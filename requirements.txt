@@ -4,3 +4,4 @@ scikit-fem[all]
 matplotlib
 pydantic
 scipy
+aleatory
