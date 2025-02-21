@@ -1,0 +1,6 @@
+streamlit 
+numpy 
+scikit-fem[all]
+matplotlib
+pydantic
+scipy
