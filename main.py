@@ -58,13 +58,19 @@ def solve_system(Th):
         b = b_previous + dt*(b_inhom)
 
         if prm.dirichlet_bcs:
-            # IMPLEMENT DIRICHLET BOUNDARY CONDITIONS
-            # u_dirichlet = Vh.project(lambda x: ul.g_d(th_i,
-            # x,
-            # bsopt, kappa, theta, is_call=prm.is_call))
-
-            # A, b = fem.enforce(A, b, x=u_dirichlet, D = Vh.get_dofs(dirichlet_bcs))
-            pass
+            # Project boundary values and enforce Dirichlet conditions
+            u_dirichlet = Vh.project(
+                lambda x: bsopt.call(
+                    th_i, x[0], dynh.mean_variance(th_i, x[1])
+                )
+                if prm.is_call
+                else bsopt.put(
+                    th_i, x[0], dynh.mean_variance(th_i, x[1])
+                )
+            )
+            A, b = fem.enforce(
+                A, b, x=u_dirichlet, D=Vh.get_dofs(prm.dirichlet_bcs)
+            )
 
         v_tsv[i + 1] = fem.solve(A, b)
 
