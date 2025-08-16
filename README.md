@@ -41,6 +41,11 @@ Execute the unit tests with `pytest`:
 pytest
 ```
 
+## Continuous Integration
+
+This project uses a GitHub Actions workflow to run the test suite on every
+push and pull request, ensuring that the codebase remains reliable.
+
 ## Project Structure
 
 ```
