@@ -6,7 +6,7 @@ import skfem as fem
 
 import src.dynamics_heston as dh
 import src.market as mkt
-import src.vainilla_bs as bs
+import src.vanilla_bs as bs
 
 
 class Sidebar:
