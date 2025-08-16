@@ -1,8 +1,12 @@
-import pydantic as pyd
-import streamlit as st
-import numpy as np
-import aleatory.processes as alp
+"""Heston model dynamics utilities.
 
+This module contains only numerical code and is free of any side effects or UI
+logic so that it can be reused from both Streamlit and command line
+interfaces.
+"""
+
+import pydantic as pyd
+import numpy as np
 import CONFIG as CFG
 
 
@@ -15,11 +19,12 @@ class DynamicsParametersHeston(pyd.BaseModel):
     rho: float
 
     def cir_number(self) -> float:
-        return 2*self.kappa*self.theta/self.sig**2
+        """Return the Cox–Ingersoll–Ross (CIR) parameter."""
+        return 2 * self.kappa * self.theta / self.sig ** 2
 
-    def write_cir(self) -> None:
-        with st.sidebar:
-            st.write(f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}")
+    def cir_message(self) -> str:
+        """Human readable message about the CIR parameter."""
+        return f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}"
 
     def mean_variance(self, th, v):
         x = self.kappa*th + CFG.EPS

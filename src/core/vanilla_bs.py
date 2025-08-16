@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import scipy.stats as spst
 
-from src.market import Market
+from .market import Market
 
 
 @dataclass(frozen=True)

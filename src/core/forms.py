@@ -1,14 +1,18 @@
+"""Finite element forms for the option pricing PDE."""
+
 import skfem as fem
 import skfem.helpers as fhl
+
 import CONFIG as CFG
 
 
 class Forms:
+    """Collection of variational forms used in the solver."""
 
-    def __init__(self, prm):
-        self.is_call = prm.is_call
-        self.bsopt = prm.bsopt
-        self.dynh = prm.dh
+    def __init__(self, is_call, bsopt, dynh):
+        self.is_call = is_call
+        self.bsopt = bsopt
+        self.dynh = dynh
 
     @staticmethod
     def id_bil():
