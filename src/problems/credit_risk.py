@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
+import numpy as np
 import pydantic as pyd
 
-from src.core.interfaces import Payoff, DynamicsModel
+from src.core.interfaces import Payoff, DynamicsModel, StochasticDynamicsModel
 from src.core.market import Market
 from src.space.boundary import DirichletBC
 
@@ -35,6 +36,17 @@ class CreditRiskDynamics(pyd.BaseModel):
     def b(self, s):  # pylint: disable=unused-argument
         """Drift capturing the default intensity."""
         return [-self.lamb * s]
+
+
+class CreditRiskJumpDynamics(CreditRiskDynamics):
+    """Default intensity with lognormal jump risk."""
+
+    jump_vol: float = 0.1
+
+    def sample(self, rng: np.random.Generator) -> CreditRiskDynamics:
+        """Return dynamics with randomised default intensity."""
+        new_lamb = rng.lognormal(mean=np.log(self.lamb), sigma=self.jump_vol)
+        return CreditRiskDynamics(r=self.r, lamb=new_lamb)
 
 
 @dataclass(frozen=True)

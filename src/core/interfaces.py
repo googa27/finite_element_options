@@ -52,6 +52,13 @@ class DynamicsModel(Protocol):
         raise NotImplementedError
 
 
+class StochasticDynamicsModel(DynamicsModel, Protocol):
+    """Extension of :class:`DynamicsModel` with stochastic coefficients."""
+
+    def sample(self, rng: np.random.Generator) -> DynamicsModel:
+        """Return a realisation with randomised coefficients."""
+
+
 class SpaceDiscretization(Protocol):
     """Protocol defining the spatial operators required by time steppers."""
 
