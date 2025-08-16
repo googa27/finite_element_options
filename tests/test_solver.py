@@ -9,6 +9,7 @@ from src.core.market import Market  # noqa: E402
 from src.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
 from src.space.mesh import create_mesh  # noqa: E402
 from src.space.solver import SpaceSolver  # noqa: E402
+from src.space.boundary import DirichletBC  # noqa: E402
 from src.time.stepper import ThetaScheme  # noqa: E402
 
 
@@ -22,5 +23,6 @@ def test_solver_runs():
     mesh = create_mesh([1.0, 1.0], 1)
     space = SpaceSolver(mesh, dh, bsopt, is_call=True)
     stepper = ThetaScheme(theta=0.5)
-    v_tsv = stepper.solve(t, space, dirichlet_bcs=[])
+    bc = DirichletBC([])
+    v_tsv = stepper.solve(t, space, boundary_condition=bc)
     assert v_tsv.shape[0] == 3
