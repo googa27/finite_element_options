@@ -19,8 +19,7 @@ class DynamicsParametersHeston(pyd.BaseModel):
 
     def write_cir(self) -> None:
         with st.sidebar:
-            st.write(f'CIR Parameter (must be greater than 1): {
-                self.cir_number():.2f}')
+            st.write(f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}")
 
     def mean_variance(self, th, v):
         x = self.kappa*th + CFG.EPS
