@@ -6,8 +6,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from src.core.dynamics_heston import DynamicsParametersHeston
 from src.core.market import Market
 from src.core.vanilla_bs import EuropeanOptionBs
-from src.core.mesh import create_rectangular_mesh
-from src.core.solver import solve_pde
+from src.space.mesh import create_rectangular_mesh
+from src.space.solver import SpaceSolver
+from src.time.stepper import ThetaScheme
 
 
 def test_solver_runs():
@@ -16,5 +17,7 @@ def test_solver_runs():
     bsopt = EuropeanOptionBs(k=0.4, q=dh.q, mkt=mkt)
     t = np.linspace(0.0, 1.0, 3)
     mesh = create_rectangular_mesh(1.0, 1.0, 1)
-    v_tsv = solve_pde(t, mesh, dh, bsopt, is_call=True, dirichlet_bcs=[], lam=0.5)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=True)
+    stepper = ThetaScheme(theta=0.5)
+    v_tsv = stepper.solve(t, space, dirichlet_bcs=[])
     assert v_tsv.shape[0] == 3
