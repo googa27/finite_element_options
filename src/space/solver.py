@@ -13,7 +13,7 @@ import CONFIG as CFG
 class SpaceSolver:
     """Assemble spatial operators and boundary terms for the PDE."""
 
-    def __init__(self, mesh: fem.MeshTri, dynh, bsopt, is_call: bool):
+    def __init__(self, mesh: fem.Mesh, dynh, bsopt, is_call: bool):
         self.mesh = mesh
         self.dynh = dynh
         self.bsopt = bsopt
@@ -21,8 +21,8 @@ class SpaceSolver:
         self.Vh = fem.CellBasis(mesh, CFG.ELEM)
         self.dVh = fem.FacetBasis(mesh, CFG.ELEM)
         self.forms = Forms(is_call=is_call, bsopt=bsopt, dynh=dynh)
-        self.I = self.forms.id_bil().assemble(self.Vh)
-        self.L = self.forms.l_bil().assemble(self.Vh)
+        self.mass = self.forms.id_bil().assemble(self.Vh)
+        self.stiffness = self.forms.l_bil().assemble(self.Vh)
 
     def initial_condition(self) -> np.ndarray:
         """Initial spatial values from the payoff."""
@@ -33,8 +33,8 @@ class SpaceSolver:
 
     def matrices(self, theta: float, dt: float):
         """Return the system matrices for the θ-scheme."""
-        A = self.I - theta * dt * self.L
-        B = self.I + (1 - theta) * dt * self.L
+        A = self.mass - theta * dt * self.stiffness
+        B = self.mass + (1 - theta) * dt * self.stiffness
         return A, B
 
     def boundary_term(self, th: float) -> np.ndarray:
@@ -44,9 +44,15 @@ class SpaceSolver:
     def dirichlet(self, th: float) -> np.ndarray:
         """Return Dirichlet values at time ``th``."""
         return self.Vh.project(
-            lambda x: self.bsopt.call(th, x[0], self.dynh.mean_variance(th, x[1]))
-            if self.is_call
-            else self.bsopt.put(th, x[0], self.dynh.mean_variance(th, x[1]))
+            lambda x: (
+                self.bsopt.call(
+                    th, x[0], self.dynh.mean_variance(th, x[1])
+                )
+                if self.is_call
+                else self.bsopt.put(
+                    th, x[0], self.dynh.mean_variance(th, x[1])
+                )
+            )
         )
 
     def apply_dirichlet(self, A, b, dirichlet_bcs, u_dirichlet):
