@@ -12,6 +12,7 @@ from .time.stepper import ThetaScheme
 
 
 def main(args=None):
+    """Parse command-line arguments and run the Heston solver."""
     parser = argparse.ArgumentParser(description="Run Heston option solver")
     parser.add_argument("--k", type=float, default=0.4, help="Strike price")
     parser.add_argument("--T", type=float, default=1.0, help="Maturity")

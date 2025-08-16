@@ -39,6 +39,7 @@ class AdaptiveMesh:
             Dict[str, Callable[[np.ndarray], np.ndarray]] | None
         ) = None,
     ) -> None:
+        """Store mesh refinement configuration."""
         self.element = element
         self.criterion = criterion
         self.theta = theta

@@ -1,3 +1,5 @@
+"""Spatial discretisation helpers and solvers."""
+
 from .mesh import create_mesh, create_rectangular_mesh
 from .forms import Forms
 from .solver import SpaceSolver

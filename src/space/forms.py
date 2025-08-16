@@ -16,6 +16,7 @@ class Forms:
         dynh,
         transform: CoordinateTransform | None = None,
     ):
+        """Store references to model objects and transformations."""
         self.is_call = is_call
         self.bsopt = bsopt
         self.dynh = dynh
@@ -23,6 +24,8 @@ class Forms:
 
     @staticmethod
     def id_bil():
+        r"""Identity bilinear form ``\int u v \,dx``."""
+
         @fem.BilinearForm
         def Id_bil(u, v, _):
             return u * v
@@ -30,6 +33,8 @@ class Forms:
         return Id_bil
 
     def l_bil(self):
+        """Diffusion–convection bilinear form for the PDE."""
+
         @fem.BilinearForm
         def L_bil(u, v, w):
             coords = self.transform.untransform_state(w.x)
@@ -46,6 +51,7 @@ class Forms:
         return L_bil
 
     def b_lin(self):
+        """Boundary linear functional associated with the PDE."""
         if not hasattr(self.dynh, "boundary_term"):
             @fem.LinearForm
             def zero(v, w):

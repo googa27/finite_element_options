@@ -11,6 +11,19 @@ import CONFIG as CFG
 
 
 class DynamicsParametersHeston(pyd.BaseModel):
+    r"""Parameters for the two-dimensional Heston stochastic volatility model.
+
+    The spot price ``S_t`` and variance ``V_t`` satisfy
+
+    .. math::
+       \begin{aligned}
+       dS_t &= (r-q)S_t\,dt + \sqrt{V_t} S_t\,dW^S_t,\\
+       dV_t &= \kappa(\theta - V_t)\,dt + \sigma\sqrt{V_t}\,dW^V_t,\\
+       \end{aligned}
+
+    with correlation ``\rho = d\langle W^S, W^V \rangle_t``.
+    """
+
     r: float
     q: float
     kappa: float
@@ -27,6 +40,7 @@ class DynamicsParametersHeston(pyd.BaseModel):
         return f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}"
 
     def mean_variance(self, th, v):
+        r"""Return ``\mathbb{E}[V_{t+th} \mid V_t = v]`` under CIR dynamics."""
         x = self.kappa*th + CFG.EPS
         return -np.expm1(-x)/x*(v - self.theta) + self.theta
 

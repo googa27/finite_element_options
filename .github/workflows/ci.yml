@@ -24,5 +24,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip install pytest
+      - name: Run pydocstyle
+        run: pydocstyle src
       - name: Run tests
         run: pytest -q

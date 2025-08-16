@@ -25,6 +25,7 @@ class SpaceSolver:
         *,
         adaptive_criterion: str | None = None,
     ):
+        """Initialize the spatial solver and assemble static operators."""
         self.mesh = mesh
         self.dynh = dynh
         self.bsopt = bsopt

@@ -41,6 +41,7 @@ class HestonCalibrator(Calibrator):
         )
 
     def model_prices(self, params: Sequence[float]) -> np.ndarray:
+        """Return prices implied by ``params`` across the market grid."""
         return self.price_formula(self.strikes, self.maturities, params)
 
 

@@ -34,9 +34,11 @@ class Identity:
     """Trivial mapping leaving values unchanged."""
 
     def transform(self, x: np.ndarray) -> np.ndarray:
+        """Return ``x`` unchanged."""
         return x
 
     def untransform(self, x: np.ndarray) -> np.ndarray:
+        """Return ``x`` unchanged."""
         return x
 
 
@@ -49,9 +51,11 @@ class LogPrice:
     """
 
     def transform(self, s: np.ndarray) -> np.ndarray:
+        r"""Map spot price ``s`` to log space ``\log s``."""
         return np.log(s)
 
     def untransform(self, x: np.ndarray) -> np.ndarray:
+        """Recover price ``s = e^x`` from log space."""
         return np.exp(x)
 
 
@@ -60,9 +64,11 @@ class SqrtVol:
     """Square-root mapping for (co)variance variables."""
 
     def transform(self, v: np.ndarray) -> np.ndarray:
+        r"""Map variance ``v`` to its root ``\sqrt{v}``."""
         return np.sqrt(v)
 
     def untransform(self, y: np.ndarray) -> np.ndarray:
+        """Square to recover variance ``v = y^2``."""
         return y ** 2
 
 
