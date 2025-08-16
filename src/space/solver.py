@@ -8,7 +8,7 @@ from typing import Iterable
 import numpy as np
 import skfem as fem
 
-import CONFIG as CFG
+from ..config import ELEM
 
 from .forms import Forms
 from . import boundary
@@ -23,8 +23,8 @@ class SpaceSolver:
     def __post_init__(self) -> None:
         self.forms = Forms(self.prm)
         self.Th = self.prm.mesh
-        self.Vh = fem.CellBasis(self.Th, CFG.ELEM)
-        self.dVh = fem.FacetBasis(self.Th, CFG.ELEM)
+        self.Vh = fem.CellBasis(self.Th, ELEM)
+        self.dVh = fem.FacetBasis(self.Th, ELEM)
         self.I = self.forms.id_bil().assemble(self.Vh)
         self.L = self.forms.l_bil().assemble(self.Vh)
         self.v0 = self.Vh.project(

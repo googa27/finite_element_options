@@ -1,6 +1,5 @@
 import skfem as fem
 import skfem.helpers as fhl
-import CONFIG as CFG
 
 
 class Forms:

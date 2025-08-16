@@ -3,7 +3,7 @@ import streamlit as st
 import numpy as np
 import aleatory.processes as alp
 
-import CONFIG as CFG
+from .config import EPS
 
 
 class DynamicsParametersHeston(pyd.BaseModel):
@@ -22,7 +22,7 @@ class DynamicsParametersHeston(pyd.BaseModel):
             st.write(f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}")
 
     def mean_variance(self, th, v):
-        x = self.kappa*th + CFG.EPS
+        x = self.kappa*th + EPS
         return -np.expm1(-x)/x*(v - self.theta) + self.theta
 
     # def mean_variance(self, th, v):
@@ -33,7 +33,7 @@ class DynamicsParametersHeston(pyd.BaseModel):
     #                            mu=self.theta,
     #                            sigma=self.sig,
     #                            initial=v)
-    #             .get_marginal(t=th + CFG.EPS)
+    #             .get_marginal(t=th + EPS)
     #             .mean()
     #             )
 
