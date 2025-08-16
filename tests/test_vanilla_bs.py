@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
+import sys, os
 
-from src.vanilla_bs import EuropeanOptionBs
-from src.market import Market
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from src.core.vanilla_bs import EuropeanOptionBs
+from src.core.market import Market
 
 
 @pytest.fixture

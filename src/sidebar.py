@@ -2,11 +2,11 @@ import streamlit as st
 import numpy as np
 import scipy.stats as spst
 import aleatory.processes as alp
-import skfem as fem
 
-import src.dynamics_heston as dh
-import src.market as mkt
-import src.vanilla_bs as bs
+from src.core.dynamics_heston import DynamicsParametersHeston
+from src.core.market import Market
+from src.core.vanilla_bs import EuropeanOptionBs
+from src.core.mesh import create_rectangular_mesh
 
 
 class Sidebar:
@@ -67,26 +67,15 @@ class Sidebar:
             x_max = z_a*np.sqrt(v_threshold*T) - min(r1, r2)*T
             s_max = k*np.exp(x_max)
 
-        self.dh = dh.DynamicsParametersHeston(r=r,
-                                              q=q,
-                                              kappa=kappa,
-                                              theta=theta,
-                                              sig=sig,
-                                              rho=rho)
-        self.mkt = mkt.Market(r=r)
-        self.bsopt = bs.EuropeanOptionBs(k,
-                                         self.dh.q,
-                                         self.mkt)
+        self.dh = DynamicsParametersHeston(r=r,
+                                           q=q,
+                                           kappa=kappa,
+                                           theta=theta,
+                                           sig=sig,
+                                           rho=rho)
+        self.mkt = Market(r=r)
+        self.bsopt = EuropeanOptionBs(k,
+                                      self.dh.q,
+                                      self.mkt)
         self.t = np.linspace(0, T, nt)
-        self.mesh = (fem.MeshTri()
-                     .init_tensor(x=np.linspace(0, s_max, 2),
-                                  y=np.linspace(0, v_max, 2)
-                                  )
-                     .refined(mesh_refine)
-                     .with_boundaries({'s_min': lambda x: x[0] == 0,
-                                      's_max': lambda x: x[0] == s_max,
-                                       'v_min': lambda x: x[1] == 0,
-                                       'v_max': lambda x: x[1] == v_max
-                                       }
-                                      )
-                     )
+        self.mesh = create_rectangular_mesh(s_max, v_max, mesh_refine)
