@@ -45,12 +45,7 @@ def main(args=None):
     space = SpaceSolver(mesh, dh, bsopt, is_call=ns.call)
     stepper = ThetaScheme(theta=ns.lam)
 
-    v_tsv = stepper.solve(
-        t,
-        space,
-        dirichlet_bcs=None,
-        is_american=ns.american,
-    )
+    v_tsv = stepper.solve(t, space, boundary_condition=None, is_american=ns.american)
 
     print(v_tsv[-1])
 

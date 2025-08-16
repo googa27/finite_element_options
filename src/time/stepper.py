@@ -8,7 +8,7 @@ from typing import Iterable
 import numpy as np
 import skfem as fem
 
-from src.space.solver import SpaceSolver
+from src.core.interfaces import BoundaryCondition, SpaceDiscretization
 
 
 class TimeStepper(ABC):
@@ -18,8 +18,8 @@ class TimeStepper(ABC):
     def solve(
         self,
         t: Iterable[float],
-        space: SpaceSolver,
-        dirichlet_bcs=None,
+        space: SpaceDiscretization,
+        boundary_condition: BoundaryCondition | None = None,
         is_american: bool = False,
     ) -> np.ndarray:
         """Return the time-space solution array."""
@@ -36,8 +36,8 @@ class ThetaScheme(TimeStepper):
     def solve(
         self,
         t: Iterable[float],
-        space: SpaceSolver,
-        dirichlet_bcs=None,
+        space: SpaceDiscretization,
+        boundary_condition: BoundaryCondition | None = None,
         is_american: bool = False,
     ) -> np.ndarray:
         """Return solution grid for the supplied time nodes ``t``."""
@@ -54,9 +54,8 @@ class ThetaScheme(TimeStepper):
             )
             b = b_previous + dt * b_inhom
 
-            if dirichlet_bcs:
-                u_dirichlet = space.dirichlet(th_i)
-                A_enf, b_enf = space.apply_dirichlet(A, b, dirichlet_bcs, u_dirichlet)
+            if boundary_condition:
+                A_enf, b_enf = boundary_condition.apply(space, A, b, th_i)
                 v_tsv[i + 1] = fem.solve(A_enf, b_enf)
             else:
                 v_tsv[i + 1] = fem.solve(A, b)

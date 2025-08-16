@@ -12,6 +12,7 @@ from src.core.market import Market  # noqa: E402
 from src.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
 from src.space.mesh import create_mesh  # noqa: E402
 from src.space.solver import SpaceSolver  # noqa: E402
+from src.space.boundary import DirichletBC  # noqa: E402
 from src.time.stepper import ThetaScheme  # noqa: E402
 
 
@@ -23,7 +24,8 @@ def test_black_scholes_price():
     mesh = create_mesh([2.0], 3)
     space = SpaceSolver(mesh, dh, bsopt, is_call=True)
     stepper = ThetaScheme(theta=0.5)
-    v_tsv = stepper.solve(t, space, dirichlet_bcs=[])
+    bc = DirichletBC([])
+    v_tsv = stepper.solve(t, space, boundary_condition=bc)
 
     s0 = 1.0
     node = np.argmin(np.abs(space.Vh.doflocs[0] - s0))

@@ -7,6 +7,7 @@ from src.core.market import Market
 from src.core.vanilla_bs import EuropeanOptionBs
 from src.space.mesh import create_mesh
 from src.space.solver import SpaceSolver
+from src.space.boundary import DirichletBC
 from src.time.stepper import ThetaScheme
 
 
@@ -19,7 +20,7 @@ def price_call():
     mesh = create_mesh([2.0], 4)
     space = SpaceSolver(mesh, dh, bsopt, is_call=True)
     stepper = ThetaScheme(theta=0.5)
-    return stepper.solve(t, space, dirichlet_bcs=[])
+    return stepper.solve(t, space, boundary_condition=DirichletBC([]))
 
 
 if __name__ == "__main__":

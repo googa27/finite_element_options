@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import skfem as fem
 
-from .forms import Forms
+from .forms import Forms, PDEForms
 from .boundary import apply_dirichlet
 from .adaptive import AdaptiveMesh
 from src.transform import CoordinateTransform
@@ -18,17 +18,18 @@ class SpaceSolver:
     def __init__(
         self,
         mesh: fem.Mesh,
-        dynh,
-        bsopt,
+        dynamics,
+        payoff,
         is_call: bool,
         transform: CoordinateTransform | None = None,
         *,
+        forms: Forms | None = None,
         adaptive_criterion: str | None = None,
     ):
         """Initialize the spatial solver and assemble static operators."""
         self.mesh = mesh
-        self.dynh = dynh
-        self.bsopt = bsopt
+        self.dynamics = dynamics
+        self.payoff = payoff
         self.is_call = is_call
         self.transform = transform or CoordinateTransform()
         self.Vh = fem.CellBasis(mesh, CFG.ELEM)
@@ -38,8 +39,11 @@ class SpaceSolver:
             if adaptive_criterion is not None
             else None
         )
-        self.forms = Forms(
-            is_call=is_call, bsopt=bsopt, dynh=dynh, transform=self.transform
+        self.forms = forms or PDEForms(
+            is_call=is_call,
+            payoff=payoff,
+            dynamics=dynamics,
+            transform=self.transform,
         )
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self.stiffness = self.forms.l_bil().assemble(self.Vh)
@@ -47,11 +51,11 @@ class SpaceSolver:
     def initial_condition(self) -> np.ndarray:
         """Initial spatial values from the payoff."""
         return self.Vh.project(
-            lambda x: self.bsopt.call_payoff(
+            lambda x: self.payoff.call_payoff(
                 self.transform.untransform_state(x)[0]
             )
             * self.is_call
-            + self.bsopt.put_payoff(
+            + self.payoff.put_payoff(
                 self.transform.untransform_state(x)[0]
             )
             * (not self.is_call)
@@ -74,18 +78,18 @@ class SpaceSolver:
 
         return self.Vh.project(
             lambda x: (
-                self.bsopt.call(
+                self.payoff.call(
                     th_phys,
                     self.transform.untransform_state(x)[0],
-                    self.dynh.mean_variance(
+                    self.dynamics.mean_variance(
                         th_phys, self.transform.untransform_state(x)[1]
                     ),
                 )
                 if self.is_call
-                else self.bsopt.put(
+                else self.payoff.put(
                     th_phys,
                     self.transform.untransform_state(x)[0],
-                    self.dynh.mean_variance(
+                    self.dynamics.mean_variance(
                         th_phys, self.transform.untransform_state(x)[1]
                     ),
                 )

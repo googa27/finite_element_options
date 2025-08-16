@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import skfem.visuals as femv
 
-from skfem.visuals.matplotlib import plot as femplot
-
 
 def plot_mean_variance(t, dynh):
     r"""Plot ``\mathbb{E}[V_t]`` under Heston dynamics."""

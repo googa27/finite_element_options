@@ -1,13 +1,9 @@
 import streamlit as st
-import numpy as np
-import skfem as fem
 
 import src.sidebar as sdb
 import src.plots as splt
-import CONFIG as CFG
-
-from skfem.visuals.matplotlib import plot as femplot
 from src.space.solver import SpaceSolver
+from src.space.boundary import DirichletBC
 from src.time.stepper import ThetaScheme
 
 prm = sdb.Sidebar()
@@ -23,12 +19,8 @@ stepper = ThetaScheme(theta=prm.lam)
 with st.sidebar:
     st.write(dynh.cir_message())
 
-v_tsv = stepper.solve(
-    t,
-    space,
-    dirichlet_bcs=prm.dirichlet_bcs,
-    is_american=prm.is_american,
-)
+bc = DirichletBC(prm.dirichlet_bcs)
+v_tsv = stepper.solve(t, space, boundary_condition=bc, is_american=prm.is_american)
 
 
 Th = space.mesh

@@ -6,10 +6,11 @@ import numpy as np
 import scipy.stats as spst
 
 from .market import Market
+from .interfaces import Payoff
 
 
 @dataclass(frozen=True)
-class EuropeanOptionBs:
+class EuropeanOptionBs(Payoff):
     """European option priced with the Black-Scholes model.
 
     Parameters are stored as attributes via ``dataclass`` which promotes a more
