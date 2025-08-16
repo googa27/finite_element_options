@@ -7,28 +7,45 @@ import skfem as fem
 
 from .forms import Forms
 from .boundary import apply_dirichlet
+from src.transform import CoordinateTransform
 import CONFIG as CFG
 
 
 class SpaceSolver:
     """Assemble spatial operators and boundary terms for the PDE."""
 
-    def __init__(self, mesh: fem.Mesh, dynh, bsopt, is_call: bool):
+    def __init__(
+        self,
+        mesh: fem.Mesh,
+        dynh,
+        bsopt,
+        is_call: bool,
+        transform: CoordinateTransform | None = None,
+    ):
         self.mesh = mesh
         self.dynh = dynh
         self.bsopt = bsopt
         self.is_call = is_call
+        self.transform = transform or CoordinateTransform()
         self.Vh = fem.CellBasis(mesh, CFG.ELEM)
         self.dVh = fem.FacetBasis(mesh, CFG.ELEM)
-        self.forms = Forms(is_call=is_call, bsopt=bsopt, dynh=dynh)
+        self.forms = Forms(
+            is_call=is_call, bsopt=bsopt, dynh=dynh, transform=self.transform
+        )
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self.stiffness = self.forms.l_bil().assemble(self.Vh)
 
     def initial_condition(self) -> np.ndarray:
         """Initial spatial values from the payoff."""
         return self.Vh.project(
-            lambda x: self.bsopt.call_payoff(x[0]) * self.is_call
-            + self.bsopt.put_payoff(x[0]) * (not self.is_call)
+            lambda x: self.bsopt.call_payoff(
+                self.transform.untransform_state(x)[0]
+            )
+            * self.is_call
+            + self.bsopt.put_payoff(
+                self.transform.untransform_state(x)[0]
+            )
+            * (not self.is_call)
         )
 
     def matrices(self, theta: float, dt: float):
@@ -39,18 +56,29 @@ class SpaceSolver:
 
     def boundary_term(self, th: float) -> np.ndarray:
         """Assemble the natural boundary contribution at time ``th``."""
-        return self.forms.b_lin().assemble(self.dVh, th=th)
+        th_phys = self.transform.untransform_time(th)
+        return self.forms.b_lin().assemble(self.dVh, th=th_phys)
 
     def dirichlet(self, th: float) -> np.ndarray:
         """Return Dirichlet values at time ``th``."""
+        th_phys = self.transform.untransform_time(th)
+
         return self.Vh.project(
             lambda x: (
                 self.bsopt.call(
-                    th, x[0], self.dynh.mean_variance(th, x[1])
+                    th_phys,
+                    self.transform.untransform_state(x)[0],
+                    self.dynh.mean_variance(
+                        th_phys, self.transform.untransform_state(x)[1]
+                    ),
                 )
                 if self.is_call
                 else self.bsopt.put(
-                    th, x[0], self.dynh.mean_variance(th, x[1])
+                    th_phys,
+                    self.transform.untransform_state(x)[0],
+                    self.dynh.mean_variance(
+                        th_phys, self.transform.untransform_state(x)[1]
+                    ),
                 )
             )
         )
