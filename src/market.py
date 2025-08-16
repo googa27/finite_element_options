@@ -1,11 +1,40 @@
-import streamlit as st
+"""Market module.
+
+Provides a simple representation of a financial market.  The class is
+implemented as a dataclass to clearly express its data attributes and to keep
+the model immutable once created.  This tiny abstraction allows other
+components to depend on the ``Market`` interface rather than concrete
+implementations, following the Dependency Inversion Principle of SOLID.
+"""
+
+from dataclasses import dataclass
 import numpy as np
 
 
+@dataclass(frozen=True)
 class Market:
+    """Container for market parameters.
 
-    def __init__(self, r: float):
-        self.r = r
+    Attributes
+    ----------
+    r:
+        Constant risk-free interest rate.
+    """
 
-    def D(self, th: float):
-        return np.exp(-self.r*th)
+    r: float
+
+    def D(self, th: float) -> float:
+        """Discount factor for maturity ``th``.
+
+        Parameters
+        ----------
+        th:
+            Time to maturity.
+
+        Returns
+        -------
+        float
+            Present value discount factor.
+        """
+
+        return np.exp(-self.r * th)
