@@ -8,3 +8,6 @@
 - Introduced an `AdaptiveMesh` utility enabling residual- or gradient-based
   adaptive refinement. Demo and solver now support configurable criteria and
   tests assert element counts increase or decrease accordingly.
+- Added `src/problems` package with `OptionPricingProblem` and
+  `CreditRiskProblem` classes bundling dynamics, payoff and boundary defaults,
+  plus a Streamlit demo showcasing their instantiation.
