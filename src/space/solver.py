@@ -7,6 +7,7 @@ import skfem as fem
 
 from .forms import Forms
 from .boundary import apply_dirichlet
+from .adaptive import AdaptiveMesh
 from src.transform import CoordinateTransform
 import CONFIG as CFG
 
@@ -21,6 +22,8 @@ class SpaceSolver:
         bsopt,
         is_call: bool,
         transform: CoordinateTransform | None = None,
+        *,
+        adaptive_criterion: str | None = None,
     ):
         self.mesh = mesh
         self.dynh = dynh
@@ -29,6 +32,11 @@ class SpaceSolver:
         self.transform = transform or CoordinateTransform()
         self.Vh = fem.CellBasis(mesh, CFG.ELEM)
         self.dVh = fem.FacetBasis(mesh, CFG.ELEM)
+        self.adapt = (
+            AdaptiveMesh(CFG.ELEM, criterion=adaptive_criterion)
+            if adaptive_criterion is not None
+            else None
+        )
         self.forms = Forms(
             is_call=is_call, bsopt=bsopt, dynh=dynh, transform=self.transform
         )
@@ -86,3 +94,20 @@ class SpaceSolver:
     def apply_dirichlet(self, A, b, dirichlet_bcs, u_dirichlet):
         """Apply Dirichlet boundary conditions to ``A`` and ``b``."""
         return apply_dirichlet(A, b, self.Vh, dirichlet_bcs, u_dirichlet)
+
+    def refine_mesh(self, u: np.ndarray) -> fem.Mesh:
+        """Refine the internal mesh using adaptive criterion.
+
+        Parameters
+        ----------
+        u:
+            Current solution vector used to compute refinement indicators.
+        """
+        if self.adapt is None:
+            raise ValueError("Adaptive mesh not configured for this solver.")
+        self.mesh = self.adapt.refine(self.mesh, u)
+        self.Vh = fem.CellBasis(self.mesh, CFG.ELEM)
+        self.dVh = fem.FacetBasis(self.mesh, CFG.ELEM)
+        self.mass = self.forms.id_bil().assemble(self.Vh)
+        self.stiffness = self.forms.l_bil().assemble(self.Vh)
+        return self.mesh
