@@ -6,7 +6,7 @@ import aleatory.processes as alp
 from src.core.dynamics_heston import DynamicsParametersHeston
 from src.core.market import Market
 from src.core.vanilla_bs import EuropeanOptionBs
-from src.core.mesh import create_rectangular_mesh
+from src.space.mesh import create_rectangular_mesh
 
 
 class Sidebar:

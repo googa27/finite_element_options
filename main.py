@@ -7,7 +7,8 @@ import src.plots as splt
 import CONFIG as CFG
 
 from skfem.visuals.matplotlib import plot as femplot
-from src.core.solver import solve_pde
+from src.space.solver import SpaceSolver
+from src.time.stepper import ThetaScheme
 
 prm = sdb.Sidebar()
 
@@ -16,27 +17,26 @@ mkt = prm.mkt
 bsopt = prm.bsopt
 t = prm.t
 
+space = SpaceSolver(prm.mesh, dynh, bsopt, is_call=prm.is_call)
+stepper = ThetaScheme(theta=prm.lam)
+
 with st.sidebar:
     st.write(dynh.cir_message())
 
-v_tsv = solve_pde(
+v_tsv = stepper.solve(
     t,
-    prm.mesh,
-    dynh,
-    bsopt,
-    is_call=prm.is_call,
+    space,
     dirichlet_bcs=prm.dirichlet_bcs,
-    lam=prm.lam,
     is_american=prm.is_american,
 )
 
 
-Th = prm.mesh
-Vh = fem.CellBasis(Th, CFG.ELEM)
+Th = space.mesh
+Vh = space.Vh
 with st.sidebar:
     st.write(f'Number of degrees of freedom: {Vh.N}')
 
-# use solution from earlier call to ``solve_pde``
+# use solution from earlier call to the time stepper
 u = v_tsv[-1]
 u_s = Vh.project(Vh.interpolate(u).grad[0])
 u_ss = Vh.project(Vh.interpolate(u_s).grad[0])

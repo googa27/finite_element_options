@@ -6,8 +6,9 @@ import numpy as np
 from .core.dynamics_heston import DynamicsParametersHeston
 from .core.market import Market
 from .core.vanilla_bs import EuropeanOptionBs
-from .core.mesh import create_rectangular_mesh
-from .core.solver import solve_pde
+from .space.mesh import create_rectangular_mesh
+from .space.solver import SpaceSolver
+from .time.stepper import ThetaScheme
 
 
 def main(args=None):
@@ -38,15 +39,13 @@ def main(args=None):
 
     t = np.linspace(0, ns.T, ns.nt)
     mesh = create_rectangular_mesh(ns.s_max, ns.v_max, ns.refine)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=ns.call)
+    stepper = ThetaScheme(theta=ns.lam)
 
-    v_tsv = solve_pde(
+    v_tsv = stepper.solve(
         t,
-        mesh,
-        dh,
-        bsopt,
-        is_call=ns.call,
+        space,
         dirichlet_bcs=None,
-        lam=ns.lam,
         is_american=ns.american,
     )
 
