@@ -30,6 +30,7 @@ class ThetaScheme(TimeStepper):
     """General θ-scheme stepping (θ=1 implicit Euler, θ=0 explicit Euler)."""
 
     def __init__(self, theta: float = 0.5):
+        """Store the parameter ``θ`` controlling implicitness."""
         self.theta = theta
 
     def solve(
@@ -39,6 +40,7 @@ class ThetaScheme(TimeStepper):
         dirichlet_bcs=None,
         is_american: bool = False,
     ) -> np.ndarray:
+        """Return solution grid for the supplied time nodes ``t``."""
         dt = t[1] - t[0]
         v_tsv = np.empty((len(t), space.Vh.N))
         v_tsv[0] = space.initial_condition()
@@ -69,4 +71,5 @@ class CrankNicolson(ThetaScheme):
     """Crank–Nicolson scheme with θ=1/2."""
 
     def __init__(self):
+        """Initialize with ``θ = 1/2``."""
         super().__init__(theta=0.5)

@@ -1,3 +1,5 @@
+"""Streamlit sidebar widgets for interactive option demos."""
+
 import streamlit as st
 import numpy as np
 import scipy.stats as spst
@@ -10,8 +12,10 @@ from src.space.mesh import create_mesh
 
 
 class Sidebar:
+    """Collect user input from the Streamlit sidebar."""
 
     def __init__(self):
+        """Instantiate the sidebar widgets."""
         self._make_sidebar()
 
     def _make_sidebar(self):
