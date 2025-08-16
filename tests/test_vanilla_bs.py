@@ -1,14 +1,6 @@
 import numpy as np
 import pytest
 
-from pathlib import Path
-import sys
-
-# Ensure project root is on ``sys.path`` so ``src`` can be imported when the
-# package isn't installed.
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
 from src.vanilla_bs import EuropeanOptionBs
 from src.market import Market
 
@@ -44,6 +36,16 @@ def test_delta(bs_option):
     assert delta == pytest.approx(0.6368, rel=1e-3)
 
 
+def test_put_delta(bs_option):
+    delta = bs_option.put_delta(th=1.0, s=100.0, v=0.04)
+    assert delta == pytest.approx(-0.3632, rel=1e-3)
+
+
+def test_vega(bs_option):
+    vega = bs_option.vega(th=1.0, s=100.0, v=0.04)
+    assert vega == pytest.approx(37.5240, rel=1e-4)
+
+
 def test_discount_factor():
     mkt = Market(r=0.05)
-    assert mkt.D(1.0) == pytest.approx(np.exp(-0.05))
+    assert mkt.discount_factor(1.0) == pytest.approx(np.exp(-0.05))

@@ -23,8 +23,8 @@ class Market:
 
     r: float
 
-    def D(self, th: float) -> float:
-        """Discount factor for maturity ``th``.
+    def discount_factor(self, th: float) -> float:
+        """Return the present value discount factor for maturity ``th``.
 
         Parameters
         ----------
@@ -34,7 +34,7 @@ class Market:
         Returns
         -------
         float
-            Present value discount factor.
+            Present value discount factor ``exp(-r * th)``.
         """
 
         return np.exp(-self.r * th)
