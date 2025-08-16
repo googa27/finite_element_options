@@ -6,7 +6,7 @@ import aleatory.processes as alp
 from src.core.dynamics_heston import DynamicsParametersHeston
 from src.core.market import Market
 from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.mesh import create_rectangular_mesh
+from src.space.mesh import create_mesh
 
 
 class Sidebar:
@@ -28,10 +28,11 @@ class Sidebar:
             r = st.slider('r', -0.1, 0.5, 0.03)
 
             st.title('Boundary Conditions')
-            self.dirichlet_bcs = st.multiselect('Dirichlet Boundary Conditions',
-                                                ['s_min', 's_max',
-                                                 'v_min', 'v_max'],
-                                                [])
+            self.dirichlet_bcs = st.multiselect(
+                'Dirichlet Boundary Conditions',
+                ['s_min', 's_max', 'v_min', 'v_max'],
+                [],
+            )
 
             st.title('Discretization Parameters')
 
@@ -78,4 +79,4 @@ class Sidebar:
                                       self.dh.q,
                                       self.mkt)
         self.t = np.linspace(0, T, nt)
-        self.mesh = create_rectangular_mesh(s_max, v_max, mesh_refine)
+        self.mesh = create_mesh([s_max, v_max], mesh_refine)

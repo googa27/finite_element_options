@@ -6,7 +6,7 @@ import numpy as np
 from .core.dynamics_heston import DynamicsParametersHeston
 from .core.market import Market
 from .core.vanilla_bs import EuropeanOptionBs
-from .space.mesh import create_rectangular_mesh
+from .space.mesh import create_mesh
 from .space.solver import SpaceSolver
 from .time.stepper import ThetaScheme
 
@@ -26,7 +26,9 @@ def main(args=None):
     parser.add_argument("--nt", type=int, default=10)
     parser.add_argument("--refine", type=int, default=2)
     parser.add_argument("--lam", type=float, default=0.5)
-    parser.add_argument("--call", action="store_true", help="Price a call option")
+    parser.add_argument(
+        "--call", action="store_true", help="Price a call option"
+    )
     parser.add_argument("--american", action="store_true")
 
     ns = parser.parse_args(args=args)
@@ -38,7 +40,7 @@ def main(args=None):
     bsopt = EuropeanOptionBs(ns.k, dh.q, mkt)
 
     t = np.linspace(0, ns.T, ns.nt)
-    mesh = create_rectangular_mesh(ns.s_max, ns.v_max, ns.refine)
+    mesh = create_mesh([ns.s_max, ns.v_max], ns.refine)
     space = SpaceSolver(mesh, dh, bsopt, is_call=ns.call)
     stepper = ThetaScheme(theta=ns.lam)
 

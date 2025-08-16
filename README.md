@@ -1,13 +1,15 @@
 # Finite Element Options
 
-Finite Element Options demonstrates pricing of European options under the
-Black-Scholes model using a finite element discretisation.  The application is
+Finite Element Options demonstrates pricing of European options under various
+stochastic models using a finite element discretisation.  The application is
 built around [scikit-fem](https://github.com/kinnala/scikit-fem) and provides a
 Streamlit based user interface for interactive exploration.
 
 ## Features
 
 - Black-Scholes option pricer with call and put payoffs
+- Configurable mesh generation supporting 1D, 2D and 3D problems
+- Sample problems for 1D Black–Scholes and 3D Heston models
 - Simple market abstraction with discount factors
 - Streamlit UI and plotting helpers
 - Example demo for adaptive mesh refinement
