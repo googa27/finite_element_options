@@ -12,7 +12,13 @@ Calibrators expect three NumPy arrays of identical shape:
 
 These arrays define the option surface used during optimisation.  Example:
 
+The module includes:
+
+- ``HestonCalibrator`` using SciPy's least-squares optimizer
+- ``StatsmodelsCalibrator`` relying on statsmodels' ``NonlinearLS``
+- ``PyMCCalibrator`` performing Bayesian inference with PyMC
+
 ```python
-calib = HestonCalibrator(strikes, maturities, prices)
+calib = StatsmodelsCalibrator(strikes, maturities, prices)
 params = calib.calibrate(initial_guess)
 ```

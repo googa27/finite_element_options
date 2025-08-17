@@ -8,6 +8,8 @@ findiff
 numba
 jax
 aleatory
+statsmodels
+pymc
 pydocstyle
 pytest
 pytest-cov
