@@ -1,48 +1,47 @@
 """Base classes for parameter calibration.
 
 This module defines the :class:`Calibrator` abstract base class which stores
-market data as NumPy arrays.  Subclasses are expected to implement
-:method:`model_prices` to generate model-implied prices for a vector of model
+market data in a :class:`pandas.DataFrame` while maintaining NumPy arrays
+internally for performance. Subclasses are expected to implement
+``model_prices`` to generate model-implied prices for a vector of model
 parameters.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Sequence
 
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 
 
 @dataclass
 class Calibrator(ABC):
-    """Abstract optimizer matching model prices to market data.
+    """Abstract optimiser matching model prices to market data.
 
     Parameters
     ----------
-    strikes:
-        Array of strike prices.
-    maturities:
-        Array of option maturities with the same shape as ``strikes``.
-    prices:
-        Observed market option prices.
+    market_data:
+        DataFrame with ``strike``, ``maturity`` and ``price`` columns.
     """
 
-    strikes: np.ndarray
-    maturities: np.ndarray
-    prices: np.ndarray
+    market_data: pd.DataFrame
+    strikes: np.ndarray = field(init=False)
+    maturities: np.ndarray = field(init=False)
+    prices: np.ndarray = field(init=False)
 
     def __post_init__(self) -> None:  # noqa: D401 - short explanation
-        """Validate input array shapes."""
-        self.strikes = np.asarray(self.strikes, dtype=float)
-        self.maturities = np.asarray(self.maturities, dtype=float)
-        self.prices = np.asarray(self.prices, dtype=float)
-        if not (
-            self.strikes.shape == self.maturities.shape == self.prices.shape
-        ):
-            raise ValueError("Input arrays must share the same shape")
+        """Validate market data and extract NumPy arrays."""
+        required = {"strike", "maturity", "price"}
+        if not required.issubset(self.market_data.columns):
+            raise ValueError("market_data must contain strike, maturity and price")
+        df = self.market_data[sorted(required)].astype(float)
+        self.strikes = df["strike"].to_numpy()
+        self.maturities = df["maturity"].to_numpy()
+        self.prices = df["price"].to_numpy()
 
     @abstractmethod
     def model_prices(self, params: Sequence[float]) -> np.ndarray:
@@ -51,6 +50,37 @@ class Calibrator(ABC):
     def residuals(self, params: Sequence[float]) -> np.ndarray:
         """Difference between model and market prices."""
         return self.model_prices(params) - self.prices
+
+    # ------------------------------------------------------------------
+    # DataFrame helpers
+    def model_prices_df(self, params: Sequence[float]) -> pd.DataFrame:
+        """Return model prices as a DataFrame.
+
+        Parameters
+        ----------
+        params:
+            Model parameter vector.
+
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with ``strike``, ``maturity`` and ``model_price`` columns.
+        """
+
+        prices = self.model_prices(params)
+        return pd.DataFrame(
+            {
+                "strike": self.strikes,
+                "maturity": self.maturities,
+                "model_price": prices,
+            }
+        )
+
+    def residuals_df(self, params: Sequence[float]) -> pd.DataFrame:
+        """Return residuals between model and market prices as a DataFrame."""
+        df = self.model_prices_df(params)
+        df["residual"] = df["model_price"] - self.prices
+        return df
 
     def calibrate(self, initial_guess: Sequence[float]) -> np.ndarray:
         """Calibrate model parameters via least squares.

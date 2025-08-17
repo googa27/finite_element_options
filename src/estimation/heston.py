@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Sequence
 
 import numpy as np
+import pandas as pd
 from statsmodels.miscmodels.nonlinls import NonlinearLS
 import pymc as pm
 
@@ -51,6 +52,7 @@ class StatsmodelsCalibrator(HestonCalibrator):
     """Calibrate using ``statsmodels`` nonlinear least squares."""
 
     def calibrate(self, initial_guess: Sequence[float]) -> np.ndarray:  # type: ignore[override]
+        """Return parameters estimated via ``statsmodels`` NLS solver."""
         strikes, maturities = self.strikes, self.maturities
 
         class _NLS(NonlinearLS):
@@ -125,7 +127,8 @@ def sample_calibration() -> np.ndarray:
     strikes, maturities = strikes.ravel(), maturities.ravel()
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
     prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
-    calibrator = HestonCalibrator(strikes, maturities, prices)
+    data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
+    calibrator = HestonCalibrator(data)
     initial_guess = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
     return calibrator.calibrate(initial_guess)
 
@@ -139,7 +142,8 @@ def sample_statsmodels_calibration() -> np.ndarray:
     strikes, maturities = strikes.ravel(), maturities.ravel()
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
     prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
-    calibrator = StatsmodelsCalibrator(strikes, maturities, prices)
+    data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
+    calibrator = StatsmodelsCalibrator(data)
     initial_guess = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
     return calibrator.calibrate(initial_guess)
 
@@ -153,5 +157,6 @@ def sample_pymc_calibration() -> np.ndarray:
     strikes, maturities = strikes.ravel(), maturities.ravel()
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
     prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
-    calibrator = PyMCCalibrator(strikes, maturities, prices)
+    data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
+    calibrator = PyMCCalibrator(data)
     return calibrator.calibrate(draws=500, chains=2, random_seed=123)

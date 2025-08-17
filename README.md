@@ -19,6 +19,8 @@ Streamlit based user interface for interactive exploration.
 - Example demo for adaptive mesh refinement
 - Comprehensive test suite using `pytest`
 - Parameter calibration helpers with SciPy, Statsmodels and Bayesian PyMC approaches
+- Market data handled via pandas DataFrames and solution snapshots via xarray
+- CSV/Parquet serialisation utilities for reproducible experiments
 - Experimental FEniCSx solver for Black-Scholes PDE
 
 ## Installation

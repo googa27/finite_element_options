@@ -19,12 +19,14 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.sparse.linalg import spsolve
 from findiff import FinDiff
+from xarray import DataArray
 
 from .acceleration import (
     NUMBA_AVAILABLE,
     call_payoff_grid,
     put_payoff_grid,
 )
+from .data_utils import snapshot
 
 
 @dataclass
@@ -169,12 +171,12 @@ def solve_system(
     payoff,
     is_call: bool = True,
     theta: float = 0.5,
-) -> np.ndarray:
+) -> DataArray:
     """Solve the Black–Scholes PDE on a regular grid.
 
-    This is a high-level convenience wrapper returning the full time-space
-    grid of option values, enabling parity with the finite element
-    ``SpaceSolver`` + ``ThetaScheme`` combination.
+    Returns an :class:`xarray.DataArray` whose dimensions are ``time`` and
+    ``space``.  The function mirrors the high-level interface of the finite
+    element solver while providing labelled coordinates for post-processing.
     """
 
     solver = FDSolver(s_grid, dynamics, payoff, is_call=is_call)
@@ -191,4 +193,4 @@ def solve_system(
         A_enf, b_enf = solver.apply_dirichlet(A, b, [], u_d)
         v[i + 1] = spsolve(A_enf, b_enf)
 
-    return v
+    return snapshot(v, t, solver.s_grid)
