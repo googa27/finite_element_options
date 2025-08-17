@@ -5,6 +5,8 @@ matplotlib
 pydantic
 scipy
 findiff
+numba
+jax
 aleatory
 pydocstyle
 pytest
