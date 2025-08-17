@@ -1,9 +1,25 @@
 # Finite Element Options
 
 Finite Element Options demonstrates pricing of European options under various
-stochastic models using a finite element discretisation.  The application is
+stochastic models using a finite element discretisation. The application is
 built around [scikit-fem](https://github.com/kinnala/scikit-fem) and provides a
-Streamlit based user interface for interactive exploration.
+Streamlit-based user interface for interactive exploration.
+
+## Quickstart
+
+Install the dependencies and run a simple Black–Scholes pricing example:
+
+```bash
+pip install -r requirements.txt
+python - <<'PY'
+from src.examples.bs_1d import price_call
+grid = price_call()
+print(grid[-1])  # option values at maturity
+PY
+```
+
+The snippet solves a one-dimensional Black–Scholes problem using default
+parameters and prints the final price grid.
 
 ## Features
 
@@ -42,6 +58,13 @@ Run the adaptive mesh demo:
 ```bash
 python demo_adaptive.py
 ```
+
+### Example Output
+
+The adaptive mesh demo refines the domain around sharp features. The final
+solution after several refinement steps is shown below:
+
+![Adaptive mesh solution showing refined grid](docs/images/adaptive_solution.svg)
 
 ## Testing
 
