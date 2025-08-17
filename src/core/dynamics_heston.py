@@ -7,7 +7,8 @@ interfaces.
 
 import pydantic as pyd
 import numpy as np
-import CONFIG as CFG
+
+from .config import Config
 
 
 class DynamicsParametersHeston(pyd.BaseModel):
@@ -39,10 +40,22 @@ class DynamicsParametersHeston(pyd.BaseModel):
         """Human readable message about the CIR parameter."""
         return f"CIR Parameter (must be greater than 1): {self.cir_number():.2f}"
 
-    def mean_variance(self, th, v):
-        r"""Return ``\mathbb{E}[V_{t+th} \mid V_t = v]`` under CIR dynamics."""
-        x = self.kappa*th + CFG.EPS
-        return -np.expm1(-x)/x*(v - self.theta) + self.theta
+    def mean_variance(self, th, v, config: Config | None = None):
+        r"""Return ``\mathbb{E}[V_{t+th} \mid V_t = v]`` under CIR dynamics.
+
+        Parameters
+        ----------
+        th:
+            Time horizon.
+        v:
+            Initial variance.
+        config:
+            Optional numerical configuration. If not provided a default
+            :class:`~src.core.config.Config` instance is used.
+        """
+        cfg = config or Config()
+        x = self.kappa * th + cfg.eps
+        return -np.expm1(-x) / x * (v - self.theta) + self.theta
 
     # def mean_variance(self, th, v):
     #     return v + th*0
@@ -52,7 +65,7 @@ class DynamicsParametersHeston(pyd.BaseModel):
     #                            mu=self.theta,
     #                            sigma=self.sig,
     #                            initial=v)
-    #             .get_marginal(t=th + CFG.EPS)
+    #             .get_marginal(t=th + cfg.eps)
     #             .mean()
     #             )
 

@@ -19,7 +19,7 @@ def pde_monte_carlo(n_paths: int = 10) -> tuple[float, float]:
     payoff = CreditRiskPayoff(recovery=0.4, mkt=Market(r=dyn.r))
     T = 1.0
     t = np.linspace(0.0, T, 5)
-    mesh = create_mesh([1.0], 1)
+    mesh, cfg = create_mesh([1.0], 1)
     stepper = ThetaScheme(theta=0.5)
 
     pde_vals = []
@@ -27,7 +27,7 @@ def pde_monte_carlo(n_paths: int = 10) -> tuple[float, float]:
 
     for _ in range(n_paths):
         sampled = dyn.sample(rng)
-        space = SpaceSolver(mesh, sampled, payoff, is_call=False)
+        space = SpaceSolver(mesh, sampled, payoff, is_call=False, config=cfg)
         u = stepper.solve(t, space, boundary_condition=DirichletBC([]))
         pde_vals.append(float(u[-1][0]))
         lamb = sampled.lamb

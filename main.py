@@ -1,3 +1,5 @@
+"""Streamlit application entry point."""
+
 import streamlit as st
 
 import src.sidebar as sdb
@@ -13,7 +15,7 @@ mkt = prm.mkt
 bsopt = prm.bsopt
 t = prm.t
 
-space = SpaceSolver(prm.mesh, dynh, bsopt, is_call=prm.is_call)
+space = SpaceSolver(prm.mesh, dynh, bsopt, is_call=prm.is_call, config=prm.config)
 stepper = ThetaScheme(theta=prm.lam)
 
 with st.sidebar:

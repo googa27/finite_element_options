@@ -2,7 +2,8 @@
 
 import pydantic as pyd
 import numpy as np
-import CONFIG as CFG
+
+from .config import Config
 
 
 class DynamicsParametersHeston3D(pyd.BaseModel):
@@ -18,9 +19,20 @@ class DynamicsParametersHeston3D(pyd.BaseModel):
     theta_r: float
     sig_r: float
 
-    def mean_variance(self, th, v):
-        """Mean of the variance process under Heston dynamics."""
-        x = self.kappa * th + CFG.EPS
+    def mean_variance(self, th, v, config: Config | None = None):
+        """Mean of the variance process under Heston dynamics.
+
+        Parameters
+        ----------
+        th:
+            Time horizon.
+        v:
+            Initial variance.
+        config:
+            Optional numerical configuration providing ``eps``.
+        """
+        cfg = config or Config()
+        x = self.kappa * th + cfg.eps
         return -np.expm1(-x) / x * (v - self.theta) + self.theta
 
     def A(self, s, v, r_val):  # pylint: disable=unused-argument

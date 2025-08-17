@@ -14,5 +14,5 @@ def test_create_mesh_invalid_dimension() -> None:
 
 def test_create_mesh_domain_extent() -> None:
     """Generated mesh should span provided domain extents."""
-    mesh = create_mesh([1.0, 1.0], 1)
+    mesh, _ = create_mesh([1.0, 1.0], 1)
     assert np.allclose(mesh.p.max(axis=1), [1.0, 1.0])

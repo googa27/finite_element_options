@@ -9,7 +9,7 @@ from .forms import Forms, PDEForms
 from .boundary import apply_dirichlet
 from .adaptive import AdaptiveMesh
 from src.transform import CoordinateTransform
-import CONFIG as CFG
+from src.core.config import Config
 
 
 class SpaceSolver:
@@ -25,17 +25,39 @@ class SpaceSolver:
         *,
         forms: Forms | None = None,
         adaptive_criterion: str | None = None,
+        config: Config | None = None,
     ):
-        """Initialize the spatial solver and assemble static operators."""
+        """Initialize the spatial solver and assemble static operators.
+
+        Parameters
+        ----------
+        mesh:
+            Spatial discretisation mesh.
+        dynamics:
+            Stochastic dynamics describing the underlying process.
+        payoff:
+            Option payoff object.
+        is_call:
+            ``True`` for call options, ``False`` for puts.
+        transform:
+            Optional coordinate transformation.
+        forms:
+            Preassembled bilinear and linear forms.
+        adaptive_criterion:
+            Name of adaptive refinement criterion.
+        config:
+            Numerical configuration specifying finite element type.
+        """
         self.mesh = mesh
         self.dynamics = dynamics
         self.payoff = payoff
         self.is_call = is_call
         self.transform = transform or CoordinateTransform()
-        self.Vh = fem.CellBasis(mesh, CFG.ELEM)
-        self.dVh = fem.FacetBasis(mesh, CFG.ELEM)
+        self.config = config or Config()
+        self.Vh = fem.CellBasis(mesh, self.config.elem)
+        self.dVh = fem.FacetBasis(mesh, self.config.elem)
         self.adapt = (
-            AdaptiveMesh(CFG.ELEM, criterion=adaptive_criterion)
+            AdaptiveMesh(self.config.elem, criterion=adaptive_criterion)
             if adaptive_criterion is not None
             else None
         )
@@ -82,7 +104,9 @@ class SpaceSolver:
                     th_phys,
                     self.transform.untransform_state(x)[0],
                     self.dynamics.mean_variance(
-                        th_phys, self.transform.untransform_state(x)[1]
+                        th_phys,
+                        self.transform.untransform_state(x)[1],
+                        config=self.config,
                     ),
                 )
                 if self.is_call
@@ -90,7 +114,9 @@ class SpaceSolver:
                     th_phys,
                     self.transform.untransform_state(x)[0],
                     self.dynamics.mean_variance(
-                        th_phys, self.transform.untransform_state(x)[1]
+                        th_phys,
+                        self.transform.untransform_state(x)[1],
+                        config=self.config,
                     ),
                 )
             )
@@ -111,8 +137,8 @@ class SpaceSolver:
         if self.adapt is None:
             raise ValueError("Adaptive mesh not configured for this solver.")
         self.mesh = self.adapt.refine(self.mesh, u)
-        self.Vh = fem.CellBasis(self.mesh, CFG.ELEM)
-        self.dVh = fem.FacetBasis(self.mesh, CFG.ELEM)
+        self.Vh = fem.CellBasis(self.mesh, self.config.elem)
+        self.dVh = fem.FacetBasis(self.mesh, self.config.elem)
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self.stiffness = self.forms.l_bil().assemble(self.Vh)
         return self.mesh

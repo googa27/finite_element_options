@@ -21,6 +21,10 @@ PY
 The snippet solves a one-dimensional Black–Scholes problem using default
 parameters and prints the final price grid.
 
+Mesh creation utilities now return both the mesh and a ``Config`` instance
+carrying numerical parameters such as the finite element. Pass this
+configuration to ``SpaceSolver`` when constructing spatial discretisations.
+
 Alternatively, run the bundled example script:
 
 ```bash
@@ -37,6 +41,7 @@ This reproduces the same call option pricing workflow in a standalone file.
 - Greek estimators (Delta, Gamma, Vega) via finite differences
 - Experimental JAX-based Greek computation via automatic differentiation
 - Configurable mesh generation supporting 1D, 2D and 3D problems
+- Central ``Config`` dataclass for numerical parameters
 - Sample problems for 1D Black–Scholes and 3D Heston models
 - Simple market abstraction with discount factors
 - Streamlit UI and plotting helpers
