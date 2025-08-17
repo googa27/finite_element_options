@@ -16,7 +16,7 @@ class Forms(ABC):
 
     @abstractmethod
     def id_bil(self):
-        """Return the mass bilinear form ``\int u v\,dx``."""
+        r"""Return the mass bilinear form ``\int u v\,dx``."""
 
     @abstractmethod
     def l_bil(self):
@@ -38,6 +38,20 @@ class PDEForms(Forms):
         dynamics: DynamicsModel,
         transform: CoordinateTransform | None = None,
     ):
+        """Store option type, payoff and dynamics descriptors.
+
+        Parameters
+        ----------
+        is_call:
+            ``True`` for call options and ``False`` for puts.
+        payoff:
+            Payoff function describing the terminal condition.
+        dynamics:
+            Model supplying drift, diffusion and rate terms.
+        transform:
+            Optional coordinate transform applied before evaluation.
+        """
+
         self.is_call = is_call
         self.payoff = payoff
         self.dynamics = dynamics
@@ -45,6 +59,8 @@ class PDEForms(Forms):
 
     @staticmethod
     def id_bil():
+        r"""Return the mass bilinear form ``\int u v\,dx``."""
+
         @fem.BilinearForm
         def _id(u, v, _):
             return u * v
@@ -52,6 +68,8 @@ class PDEForms(Forms):
         return _id
 
     def l_bil(self):
+        """Return the bilinear form representing the PDE operator."""
+
         @fem.BilinearForm
         def _l(u, v, w):
             coords = self.transform.untransform_state(w.x)
@@ -68,6 +86,8 @@ class PDEForms(Forms):
         return _l
 
     def b_lin(self):
+        """Return the linear form associated with natural boundaries."""
+
         if not hasattr(self.dynamics, "boundary_term"):
             @fem.LinearForm
             def zero(v, w):  # pylint: disable=unused-argument
