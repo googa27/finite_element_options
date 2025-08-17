@@ -8,6 +8,8 @@ Streamlit based user interface for interactive exploration.
 ## Features
 
 - Black-Scholes option pricer with call and put payoffs
+- Finite-difference solver on regular grids using ``findiff``
+- Greek estimators (Delta, Gamma, Vega) via finite differences
 - Configurable mesh generation supporting 1D, 2D and 3D problems
 - Sample problems for 1D Black–Scholes and 3D Heston models
 - Simple market abstraction with discount factors
