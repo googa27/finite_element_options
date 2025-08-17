@@ -16,6 +16,7 @@ Streamlit based user interface for interactive exploration.
 - Streamlit UI and plotting helpers
 - Example demo for adaptive mesh refinement
 - Comprehensive test suite using `pytest`
+- Experimental FEniCSx solver for Black-Scholes PDE
 
 ## Installation
 
@@ -51,6 +52,15 @@ suite. Coverage reports are generated via `pytest-cov`:
 ```bash
 pytest --cov=src
 ```
+
+### FEniCSx Spike
+
+An experimental `FenicsSolver` mirrors the existing scikit-fem backend using
+FEniCSx and UFL. On the Black–Scholes test problem the scikit-fem solver runs
+in roughly 2 ms per step on this environment. FEniCSx wheels are unavailable for
+Python 3.11, so its performance could not be measured here. The solver is
+therefore an optional dependency and currently best treated as a preview for a
+potential future migration.
 
 ## Continuous Integration
 

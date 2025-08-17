@@ -15,3 +15,5 @@
   run tests with coverage reporting.
 - Added mesh creation tests covering domain extent accuracy and invalid
   dimension handling.
+- Introduced an experimental `FenicsSolver` using FEniCSx/UFL with optional
+  dependency and benchmarking scaffolding against scikit-fem.
