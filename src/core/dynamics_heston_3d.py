@@ -2,11 +2,19 @@
 
 import pydantic as pyd
 import numpy as np
+import skfem as fem
 
 from .config import Config
+from .interfaces import DynamicsModel, Payoff
 
 
-class DynamicsParametersHeston3D(pyd.BaseModel):
+class _ModelDynamicsMeta(type(pyd.BaseModel), type(DynamicsModel)):
+    """Metaclass combining ``BaseModel`` and ``DynamicsModel`` protocols."""
+
+
+class DynamicsParametersHeston3D(
+    pyd.BaseModel, DynamicsModel, metaclass=_ModelDynamicsMeta
+):
     """Heston dynamics for stock, variance and short rate."""
 
     r: float
@@ -61,3 +69,12 @@ class DynamicsParametersHeston3D(pyd.BaseModel):
             self.kappa * (self.theta - v),
             self.kappa_r * (self.theta_r - r_val),
         ]
+
+    def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:  # pylint: disable=unused-argument
+        """Return the natural boundary contribution, which is zero."""
+
+        @fem.LinearForm
+        def zero(_v, _w):  # pylint: disable=unused-argument
+            return 0.0
+
+        return zero

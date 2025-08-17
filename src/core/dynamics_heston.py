@@ -7,11 +7,19 @@ interfaces.
 
 import pydantic as pyd
 import numpy as np
+import skfem as fem
 
 from .config import Config
+from .interfaces import DynamicsModel, Payoff
 
 
-class DynamicsParametersHeston(pyd.BaseModel):
+class _ModelDynamicsMeta(type(pyd.BaseModel), type(DynamicsModel)):
+    """Metaclass combining ``BaseModel`` and ``DynamicsModel`` protocols."""
+
+
+class DynamicsParametersHeston(
+    pyd.BaseModel, DynamicsModel, metaclass=_ModelDynamicsMeta
+):
     r"""Parameters for the two-dimensional Heston stochastic volatility model.
 
     The spot price ``S_t`` and variance ``V_t`` satisfy
@@ -89,6 +97,15 @@ class DynamicsParametersHeston(pyd.BaseModel):
         '''
         return [(self.r - self.q)*x,
                 self.kappa*(self.theta - y)]
+
+    def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:  # pylint: disable=unused-argument
+        """Return the natural boundary contribution, which is zero."""
+
+        @fem.LinearForm
+        def zero(_v, _w):  # pylint: disable=unused-argument
+            return 0.0
+
+        return zero
 
     # def b(self, x, y) -> list:
     #     '''
