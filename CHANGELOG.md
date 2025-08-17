@@ -17,3 +17,4 @@
   dimension handling.
 - Introduced an experimental `FenicsSolver` using FEniCSx/UFL with optional
   dependency and benchmarking scaffolding against scikit-fem.
+- Added a basic usage example script and documentation for running it.
