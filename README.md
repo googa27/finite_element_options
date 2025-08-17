@@ -56,6 +56,19 @@ suite. Coverage reports are generated via `pytest-cov`:
 pytest --cov=src
 ```
 
+## Benchmarking
+
+Solver performance is tracked with `pytest-benchmark`.  Run the dedicated
+benchmark suite locally to measure runtime on a fixed mesh:
+
+```bash
+pytest tests/test_benchmark_black_scholes.py --benchmark-only
+```
+
+Results can be saved for comparison and analysed with `pytest-benchmark compare`.
+See [docs/benchmarking.md](docs/benchmarking.md) for details on
+interpreting the output and contrasting runs.
+
 ### FEniCSx Spike
 
 An experimental `FenicsSolver` mirrors the existing scikit-fem backend using
