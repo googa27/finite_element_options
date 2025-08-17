@@ -1,9 +1,10 @@
 streamlit 
-numpy 
+numpy
 scikit-fem[all]
 matplotlib
 pydantic
 scipy
+findiff
 aleatory
 pydocstyle
 pytest
