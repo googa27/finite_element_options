@@ -1,9 +1,18 @@
 """Black-Scholes dynamics in 1D."""
 
 import pydantic as pyd
+import skfem as fem
+
+from .interfaces import DynamicsModel, Payoff
 
 
-class DynamicsParametersBlackScholes(pyd.BaseModel):
+class _ModelDynamicsMeta(type(pyd.BaseModel), type(DynamicsModel)):
+    """Metaclass combining ``BaseModel`` and ``DynamicsModel`` protocols."""
+
+
+class DynamicsParametersBlackScholes(
+    pyd.BaseModel, DynamicsModel, metaclass=_ModelDynamicsMeta
+):
     """Parameters for the one-dimensional Black-Scholes model."""
 
     r: float
@@ -25,3 +34,12 @@ class DynamicsParametersBlackScholes(pyd.BaseModel):
     def b(self, s):
         """Drift vector in the Feynman–Kac formulation."""
         return [(self.r - self.q) * s]
+
+    def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:  # pylint: disable=unused-argument
+        """Return the natural boundary contribution, which is zero."""
+
+        @fem.LinearForm
+        def zero(_v, _w):  # pylint: disable=unused-argument
+            return 0.0
+
+        return zero
