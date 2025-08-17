@@ -18,6 +18,7 @@ Streamlit based user interface for interactive exploration.
 - Streamlit UI and plotting helpers
 - Example demo for adaptive mesh refinement
 - Comprehensive test suite using `pytest`
+- Parameter calibration helpers with SciPy, Statsmodels and Bayesian PyMC approaches
 - Experimental FEniCSx solver for Black-Scholes PDE
 
 ## Installation
