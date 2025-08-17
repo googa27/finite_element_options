@@ -24,8 +24,8 @@ def test_fenics_solver_benchmark(benchmark) -> None:
     bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
     t = np.linspace(0.0, 1.0, 5)
 
-    mesh_sk = create_mesh([2.0], 3)
-    space_sk = SpaceSolver(mesh_sk, dh, bsopt, is_call=True)
+    mesh_sk, cfg = create_mesh([2.0], 3)
+    space_sk = SpaceSolver(mesh_sk, dh, bsopt, is_call=True, config=cfg)
     stepper = ThetaScheme(theta=0.5)
     bc = DirichletBC([])
 

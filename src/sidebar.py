@@ -83,4 +83,4 @@ class Sidebar:
                                       self.dh.q,
                                       self.mkt)
         self.t = np.linspace(0, T, nt)
-        self.mesh = create_mesh([s_max, v_max], mesh_refine)
+        self.mesh, self.config = create_mesh([s_max, v_max], mesh_refine)

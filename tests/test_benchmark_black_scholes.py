@@ -24,8 +24,8 @@ def test_black_scholes_benchmark(benchmark) -> None:
     mkt = Market(r=dh.r)
     bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
     t = np.linspace(0.0, 1.0, 5)
-    mesh = create_mesh([2.0], 3)
-    space = SpaceSolver(mesh, dh, bsopt, is_call=True)
+    mesh, cfg = create_mesh([2.0], 3)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=True, config=cfg)
     stepper = ThetaScheme(theta=0.5)
     bc = DirichletBC([])
 

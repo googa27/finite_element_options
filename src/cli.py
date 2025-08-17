@@ -41,8 +41,8 @@ def main(args=None):
     bsopt = EuropeanOptionBs(ns.k, dh.q, mkt)
 
     t = np.linspace(0, ns.T, ns.nt)
-    mesh = create_mesh([ns.s_max, ns.v_max], ns.refine)
-    space = SpaceSolver(mesh, dh, bsopt, is_call=ns.call)
+    mesh, cfg = create_mesh([ns.s_max, ns.v_max], ns.refine)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=ns.call, config=cfg)
     stepper = ThetaScheme(theta=ns.lam)
 
     v_tsv = stepper.solve(t, space, boundary_condition=None, is_american=ns.american)
