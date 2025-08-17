@@ -64,6 +64,10 @@ requirements.txt  Project dependencies
 tests/          Pytest-based test suite
 ```
 
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for development guidelines and prompt templates.
+
 ## License
 
 This project is provided as-is without warranty.
