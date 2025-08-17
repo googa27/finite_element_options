@@ -14,5 +14,6 @@ pydocstyle
 pytest
 pytest-cov
 pytest-benchmark
+hypothesis
 # Optional FEniCS backend
 # fenics-dolfinx
