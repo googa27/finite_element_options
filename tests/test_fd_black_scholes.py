@@ -23,10 +23,10 @@ def test_fd_black_scholes_price():
 
     s0 = 1.0
     idx = np.argmin(np.abs(s_grid - s0))
-    price_num = v[-1, idx]
+    price_num = v.sel(time=t[-1], space=s0, method="nearest").item()
     price_exact = bsopt.call(t[-1], s0, dh.sig ** 2)
     assert price_num == pytest.approx(price_exact, rel=1e-2)
 
-    d_num = delta(v[-1], s_grid[1] - s_grid[0])[idx]
+    d_num = delta(v.sel(time=t[-1]).values, s_grid[1] - s_grid[0])[idx]
     d_exact = bsopt.call_delta(t[-1], s0, dh.sig ** 2)
     assert d_num == pytest.approx(d_exact, rel=2e-2)
