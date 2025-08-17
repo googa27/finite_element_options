@@ -43,6 +43,13 @@ Execute the unit tests with `pytest`:
 pytest
 ```
 
+Benchmarks leveraging `pytest-benchmark` can be executed alongside the test
+suite. Coverage reports are generated via `pytest-cov`:
+
+```bash
+pytest --cov=src
+```
+
 ## Continuous Integration
 
 This project uses a GitHub Actions workflow to run the test suite on every

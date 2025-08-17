@@ -11,3 +11,7 @@
 - Added `src/problems` package with `OptionPricingProblem` and
   `CreditRiskProblem` classes bundling dynamics, payoff and boundary defaults,
   plus a Streamlit demo showcasing their instantiation.
+- Integrated `pytest-benchmark` for performance tracking and configured CI to
+  run tests with coverage reporting.
+- Added mesh creation tests covering domain extent accuracy and invalid
+  dimension handling.

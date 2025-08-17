@@ -6,3 +6,6 @@ pydantic
 scipy
 aleatory
 pydocstyle
+pytest
+pytest-cov
+pytest-benchmark
