@@ -21,6 +21,14 @@ PY
 The snippet solves a one-dimensional Black–Scholes problem using default
 parameters and prints the final price grid.
 
+Alternatively, run the bundled example script:
+
+```bash
+python examples/basic_usage.py
+```
+
+This reproduces the same call option pricing workflow in a standalone file.
+
 ## Features
 
 - Black-Scholes option pricer with call and put payoffs
