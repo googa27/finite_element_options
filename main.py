@@ -8,6 +8,8 @@ from src.space.solver import SpaceSolver
 from src.space.boundary import DirichletBC
 from src.time.stepper import ThetaScheme
 
+from skfem.visuals.matplotlib import plot #there is a bug that does not allow to plot unless this is imported (even if not used)   
+
 prm = sdb.Sidebar()
 
 dynh = prm.dh
