@@ -72,6 +72,73 @@ Run the adaptive mesh demo:
 python demo_adaptive.py
 ```
 
+### Python API example
+
+Interact with the building blocks directly to assemble a pricing pipeline and
+observe how market data, dynamics, payoffs, spatial discretisation, and
+timestepping interact:
+
+```python
+import numpy as np
+
+from src.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from src.core.market import Market
+from src.core.vanilla_bs import EuropeanOptionBs
+from src.space.mesh import create_mesh
+from src.space.solver import SpaceSolver
+from src.space.boundary import DirichletBC
+from src.time.stepper import ThetaScheme
+from src.jax_greeks import compute_greeks
+from skfem import Function
+
+# 1. Define market and model parameters
+market = Market(r=0.03)
+dynamics = DynamicsParametersBlackScholes(r=market.r, q=0.0, sig=0.2)
+option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=market)
+
+# 2. Build the spatial problem (mesh + finite element space)
+mesh, config = create_mesh(extents=[2.0], refine=5)
+call_space = SpaceSolver(
+    mesh=mesh,
+    dynamics=dynamics,
+    payoff=option,
+    is_call=True,
+    config=config,
+)
+
+# 3. March the forward-time PDE using a θ-scheme (Crank–Nicolson here)
+time_grid = np.linspace(0.0, 1.0, 80)
+solver = ThetaScheme(theta=0.5)
+call_grid = solver.solve(time_grid, call_space, boundary_condition=DirichletBC([]))
+call_fn = Function(call_space.Vh, call_grid[-1])
+call_price = float(call_fn(np.array([[1.0]])))  # price at S=1
+
+# 4. Reuse the same components for a put payoff
+put_space = SpaceSolver(
+    mesh=mesh,
+    dynamics=dynamics,
+    payoff=option,
+    is_call=False,
+    config=config,
+)
+put_grid = solver.solve(time_grid, put_space, boundary_condition=DirichletBC([]))
+put_fn = Function(put_space.Vh, put_grid[-1])
+put_price = float(put_fn(np.array([[1.0]])))
+
+# 5. Compare numerical results with analytic Greeks for sanity checks
+delta, vega = compute_greeks(
+    s=1.0,
+    k=option.k,
+    r=market.r,
+    q=option.q,
+    sigma=dynamics.sig,
+    t=time_grid[-1],
+)
+
+print(f"European call: price={call_price:.4f}, delta={delta:.4f}, vega={vega:.4f}")
+print(f"European put:  price={put_price:.4f}")
+```
+
 ### Example Output
 
 The adaptive mesh demo refines the domain around sharp features. The final
