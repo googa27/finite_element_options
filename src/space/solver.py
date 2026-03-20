@@ -67,21 +67,49 @@ class SpaceSolver:
             dynamics=dynamics,
             transform=self.transform,
         )
+        self._mean_variance_supports_config = (
+            "config" in dynamics.mean_variance.__code__.co_varnames
+        )
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self.stiffness = self.forms.l_bil().assemble(self.Vh)
 
+    def _projected_payoff(
+        self, x: np.ndarray, *, th_phys: float | None = None
+    ) -> np.ndarray:
+        """Return projected payoff or boundary values for coordinates ``x``.
+
+        The helper performs :meth:`~src.transform.CoordinateTransform.untransform_state` once and reuses
+        the extracted variance inputs when computing mean-variance terms.
+        """
+
+        state = self.transform.untransform_state(x)
+        spot = state[0]
+        variance_inputs = state[1] if state.shape[0] > 1 else None
+
+        if self.is_call:
+            payoff_fn = self.payoff.call_payoff
+            price_fn = self.payoff.call
+        else:
+            payoff_fn = self.payoff.put_payoff
+            price_fn = self.payoff.put
+
+        if th_phys is None:
+            return payoff_fn(spot)
+
+        variance_seed = (
+            variance_inputs if variance_inputs is not None else np.zeros_like(spot)
+        )
+        kwargs = {"config": self.config} if self._mean_variance_supports_config else {}
+        mean_variance = self.dynamics.mean_variance(
+            th_phys,
+            variance_seed,
+            **kwargs,
+        )
+        return price_fn(th_phys, spot, mean_variance)
+
     def initial_condition(self) -> np.ndarray:
         """Initial spatial values from the payoff."""
-        return self.Vh.project(
-            lambda x: self.payoff.call_payoff(
-                self.transform.untransform_state(x)[0]
-            )
-            * self.is_call
-            + self.payoff.put_payoff(
-                self.transform.untransform_state(x)[0]
-            )
-            * (not self.is_call)
-        )
+        return self.Vh.project(lambda x: self._projected_payoff(x))
 
     def matrices(self, theta: float, dt: float):
         """Return the system matrices for the θ-scheme."""
@@ -98,29 +126,7 @@ class SpaceSolver:
         """Return Dirichlet values at time ``th``."""
         th_phys = self.transform.untransform_time(th)
 
-        return self.Vh.project(
-            lambda x: (
-                self.payoff.call(
-                    th_phys,
-                    self.transform.untransform_state(x)[0],
-                    self.dynamics.mean_variance(
-                        th_phys,
-                        self.transform.untransform_state(x)[1],
-                        config=self.config,
-                    ),
-                )
-                if self.is_call
-                else self.payoff.put(
-                    th_phys,
-                    self.transform.untransform_state(x)[0],
-                    self.dynamics.mean_variance(
-                        th_phys,
-                        self.transform.untransform_state(x)[1],
-                        config=self.config,
-                    ),
-                )
-            )
-        )
+        return self.Vh.project(lambda x: self._projected_payoff(x, th_phys=th_phys))
 
     def apply_dirichlet(self, A, b, dirichlet_bcs, u_dirichlet):
         """Apply Dirichlet boundary conditions to ``A`` and ``b``."""

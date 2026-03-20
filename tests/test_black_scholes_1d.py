@@ -1,5 +1,6 @@
 import os
 import sys
+
 import numpy as np
 import pytest
 
@@ -33,3 +34,40 @@ def test_black_scholes_price():
     price_exact = bsopt.call(t[-1], s0, dh.sig ** 2)
 
     assert price_num == pytest.approx(price_exact, rel=1e-2)
+
+
+def test_black_scholes_initial_condition_matches_payoff():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    mkt = Market(r=dh.r)
+    bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
+    mesh, cfg = create_mesh([2.0], 2)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=True, config=cfg)
+
+    initial = space.initial_condition()
+    expected = space.Vh.project(
+        lambda x: bsopt.call_payoff(space.transform.untransform_state(x)[0])
+    )
+    np.testing.assert_allclose(initial, expected)
+
+
+def test_black_scholes_dirichlet_matches_price():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    mkt = Market(r=dh.r)
+    bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
+    mesh, cfg = create_mesh([2.0], 2)
+    space = SpaceSolver(mesh, dh, bsopt, is_call=True, config=cfg)
+
+    th = 0.5
+    dirichlet_vals = space.dirichlet(th)
+    th_phys = space.transform.untransform_time(th)
+    expected = space.Vh.project(
+        lambda x: bsopt.call(
+            th_phys,
+            space.transform.untransform_state(x)[0],
+            dh.mean_variance(
+                th_phys,
+                np.zeros_like(space.transform.untransform_state(x)[0]),
+            ),
+        )
+    )
+    np.testing.assert_allclose(dirichlet_vals, expected)
