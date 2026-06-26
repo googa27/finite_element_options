@@ -375,7 +375,11 @@ Test layers:
 
 Default tests are deterministic and offline. Heavy FEniCSx/PETSc/JAX/Bayesian profiles run in explicit jobs.
 
-## 21. CI and release topology
+## 21. Architecture fitness gates and CI release topology
+
+The baseline gate for #57 is `pytest -q tests/architecture`. It is ratcheted around the current transitional literal `src` package: new root-level source modules/packages require an architecture-doc update, FEM core cannot import application or research-only stacks, and the package import shim stays lightweight.
+
+After package foundation #44 and ownership cleanup #50 land, this gate must add the hard `src.*` public import ban, clean-wheel import smoke tests, compatibility-shim inventory, and optional-profile import checks for FEniCSx/PETSc/JAX. The M0 gate is therefore executable now and has explicit successors.
 
 | Job | Purpose | Policy |
 |---|---|---|
@@ -392,7 +396,9 @@ Default tests are deterministic and offline. Heavy FEniCSx/PETSc/JAX/Bayesian pr
 
 Python 3.11-only CI and one all-dependencies environment are insufficient evidence of support.
 
-## 22. Compatibility and deprecation
+## 22. Compatibility and deprecation policy
+
+This policy maps #57 to its successor issues: #44 creates the replacement namespace and package metadata, #50 retires duplicate ownership and predecessor modules, and #49 connects the Haircut adapter only through the replacement public API after those gates pass.
 
 - Distribution API and Haircut solver-contract versions are independent.
 - The compatibility matrix is owned by Haircut #65 and mirrored in release notes.
