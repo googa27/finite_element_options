@@ -56,9 +56,28 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = {
 }
 
 FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
+    "acceleration",
+    "cli",
+    "data_utils",
+    "estimation",
     "examples",
+    "jax_greeks",
     "plots",
     "sidebar",
+}
+
+# Baseline-aware exception for pre-existing ``fdsolver.py`` dependencies. This
+# keeps the gate red for any new core->optional/research imports while avoiding a
+# big-bang rewrite inside the M0 architecture-fitness slice.
+KNOWN_TRANSITIONAL_CORE_IMPORT_EXCEPTIONS = {
+    "src/fdsolver.py": {
+        "acceleration",
+        "acceleration.NUMBA_AVAILABLE",
+        "acceleration.call_payoff_grid",
+        "acceleration.put_payoff_grid",
+        "data_utils",
+        "data_utils.snapshot",
+    },
 }
 
 REQUIRED_ARCHITECTURE_PHRASES = {
@@ -168,15 +187,34 @@ def test_import_parser_detects_src_prefixed_and_relative_application_imports() -
     tree = ast.parse(
         "from src import plots\n"
         "from src.sidebar import render\n"
+        "from src import estimation\n"
+        "from src.jax_greeks import compute_greeks\n"
         "from ..examples import demo\n"
         "from .solver import LinearSolver\n"
         "import pandas\n"
     )
     imports = _imports_from_tree(tree, SRC_ROOT / "space" / "solver.py")
-    assert {"src.plots", "src.sidebar", "src.sidebar.render", "examples", "examples.demo"} <= imports
+    assert {
+        "src.plots",
+        "src.sidebar",
+        "src.sidebar.render",
+        "src.estimation",
+        "src.jax_greeks",
+        "src.jax_greeks.compute_greeks",
+        "examples",
+        "examples.demo",
+    } <= imports
     assert all(
         _is_forbidden_core_import(name)
-        for name in ["src.plots", "src.sidebar.render", "examples", "examples.demo", "pandas"]
+        for name in [
+            "src.plots",
+            "src.sidebar.render",
+            "src.estimation",
+            "src.jax_greeks.compute_greeks",
+            "examples",
+            "examples.demo",
+            "pandas",
+        ]
     )
     assert not _is_forbidden_core_import("space.solver")
 
@@ -185,17 +223,17 @@ def test_fem_core_does_not_import_application_or_research_stacks() -> None:
     violations: dict[str, list[str]] = {}
     for entry in sorted(FEM_CORE_PACKAGES_AND_MODULES):
         for path in _python_files(SRC_ROOT / entry):
-            forbidden = sorted(name for name in _imports(path) if _is_forbidden_core_import(name))
+            relative_path = str(path.relative_to(ROOT))
+            allowed = KNOWN_TRANSITIONAL_CORE_IMPORT_EXCEPTIONS.get(relative_path, set())
+            forbidden = sorted(name for name in _imports(path) if _is_forbidden_core_import(name) and name not in allowed)
             if forbidden:
-                violations[str(path.relative_to(ROOT))] = forbidden
+                violations[relative_path] = forbidden
     assert not violations, "FEM core imported application/research-only layers: " + repr(violations)
 
 
 def test_base_package_import_surface_stays_lightweight() -> None:
     imported = _imports(SRC_ROOT / "__init__.py")
-    forbidden = sorted(
-        name for name in imported if _top_level_import(name) in FORBIDDEN_CORE_IMPORT_PREFIXES or name.startswith("src.")
-    )
+    forbidden = sorted(name for name in imported if _is_forbidden_core_import(name) or name.startswith("src."))
     assert not forbidden, "Transitional src package import must remain a lightweight shim: " + repr(forbidden)
 
 
