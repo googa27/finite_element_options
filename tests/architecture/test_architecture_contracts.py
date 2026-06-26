@@ -53,6 +53,11 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = {
     "pandas",
     "pymc",
     "jax",
+    "numba",
+    "xarray",
+    "pyarrow",
+    "statsmodels",
+    "findiff",
 }
 
 FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
@@ -77,6 +82,10 @@ KNOWN_TRANSITIONAL_CORE_IMPORT_EXCEPTIONS = {
         "acceleration.put_payoff_grid",
         "data_utils",
         "data_utils.snapshot",
+        "findiff",
+        "findiff.FinDiff",
+        "xarray",
+        "xarray.DataArray",
     },
 }
 
@@ -177,9 +186,14 @@ def test_current_src_surface_is_declared_transition_baseline() -> None:
         or (path.is_dir() and not path.name.startswith("__") and any(path.rglob("*.py")))
     }
     unexpected = actual - TRANSITIONAL_SRC_PACKAGES_AND_MODULES
+    missing = TRANSITIONAL_SRC_PACKAGES_AND_MODULES - actual
     assert not unexpected, (
         "New transitional src modules/packages must be added to docs/ARCHITECTURE.md and the architecture "
         f"baseline before code lands. Unexpected entries: {sorted(unexpected)}"
+    )
+    assert not missing, (
+        "Removed transitional src modules/packages must shrink docs/ARCHITECTURE.md and the architecture "
+        f"baseline in the same PR. Missing entries: {sorted(missing)}"
     )
 
 
@@ -191,6 +205,8 @@ def test_import_parser_detects_src_prefixed_and_relative_application_imports() -
         "from src.jax_greeks import compute_greeks\n"
         "from ..examples import demo\n"
         "from .solver import LinearSolver\n"
+        "from numba import njit\n"
+        "import pyarrow\n"
         "import pandas\n"
     )
     imports = _imports_from_tree(tree, SRC_ROOT / "space" / "solver.py")
@@ -213,6 +229,8 @@ def test_import_parser_detects_src_prefixed_and_relative_application_imports() -
             "src.jax_greeks.compute_greeks",
             "examples",
             "examples.demo",
+            "numba.njit",
+            "pyarrow",
             "pandas",
         ]
     )
