@@ -172,6 +172,9 @@ def _without_src_prefix(import_name: str) -> str:
 
 
 def _is_forbidden_core_import(import_name: str) -> bool:
+    if import_name == "src":
+        return True
+
     if _top_level_import(import_name) in FORBIDDEN_CORE_IMPORT_PREFIXES:
         return True
 
@@ -232,6 +235,7 @@ def test_import_parser_detects_src_prefixed_and_relative_application_imports() -
     )
     imports = _imports_from_tree(tree, SRC_ROOT / "space" / "solver.py")
     assert {
+        "src",
         "src.plots",
         "src.sidebar",
         "src.sidebar.render",
@@ -244,6 +248,7 @@ def test_import_parser_detects_src_prefixed_and_relative_application_imports() -
     assert all(
         _is_forbidden_core_import(name)
         for name in [
+            "src",
             "src.plots",
             "src.sidebar.render",
             "src.estimation",
