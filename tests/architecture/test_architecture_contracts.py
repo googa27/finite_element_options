@@ -46,6 +46,17 @@ FEM_CORE_PACKAGES_AND_MODULES = {
     "transform.py",
 }
 
+OUTER_LAYER_PACKAGES_AND_MODULES = {
+    "acceleration.py",
+    "cli.py",
+    "data_utils.py",
+    "estimation",
+    "examples",
+    "jax_greeks.py",
+    "plots.py",
+    "sidebar.py",
+}
+
 FORBIDDEN_CORE_IMPORT_PREFIXES = {
     "streamlit",
     "matplotlib",
@@ -195,6 +206,16 @@ def test_current_src_surface_is_declared_transition_baseline() -> None:
         "Removed transitional src modules/packages must shrink docs/ARCHITECTURE.md and the architecture "
         f"baseline in the same PR. Missing entries: {sorted(missing)}"
     )
+
+
+def test_transitional_src_entries_are_classified_as_core_or_outer_layer() -> None:
+    classified = FEM_CORE_PACKAGES_AND_MODULES | OUTER_LAYER_PACKAGES_AND_MODULES
+    duplicated = FEM_CORE_PACKAGES_AND_MODULES & OUTER_LAYER_PACKAGES_AND_MODULES
+    unclassified = TRANSITIONAL_SRC_PACKAGES_AND_MODULES - classified
+    stale_classifications = classified - TRANSITIONAL_SRC_PACKAGES_AND_MODULES
+    assert not duplicated, "Entries cannot be both FEM core and outer-layer modules: " + repr(sorted(duplicated))
+    assert not unclassified, "Every transitional src root must be classified before it is accepted: " + repr(sorted(unclassified))
+    assert not stale_classifications, "Removed transitional roots must also be removed from layer classifications: " + repr(sorted(stale_classifications))
 
 
 def test_import_parser_detects_src_prefixed_and_relative_application_imports() -> None:
