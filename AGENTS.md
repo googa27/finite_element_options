@@ -1,88 +1,234 @@
-# AGENTS.md — Finite Element Options
+# AGENTS.md — Finite Element Options Operating Contract
 
-## Mission
-- Run the PDE solver regression suite whenever code or data affecting numerical solvers changes, and block merges on failures until resolved.
-- Keep `docs/` and in-repo Markdown guides up to date after modelling or API changes; prefer succinct, technically precise updates over verbose prose.
-- Surface discrepancies between documented processes and actual repository state so maintainers can keep human- and agent-facing docs aligned.
+**Canonical for:** human contributors and coding/review agents  
+**Audit baseline:** 2026-06-26  
+**Default branch:** `master`  
+**Portfolio epic:** [`haircut-engine` #62](https://github.com/googa27/haircut-engine/issues/62)  
+**Local modernization epic:** [#43](https://github.com/googa27/finite_element_options/issues/43)
 
-## Project Snapshot
-Finite Element Options provides finite-element and related numerical tooling to price and hedge derivative contracts. Core goals:
-- Solve transformed forward parabolic PDEs (e.g. Black–Scholes via `tau = T - t`) with finite elements and supporting numerical schemes.
-- Compute Greeks and risk measures, optionally via JAX acceleration.
-- Support market data ingestion, calibration workflows, plotting, and Streamlit-based exploration.
-- Maintain extensibility for new products (options on futures, exotic payoffs) together with robust testing.
+> The prior guide is preserved at
+> [`docs/archive/AGENTS.pre-federated-audit-2026-06-26.md`](docs/archive/AGENTS.pre-federated-audit-2026-06-26.md).
 
-## Repository Map
-- `src/`: library code (solvers, spaces, problem definitions, calibration, plotting, CLI helpers).
-- `tests/`: pytest suite (unit, integration, benchmarks, property-based checks). PDE solvers live in `tests/test_black_scholes_1d.py`, `tests/test_fenics_solver.py`, `tests/test_fd_black_scholes.py`, and related files.
-- `examples/`: runnable scenarios such as `basic_usage.py` showing end-to-end pricing pipelines.
-- `docs/`: living documentation (`benchmarking.md`, `ROADMAP.md`, figures). Update alongside code changes.
-- `main.py` / `demo_adaptive.py`: Streamlit app entry point and adaptive mesh showcase.
-- `.github/workflows/ci.yml`: CI pipeline (Python 3.11, `pytest --cov`, solver benchmarks, `pydocstyle`).
+## 1. Mission
 
-## Environment Setup
-1. Create a fresh virtual environment: `python -m venv .venv`
-2. Activate it: `source .venv/bin/activate` (Unix) or `.venv\Scripts\Activate.ps1` (Windows PowerShell).
-3. Install runtime/test dependencies: `pip install --upgrade pip && pip install -r requirements.txt`
-4. Install the project in editable mode for local imports: `pip install -e .`
-5. Tooling (recommended for agents & contributors): `pip install black ruff mypy pre-commit`
-6. Optional FEniCS backend: uncomment `fenics-dolfinx` in `requirements.txt` and install if those solvers are exercised.
+Build an installable, reusable and numerically trustworthy finite-element library. Weak-form correctness, boundary algebra, convergence, diagnostics, reproducibility and dependency boundaries take priority over feature count or speed.
 
-## Core Commands
-- Unit/integration tests (parallel): `pytest -n auto`
-- PDE solver regression focus: `pytest -n auto tests/test_black_scholes_1d.py tests/test_fd_black_scholes.py tests/test_fenics_solver.py`
-- Coverage report: `pytest --cov=src --cov-report=term-missing`
-- Benchmarks (matches CI): `pytest tests/test_benchmark_black_scholes.py --benchmark-json=benchmark.json`
-- Linting & formatting: `black src tests`, `ruff check src tests`, `mypy src tests`
-- Streamlit UI: `streamlit run main.py`
-- Example pipeline: `python examples/basic_usage.py`
+A module or demo is not a validated capability. A faster solve with worse or unknown error is not an improvement.
 
-## Workflow Checklist (for every meaningful change)
-1. Sync with the latest `main` and branch before edits.
-2. Activate the project virtual environment and confirm dependencies are current.
-3. Implement changes following the design principles below; prefer composition, keep responsibilities narrow, and add docstrings where public APIs change.
-4. Update or add tests (unit, integration, end-to-end) covering new behaviour; extend PDE solver coverage when altering numerical code or meshes.
-5. Run targeted PDE solver tests first, then the full suite with coverage. Record any failure details in `.gemini_project`.
-6. Format and lint (`black`, `ruff`, `mypy`, `pydocstyle` as needed). If fixes are required, apply them before continuing.
-7. Update documentation (`docs/`, `README.md`, changelog) to reflect behaviour, performance, or interface changes.
-8. Confirm CI parity by mirroring workflow steps locally when possible.
-9. Craft Conventional Commit messages (e.g., `feat(solver): add theta scheme`), and prefer small, reviewable diffs.
+## 2. Required reading
 
-## Code Quality & Style Expectations
-- Follow OOP and SOLID principles where they improve clarity; favour composition over inheritance.
-- Employ standard design patterns (Strategy for pricers, Factory for problem setups, etc.) when they simplify extensibility.
-- Adhere to Python style guidance per PEP 8, except where this document specifies explicit overrides (e.g., 120-character lines).
-- Use type hints everywhere; keep `mypy` clean and avoid `Any` unless unavoidable.
-- Provide docstrings for all public modules, classes, functions, and methods, documenting inputs, outputs, and side-effects.
-- Use custom exceptions for domain-specific error states (e.g., invalid payoff configuration, mesh issues).
-- Maintain 120-character line length and auto-format with Black; resolve Ruff (`E`, `F`, `B`) warnings promptly.
-- Keep `src/` importable (no implicit relative imports) so tests and consumers work under both editable installs and packaged builds.
+Before a non-trivial change, read:
 
-## Testing Strategy
-- Unit tests live alongside core modules; add fixtures targeting deterministic PDE solutions where closed forms exist (Black–Scholes analytic pricing for validation).
-- Integration tests ensure solver pipelines work end-to-end (mesh creation, PDE solve, Greeks, calibration).
-- End-to-end/benchmark tests (`tests/test_benchmark_black_scholes.py`) measure performance drift—update baseline expectations cautiously.
-- When introducing numerical schemes, cross-check against analytical or previously validated solutions to avoid silent instability.
-- Hypothesis-based tests exist for probabilistic coverage; keep them fast and deterministic when seeding is possible.
+1. `docs/PRD.md`.
+2. `docs/ARCHITECTURE.md`.
+3. The owning GitHub issue and its parent.
+4. Relevant tests and implementation.
+5. User-facing README and benchmark documentation when behavior changes.
 
-## Documentation & Knowledge Sharing
-- Mirror changes in solver behaviour, calibration routines, or interfaces in `docs/` and `README.md`.
-- Add plots or benchmark artefacts to `docs/images/` when they aid comprehension; ensure generated assets are deterministic or provide scripts to reproduce them.
-- When updating Streamlit flows or CLIs, include usage snippets in the README or `docs/benchmarking.md`.
-- Changelog updates should summarise new capabilities, bug fixes, and backwards-incompatible changes.
+GitHub issues, canonical docs, tests and release manifests are authoritative. Local agent scratch files, caches and untracked notebooks are not.
 
-## Project-Specific Guidance
-- Always formulate PDE problems as forward parabolic IVPs before discretisation; document variable transforms in code comments and docstrings.
-- Preserve numerical stability guardrails (time step, mesh density, CFL-like constraints). If altering defaults, justify and update tests.
-- Greeks must be validated against analytical references (Black–Scholes) or high-fidelity numerical baselines; log discrepancies with rationale.
+## 3. Ownership
 
-## Coordination With Other Agents
-- Treat this AGENTS.md as the canonical source. If other agent configs exist (e.g., `GEMINI.md`, `QWEN.md`, `.cursorrules`), make them lightweight pointers back here to avoid divergence.
-- When generating ancillary agent files, include only deltas (e.g., environment quirks) and link to this document for shared standards.
-- Keep instructions synchronised across agents whenever workflows change; flag outdated files in reviews.
+This repository owns meshes, finite-element spaces, weak forms, assembly, boundary treatment, time integration, adaptivity, sparse solver policies, sensitivities and FEM diagnostics.
 
-## Escalation & Logging
-- Record failing commands, flaky tests, or environment anomalies in `.gemini_project` with timestamps and reproduction steps.
-- If automation cannot proceed (e.g., missing dependency, CI drift), stop, capture the state, and request maintainer guidance rather than guessing.
+It does not own Haircut Engine domain or CASCADE policy, PDP internals, or a second production finite-difference implementation.
 
-Following this playbook keeps human and AI contributors aligned, ensures numerical credibility, and preserves a high signal-to-noise workflow for the derivative pricing library.
+Cross-repository integration uses released wheels, a versioned solver contract, entry points and parity fixtures. Do not add production Git submodules, local-path release dependencies, branch dependencies or repository-relative imports.
+
+## 4. Workflow
+
+1. Start from current `master`.
+2. Link the change to the correct parent/child issue.
+3. Add a characterization or failing numerical test before changing semantics.
+4. Separate package moves from mathematical changes.
+5. Update contracts, tests, benchmarks, docs and deprecation notes together.
+6. Run targeted numerical tests, then architecture, packaging and profile gates.
+7. Describe mathematical risk, compatibility, performance and rollback in the PR.
+8. Do not increase a capability's maturity without the required evidence.
+
+## 5. Dependency direction
+
+```text
+contracts and diagnostic schemas
+             ↑
+mesh / spaces / forms / boundary conditions
+             ↑
+assembly / time integration / linear solvers / adaptivity / sensitivities
+             ↑
+validation and integration adapters
+             ↑
+examples / apps / research workflows
+```
+
+Rules:
+
+- The stable import package is `finite_element_options`; no new public `src.*` imports.
+- Contracts do not import scikit-fem internals, JAX, FEniCSx, PETSc, pandas, PyMC, Streamlit, plotting or Haircut.
+- Numerical core does not import products, calibration, UI, examples or integration adapters.
+- Optional imports are lazy and name the required extra.
+- Examples and applications import the installed public package.
+- Compatibility shims live only at package boundaries and have removal milestones.
+- Add architecture tests for every new package boundary.
+
+## 6. Mathematical preflight
+
+For every PDE or FEM change, document:
+
+- strong-form PDE and operator sign;
+- forward/backward-time transform;
+- domain and coordinates;
+- initial or terminal condition;
+- boundary partition, type and formula;
+- weak form and integration-by-parts terms;
+- coefficient regularity and quadrature policy;
+- element family/order and expected spatial convergence;
+- time integrator and expected temporal convergence;
+- linear or nonlinear solver and stopping criterion;
+- requested value, functional or sensitivity convention.
+
+Product classes and UI defaults are not substitutes for this specification.
+
+## 7. Mesh, forms and boundary rules
+
+- Validate mesh dimension, topology, element orientation and boundary markers.
+- Record mesh identity, refinement lineage and degrees of freedom.
+- Element family, order, continuity and quadrature are explicit.
+- Keep mass, diffusion, advection, reaction, source and coupling terms distinguishable.
+- Evaluate variable coefficients using a documented quadrature or projection policy.
+- Preserve sparse structure unless a measured small-system exception is documented.
+- Essential-boundary elimination must update the right-hand side correctly.
+- Neumann and Robin contributions must be retained in the weak form where required.
+- Test boundary residuals, corners, time-dependent data and unsupported conditions.
+- Generic FEM code must not guess financial far-field boundaries.
+
+## 8. Time integration and linear solvers
+
+- New canonical code uses `time_integration`, not a `time` package.
+- State the theta-scheme operator sign and formula used by implementation.
+- Test spatial and temporal convergence separately.
+- Time-dependent operators and boundaries have explicit assembly and reuse behavior.
+- Rannacher smoothing, adaptive time stepping and remeshing are separate capabilities.
+- A solver policy declares matrix assumptions, method, preconditioner, tolerances, iteration limit, reuse and diagnostics.
+- Broad exception-based solver switching is prohibited.
+- Return or raise a typed failure with residual and context when convergence fails.
+- Record iterations, residual, factorization/preconditioner reuse and regularization.
+
+## 9. Adaptivity and sensitivities
+
+Adaptive work identifies estimator or goal functional, norm, marking policy, mesh limits, transfer operator and stopping criterion. Evidence includes DOF growth, estimator behavior, transfer error and convergence. A visual demo alone is not validation.
+
+Every Greek or sensitivity states the differentiated state or parameter, units, evaluation point, method, bump or smoothing policy and reference/error evidence. Finite-difference, tangent, adjoint and JAX routes are separate capabilities. JAX remains optional and does not define core array types.
+
+## 10. Backend plugin
+
+The Haircut adapter must:
+
+- expose lightweight identity, solver-contract range, maturity and capabilities;
+- validate the request before mesh or assembly work;
+- map generic records into canonical native FEM contracts without reinterpretation;
+- use only validated native policies;
+- return solution, sensitivities and complete diagnostics;
+- work from a clean installed wheel;
+- import no Haircut domain/application, PDP, UI or calibration modules.
+
+Advertise only capabilities backed by repository-local tests and shared parity evidence.
+
+## 11. Ownership cleanup
+
+Classify modules as stable core, optional, example, research, compatibility, migrate or delete.
+
+- Production FD behavior belongs in `finite_difference_options`.
+- Product and market models are thin validation clients unless genuinely FEM-specific.
+- Calibration, dataframes, plotting and Streamlit stay outside core.
+- JAX, Numba, FEniCSx and PETSc are explicit optional profiles.
+- Consolidate duplicate examples so they use the installed package.
+- Preserve behavior with tests before moving code; change numerics separately.
+
+## 12. Packaging and dependencies
+
+Packaging changes must:
+
+- use PEP 621 metadata and an explicit build backend;
+- place the package under `src/finite_element_options`;
+- declare `requires-python`, bounded core dependencies, license and project URLs;
+- use published extras for optional capabilities and dependency groups for development tools;
+- keep core to NumPy, SciPy and minimal scikit-fem unless evidence justifies more;
+- avoid `scikit-fem[all]` in core;
+- isolate mesh, visualization, JAX, Numba, calibration, Bayesian, columnar, FEniCSx, PETSc, UI and validation profiles;
+- maintain a reproducible lock but publish compatible runtime ranges;
+- test minimum-supported and latest-compatible profiles separately;
+- build and install sdist/wheel outside the repository;
+- test missing-extra messages and wheel contents;
+- produce release supply-chain evidence or an owned exception.
+
+Evaluate a dependency by API stability, maintenance, platform support, transitive size, license, security history and measured value.
+
+## 13. Performance
+
+Optimization order:
+
+1. Prove analytical or manufactured correctness and convergence.
+2. Profile assembly, boundary application, factorization, solve, transfer and post-processing.
+3. Remove dense conversions, repeated assembly and unnecessary solution history.
+4. Reuse invariant matrices and factorizations with complete invalidation keys.
+5. Compare alternatives at equal numerical error.
+6. Establish noise-aware regression budgets.
+
+A benchmark records problem/config hash, DOFs, nonzeros, time steps, versions, hardware/BLAS/threads, dtype/device, cold/warm/JIT/cache state, stage timings, memory, residual/iterations, achieved error and reuse count.
+
+## 14. Tests and verification
+
+Required layers are architecture, contract, unit, numerical, integration, shared parity, performance and packaging.
+
+Current repository commands include:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+pytest -q
+pytest tests/test_black_scholes_1d.py tests/test_fd_black_scholes.py tests/test_fenics_solver.py -q
+pytest tests/test_benchmark_black_scholes.py --benchmark-json=benchmark.json
+pydocstyle src
+```
+
+After package modernization, also require lock validation, Ruff/type gates, `python -m build`, `twine check`, clean-wheel import tests and the Haircut backend conformance suite.
+
+Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
+
+## 15. Evidence by change type
+
+| Change | Minimum evidence |
+|---|---|
+| Strong/weak form or coefficients | Mathematical statement, reference/manufactured and residual tests |
+| Boundary algebra | Boundary residual, RHS correction, corner and time-dependent cases |
+| Mesh or adaptivity | Geometry, transfer and convergence/effectivity evidence |
+| Time integration | Temporal convergence and start-up/stability behavior |
+| Linear solver | Residual, failure behavior and equal-accuracy benchmark |
+| Sensitivities | Convention, method, bump/smoothing and reference error |
+| Package topology | Characterization, clean wheel and legacy import mapping |
+| Optional dependency | Missing-extra and isolated profile test |
+| Haircut adapter | Entry-point discovery, capability negatives, parity and compatibility update |
+| Breaking public semantics | Version bump, migration/deprecation note and downstream evidence |
+
+## 16. Compatibility, docs and review
+
+Distribution API and Haircut solver-contract versions are separate. Unknown combinations are unsupported. Public deprecations name replacement, warning version, removal date/version and migration example; shims contain no new numerical behavior.
+
+Update `docs/PRD.md`, `docs/ARCHITECTURE.md`, `AGENTS.md`, tests, benchmarks and issues together when responsibilities or semantics change. Keep README examples aligned with the installed namespace. Do not create competing roadmaps or agent state stores.
+
+Before review, confirm:
+
+- [ ] The change belongs in the FEM repository.
+- [ ] Strong/weak form, time and boundary conventions are explicit.
+- [ ] Numerical evidence includes convergence, residuals and negative behavior.
+- [ ] No optional dependency leaked into core.
+- [ ] No new checkout-only import assumption was added.
+- [ ] Solver failure and fallback behavior are explicit.
+- [ ] Performance compares equal error.
+- [ ] API, compatibility and deprecation impact are handled.
+- [ ] Examples use the installed package.
+- [ ] Docs, issues and release metadata are synchronized.
+
+---
+
+*This file is the canonical Finite Element Options contributor and agent contract.*
