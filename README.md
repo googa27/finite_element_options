@@ -37,7 +37,6 @@ This reproduces the same call option pricing workflow in a standalone file.
 
 - Black-Scholes option pricer with call and put payoffs
 - Finite-difference solver on regular grids using ``findiff``
-- Numba prototypes for accelerating payoff evaluation
 - Greek estimators (Delta, Gamma, Vega) via finite differences
 - Experimental JAX-based Greek computation via automatic differentiation
 - Configurable mesh generation supporting 1D, 2D and 3D problems

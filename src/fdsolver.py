@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 import scipy.sparse as sps
@@ -21,11 +21,6 @@ from scipy.sparse.linalg import spsolve
 from findiff import FinDiff
 from xarray import DataArray
 
-from .acceleration import (
-    NUMBA_AVAILABLE,
-    call_payoff_grid,
-    put_payoff_grid,
-)
 from .data_utils import snapshot
 
 
@@ -85,27 +80,16 @@ class FDSolver:
     def initial_condition(self) -> np.ndarray:
         """Project the terminal payoff onto ``s_grid``.
 
-        The payoff evaluation forms a hot loop during initialisation.  When
-        available, a Numba-accelerated routine is used to compute the intrinsic
-        values; otherwise we fall back to vectorised NumPy evaluation which in
-        turn drops to a Python loop if the payoff does not support array
-        inputs.
+        The implementation tries a vectorized payoff evaluation first, then falls
+        back to scalar evaluation for custom payoff objects that do not support
+        batched array inputs.
         """
 
         if self.is_call:
-            if NUMBA_AVAILABLE and hasattr(self.payoff, "k"):
-                return call_payoff_grid(self.s_grid, float(self.payoff.k))
-            try:
-                return self.payoff.call_payoff(self.s_grid)
-            except Exception:
-                return np.array([self.payoff.call_payoff(s) for s in self.s_grid])
-
-        if NUMBA_AVAILABLE and hasattr(self.payoff, "k"):
-            return put_payoff_grid(self.s_grid, float(self.payoff.k))
-        try:
-            return self.payoff.put_payoff(self.s_grid)
-        except Exception:
-            return np.array([self.payoff.put_payoff(s) for s in self.s_grid])
+            payoff_fn = getattr(self.payoff, "call_payoff")
+        else:
+            payoff_fn = getattr(self.payoff, "put_payoff")
+        return _evaluate_payoff_grid(payoff_fn, self.s_grid)
 
     def matrices(self, theta: float, dt: float) -> tuple[sps.csr_matrix, sps.csr_matrix]:
         """Return system matrices for the θ-scheme."""
@@ -159,6 +143,24 @@ def gamma(v: np.ndarray, ds: float) -> np.ndarray:
 def vega(v: np.ndarray, dv: float) -> np.ndarray:
     """Compute Vega from a two-dimensional grid ``v`` (axis 1 is volatility)."""
     return FinDiff(1, dv, 1, acc=2)(v)
+
+
+def _evaluate_payoff_grid(
+    payoff_fn: Callable[[object], object], s_grid: np.ndarray
+) -> np.ndarray:
+    """Evaluate payoff methods on a grid with scalar fallback.
+
+    Payoff objects own the intrinsic-value semantics.  The vectorized path is
+    attempted first for NumPy-aware implementations; scalar fallback preserves
+    custom Python payoffs that reject array truth values with ``TypeError`` or
+    ``ValueError``.
+    """
+
+    try:
+        values = payoff_fn(s_grid)
+    except (TypeError, ValueError):
+        values = [payoff_fn(float(s)) for s in s_grid]
+    return np.asarray(values, dtype=float)
 
 
 # ----------------------------------------------------------------------

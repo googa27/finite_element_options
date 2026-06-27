@@ -232,7 +232,6 @@ The current single `requirements.txt` combines core, FD, UI, calibration, datafr
 | `mesh` | Optional mesh readers/generators | Mesh-specific packages only |
 | `viz` | Plotting and export | Matplotlib/visualization packages |
 | `jax` | Experimental differentiable FEM/Greeks | JAX profile |
-| `numba` | Optional CPU acceleration | Numba |
 | `calibration` | Deterministic statistical calibration | pandas/xarray/Statsmodels as required |
 | `bayes` | Bayesian research workflow | PyMC and its stack |
 | `columnar` | Arrow/Parquet experiment exchange | PyArrow and optional dataframe packages |
