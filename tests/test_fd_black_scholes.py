@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.fdsolver import solve_system, delta  # noqa: E402
+from src.fdsolver import FDSolver, solve_system, delta  # noqa: E402
 from src.core.dynamics_black_scholes import (
     DynamicsParametersBlackScholes,
 )  # noqa: E402
@@ -30,3 +30,28 @@ def test_fd_black_scholes_price():
     d_num = delta(v.sel(time=t[-1]).values, s_grid[1] - s_grid[0])[idx]
     d_exact = bsopt.call_delta(t[-1], s0, dh.sig ** 2)
     assert d_num == pytest.approx(d_exact, rel=2e-2)
+
+
+def test_fd_solver_initial_condition_matches_vectorized_payoff_formula():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    mkt = Market(r=dh.r)
+    bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
+    s_grid = np.array([0.0, 0.5, 1.0, 1.5, 2.0], dtype=float)
+
+    call_solver = FDSolver(s_grid, dh, bsopt, is_call=True)
+    put_solver = FDSolver(s_grid, dh, bsopt, is_call=False)
+
+    np.testing.assert_allclose(call_solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0))
+    np.testing.assert_allclose(put_solver.initial_condition(), np.maximum(bsopt.k - s_grid, 0.0))
+
+
+def test_fd_solver_initial_condition_accepts_noncontiguous_grid_views():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    mkt = Market(r=dh.r)
+    bsopt = EuropeanOptionBs(k=1.0, q=dh.q, mkt=mkt)
+    s_grid = np.linspace(0.0, 2.0, 11, dtype=float)[::2]
+
+    solver = FDSolver(s_grid, dh, bsopt, is_call=True)
+
+    assert not s_grid.flags.c_contiguous
+    np.testing.assert_allclose(solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0))

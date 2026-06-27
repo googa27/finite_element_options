@@ -21,7 +21,6 @@ ARCHITECTURE_DOC = ROOT / "docs" / "ARCHITECTURE.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 TRANSITIONAL_SRC_PACKAGES_AND_MODULES = {
-    "acceleration.py",
     "cli.py",
     "core",
     "data_utils.py",
@@ -47,7 +46,6 @@ FEM_CORE_PACKAGES_AND_MODULES = {
 }
 
 OUTER_LAYER_PACKAGES_AND_MODULES = {
-    "acceleration.py",
     "cli.py",
     "data_utils.py",
     "estimation",
@@ -72,7 +70,6 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = {
 }
 
 FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
-    "acceleration",
     "cli",
     "data_utils",
     "estimation",
@@ -87,10 +84,6 @@ FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
 # big-bang rewrite inside the M0 architecture-fitness slice.
 KNOWN_TRANSITIONAL_CORE_IMPORT_EXCEPTIONS = {
     "src/fdsolver.py": {
-        "acceleration",
-        "acceleration.NUMBA_AVAILABLE",
-        "acceleration.call_payoff_grid",
-        "acceleration.put_payoff_grid",
         "data_utils",
         "data_utils.snapshot",
         "findiff",
