@@ -55,3 +55,39 @@ def test_fd_solver_initial_condition_accepts_noncontiguous_grid_views():
 
     assert not s_grid.flags.c_contiguous
     np.testing.assert_allclose(solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0))
+
+
+class _CappedPayoffWithStrike:
+    k = 1.0
+
+    def call_payoff(self, s):
+        return np.minimum(np.maximum(np.asarray(s) - self.k, 0.0), 0.25)
+
+    def put_payoff(self, s):
+        return np.minimum(np.maximum(self.k - np.asarray(s), 0.0), 0.25)
+
+
+class _ScalarOnlyPayoffWithStrike:
+    k = 1.0
+
+    def call_payoff(self, s):
+        return max(s - self.k, 0.0)
+
+    def put_payoff(self, s):
+        return max(self.k - s, 0.0)
+
+
+def test_fd_solver_initial_condition_honors_custom_payoff_semantics():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    s_grid = np.array([0.0, 1.0, 1.5, 2.0], dtype=float)
+    solver = FDSolver(s_grid, dh, _CappedPayoffWithStrike(), is_call=True)
+
+    np.testing.assert_allclose(solver.initial_condition(), [0.0, 0.0, 0.25, 0.25])
+
+
+def test_fd_solver_initial_condition_falls_back_for_scalar_only_payoffs():
+    dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
+    s_grid = np.array([0.0, 0.5, 1.0, 1.5], dtype=float)
+    solver = FDSolver(s_grid, dh, _ScalarOnlyPayoffWithStrike(), is_call=True)
+
+    np.testing.assert_allclose(solver.initial_condition(), [0.0, 0.0, 0.0, 0.5])

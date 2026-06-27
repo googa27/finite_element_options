@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 import scipy.sparse as sps
@@ -86,21 +86,10 @@ class FDSolver:
         """
 
         if self.is_call:
-            if hasattr(self.payoff, "k"):
-                return _call_payoff_grid(self.s_grid, float(self.payoff.k))
-            try:
-                values = self.payoff.call_payoff(self.s_grid)
-            except TypeError:
-                values = [self.payoff.call_payoff(float(s)) for s in self.s_grid]
-            return np.asarray(values, dtype=float)
-
-        if hasattr(self.payoff, "k"):
-            return _put_payoff_grid(self.s_grid, float(self.payoff.k))
-        try:
-            values = self.payoff.put_payoff(self.s_grid)
-        except TypeError:
-            values = [self.payoff.put_payoff(float(s)) for s in self.s_grid]
-        return np.asarray(values, dtype=float)
+            payoff_fn = getattr(self.payoff, "call_payoff")
+        else:
+            payoff_fn = getattr(self.payoff, "put_payoff")
+        return _evaluate_payoff_grid(payoff_fn, self.s_grid)
 
     def matrices(self, theta: float, dt: float) -> tuple[sps.csr_matrix, sps.csr_matrix]:
         """Return system matrices for the θ-scheme."""
@@ -156,20 +145,22 @@ def vega(v: np.ndarray, dv: float) -> np.ndarray:
     return FinDiff(1, dv, 1, acc=2)(v)
 
 
-def _call_payoff_grid(s: np.ndarray, k: float) -> np.ndarray:
-    """Vectorized intrinsic call payoff ``max(S-k,0)``.
+def _evaluate_payoff_grid(
+    payoff_fn: Callable[[object], object], s_grid: np.ndarray
+) -> np.ndarray:
+    """Evaluate payoff methods on a grid with scalar fallback.
 
-    This keeps the initialization path simple and avoids optional micro-kernels
-    while preserving predictable behaviour for non-contiguous inputs.
+    Payoff objects own the intrinsic-value semantics.  The vectorized path is
+    attempted first for NumPy-aware implementations; scalar fallback preserves
+    custom Python payoffs that reject array truth values with ``TypeError`` or
+    ``ValueError``.
     """
 
-    return np.maximum(np.asarray(s, dtype=float) - float(k), 0.0)
-
-
-def _put_payoff_grid(s: np.ndarray, k: float) -> np.ndarray:
-    """Vectorized intrinsic put payoff ``max(k-S,0)``."""
-
-    return np.maximum(float(k) - np.asarray(s, dtype=float), 0.0)
+    try:
+        values = payoff_fn(s_grid)
+    except (TypeError, ValueError):
+        values = [payoff_fn(float(s)) for s in s_grid]
+    return np.asarray(values, dtype=float)
 
 
 # ----------------------------------------------------------------------
