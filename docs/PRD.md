@@ -170,6 +170,8 @@ After package and typed-interface foundations are stable, publish an optional en
 
 Owner: #49.
 
+Issue #64 provides the first executable Project #5 compatibility slice before the full entry-point plugin: a public-synthetic QuantProblemSpec adapter manifest, fail-closed route diagnostics and the `fem-bs-001` Black-Scholes parity fixture. This slice is deliberately narrow and validates only the one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route against the Haircut analytical oracle with named endpoint boundary enforcement and value/Delta/Gamma error evidence; unsupported dimensions, adaptive meshes, unvalidated elements, American exercise, jump terms and HJB/control terms fail before mesh or weak-form allocation.
+
 ### FR-FEM-012 — Module ownership and duplicate retirement
 
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.

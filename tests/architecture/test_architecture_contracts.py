@@ -22,6 +22,7 @@ CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 TRANSITIONAL_SRC_PACKAGES_AND_MODULES = {
     "cli.py",
+    "contracts",
     "core",
     "data_utils.py",
     "estimation",
@@ -34,15 +35,18 @@ TRANSITIONAL_SRC_PACKAGES_AND_MODULES = {
     "space",
     "time",
     "transform.py",
+    "validation",
 }
 
 FEM_CORE_PACKAGES_AND_MODULES = {
+    "contracts",
     "core",
     "fdsolver.py",
     "problems",
     "space",
     "time",
     "transform.py",
+    "validation",
 }
 
 OUTER_LAYER_PACKAGES_AND_MODULES = {
@@ -102,6 +106,7 @@ REQUIRED_ARCHITECTURE_PHRASES = {
     "Compatibility and deprecation policy",
     "Architecture fitness gates",
     "haircut-engine",
+    "Issue #64 adds",
 }
 
 

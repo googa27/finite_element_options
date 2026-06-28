@@ -9,6 +9,7 @@ jax
 aleatory
 statsmodels
 pymc
+arviz>=0.23,<1
 pandas
 xarray
 pyarrow

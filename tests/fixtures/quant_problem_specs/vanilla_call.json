@@ -1,0 +1,191 @@
+{
+  "artifact_manifest": {
+    "artifacts": [
+      {
+        "artifact_id": "option-fixture-json",
+        "artifact_type": "json_fixture",
+        "privacy_class": "public_synthetic",
+        "sha256": null,
+        "uri": "artifact://quant-problem-spec/vanilla-call-v0"
+      }
+    ],
+    "manifest_id": "public-synthetic-manifest-v0"
+  },
+  "data_requirement_plan": {
+    "fixture_policy": "public-synthetic-only",
+    "requirements": [
+      {
+        "contract": "public-synthetic-option-contract",
+        "lineage_id": "public-synthetic",
+        "name": "option_parameters",
+        "privacy_class": "public_synthetic",
+        "required_fields": [
+          "spot",
+          "strike",
+          "rate",
+          "volatility",
+          "maturity"
+        ],
+        "version": "v0"
+      }
+    ],
+    "restricted_data_policy": "reject"
+  },
+  "family": "vanilla_option",
+  "financial_graph": {
+    "graph_role": "derivative benchmark graph",
+    "required_solver_features": [
+      "delta",
+      "family:exact",
+      "family:fem",
+      "family:transform",
+      "gamma",
+      "value"
+    ],
+    "translation_notes": "Shared exact/FD/FEM parity fixture; no private market data.",
+    "valuation_graph": {
+      "cashflows": [
+        {
+          "cashflow_id": "terminal_payoff",
+          "currency": "CLP",
+          "direction": "inflow",
+          "formula": "max(S_T-K,0)",
+          "metadata": {},
+          "node_id": "expiry",
+          "timing": "terminal"
+        }
+      ],
+      "graph_id": "public-synthetic-vanilla-call-graph-v0",
+      "measure_id": "risk_neutral",
+      "metadata": {
+        "product_adapter": "vanilla_derivative"
+      },
+      "nodes": [
+        {
+          "kind": "economic_state",
+          "label": "Contract alive",
+          "metadata": {},
+          "node_id": "alive",
+          "state_variables": [
+            "S"
+          ],
+          "terminal": false
+        },
+        {
+          "kind": "terminal",
+          "label": "Expiry payoff",
+          "metadata": {},
+          "node_id": "expiry",
+          "state_variables": [],
+          "terminal": true
+        }
+      ],
+      "solver_hints": {
+        "benchmark_ids": [
+          "black-scholes-call-001"
+        ],
+        "error_budget": null,
+        "fallback_family": "fem",
+        "preferred_families": [
+          "exact",
+          "transform",
+          "fem"
+        ],
+        "required_outputs": [
+          "value",
+          "delta",
+          "gamma"
+        ]
+      },
+      "transitions": [
+        {
+          "intensity_id": null,
+          "metadata": {},
+          "payoff_formula": null,
+          "probability_formula": "t == T",
+          "source_node_id": "alive",
+          "target_node_id": "expiry",
+          "transition_id": "expiry"
+        }
+      ],
+      "version": "1.0"
+    }
+  },
+  "lineage_run_record": {
+    "lineage_id": "public-synthetic-option-lineage-v0",
+    "producer_repo": "googa27/haircut-engine",
+    "schema_owner": "Quant PDE Platform Evolutionary Architecture",
+    "source_issue_refs": [
+      "googa27/haircut-engine#103",
+      "googa27/finite_difference_options#76",
+      "googa27/finite_element_options#64"
+    ]
+  },
+  "mathematical_problem": {
+    "boundary_conditions": {
+      "S=0": "0",
+      "S=S_max": "linear growth"
+    },
+    "domain": {
+      "S": "[0, 400]",
+      "t": "[0, 1]"
+    },
+    "measure_id": "risk_neutral_money_market",
+    "numeraire_id": "money_market_account_CLP",
+    "objective": "price and Greeks",
+    "operator": "Black-Scholes parabolic PDE with constant volatility",
+    "state_variables": [
+      "S"
+    ],
+    "terminal_condition": "max(S-K,0)",
+    "time_variable": "t",
+    "units": {
+      "S": "CLP",
+      "rate": "ACT/365F annualized",
+      "t": "years",
+      "volatility": "annualized decimal"
+    }
+  },
+  "metadata": {
+    "fixture_kind": "public_synthetic",
+    "units": "dimensionless price inputs"
+  },
+  "privacy_class": "public_synthetic",
+  "problem_id": "public-synthetic-vanilla-call-v0",
+  "result_bundle": {
+    "benchmark_ids": [
+      "black-scholes-call-001"
+    ],
+    "diagnostics": {},
+    "status": "schema_only",
+    "values": {}
+  },
+  "schema_version": "quant-problem-spec/v0",
+  "solver_plan": {
+    "benchmark_ids": [
+      "black-scholes-call-001"
+    ],
+    "fallback_policy": "fail_closed",
+    "max_runtime_seconds": 30.0,
+    "preferred_families": [
+      "exact",
+      "finite_difference",
+      "finite_element"
+    ],
+    "required_outputs": [
+      "value",
+      "delta",
+      "gamma"
+    ],
+    "tolerance": 0.001
+  },
+  "title": "Public synthetic Black--Scholes European call",
+  "vintage": {
+    "calendar_id": "CL-business-following-public-synthetic-v1",
+    "convention_id": "CL-RAN21-10-CLP-ACT365F-FOLLOWING-v1",
+    "observation_date": "2026-06-30",
+    "valuation_date": "2026-06-30",
+    "vintage_date": "2026-06-30",
+    "vintage_id": "public-synthetic-2026-06-v0"
+  }
+}
