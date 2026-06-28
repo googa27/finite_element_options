@@ -421,7 +421,8 @@ def _boundary_condition_classes(value: Any) -> tuple[str, ...]:
         elif "dirichlet" in text or "absorbing" in text or text.strip() in {"0", "zero"}:
             boundary_class = "dirichlet"
         elif ("linear" in text or "growth" in text) and any(
-            marker in location_text for marker in ("s_max", "upper", "right", "far_field")
+            marker in location_text
+            for marker in ("s=0", "s_min", "lower", "left", "s_max", "upper", "right", "far_field")
         ):
             boundary_class = "dirichlet"
         else:
