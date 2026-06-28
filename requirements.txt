@@ -9,6 +9,7 @@ jax
 aleatory
 statsmodels
 pymc
+# PyMC imports ArviZ during calibration tests; constrain the transitive dependency to a known concat-compatible range.
 arviz>=0.23,<1
 pandas
 xarray

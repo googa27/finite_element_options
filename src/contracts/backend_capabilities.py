@@ -244,13 +244,24 @@ def diagnose_unsupported_route(
         manifest.element_families,
     )
     _extend_set_diagnostics(diagnostics, UnsupportedReason.UNSUPPORTED_TERM, "pde_terms", request.pde_terms, manifest.pde_terms)
-    _extend_set_diagnostics(
-        diagnostics,
-        UnsupportedReason.UNSUPPORTED_BOUNDARY,
-        "boundary_conditions",
-        request.boundary_conditions,
-        manifest.boundary_conditions,
-    )
+    if request.boundary_conditions:
+        _extend_set_diagnostics(
+            diagnostics,
+            UnsupportedReason.UNSUPPORTED_BOUNDARY,
+            "boundary_conditions",
+            request.boundary_conditions,
+            manifest.boundary_conditions,
+        )
+    else:
+        diagnostics.append(
+            _diagnostic(
+                UnsupportedReason.UNSUPPORTED_BOUNDARY,
+                "boundary_conditions",
+                "<missing>",
+                manifest.boundary_conditions,
+                "QuantProblemSpec mapping must declare at least one boundary condition class before FEM routing.",
+            )
+        )
     _extend_set_diagnostics(
         diagnostics,
         UnsupportedReason.UNSUPPORTED_EXERCISE,
@@ -392,26 +403,32 @@ def _state_dimension(value: Any) -> int:
 def _boundary_condition_classes(value: Any) -> tuple[str, ...]:
     """Normalize public schema boundary formulas to FEM capability classes."""
 
-    raw_items: Iterable[Any]
     if isinstance(value, Mapping):
-        raw_items = value.values()
+        raw_items: Iterable[tuple[str, Any]] = value.items()
     else:
-        raw_items = _tuple_of_strings(value)
+        raw_items = (("", item) for item in _tuple_of_strings(value))
 
     classes: list[str] = []
-    for item in raw_items:
+    for location, item in raw_items:
         text = str(item).lower().replace("-", "_")
-        if "robin" in text:
+        location_text = str(location).lower().replace("-", "_")
+        if "free" in text and "boundary" in text:
+            boundary_class = "free_boundary"
+        elif "robin" in text:
             boundary_class = "robin"
-        elif "dirichlet" in text or "absorbing" in text or "linear" in text or "growth" in text or text.strip() in {"0", "zero"}:
-            boundary_class = "dirichlet"
-        elif "slope" in text or "neumann" in text:
+        elif "neumann" in text or "slope" in text:
             boundary_class = "neumann"
+        elif "dirichlet" in text or "absorbing" in text or text.strip() in {"0", "zero"}:
+            boundary_class = "dirichlet"
+        elif ("linear" in text or "growth" in text) and any(
+            marker in location_text for marker in ("s_max", "upper", "right", "far_field")
+        ):
+            boundary_class = "dirichlet"
         else:
             boundary_class = text
         if boundary_class not in classes:
             classes.append(boundary_class)
-    return tuple(classes) or ("dirichlet",)
+    return tuple(classes)
 
 
 def _optional_string(value: Any) -> str | None:

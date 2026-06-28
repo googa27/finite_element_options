@@ -105,6 +105,36 @@ def test_haircut_engine_vanilla_call_fixture_maps_to_supported_fem_route() -> No
     assert diagnose_unsupported_route(request) == ()
 
 
+def test_empty_boundary_conditions_fail_closed_instead_of_defaulting_to_dirichlet() -> None:
+    payload = _supported_payload()
+    payload["mathematical_problem"] = {**payload["mathematical_problem"], "boundary_conditions": []}
+
+    request = FEMRouteRequest.from_quant_problem_spec(payload)
+    diagnostics = diagnose_unsupported_route(request)
+
+    assert request.boundary_conditions == ()
+    assert any(
+        diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY
+        and diagnostic.field == "boundary_conditions"
+        and diagnostic.value == "<missing>"
+        for diagnostic in diagnostics
+    )
+
+
+def test_free_boundary_text_is_not_misclassified_as_dirichlet() -> None:
+    payload = _supported_payload()
+    payload["mathematical_problem"] = {
+        **payload["mathematical_problem"],
+        "boundary_conditions": {"S=S_star": "free boundary with linear continuation"},
+    }
+
+    request = FEMRouteRequest.from_quant_problem_spec(payload)
+    diagnostics = diagnose_unsupported_route(request)
+
+    assert request.boundary_conditions == ("free_boundary",)
+    assert any(diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY for diagnostic in diagnostics)
+
+
 def test_unsupported_variational_terms_dimensions_boundaries_and_exercise_fail_closed() -> None:
     payload = _supported_payload()
     payload["mathematical_problem"] = {

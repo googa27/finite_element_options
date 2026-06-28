@@ -106,7 +106,7 @@ REQUIRED_ARCHITECTURE_PHRASES = {
     "Compatibility and deprecation policy",
     "Architecture fitness gates",
     "haircut-engine",
-    "Issue #64 adds",
+    "executable FEM adapter evidence",
 }
 
 

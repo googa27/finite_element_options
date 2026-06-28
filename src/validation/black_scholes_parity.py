@@ -9,13 +9,13 @@ from typing import Any
 import numpy as np
 import scipy.stats as spst
 
-from src.core.dynamics_black_scholes import DynamicsParametersBlackScholes
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.boundary import DirichletBC
-from src.space.mesh import create_mesh
-from src.space.solver import SpaceSolver
-from src.time.stepper import ThetaScheme
+from ..core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from ..core.market import Market
+from ..core.vanilla_bs import EuropeanOptionBs
+from ..space.boundary import DirichletBC
+from ..space.mesh import create_mesh
+from ..space.solver import SpaceSolver
+from ..time.stepper import ThetaScheme
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
 PUBLIC_SYNTHETIC_PROBLEM_ID = "public-synthetic-vanilla-call-v0"
