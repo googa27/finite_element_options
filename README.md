@@ -63,13 +63,13 @@ pip install -r requirements.txt
 Launch the Streamlit application:
 
 ```bash
-streamlit run main.py
+streamlit run examples/streamlit_app.py
 ```
 
 Run the adaptive mesh demo:
 
 ```bash
-python demo_adaptive.py
+python examples/adaptive_mesh_refinement.py
 ```
 
 ### Python API example
@@ -188,11 +188,15 @@ potential future migration.
 This project uses a GitHub Actions workflow to run the test suite on every
 push and pull request, ensuring that the codebase remains reliable.
 
+
+
+The package topology is guarded by `docs/architecture_contract.toml` and the `scripts/check_architecture_contract.py` architecture contract gate in CI.
+
 ## Project Structure
 
 ```
 src/            Core library modules
-main.py         Streamlit entry point
+examples/       Runnable demos, including the Streamlit entry point
 requirements.txt  Project dependencies
 tests/          Pytest-based test suite
 ```

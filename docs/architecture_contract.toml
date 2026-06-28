@@ -1,0 +1,61 @@
+# Machine-readable finite_element_options architecture contract.
+# The repo remains in a transitional literal `src` namespace; this contract
+# prevents more drift until the canonical finite_element_options package lands.
+
+[contract]
+schema_version = 1
+name = "finite_element_options"
+mode = "transitional-src-namespace"
+
+[paths]
+package_root = "src"
+tests_root = "tests"
+
+[topology]
+allowed_root_modules = [
+  "__init__.py",
+  "cli.py",
+  "data_utils.py",
+  "fdsolver.py",
+  "jax_greeks.py",
+  "plots.py",
+  "sidebar.py",
+  "transform.py",
+]
+required_top_level_packages = [
+  "contracts",
+  "core",
+  "estimation",
+  "examples",
+  "problems",
+  "space",
+  "time",
+  "validation",
+]
+allowed_top_level_packages = [
+  "contracts",
+  "core",
+  "estimation",
+  "examples",
+  "problems",
+  "space",
+  "time",
+  "validation",
+]
+max_top_level_package_count = 8
+ignore_top_level_dirs = []
+
+[repository_root]
+allowed_python_files = ["setup.py"]
+
+[documentation]
+required_docs = ["docs/ARCHITECTURE.md", "README.md"]
+required_fragments = ["docs/architecture_contract.toml", "architecture contract"]
+
+[ci]
+workflow_paths = [".github/workflows/ci.yml"]
+required_fragments = ["scripts/check_architecture_contract.py", "tests/architecture"]
+
+[[import_rules]]
+source = "src/core"
+forbidden_prefixes = ["streamlit", "matplotlib", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]

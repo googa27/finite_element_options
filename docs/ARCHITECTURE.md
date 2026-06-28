@@ -123,6 +123,10 @@ tests/
 
 Do not create a subpackage merely for visual symmetry. Boundaries are justified by dependency direction, semantic ownership, optional installation or independent testing.
 
+
+
+The machine-readable architecture contract is `docs/architecture_contract.toml`. It is the CI-enforced source of truth for the transitional literal-`src` package/module allowlist, repository-root Python-file policy, and topology-count ratchet; update it with `tests/architecture` and `scripts/check_architecture_contract.py` in every hierarchy-changing PR.
+
 ## 6. Dependency direction
 
 ```text
