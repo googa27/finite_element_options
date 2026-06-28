@@ -25,6 +25,8 @@ jobs:
           pip install -e .
       - name: Run pydocstyle
         run: pydocstyle src
+      - name: Architecture contract
+        run: python scripts/check_architecture_contract.py
       - name: Architecture fitness gate
         run: pytest -q tests/architecture
       - name: Run tests
