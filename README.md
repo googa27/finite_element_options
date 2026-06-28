@@ -50,6 +50,7 @@ This reproduces the same call option pricing workflow in a standalone file.
 - Market data handled via pandas DataFrames and solution snapshots via xarray
 - CSV/Parquet serialisation utilities for reproducible experiments
 - Experimental FEniCSx solver for Black-Scholes PDE
+- Public-synthetic QuantProblemSpec FEM adapter manifest and `fem-bs-001` Black-Scholes parity fixture for cross-repo Haircut Engine compatibility checks
 
 ## Installation
 
