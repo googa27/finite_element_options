@@ -13,8 +13,8 @@
     "primary_metric": "price/Delta/Gamma absolute error",
     "tolerance": 0.002
   },
-  "config_hash": "6c4fe89c536392c068767dfd0e40207b9257dae208a7ebe122ec3ce6fcbbce58",
-  "config_id": "6c4fe89c536392c068767dfd0e40207b9257dae208a7ebe122ec3ce6fcbbce58",
+  "config_hash": "94e07ddcf8eb9bae10710f9fa1df61c2fd269af3a43ae643d9c66add7ee26930",
+  "config_id": "94e07ddcf8eb9bae10710f9fa1df61c2fd269af3a43ae643d9c66add7ee26930",
   "format_version": "fem-bs-oracle-result-v1",
   "mesh_metadata": {
     "domain_max": 4.0,
@@ -28,7 +28,7 @@
       5,
       6
     ],
-    "solver_backing": "scikit-fem_direct",
+    "solver_backing": "scikit-fem+sparse-direct",
     "spatial_domain": "[0, 4.0] normalized spot"
   },
   "privacy_class": "public_synthetic",
