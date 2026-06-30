@@ -397,13 +397,15 @@ def write_public_fem_bs_result_export(
     path: Path | str = FEM_BS_001_RESULT_EXPORT_PATH,
     *,
     refresh: bool = False,
+    report: FEMParityReport | None = None,
 ) -> Path:
     """Run and write the FEM result export in a stable public artifact shape."""
 
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
-        report = run_public_black_scholes_parity_fixture()
+        if report is None:
+            report = run_public_black_scholes_parity_fixture()
         payload = report.export_payload()
         payload["config_id"] = report.config_hash
         target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -455,8 +457,8 @@ def run_public_black_scholes_parity_fixture(
     )
     sensitivity_reference_policy = SensitivityReferencePolicy(
         policy_id="finite_difference_central_stencil_v1",
-        delta_reference="analytical Black-Scholes delta at t=T, S=K",
-        gamma_reference="analytical Black-Scholes gamma at t=T, S=K",
+        delta_reference="analytical Black-Scholes delta at valuation time, S=K",
+        gamma_reference="analytical Black-Scholes gamma at valuation time, S=K",
         extraction_method="central finite-difference in normalized strike space",
         allowed_fallback="explicit kink-aware boundary derivative remains separate evidence",
     )
@@ -526,7 +528,7 @@ def run_public_black_scholes_parity_fixture(
 
     if refresh_exports:
         write_public_fem_bs_oracle_spec()
-        write_public_fem_bs_result_export(path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True)
+        write_public_fem_bs_result_export(path=FEM_BS_001_RESULT_EXPORT_PATH, report=report)
 
     return report
 
@@ -548,7 +550,6 @@ def _config_hash(report: FEMParityReport) -> str:
             "delta": report.delta_tolerance_absolute,
             "gamma": report.gamma_tolerance_absolute,
         },
-        "rows": [row.to_public_dict() for row in report.convergence_rows],
     }
     return build_fixture_config_hash(payload)
 

@@ -7,8 +7,8 @@
     "primary_metric": "price/Delta/Gamma absolute error",
     "tolerance": 0.002
   },
-  "config_hash": "90defc83a2dea51fa96a8a6d5d6cc9cc66629fabd02196e5d662bb53db82732e",
-  "config_id": "90defc83a2dea51fa96a8a6d5d6cc9cc66629fabd02196e5d662bb53db82732e",
+  "config_hash": "bbfa6961588be3b664ccf2f39b2dfcc9e06bd47271abb8ee40ddf3bb334d6068",
+  "config_id": "bbfa6961588be3b664ccf2f39b2dfcc9e06bd47271abb8ee40ddf3bb334d6068",
   "format_version": "fem-bs-oracle-result-v1",
   "mesh_metadata": {
     "domain_max": 4.0,
@@ -71,9 +71,9 @@
   ],
   "sensitivity_reference_policy": {
     "allowed_fallback": "explicit kink-aware boundary derivative remains separate evidence",
-    "delta_reference": "analytical Black-Scholes delta at t=T, S=K",
+    "delta_reference": "analytical Black-Scholes delta at valuation time, S=K",
     "extraction_method": "central finite-difference in normalized strike space",
-    "gamma_reference": "analytical Black-Scholes gamma at t=T, S=K",
+    "gamma_reference": "analytical Black-Scholes gamma at valuation time, S=K",
     "policy_id": "finite_difference_central_stencil_v1"
   },
   "summary": {
