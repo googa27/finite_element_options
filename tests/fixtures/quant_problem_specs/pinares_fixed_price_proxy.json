@@ -1,0 +1,96 @@
+{
+  "evidence": {
+    "caveats": [
+      "not private Pinares data"
+    ],
+    "evidence_ids": [
+      "public-synthetic"
+    ]
+  },
+  "mathematical_problem": {
+    "boundary_conditions": {
+      "S=0": "dirichlet",
+      "S=S_max": "linear_growth"
+    },
+    "dimension": 1,
+    "exercise_style": "european",
+    "formulations": [
+      {
+        "formulation_id": "expectation_fixed_price_proxy",
+        "kind": "conditional_expectation"
+      },
+      {
+        "formulation_id": "pde_fixed_price_proxy",
+        "kind": "generator_pde"
+      },
+      {
+        "formulation_id": "weak_form_fixed_price_proxy",
+        "kind": "weak_form"
+      }
+    ],
+    "has_hjb_control": false,
+    "has_jumps": false,
+    "has_obstacle": false,
+    "measure_id": "Q*",
+    "numeraire_id": "UF_money_market_account_proxy",
+    "pde_terms": [
+      "drift",
+      "diffusion",
+      "reaction"
+    ],
+    "state_variables": [
+      {
+        "description": "public synthetic property-value proxy",
+        "name": "S",
+        "role": "underlying",
+        "unit": "UF"
+      }
+    ],
+    "terminal_payoff": {
+      "expression": "0.97 * max(S-K,0)",
+      "payoff_id": "mortality_adjusted_call_payoff",
+      "timing": "terminal",
+      "units": "UF"
+    },
+    "units": {
+      "S": "UF",
+      "rate": "1/year",
+      "time": "year",
+      "value": "UF"
+    }
+  },
+  "problem_hash": "publicsyntheticpinares001",
+  "problem_id": "pinares.fixed_price_option_proxy.v1",
+  "schema_version": "quant-problem-spec/v0",
+  "solver_plan": {
+    "backend_id": "googa27/pinares-real-options",
+    "element_family": "lagrange_p2",
+    "formulation_kind": "generator_pde_or_weak_form",
+    "grid_type": "uniform",
+    "linear_solver": "scipy_direct",
+    "mesh_family": "line_uniform",
+    "method_id": "pinares_backend_compatibility_smoke",
+    "method_kind": "finite_difference_or_finite_element",
+    "requested_outputs": [
+      "value",
+      "delta",
+      "gamma"
+    ],
+    "stability_controls": [
+      "theta"
+    ]
+  },
+  "valuation_context": {
+    "measure": "Q*",
+    "numeraire": "UF_money_market_account_proxy",
+    "privacy_tier": "public_sanitized",
+    "time_domain": "[0, 1]",
+    "units": {
+      "S": "UF",
+      "rate": "1/year",
+      "time": "year",
+      "value": "UF"
+    },
+    "valuation_date": "2026-06-30"
+  }
+}

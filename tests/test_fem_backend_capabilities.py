@@ -105,6 +105,29 @@ def test_haircut_engine_vanilla_call_fixture_maps_to_supported_fem_route() -> No
     assert diagnose_unsupported_route(request) == ()
 
 
+def test_pinares_fixed_price_problem_fixture_maps_to_supported_fem_route() -> None:
+    """Pinares publishes the problem; FEM only chooses mesh/weak-form controls."""
+
+    payload = json.loads((FIXTURE_DIR / "pinares_fixed_price_proxy.json").read_text())
+
+    request = FEMRouteRequest.from_quant_problem_spec(payload)
+
+    assert payload["problem_id"] == "pinares.fixed_price_option_proxy.v1"
+    assert request.source_schema_version == "quant-problem-spec/v0"
+    assert request.dimension == 1
+    assert request.mesh_family == "line_uniform"
+    assert request.element_family == "lagrange_p2"
+    assert request.pde_terms == ("drift", "diffusion", "reaction")
+    assert request.boundary_conditions == ("dirichlet",)
+    assert request.requested_outputs == ("value", "delta", "gamma")
+    assert request.measure == "Q*"
+    assert request.numeraire == "UF_money_market_account_proxy"
+    assert request.units["S"] == "UF"
+    assert request.valuation_date == "2026-06-30"
+    assert request.time_domain == "[0, 1]"
+    assert diagnose_unsupported_route(request) == ()
+
+
 def test_empty_boundary_conditions_fail_closed_instead_of_defaulting_to_dirichlet() -> None:
     payload = _supported_payload()
     math_problem = payload["mathematical_problem"]
