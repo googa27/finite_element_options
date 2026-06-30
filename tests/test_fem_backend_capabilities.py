@@ -356,6 +356,7 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
     assert payload["comparison_policy"]["mode"] == "equal_error"
     assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
+    assert payload["mesh_metadata"]["refinement_levels"] == list(report.mesh_metadata.refinement_levels)
     assert payload["time_metadata"]["time_steps"] == report.time_metadata.time_steps
     assert (
         payload["sensitivity_reference_policy"]["policy_id"]
@@ -383,6 +384,7 @@ def test_refresh_exports_serializes_current_non_default_report(tmp_path, monkeyp
     assert spec_path.exists()
     assert payload["config_hash"] == report.config_hash
     assert payload["time_metadata"]["time_steps"] == 40
+    assert payload["mesh_metadata"]["refinement_levels"] == [4, 5]
     assert [row["time_steps"] for row in payload["rows"]] == [40, 40]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
     assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)

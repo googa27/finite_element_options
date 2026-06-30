@@ -90,9 +90,10 @@ class MeshMetadata:
     spatial_domain: str
     min_refinement_level: int
     max_refinement_level: int
+    refinement_levels: tuple[int, ...]
     solver_backing: str
 
-    def to_public_dict(self) -> dict[str, str | float | int]:
+    def to_public_dict(self) -> dict[str, str | float | int | list[int]]:
         """Return a JSON-safe mesh configuration payload."""
 
         return {
@@ -103,6 +104,7 @@ class MeshMetadata:
             "spatial_domain": self.spatial_domain,
             "min_refinement_level": self.min_refinement_level,
             "max_refinement_level": self.max_refinement_level,
+            "refinement_levels": list(self.refinement_levels),
             "solver_backing": self.solver_backing,
         }
 
@@ -447,6 +449,7 @@ def run_public_black_scholes_parity_fixture(
         spatial_domain="[0, 4.0] normalized spot",
         min_refinement_level=min(refinement_levels),
         max_refinement_level=max(refinement_levels),
+        refinement_levels=tuple(refinement_levels),
         solver_backing="scikit-fem_direct",
     )
     time_metadata = TimeMetadata(
