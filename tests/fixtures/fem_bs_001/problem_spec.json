@@ -20,7 +20,7 @@
     "primary_metric": "abs(price,delta,gamma errors)@policy_tolerance",
     "tolerance": 0.002
   },
-  "contract_id": "9053100707726d6006d34096882be1246a8687cd3436beb6bc441e860ffd8fd5",
+  "contract_id": "a1edf56691e60ea85f8fc11267fa7f82cad63ab2feb7aa91f056e97ded4fc15b",
   "contract_version": "fem-parity-contract/v1",
   "fixture_id": "fem-bs-001",
   "mesh_metadata": {
@@ -54,9 +54,9 @@
   "result_export_uri": "tests/fixtures/fem_bs_001/result_export.json",
   "sensitivity_reference_policy": {
     "allowed_fallback": "separate kink-aware evidence for production Greek policy",
-    "delta_reference": "Black-Scholes analytical delta",
+    "delta_reference": "Black-Scholes analytical delta at valuation time, S=K",
     "extraction_method": "central finite-difference in normalized strike space",
-    "gamma_reference": "Black-Scholes analytical gamma",
+    "gamma_reference": "Black-Scholes analytical gamma at valuation time, S=K",
     "policy_id": "finite_difference_central_stencil_v1"
   },
   "time_metadata": {

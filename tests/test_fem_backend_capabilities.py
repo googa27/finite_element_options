@@ -1,4 +1,5 @@
 """FEM capability-manifest, QuantProblemSpec mapping and parity tests."""
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ from src.contracts import (  # noqa: E402
     diagnose_unsupported_route,
     ensure_route_supported,
 )
+from src.validation import black_scholes_parity as parity_module  # noqa: E402
 from src.validation.black_scholes_parity import (  # noqa: E402
     FEM_BS_001_PROBLEM_SPEC_PATH,
     FEM_BS_001_RESULT_EXPORT_PATH,
@@ -138,7 +140,10 @@ def test_pinares_fixed_price_problem_fixture_maps_to_supported_fem_route() -> No
 
 def test_wrong_backend_id_fails_closed_for_fem_route() -> None:
     payload = json.loads((FIXTURE_DIR / "pinares_fixed_price_proxy.json").read_text())
-    payload["solver_plan"] = {**payload["solver_plan"], "backend_id": "finite_difference_options.fd_backend.v0"}
+    payload["solver_plan"] = {
+        **payload["solver_plan"],
+        "backend_id": "finite_difference_options.fd_backend.v0",
+    }
     request = FEMRouteRequest.from_quant_problem_spec(payload)
 
     diagnostics = diagnose_unsupported_route(request)
@@ -196,7 +201,9 @@ def test_free_boundary_text_is_not_misclassified_as_dirichlet() -> None:
     diagnostics = diagnose_unsupported_route(request)
 
     assert request.boundary_conditions == ("free_boundary",)
-    assert any(diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY for diagnostic in diagnostics)
+    assert any(
+        diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY for diagnostic in diagnostics
+    )
 
 
 def test_unsupported_variational_terms_dimensions_boundaries_and_exercise_fail_closed() -> None:
@@ -233,7 +240,11 @@ def test_missing_measure_numeraire_units_and_dates_are_actionable_diagnostics() 
     request = FEMRouteRequest.from_quant_problem_spec(payload)
 
     diagnostics = diagnose_unsupported_route(request)
-    missing = {diagnostic.field for diagnostic in diagnostics if diagnostic.reason == UnsupportedReason.MISSING_CONVENTION}
+    missing = {
+        diagnostic.field
+        for diagnostic in diagnostics
+        if diagnostic.reason == UnsupportedReason.MISSING_CONVENTION
+    }
 
     assert missing == {"measure", "numeraire", "units", "valuation_date", "maturity_or_time_domain"}
     assert all("missing or empty" in diagnostic.message for diagnostic in diagnostics)
@@ -256,11 +267,15 @@ def test_unsupported_outputs_mesh_element_and_solver_controls_do_not_silently_do
     assert by_field["mesh_family"].reason == UnsupportedReason.UNSUPPORTED_MESH
     assert by_field["element_family"].reason == UnsupportedReason.UNSUPPORTED_ELEMENT
     assert by_field["linear_solver"].reason == UnsupportedReason.UNSUPPORTED_LINEAR_SOLVER
-    assert {diagnostic.value for diagnostic in diagnostics if diagnostic.field == "requested_outputs"} == {
+    assert {
+        diagnostic.value for diagnostic in diagnostics if diagnostic.field == "requested_outputs"
+    } == {
         "vega",
         "mesh_error_indicator",
     }
-    assert {diagnostic.value for diagnostic in diagnostics if diagnostic.field == "stability_controls"} == {
+    assert {
+        diagnostic.value for diagnostic in diagnostics if diagnostic.field == "stability_controls"
+    } == {
         "adaptive_time",
         "rannacher",
     }
@@ -274,11 +289,17 @@ def test_public_black_scholes_parity_fixture_matches_analytical_oracle_with_evid
     assert report.privacy_class == "public_synthetic"
     assert report.price_absolute_error <= report.tolerance_absolute
     assert report.price_relative_error <= report.tolerance_relative
-    assert report.observed_price == pytest.approx(report.expected_price, abs=report.tolerance_absolute)
+    assert report.observed_price == pytest.approx(
+        report.expected_price, abs=report.tolerance_absolute
+    )
     assert report.delta_absolute_error <= report.delta_tolerance_absolute
     assert report.gamma_absolute_error <= report.gamma_tolerance_absolute
-    assert report.observed_delta == pytest.approx(report.expected_delta, abs=report.delta_tolerance_absolute)
-    assert report.observed_gamma == pytest.approx(report.expected_gamma, abs=report.gamma_tolerance_absolute)
+    assert report.observed_delta == pytest.approx(
+        report.expected_delta, abs=report.delta_tolerance_absolute
+    )
+    assert report.observed_gamma == pytest.approx(
+        report.expected_gamma, abs=report.gamma_tolerance_absolute
+    )
     assert report.convergence_rows
     assert [row.absolute_error for row in report.convergence_rows] == sorted(
         (row.absolute_error for row in report.convergence_rows),
@@ -287,7 +308,10 @@ def test_public_black_scholes_parity_fixture_matches_analytical_oracle_with_evid
     assert report.diagnostics["mesh_family"] == "line_uniform"
     assert report.diagnostics["element_family"] == "lagrange_p2"
     assert report.diagnostics["boundary_nodes_enforced"] == 2
-    assert report.diagnostics["weak_form_sign_convention"] == "existing_forward_tau_identity_transform_black_scholes_forms"
+    assert (
+        report.diagnostics["weak_form_sign_convention"]
+        == "existing_forward_tau_identity_transform_black_scholes_forms"
+    )
 
 
 def test_public_black_scholes_parity_fixture_is_deterministic() -> None:
@@ -312,7 +336,10 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
     assert spec_payload["weak_form"]["time_transformation"] == report.weak_form.time_transformation
     assert spec_payload["comparison_policy"]["mode"] == report.comparison_policy.mode
     assert spec_payload["comparison_policy"]["policy_id"] == report.comparison_policy.policy_id
-    assert spec_payload["sensitivity_reference_policy"]["policy_id"] == report.sensitivity_reference_policy.policy_id
+    assert (
+        spec_payload["sensitivity_reference_policy"]["policy_id"]
+        == report.sensitivity_reference_policy.policy_id
+    )
     assert spec_payload["boundaries"] == [item.to_public_dict() for item in report.boundaries]
     assert spec_payload["contract_id"] == regenerated_id
     assert FEM_FIXTURE_DIR.joinpath("problem_spec.json").exists()
@@ -330,10 +357,32 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["comparison_policy"]["mode"] == "equal_error"
     assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
     assert payload["time_metadata"]["time_steps"] == report.time_metadata.time_steps
-    assert payload["sensitivity_reference_policy"]["policy_id"] == report.sensitivity_reference_policy.policy_id
+    assert (
+        payload["sensitivity_reference_policy"]["policy_id"]
+        == report.sensitivity_reference_policy.policy_id
+    )
     assert [row["refinement_level"] for row in payload["rows"]] == [
         row.refinement_level for row in report.convergence_rows
     ]
     assert payload["rows"][0]["absolute_error"] >= payload["rows"][1]["absolute_error"]
+    assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
+    assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
+
+
+def test_refresh_exports_serializes_current_non_default_report(tmp_path, monkeypatch) -> None:
+    result_path = tmp_path / "result_export.json"
+    spec_path = tmp_path / "problem_spec.json"
+    monkeypatch.setattr(parity_module, "FEM_BS_001_RESULT_EXPORT_PATH", result_path)
+    monkeypatch.setattr(parity_module, "FEM_BS_001_PROBLEM_SPEC_PATH", spec_path)
+
+    report = parity_module.run_public_black_scholes_parity_fixture(
+        refinement_levels=(4, 5), time_steps=40, refresh_exports=True
+    )
+    payload = json.loads(result_path.read_text())
+
+    assert spec_path.exists()
+    assert payload["config_hash"] == report.config_hash
+    assert payload["time_metadata"]["time_steps"] == 40
+    assert [row["time_steps"] for row in payload["rows"]] == [40, 40]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
     assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)

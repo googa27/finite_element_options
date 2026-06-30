@@ -359,8 +359,8 @@ def build_public_fem_bs_oracle_problem_spec() -> dict[str, Any]:
         },
         "sensitivity_reference_policy": {
             "policy_id": "finite_difference_central_stencil_v1",
-            "delta_reference": "Black-Scholes analytical delta",
-            "gamma_reference": "Black-Scholes analytical gamma",
+            "delta_reference": "Black-Scholes analytical delta at valuation time, S=K",
+            "gamma_reference": "Black-Scholes analytical gamma at valuation time, S=K",
             "extraction_method": "central finite-difference in normalized strike space",
             "allowed_fallback": "separate kink-aware evidence for production Greek policy",
         },
@@ -432,7 +432,9 @@ def run_public_black_scholes_parity_fixture(
     if time_steps <= 0:
         raise ValueError("time_steps must be positive")
 
-    rows = tuple(_run_row(refinement_level=level, time_steps=time_steps) for level in refinement_levels)
+    rows = tuple(
+        _run_row(refinement_level=level, time_steps=time_steps) for level in refinement_levels
+    )
     final = rows[-1]
 
     weak_form = _public_weak_form_metadata()
@@ -527,8 +529,10 @@ def run_public_black_scholes_parity_fixture(
     )
 
     if refresh_exports:
-        write_public_fem_bs_oracle_spec()
-        write_public_fem_bs_result_export(path=FEM_BS_001_RESULT_EXPORT_PATH, report=report)
+        write_public_fem_bs_oracle_spec(path=FEM_BS_001_PROBLEM_SPEC_PATH)
+        write_public_fem_bs_result_export(
+            path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
+        )
 
     return report
 
@@ -565,8 +569,15 @@ def _public_weak_form_metadata() -> WeakFormMetadata:
 
 def _public_boundary_metadata() -> tuple[BoundaryMetadata, ...]:
     return (
-        BoundaryMetadata(location="S=0", condition_type="dirichlet", expression="0", enforced_nodes=1),
-        BoundaryMetadata(location="S=S_max", condition_type="dirichlet", expression="linear_growth", enforced_nodes=1),
+        BoundaryMetadata(
+            location="S=0", condition_type="dirichlet", expression="0", enforced_nodes=1
+        ),
+        BoundaryMetadata(
+            location="S=S_max",
+            condition_type="dirichlet",
+            expression="linear_growth",
+            enforced_nodes=1,
+        ),
     )
 
 
@@ -588,14 +599,20 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
     )
     space = SpaceSolver(mesh, dynamics, option, is_call=True, config=config)
     with np.errstate(divide="ignore", invalid="ignore"):
-        solution = ThetaScheme(theta=0.5).solve(times, space, boundary_condition=DirichletBC(["left", "right"]))
+        solution = ThetaScheme(theta=0.5).solve(
+            times, space, boundary_condition=DirichletBC(["left", "right"])
+        )
     spot_node = int(np.argmin(np.abs(space.Vh.doflocs[0] - 1.0)))
     normalized_price = float(solution[-1, spot_node])
-    observed_delta, observed_gamma = _central_difference_greeks(space.Vh.doflocs[0], solution[-1], strike)
+    observed_delta, observed_gamma = _central_difference_greeks(
+        space.Vh.doflocs[0], solution[-1], strike
+    )
     observed_price = strike * normalized_price
     expected_price = EXPECTED_BLACK_SCHOLES_CALL_PRICE
     expected_delta = float(option.call_delta(1.0, 1.0, dynamics.sig**2))
-    expected_gamma = float(spst.norm.pdf(option.d1(1.0, 1.0, dynamics.sig**2)) / (strike * dynamics.sig))
+    expected_gamma = float(
+        spst.norm.pdf(option.d1(1.0, 1.0, dynamics.sig**2)) / (strike * dynamics.sig)
+    )
     absolute_error = abs(observed_price - expected_price)
     relative_error = absolute_error / max(abs(expected_price), 1.0)
     delta_absolute_error = abs(observed_delta - expected_delta)
@@ -620,7 +637,9 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
     )
 
 
-def _central_difference_greeks(dof_locations: np.ndarray, values: np.ndarray, strike: float) -> tuple[float, float]:
+def _central_difference_greeks(
+    dof_locations: np.ndarray, values: np.ndarray, strike: float
+) -> tuple[float, float]:
     """Return central finite-element Delta and Gamma at normalized spot one."""
 
     order = np.argsort(dof_locations)
@@ -632,10 +651,16 @@ def _central_difference_greeks(dof_locations: np.ndarray, values: np.ndarray, st
     delta = (ordered_values[center + 1] - ordered_values[center - 1]) / (
         coordinates[center + 1] - coordinates[center - 1]
     )
-    gamma_normalized = 2.0 * (
-        (ordered_values[center + 1] - ordered_values[center]) / (coordinates[center + 1] - coordinates[center])
-        - (ordered_values[center] - ordered_values[center - 1]) / (coordinates[center] - coordinates[center - 1])
-    ) / (coordinates[center + 1] - coordinates[center - 1])
+    gamma_normalized = (
+        2.0
+        * (
+            (ordered_values[center + 1] - ordered_values[center])
+            / (coordinates[center + 1] - coordinates[center])
+            - (ordered_values[center] - ordered_values[center - 1])
+            / (coordinates[center] - coordinates[center - 1])
+        )
+        / (coordinates[center + 1] - coordinates[center - 1])
+    )
     return float(delta), float(gamma_normalized / strike)
 
 
