@@ -63,7 +63,7 @@
   "problem_id": "pinares.fixed_price_option_proxy.v1",
   "schema_version": "quant-problem-spec/v0",
   "solver_plan": {
-    "backend_id": "googa27/pinares-real-options",
+    "backend_id": "finite_element_options.fem_backend.v0",
     "element_family": "lagrange_p2",
     "formulation_kind": "generator_pde_or_weak_form",
     "grid_type": "uniform",
