@@ -1,0 +1,105 @@
+{
+  "benchmark_id": "fem-bs-001",
+  "comparison_policy": {
+    "mode": "equal_error",
+    "note": "Meshes and time steps are compared at matching error budgets (default absolute policy tolerances).",
+    "policy_id": "equal-error-budget-v1",
+    "primary_metric": "price/Delta/Gamma absolute error",
+    "tolerance": 0.002
+  },
+  "config_hash": "90defc83a2dea51fa96a8a6d5d6cc9cc66629fabd02196e5d662bb53db82732e",
+  "config_id": "90defc83a2dea51fa96a8a6d5d6cc9cc66629fabd02196e5d662bb53db82732e",
+  "format_version": "fem-bs-oracle-result-v1",
+  "mesh_metadata": {
+    "domain_max": 4.0,
+    "domain_min": 0.0,
+    "element_family": "lagrange_p2",
+    "max_refinement_level": 6,
+    "mesh_family": "line_uniform",
+    "min_refinement_level": 4,
+    "solver_backing": "scikit-fem_direct",
+    "spatial_domain": "[0, 4.0] normalized spot"
+  },
+  "privacy_class": "public_synthetic",
+  "problem_id": "public-synthetic-vanilla-call-v0",
+  "rows": [
+    {
+      "absolute_error": 0.021192225990789737,
+      "degrees_of_freedom": 33,
+      "delta_absolute_error": 0.01162599502601025,
+      "expected_delta": 0.6368306511756192,
+      "expected_gamma": 0.01876201734584689,
+      "expected_price": 10.450583572185565,
+      "gamma_absolute_error": 0.0005828759550322721,
+      "observed_delta": 0.625204656149609,
+      "observed_gamma": 0.01817914139081462,
+      "observed_price": 10.471775798176354,
+      "refinement_level": 4,
+      "relative_error": 0.0020278509658726873,
+      "time_steps": 80
+    },
+    {
+      "absolute_error": 0.0007133389619387032,
+      "degrees_of_freedom": 65,
+      "delta_absolute_error": 0.003286834738940425,
+      "expected_delta": 0.6368306511756192,
+      "expected_gamma": 0.01876201734584689,
+      "expected_price": 10.450583572185565,
+      "gamma_absolute_error": 5.7508074669483655e-05,
+      "observed_delta": 0.6335438164366788,
+      "observed_gamma": 0.018704509271177408,
+      "observed_price": 10.451296911147503,
+      "refinement_level": 5,
+      "relative_error": 6.825828978941128e-05,
+      "time_steps": 80
+    },
+    {
+      "absolute_error": 7.92819519030985e-05,
+      "degrees_of_freedom": 129,
+      "delta_absolute_error": 0.0008363263841546509,
+      "expected_delta": 0.6368306511756192,
+      "expected_gamma": 0.01876201734584689,
+      "expected_price": 10.450583572185565,
+      "gamma_absolute_error": 8.80159137202699e-06,
+      "observed_delta": 0.6359943247914646,
+      "observed_gamma": 0.018753215754474865,
+      "observed_price": 10.450662854137468,
+      "refinement_level": 6,
+      "relative_error": 7.586366001044094e-06,
+      "time_steps": 80
+    }
+  ],
+  "sensitivity_reference_policy": {
+    "allowed_fallback": "explicit kink-aware boundary derivative remains separate evidence",
+    "delta_reference": "analytical Black-Scholes delta at t=T, S=K",
+    "extraction_method": "central finite-difference in normalized strike space",
+    "gamma_reference": "analytical Black-Scholes gamma at t=T, S=K",
+    "policy_id": "finite_difference_central_stencil_v1"
+  },
+  "summary": {
+    "delta_absolute_error": 0.0008363263841546509,
+    "expected_delta": 0.6368306511756192,
+    "expected_gamma": 0.01876201734584689,
+    "expected_price": 10.450583572185565,
+    "gamma_absolute_error": 8.80159137202699e-06,
+    "observed_delta": 0.6359943247914646,
+    "observed_gamma": 0.018753215754474865,
+    "observed_price": 10.450662854137468,
+    "price_absolute_error": 7.92819519030985e-05,
+    "price_relative_error": 7.586366001044094e-06
+  },
+  "time_metadata": {
+    "end_time": 1.0,
+    "integrator": "theta_crank_nicolson",
+    "start_time": 0.0,
+    "theta": 0.5,
+    "time_domain": "[0, 1]",
+    "time_steps": 80
+  },
+  "weak_form": {
+    "coordinate_transform": "identity",
+    "equation_id": "black_scholes_weak_form_transformed",
+    "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+    "time_transformation": "tau = T - t"
+  }
+}

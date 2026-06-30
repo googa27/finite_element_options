@@ -18,11 +18,16 @@ from src.contracts import (  # noqa: E402
     ensure_route_supported,
 )
 from src.validation.black_scholes_parity import (  # noqa: E402
+    FEM_BS_001_PROBLEM_SPEC_PATH,
+    FEM_BS_001_RESULT_EXPORT_PATH,
     PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID,
+    build_public_fem_bs_oracle_problem_spec,
+    build_fixture_config_hash,
     run_public_black_scholes_parity_fixture,
 )
 
 FIXTURE_DIR = pathlib.Path(__file__).parent / "fixtures" / "quant_problem_specs"
+FEM_FIXTURE_DIR = pathlib.Path(__file__).parent / "fixtures" / "fem_bs_001"
 
 
 def _supported_payload() -> dict[str, object]:
@@ -290,3 +295,45 @@ def test_public_black_scholes_parity_fixture_is_deterministic() -> None:
     second = run_public_black_scholes_parity_fixture()
 
     assert first.to_public_dict() == second.to_public_dict()
+
+
+def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
+    report = run_public_black_scholes_parity_fixture()
+    spec_payload = json.loads(FEM_BS_001_PROBLEM_SPEC_PATH.read_text())
+    generated = build_public_fem_bs_oracle_problem_spec()
+    regenerated_id = build_fixture_config_hash(generated)
+
+    assert spec_payload["contract_version"] == "fem-parity-contract/v1"
+    assert spec_payload["fixture_id"] == PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID
+    assert spec_payload["problem_id"] == report.problem_id
+    assert spec_payload["privacy_class"] == "public_synthetic"
+    assert spec_payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
+    assert spec_payload["weak_form"]["equation_id"] == report.weak_form.equation_id
+    assert spec_payload["weak_form"]["time_transformation"] == report.weak_form.time_transformation
+    assert spec_payload["comparison_policy"]["mode"] == report.comparison_policy.mode
+    assert spec_payload["comparison_policy"]["policy_id"] == report.comparison_policy.policy_id
+    assert spec_payload["sensitivity_reference_policy"]["policy_id"] == report.sensitivity_reference_policy.policy_id
+    assert spec_payload["boundaries"] == [item.to_public_dict() for item in report.boundaries]
+    assert spec_payload["contract_id"] == regenerated_id
+    assert FEM_FIXTURE_DIR.joinpath("problem_spec.json").exists()
+
+
+def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> None:
+    report = run_public_black_scholes_parity_fixture(refresh_exports=True)
+    payload = json.loads(FEM_BS_001_RESULT_EXPORT_PATH.read_text())
+
+    assert payload["format_version"] == "fem-bs-oracle-result-v1"
+    assert payload["benchmark_id"] == report.benchmark_id
+    assert payload["problem_id"] == report.problem_id
+    assert payload["config_hash"] == report.config_hash
+    assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
+    assert payload["comparison_policy"]["mode"] == "equal_error"
+    assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
+    assert payload["time_metadata"]["time_steps"] == report.time_metadata.time_steps
+    assert payload["sensitivity_reference_policy"]["policy_id"] == report.sensitivity_reference_policy.policy_id
+    assert [row["refinement_level"] for row in payload["rows"]] == [
+        row.refinement_level for row in report.convergence_rows
+    ]
+    assert payload["rows"][0]["absolute_error"] >= payload["rows"][1]["absolute_error"]
+    assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
+    assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)

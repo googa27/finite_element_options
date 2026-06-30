@@ -322,9 +322,12 @@ The adapter:
 5. solves and normalizes values, sensitivities and diagnostics;
 6. records backend/package/contract and benchmark IDs.
 
-The adapter cannot import Haircut domain/application, PDP, UI or calibration code. It advertises only capabilities backed by repository-local tests and shared parity #64.
+The adapter cannot import Haircut domain/application, PDP, UI or calibration code. It advertises only capabilities backed by repository-local tests and shared parity #64/#74.
 
-Issue #64 adds the transitional `src/contracts/backend_capabilities.py` and `src/validation/black_scholes_parity.py` modules as executable FEM adapter evidence. `FEMRouteRequest.from_quant_problem_spec` consumes the same public-synthetic vanilla-call JSON fixture validated by Haircut Engine and finite_difference_options, preserves schema version, measure, numeraire, units, valuation/vintage timing, time-domain or maturity information, boundary details, mesh/element policy, linear solver policy and requested outputs, and fails closed before mesh/weak-form allocation for unsupported dimensions, variational terms, boundaries, exercise styles, outputs or controls. The default manifest intentionally advertises only the validated one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route; higher-dimensional, adaptive, American, jump and HJB/control capabilities remain unsupported until their own parity evidence lands. The `fem-bs-001` parity fixture solves the public-synthetic Black-Scholes call against the Haircut analytical oracle with named endpoint boundary enforcement, value/Delta/Gamma error evidence, deterministic mesh/time refinement evidence and no private data.
+Issue #64 adds the transitional `src/contracts/backend_capabilities.py` and `src/validation/black_scholes_parity.py` modules as executable FEM adapter evidence. `FEMRouteRequest.from_quant_problem_spec` consumes the same public-synthetic vanilla-call JSON fixture validated by Haircut Engine and finite_difference_options, preserves schema version, measure, numeraire, units, valuation/vintage timing, time-domain or maturity information, boundary details, mesh/element policy, linear solver policy and requested outputs, and fails closed before mesh/weak-form allocation for unsupported dimensions, variational terms, boundaries, exercise styles, outputs or controls. The default manifest intentionally advertises only the validated one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route; higher-dimensional, adaptive, American, jump and HJB/control capabilities remain unsupported until their own parity evidence lands. The `fem-bs-001` parity fixture solves the public-synthetic Black-Scholes call against the Haircut analytical oracle with named endpoint boundary enforcement, deterministic weak-form metadata, typed boundary metadata, value/Delta/Gamma error evidence, and deterministic mesh/time refinement export.
+
+Issue #74 publishes the public arxiv-lab contract artifacts in `tests/fixtures/fem_bs_001/` alongside the executable report: `problem_spec.json` (fixture/problem spec), deterministic mesh/time-step configuration and boundary metadata, `result_export.json` (convergence rows and summary), and explicit equal-error comparison policy for parity consumers.
+
 
 ## 17. Ownership cleanup
 
@@ -375,7 +378,7 @@ Test layers:
 | Unit | Mesh, forms, BC algebra, assembly, solver policy and transfers |
 | Numerical | Manufactured/analytical solutions, convergence, invariants and Greeks |
 | Integration | End-to-end mesh→assembly→time→result and optional adapters |
-| Parity | Shared Haircut backend fixtures from #64 |
+| Parity | Shared Haircut backend fixtures from #64/#74 |
 | Performance | Accuracy-adjusted stage/memory regressions |
 | Packaging | sdist/wheel content, clean install, missing-extra behavior |
 
@@ -475,7 +478,7 @@ This policy maps #57 to its successor issues: #44 creates the replacement namesp
 - Numerical verification and model correctness: #33–#42
 - Modernization and package foundation: #43, #44
 - Interfaces, calibration, Greeks and solver policy: #45–#48
-- Haircut backend adapter: #49
+- Haircut backend adapter: #49, FEM parity fixture extension: `finite_element_options` #74
 - Ownership and duplicate retirement: #50
 - Portfolio protocol/parity/release: `haircut-engine` #62–#65
 
