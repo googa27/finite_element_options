@@ -308,8 +308,17 @@ class FEMParityReport:
         }
 
 
-def build_public_fem_bs_oracle_problem_spec() -> dict[str, Any]:
+def build_public_fem_bs_oracle_problem_spec(
+    *,
+    refinement_levels: tuple[int, ...] = (4, 5, 6),
+    time_steps: int = 80,
+) -> dict[str, Any]:
     """Return the deterministic fixture/problem-spec contract used by arxiv-lab."""
+
+    if not refinement_levels:
+        raise ValueError("at least one refinement level is required")
+    if time_steps <= 0:
+        raise ValueError("time_steps must be positive")
 
     return {
         "contract_version": "fem-parity-contract/v1",
@@ -351,8 +360,8 @@ def build_public_fem_bs_oracle_problem_spec() -> dict[str, Any]:
             "element_family": "lagrange_p2",
             "spatial_domain": "[0, 4.0] normalized spot",
             "solver_backing": "scikit-fem+sparse-direct",
-            "mesh_refinement_levels": [4, 5, 6],
-            "default_time_steps": 80,
+            "mesh_refinement_levels": list(refinement_levels),
+            "default_time_steps": time_steps,
         },
         "time_metadata": {
             "integrator": "theta_crank_nicolson",
@@ -384,12 +393,22 @@ def build_fixture_config_hash(payload: dict[str, Any]) -> str:
     return sha256(payload_bytes).hexdigest()
 
 
-def write_public_fem_bs_oracle_spec(path: Path | str = FEM_BS_001_PROBLEM_SPEC_PATH) -> Path:
+def write_public_fem_bs_oracle_spec(
+    path: Path | str = FEM_BS_001_PROBLEM_SPEC_PATH,
+    *,
+    report: FEMParityReport | None = None,
+) -> Path:
     """Write the deterministic problem spec to a public JSON fixture file."""
 
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    payload = build_public_fem_bs_oracle_problem_spec()
+    if report is None:
+        payload = build_public_fem_bs_oracle_problem_spec()
+    else:
+        payload = build_public_fem_bs_oracle_problem_spec(
+            refinement_levels=report.mesh_metadata.refinement_levels,
+            time_steps=report.time_metadata.time_steps,
+        )
     payload["contract_id"] = build_fixture_config_hash(payload)
     target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return target
@@ -532,10 +551,8 @@ def run_public_black_scholes_parity_fixture(
     )
 
     if refresh_exports:
-        write_public_fem_bs_oracle_spec(path=FEM_BS_001_PROBLEM_SPEC_PATH)
-        write_public_fem_bs_result_export(
-            path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
-        )
+        write_public_fem_bs_oracle_spec(path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report)
+        write_public_fem_bs_result_export(path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report)
 
     return report
 

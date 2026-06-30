@@ -380,11 +380,17 @@ def test_refresh_exports_serializes_current_non_default_report(tmp_path, monkeyp
         refinement_levels=(4, 5), time_steps=40, refresh_exports=True
     )
     payload = json.loads(result_path.read_text())
+    spec_payload = json.loads(spec_path.read_text())
 
     assert spec_path.exists()
     assert payload["config_hash"] == report.config_hash
     assert payload["time_metadata"]["time_steps"] == 40
     assert payload["mesh_metadata"]["refinement_levels"] == [4, 5]
+    assert spec_payload["mesh_metadata"]["mesh_refinement_levels"] == [4, 5]
+    assert spec_payload["mesh_metadata"]["default_time_steps"] == 40
+    assert spec_payload["contract_id"] == build_fixture_config_hash(
+        {key: value for key, value in spec_payload.items() if key != "contract_id"}
+    )
     assert [row["time_steps"] for row in payload["rows"]] == [40, 40]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
     assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
