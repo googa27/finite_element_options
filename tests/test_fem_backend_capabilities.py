@@ -351,6 +351,7 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
 def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> None:
     report = run_public_black_scholes_parity_fixture()
     payload = json.loads(FEM_BS_001_RESULT_EXPORT_PATH.read_text())
+    spec_payload = json.loads(FEM_BS_001_PROBLEM_SPEC_PATH.read_text())
 
     assert payload["format_version"] == "fem-bs-oracle-result-v1"
     assert payload["benchmark_id"] == report.benchmark_id
@@ -365,6 +366,7 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
         "gamma_absolute": report.gamma_tolerance_absolute,
     }
     assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
+    assert payload["mesh_metadata"]["solver_backing"] == spec_payload["mesh_metadata"]["solver_backing"]
     assert payload["mesh_metadata"]["refinement_levels"] == list(
         report.mesh_metadata.refinement_levels
     )

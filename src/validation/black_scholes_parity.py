@@ -492,7 +492,7 @@ def run_public_black_scholes_parity_fixture(
         min_refinement_level=min(refinement_levels),
         max_refinement_level=max(refinement_levels),
         refinement_levels=tuple(refinement_levels),
-        solver_backing="scikit-fem_direct",
+        solver_backing="scikit-fem+sparse-direct",
     )
     time_metadata = TimeMetadata(
         integrator="theta_crank_nicolson",
