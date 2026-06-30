@@ -336,6 +336,9 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
     assert spec_payload["weak_form"]["time_transformation"] == report.weak_form.time_transformation
     assert spec_payload["comparison_policy"]["mode"] == report.comparison_policy.mode
     assert spec_payload["comparison_policy"]["policy_id"] == report.comparison_policy.policy_id
+    assert spec_payload["comparison_policy"]["metric_tolerances"] == dict(
+        report.comparison_policy.metric_tolerances
+    )
     assert (
         spec_payload["sensitivity_reference_policy"]["policy_id"]
         == report.sensitivity_reference_policy.policy_id
@@ -355,8 +358,16 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["config_hash"] == report.config_hash
     assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
     assert payload["comparison_policy"]["mode"] == "equal_error"
+    assert payload["comparison_policy"]["metric_tolerances"] == {
+        "price_absolute": report.tolerance_absolute,
+        "price_relative": report.tolerance_relative,
+        "delta_absolute": report.delta_tolerance_absolute,
+        "gamma_absolute": report.gamma_tolerance_absolute,
+    }
     assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
-    assert payload["mesh_metadata"]["refinement_levels"] == list(report.mesh_metadata.refinement_levels)
+    assert payload["mesh_metadata"]["refinement_levels"] == list(
+        report.mesh_metadata.refinement_levels
+    )
     assert payload["time_metadata"]["time_steps"] == report.time_metadata.time_steps
     assert (
         payload["sensitivity_reference_policy"]["policy_id"]
@@ -368,9 +379,16 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["rows"][0]["absolute_error"] >= payload["rows"][1]["absolute_error"]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
     assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
+    assert payload["summary"]["price_tolerance_absolute"] == report.tolerance_absolute
+    assert payload["summary"]["price_tolerance_relative"] == report.tolerance_relative
+    assert payload["summary"]["delta_tolerance_absolute"] == report.delta_tolerance_absolute
+    assert payload["summary"]["gamma_tolerance_absolute"] == report.gamma_tolerance_absolute
+
 
 def test_config_hash_distinguishes_sparse_refinement_schedule() -> None:
-    default_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 5, 6), time_steps=40)
+    default_report = run_public_black_scholes_parity_fixture(
+        refinement_levels=(4, 5, 6), time_steps=40
+    )
     sparse_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 6), time_steps=40)
 
     assert default_report.mesh_metadata.refinement_levels == (4, 5, 6)

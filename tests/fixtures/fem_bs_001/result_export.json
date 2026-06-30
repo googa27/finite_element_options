@@ -1,14 +1,20 @@
 {
   "benchmark_id": "fem-bs-001",
   "comparison_policy": {
+    "metric_tolerances": {
+      "delta_absolute": 0.001,
+      "gamma_absolute": 2e-05,
+      "price_absolute": 0.002,
+      "price_relative": 0.0005
+    },
     "mode": "equal_error",
     "note": "Meshes and time steps are compared at matching error budgets (default absolute policy tolerances).",
     "policy_id": "equal-error-budget-v1",
     "primary_metric": "price/Delta/Gamma absolute error",
     "tolerance": 0.002
   },
-  "config_hash": "920203129ae528e9792059e2d23fcdc7c75126681676dc4a3c9624c572fb599e",
-  "config_id": "920203129ae528e9792059e2d23fcdc7c75126681676dc4a3c9624c572fb599e",
+  "config_hash": "6c4fe89c536392c068767dfd0e40207b9257dae208a7ebe122ec3ce6fcbbce58",
+  "config_id": "6c4fe89c536392c068767dfd0e40207b9257dae208a7ebe122ec3ce6fcbbce58",
   "format_version": "fem-bs-oracle-result-v1",
   "mesh_metadata": {
     "domain_max": 4.0,
@@ -83,15 +89,19 @@
   },
   "summary": {
     "delta_absolute_error": 0.0008363263841546509,
+    "delta_tolerance_absolute": 0.001,
     "expected_delta": 0.6368306511756192,
     "expected_gamma": 0.01876201734584689,
     "expected_price": 10.450583572185565,
     "gamma_absolute_error": 8.80159137202699e-06,
+    "gamma_tolerance_absolute": 2e-05,
     "observed_delta": 0.6359943247914646,
     "observed_gamma": 0.018753215754474865,
     "observed_price": 10.450662854137468,
     "price_absolute_error": 7.92819519030985e-05,
-    "price_relative_error": 7.586366001044094e-06
+    "price_relative_error": 7.586366001044094e-06,
+    "price_tolerance_absolute": 0.002,
+    "price_tolerance_relative": 0.0005
   },
   "time_metadata": {
     "end_time": 1.0,

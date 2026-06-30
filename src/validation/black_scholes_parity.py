@@ -32,6 +32,8 @@ PUBLIC_SYNTHETIC_PROBLEM_ID = "public-synthetic-vanilla-call-v0"
 EXPECTED_BLACK_SCHOLES_CALL_PRICE = 10.450583572185565
 DEFAULT_TOLERANCE_ABSOLUTE = 2e-3
 DEFAULT_TOLERANCE_RELATIVE = 5e-4
+DEFAULT_DELTA_TOLERANCE_ABSOLUTE = 1e-3
+DEFAULT_GAMMA_TOLERANCE_ABSOLUTE = 2e-5
 
 
 FIXTURE_ROOT = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "fem_bs_001"
@@ -164,8 +166,9 @@ class ComparisonPolicy:
     primary_metric: str
     tolerance: float
     note: str
+    metric_tolerances: tuple[tuple[str, float], ...]
 
-    def to_public_dict(self) -> dict[str, str | float]:
+    def to_public_dict(self) -> dict[str, str | float | dict[str, float]]:
         """Return a JSON-safe comparison-policy payload."""
 
         return {
@@ -173,6 +176,7 @@ class ComparisonPolicy:
             "mode": self.mode,
             "primary_metric": self.primary_metric,
             "tolerance": self.tolerance,
+            "metric_tolerances": dict(self.metric_tolerances),
             "note": self.note,
         }
 
@@ -281,13 +285,22 @@ class FEMParityReport:
     def export_payload(self) -> dict[str, Any]:
         """Return a result-export shape suitable for direct public consumption."""
 
+        comparison_policy = {
+            **self.comparison_policy.to_public_dict(),
+            "metric_tolerances": {
+                "price_absolute": self.tolerance_absolute,
+                "price_relative": self.tolerance_relative,
+                "delta_absolute": self.delta_tolerance_absolute,
+                "gamma_absolute": self.gamma_tolerance_absolute,
+            },
+        }
         return {
             "format_version": "fem-bs-oracle-result-v1",
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
             "privacy_class": self.privacy_class,
             "config_hash": self.config_hash,
-            "comparison_policy": self.comparison_policy.to_public_dict(),
+            "comparison_policy": comparison_policy,
             "weak_form": self.weak_form.to_public_dict(),
             "mesh_metadata": self.mesh_metadata.to_public_dict(),
             "time_metadata": self.time_metadata.to_public_dict(),
@@ -298,12 +311,16 @@ class FEMParityReport:
                 "observed_price": self.observed_price,
                 "price_absolute_error": self.price_absolute_error,
                 "price_relative_error": self.price_relative_error,
+                "price_tolerance_absolute": self.tolerance_absolute,
+                "price_tolerance_relative": self.tolerance_relative,
                 "expected_delta": self.expected_delta,
                 "observed_delta": self.observed_delta,
                 "delta_absolute_error": self.delta_absolute_error,
+                "delta_tolerance_absolute": self.delta_tolerance_absolute,
                 "expected_gamma": self.expected_gamma,
                 "observed_gamma": self.observed_gamma,
                 "gamma_absolute_error": self.gamma_absolute_error,
+                "gamma_tolerance_absolute": self.gamma_tolerance_absolute,
             },
         }
 
@@ -380,6 +397,12 @@ def build_public_fem_bs_oracle_problem_spec(
             "mode": "equal_error",
             "primary_metric": "abs(price,delta,gamma errors)@policy_tolerance",
             "tolerance": DEFAULT_TOLERANCE_ABSOLUTE,
+            "metric_tolerances": {
+                "price_absolute": DEFAULT_TOLERANCE_ABSOLUTE,
+                "price_relative": DEFAULT_TOLERANCE_RELATIVE,
+                "delta_absolute": DEFAULT_DELTA_TOLERANCE_ABSOLUTE,
+                "gamma_absolute": DEFAULT_GAMMA_TOLERANCE_ABSOLUTE,
+            },
             "note": "Compare by matching error budget, not by raw grid size alone.",
         },
         "result_export_uri": "tests/fixtures/fem_bs_001/result_export.json",
@@ -492,6 +515,12 @@ def run_public_black_scholes_parity_fixture(
         primary_metric="price/Delta/Gamma absolute error",
         tolerance=DEFAULT_TOLERANCE_ABSOLUTE,
         note="Meshes and time steps are compared at matching error budgets (default absolute policy tolerances).",
+        metric_tolerances=(
+            ("price_absolute", DEFAULT_TOLERANCE_ABSOLUTE),
+            ("price_relative", DEFAULT_TOLERANCE_RELATIVE),
+            ("delta_absolute", DEFAULT_DELTA_TOLERANCE_ABSOLUTE),
+            ("gamma_absolute", DEFAULT_GAMMA_TOLERANCE_ABSOLUTE),
+        ),
     )
 
     diagnostics: dict[str, str | int | float] = {
@@ -525,11 +554,11 @@ def run_public_black_scholes_parity_fixture(
         expected_delta=final.expected_delta,
         observed_delta=final.observed_delta,
         delta_absolute_error=final.delta_absolute_error,
-        delta_tolerance_absolute=1e-3,
+        delta_tolerance_absolute=DEFAULT_DELTA_TOLERANCE_ABSOLUTE,
         expected_gamma=final.expected_gamma,
         observed_gamma=final.observed_gamma,
         gamma_absolute_error=final.gamma_absolute_error,
-        gamma_tolerance_absolute=2e-5,
+        gamma_tolerance_absolute=DEFAULT_GAMMA_TOLERANCE_ABSOLUTE,
         tolerance_absolute=DEFAULT_TOLERANCE_ABSOLUTE,
         tolerance_relative=DEFAULT_TOLERANCE_RELATIVE,
         convergence_rows=rows,
@@ -552,7 +581,9 @@ def run_public_black_scholes_parity_fixture(
 
     if refresh_exports:
         write_public_fem_bs_oracle_spec(path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report)
-        write_public_fem_bs_result_export(path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report)
+        write_public_fem_bs_result_export(
+            path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
+        )
 
     return report
 
@@ -688,6 +719,8 @@ def _central_difference_greeks(
 __all__ = [
     "DEFAULT_TOLERANCE_ABSOLUTE",
     "DEFAULT_TOLERANCE_RELATIVE",
+    "DEFAULT_DELTA_TOLERANCE_ABSOLUTE",
+    "DEFAULT_GAMMA_TOLERANCE_ABSOLUTE",
     "EXPECTED_BLACK_SCHOLES_CALL_PRICE",
     "PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID",
     "PUBLIC_SYNTHETIC_PROBLEM_ID",

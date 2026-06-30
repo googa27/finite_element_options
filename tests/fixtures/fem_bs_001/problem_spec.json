@@ -14,13 +14,19 @@
     }
   ],
   "comparison_policy": {
+    "metric_tolerances": {
+      "delta_absolute": 0.001,
+      "gamma_absolute": 2e-05,
+      "price_absolute": 0.002,
+      "price_relative": 0.0005
+    },
     "mode": "equal_error",
     "note": "Compare by matching error budget, not by raw grid size alone.",
     "policy_id": "equal-error-budget-v1",
     "primary_metric": "abs(price,delta,gamma errors)@policy_tolerance",
     "tolerance": 0.002
   },
-  "contract_id": "a1edf56691e60ea85f8fc11267fa7f82cad63ab2feb7aa91f056e97ded4fc15b",
+  "contract_id": "3b3739a094b71f22fd0f91252820f6fa183184971a6cf5ab3dd4e8a080aa0bfe",
   "contract_version": "fem-parity-contract/v1",
   "fixture_id": "fem-bs-001",
   "mesh_metadata": {
