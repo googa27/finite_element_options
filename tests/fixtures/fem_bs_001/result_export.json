@@ -7,8 +7,8 @@
     "primary_metric": "price/Delta/Gamma absolute error",
     "tolerance": 0.002
   },
-  "config_hash": "ee414341f36c4f2146dc1f5ff7986aee88295ff8c133b3c91bf0be209ef95111",
-  "config_id": "ee414341f36c4f2146dc1f5ff7986aee88295ff8c133b3c91bf0be209ef95111",
+  "config_hash": "920203129ae528e9792059e2d23fcdc7c75126681676dc4a3c9624c572fb599e",
+  "config_id": "920203129ae528e9792059e2d23fcdc7c75126681676dc4a3c9624c572fb599e",
   "format_version": "fem-bs-oracle-result-v1",
   "mesh_metadata": {
     "domain_max": 4.0,

@@ -369,6 +369,14 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
     assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
 
+def test_config_hash_distinguishes_sparse_refinement_schedule() -> None:
+    default_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 5, 6), time_steps=40)
+    sparse_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 6), time_steps=40)
+
+    assert default_report.mesh_metadata.refinement_levels == (4, 5, 6)
+    assert sparse_report.mesh_metadata.refinement_levels == (4, 6)
+    assert default_report.config_hash != sparse_report.config_hash
+
 
 def test_refresh_exports_serializes_current_non_default_report(tmp_path, monkeypatch) -> None:
     result_path = tmp_path / "result_export.json"

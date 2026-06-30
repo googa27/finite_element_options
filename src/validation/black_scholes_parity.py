@@ -564,6 +564,7 @@ def _config_hash(report: FEMParityReport) -> str:
         "privacy_class": report.privacy_class,
         "weak_form": report.weak_form.to_public_dict(),
         "mesh_metadata": report.mesh_metadata.to_public_dict(),
+        "refinement_levels": list(report.mesh_metadata.refinement_levels),
         "time_metadata": report.time_metadata.to_public_dict(),
         "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
         "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
