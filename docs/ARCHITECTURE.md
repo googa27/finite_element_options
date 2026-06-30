@@ -181,7 +181,7 @@ while the mass form is
 m(u,v)=\int_\Omega vu\,dx.
 \]
 
-The exact signs depend on the declared strong-form convention; code and fixtures must agree. Product adapters cannot silently reinterpret them.
+The exact signs depend on the declared strong-form convention; code and fixtures must agree. Product adapters cannot silently reinterpret them. Problem identity/hash is distinct from FEM method controls so Pinares, Haircut, and other consumers can ask FD/FEM/analytical methods to solve the same claim without rewriting its economics.
 
 ## 8. Native contract model
 
@@ -212,7 +212,7 @@ FEMResult
 └── version and reproducibility metadata
 ```
 
-Public contracts are immutable or snapshot-able and serialization-tested.
+Public contracts are immutable or snapshot-able and serialization-tested. `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json` is the public-synthetic compatibility smoke for the Pinares fixed-price option proxy: it verifies that Pinares owns the financial problem and this backend owns only mesh/element/weak-form/linear-solver controls.
 
 ## 9. Meshes and spaces
 

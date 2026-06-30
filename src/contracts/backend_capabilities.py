@@ -34,6 +34,7 @@ class UnsupportedReason(str, Enum):
     UNSUPPORTED_OUTPUT = "unsupported_output"
     UNSUPPORTED_STABILITY_CONTROL = "unsupported_stability_control"
     UNSUPPORTED_LINEAR_SOLVER = "unsupported_linear_solver"
+    UNSUPPORTED_BACKEND = "unsupported_backend"
     MISSING_CONVENTION = "missing_convention"
 
 
@@ -108,6 +109,7 @@ class FEMRouteRequest:
     maturity_date: str | None = None
     time_domain: str | None = None
     source_schema_version: str | None = None
+    backend_id: str | None = None
 
     @classmethod
     def from_quant_problem_spec(cls, payload: Mapping[str, Any]) -> FEMRouteRequest:
@@ -181,6 +183,7 @@ class FEMRouteRequest:
             maturity_date=_optional_string(_first_present(context, ("maturity_date",), default=vintage.get("maturity_date"))),
             time_domain=_optional_string(_first_present(context, ("time_domain",), default=domain.get("t"))),
             source_schema_version=_optional_string(payload.get("schema_version")),
+            backend_id=_optional_string(_first_present(solver, ("backend_id", "backend"), default=None)),
         )
 
 
@@ -223,6 +226,17 @@ def diagnose_unsupported_route(
     """Return fail-closed diagnostics for unsupported request fields."""
 
     diagnostics: list[UnsupportedRouteDiagnostic] = []
+
+    if request.backend_id and request.backend_id != manifest.backend_id:
+        diagnostics.append(
+            _diagnostic(
+                UnsupportedReason.UNSUPPORTED_BACKEND,
+                "backend_id",
+                request.backend_id,
+                (manifest.backend_id,),
+                f"Unsupported backend_id {request.backend_id!r}; expected {manifest.backend_id!r}.",
+            )
+        )
 
     if request.dimension not in manifest.supported_dimensions:
         diagnostics.append(
