@@ -172,6 +172,8 @@ Owner: #49.
 
 Issue #64 provides the first executable Project #5 compatibility slice before the full entry-point plugin: a public-synthetic QuantProblemSpec adapter manifest, fail-closed route diagnostics and the `fem-bs-001` Black-Scholes parity fixture. This slice is deliberately narrow and validates only the one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route against the Haircut analytical oracle with named endpoint boundary enforcement and value/Delta/Gamma error evidence; unsupported dimensions, adaptive meshes, unvalidated elements, American exercise, jump terms and HJB/control terms fail before mesh or weak-form allocation.
 
+Issue #74 extends this to a public arxiv-lab compatible FEM oracle artifact set for the same European call benchmark. It adds deterministic public problem/contract files, explicit weak-form sign metadata, typed boundary metadata (`S=0`, `S=S_max`), mesh/time-step and results exports, and an equal-error comparison policy so parity consumers can compare results against matching error budgets using public files/contracts.
+
 ### FR-FEM-012 — Module ownership and duplicate retirement
 
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.
