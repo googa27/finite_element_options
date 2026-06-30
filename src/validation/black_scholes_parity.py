@@ -49,6 +49,8 @@ class BoundaryMetadata:
     enforced_nodes: int = 1
 
     def to_public_dict(self) -> dict[str, float | int | str]:
+        """Return a JSON-safe boundary specification dictionary."""
+
         return {
             "location": self.location,
             "condition_type": self.condition_type,
@@ -67,6 +69,8 @@ class WeakFormMetadata:
     coordinate_transform: str
 
     def to_public_dict(self) -> dict[str, str]:
+        """Return a JSON-safe weak-form metadata dictionary."""
+
         return {
             "equation_id": self.equation_id,
             "sign_convention": self.sign_convention,
@@ -89,6 +93,8 @@ class MeshMetadata:
     solver_backing: str
 
     def to_public_dict(self) -> dict[str, str | float | int]:
+        """Return a JSON-safe mesh configuration payload."""
+
         return {
             "mesh_family": self.mesh_family,
             "element_family": self.element_family,
@@ -113,6 +119,8 @@ class TimeMetadata:
     time_domain: str
 
     def to_public_dict(self) -> dict[str, float | int | str]:
+        """Return a JSON-safe time discretization metadata dictionary."""
+
         return {
             "integrator": self.integrator,
             "theta": self.theta,
@@ -134,6 +142,8 @@ class SensitivityReferencePolicy:
     allowed_fallback: str
 
     def to_public_dict(self) -> dict[str, str]:
+        """Return a JSON-safe sensitivity-policy dictionary."""
+
         return {
             "policy_id": self.policy_id,
             "delta_reference": self.delta_reference,
@@ -154,6 +164,8 @@ class ComparisonPolicy:
     note: str
 
     def to_public_dict(self) -> dict[str, str | float]:
+        """Return a JSON-safe comparison-policy payload."""
+
         return {
             "policy_id": self.policy_id,
             "mode": self.mode,
