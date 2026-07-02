@@ -59,13 +59,13 @@ Cross-repository integration uses independently versioned wheels, semantic contr
 
 | Finding | Risk | Decision / owner |
 |---|---|---|
-| `setup.py` declares `packages=['src']` | Built wheel does not represent intended nested package API | Create real `src/finite_element_options` package and PEP 621 metadata under #44 |
-| README and source import `src.*` | Checkout success can mask broken distribution | Remove `src` as public package; clean-wheel tests |
-| No `pyproject.toml` project metadata | Runtime dependencies, Python support, extras and entry points are undefined | Modern package foundation under #44 |
-| One `requirements.txt` includes `scikit-fem[all]`, UI, FD, JAX, PyMC, dataframes and test tools | Large mandatory environment and fragile compatibility | Split published extras and development groups |
-| FEM, FD, products, calibration, plotting and Streamlit coexist in one namespace | Ambiguous ownership and reverse dependencies | Ownership cleanup under #50 |
-| `src/time` is a package name | Conceptual collision with standard-library `time` | Rename to `time_integration` during topology migration |
-| CI tests only Python 3.11 and one all-dependencies environment | No package/profile or support-edge confidence | Minimum/latest and feature-profile matrix |
+| Historical `setup.py` declared `packages=['src']` | Built wheels did not represent the intended nested package API | #44 replaces it with PEP 621 metadata and `src/finite_element_options` package discovery |
+| Historical README/source imported `src.*` | Checkout success masked broken distribution installs | #44 removes `src` as a public package and adds clean-wheel tests |
+| Historical metadata lived outside `pyproject.toml` | Runtime dependencies, Python support, extras and entry points were undefined | #44 makes `pyproject.toml` the package source of truth |
+| Historical `requirements.txt` combined `scikit-fem[all]`, UI, FD, JAX, PyMC, dataframes and test tools | Large mandatory environment and fragile compatibility | #44 splits core dependencies from published extras and dev/test groups |
+| FEM, FD, products, calibration, plotting and Streamlit coexist in one distribution | Ambiguous ownership and reverse dependencies | Ownership cleanup remains under #50; #44 keeps optional stacks out of core dependencies |
+| Historical `src/time` package name | Conceptual collision with standard-library `time` | #44 renames it to `finite_element_options.time_integration` |
+| CI tested only Python 3.11 and one all-dependencies environment | No package/profile or support-edge confidence | #44 adds build/install checks across Python 3.11 and 3.12 plus package contract tests |
 | Benchmark runs are not accuracy-normalized | Faster but less accurate results can look better | Numerical validation before performance budgets |
 | Agent guide points to `main` while default is `master` and records state in `.gemini_project` | Workflow drift and non-versioned source of truth | Correct branch and make GitHub/docs/tests authoritative |
 | External backend integration is aspirational | Private-module coupling risk | Thin entry-point adapter under #49 after package/interface gates |
@@ -125,7 +125,7 @@ Do not create a subpackage merely for visual symmetry. Boundaries are justified 
 
 
 
-The machine-readable architecture contract is `docs/architecture_contract.toml`. It is the CI-enforced source of truth for the transitional literal-`src` package/module allowlist, repository-root Python-file policy, and topology-count ratchet; update it with `tests/architecture` and `scripts/check_architecture_contract.py` in every hierarchy-changing PR.
+The machine-readable architecture contract is `docs/architecture_contract.toml`. It is the CI-enforced source of truth for the `src/finite_element_options` package-root allowlist, repository-root Python-file policy, topology-count ratchet, and optional-stack import boundaries; update it with `tests/architecture` and `scripts/check_architecture_contract.py` in every hierarchy-changing PR.
 
 ## 6. Dependency direction
 
@@ -324,7 +324,7 @@ The adapter:
 
 The adapter cannot import Haircut domain/application, PDP, UI or calibration code. It advertises only capabilities backed by repository-local tests and shared parity #64/#74.
 
-Issue #64 adds the transitional `src/contracts/backend_capabilities.py` and `src/validation/black_scholes_parity.py` modules as executable FEM adapter evidence. `FEMRouteRequest.from_quant_problem_spec` consumes the same public-synthetic vanilla-call JSON fixture validated by Haircut Engine and finite_difference_options, preserves schema version, measure, numeraire, units, valuation/vintage timing, time-domain or maturity information, boundary details, mesh/element policy, linear solver policy and requested outputs, and fails closed before mesh/weak-form allocation for unsupported dimensions, variational terms, boundaries, exercise styles, outputs or controls. The default manifest intentionally advertises only the validated one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route; higher-dimensional, adaptive, American, jump and HJB/control capabilities remain unsupported until their own parity evidence lands. The `fem-bs-001` parity fixture solves the public-synthetic Black-Scholes call against the Haircut analytical oracle with named endpoint boundary enforcement, deterministic weak-form metadata, typed boundary metadata, value/Delta/Gamma error evidence, and deterministic mesh/time refinement export.
+Issue #64 adds `finite_element_options.contracts.backend_capabilities` and `finite_element_options.validation.black_scholes_parity` as executable FEM adapter evidence. `FEMRouteRequest.from_quant_problem_spec` consumes the same public-synthetic vanilla-call JSON fixture validated by Haircut Engine and finite_difference_options, preserves schema version, measure, numeraire, units, valuation/vintage timing, time-domain or maturity information, boundary details, mesh/element policy, linear solver policy and requested outputs, and fails closed before mesh/weak-form allocation for unsupported dimensions, variational terms, boundaries, exercise styles, outputs or controls. The default manifest intentionally advertises only the validated one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route; higher-dimensional, adaptive, American, jump and HJB/control capabilities remain unsupported until their own parity evidence lands. The `fem-bs-001` parity fixture solves the public-synthetic Black-Scholes call against the Haircut analytical oracle with named endpoint boundary enforcement, deterministic weak-form metadata, typed boundary metadata, value/Delta/Gamma error evidence, and deterministic mesh/time refinement export.
 
 Issue #74 publishes the public arxiv-lab contract artifacts in `tests/fixtures/fem_bs_001/` alongside the executable report: `problem_spec.json` (fixture/problem spec), deterministic mesh/time-step configuration and boundary metadata, `result_export.json` (convergence rows and summary), and explicit equal-error comparison policy for parity consumers.
 
@@ -386,9 +386,9 @@ Default tests are deterministic and offline. Heavy FEniCSx/PETSc/JAX/Bayesian pr
 
 ## 21. Architecture fitness gates and CI release topology
 
-The baseline gate for #57 is `pytest -q tests/architecture`. It is ratcheted around the current transitional literal `src` package: new root-level source modules/packages require an architecture-doc update, FEM core cannot import application or research-only stacks, and the package import shim stays lightweight.
+The package gate for #44 is `pytest -q tests/architecture tests/test_packaging_contract.py`. It is ratcheted around the real `src/finite_element_options` package: new package-root source modules/packages require an architecture-doc and TOML-contract update, FEM core cannot import application or research-only stacks, the base package import stays lightweight, and a built wheel must not export a top-level package named `src`.
 
-After package foundation #44 and ownership cleanup #50 land, this gate must add the hard `src.*` public import ban, clean-wheel import smoke tests, compatibility-shim inventory, and optional-profile import checks for FEniCSx/PETSc/JAX. The M0 gate is therefore executable now and has explicit successors.
+Ownership cleanup #50 remains the successor for retiring FD/application duplicates. Until then, the architecture gate carries explicit baseline exceptions only for the known FD compatibility module and keeps optional-profile import checks for FEniCSx/PETSc/JAX isolated from core packaging evidence.
 
 | Job | Purpose | Policy |
 |---|---|---|
@@ -420,19 +420,19 @@ This policy maps #57 to its successor issues: #44 creates the replacement namesp
 
 ### Phase 0 — Freeze coupling growth
 
-- Do not add new `src.*` public imports, mandatory optional dependencies or product/UI imports into numerical core.
+- Do not add mandatory optional dependencies or product/UI imports into numerical core.
 - Add characterization tests before moves.
 
 ### Phase 1 — Package foundation
 
-- Implement #44: `pyproject.toml`, real package namespace, build metadata and clean-wheel CI.
-- Add architecture contracts and public symbol inventory.
-- Correct contributor guidance to `master`.
+- #44 complete: `pyproject.toml`, real `finite_element_options` namespace, build metadata, clean-wheel CI, and `src` import-package retirement.
+- Architecture contracts and package/install tests guard the public namespace and optional dependency split.
+- Contributor guidance uses the repository's `master` default branch.
 
 ### Phase 2 — Canonical FEM modules
 
-- Move mesh, spaces, forms, BCs, assembly, time integration and solvers without behavior changes.
-- Rename `src/time` to `time_integration`.
+- Continue moving mesh, spaces, forms, BCs, assembly, time integration and solvers into sharper subpackages without behavior changes.
+- `time_integration` is the canonical replacement for historical `src/time`.
 - Add `_compat` shims only where downstream usage is known.
 
 ### Phase 3 — Ownership cleanup

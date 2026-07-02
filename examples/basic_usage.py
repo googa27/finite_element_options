@@ -1,6 +1,6 @@
 """Basic usage examples for the finite_element_options package."""
 
-from src.examples.bs_1d import price_call
+from finite_element_options.examples.bs_1d import price_call
 
 
 def main() -> None:

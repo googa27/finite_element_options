@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.problems.credit_risk import CreditRiskJumpDynamics, CreditRiskPayoff
-from src.core.market import Market
-from src.space.mesh import create_mesh
-from src.space.solver import SpaceSolver
-from src.space.boundary import DirichletBC
-from src.time.stepper import ThetaScheme
+from finite_element_options.problems.credit_risk import CreditRiskJumpDynamics, CreditRiskPayoff
+from finite_element_options.core.market import Market
+from finite_element_options.space.mesh import create_mesh
+from finite_element_options.space.solver import SpaceSolver
+from finite_element_options.space.boundary import DirichletBC
+from finite_element_options.time_integration.stepper import ThetaScheme
 
 
 def pde_monte_carlo(n_paths: int = 10) -> tuple[float, float]:

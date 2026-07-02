@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from src.data_utils import (
+from finite_element_options.data_utils import (
     make_market_dataframe,
     df_to_csv,
     df_from_csv,

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.space.mesh import create_mesh
+from finite_element_options.space.mesh import create_mesh
 
 
 def test_create_mesh_invalid_dimension() -> None:

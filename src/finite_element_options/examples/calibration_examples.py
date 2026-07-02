@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.estimation import (
+from finite_element_options.estimation import (
     HestonCalibrator,
     StatsmodelsCalibrator,
     PyMCCalibrator,

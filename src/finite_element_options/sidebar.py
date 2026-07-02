@@ -5,10 +5,10 @@ import numpy as np
 import scipy.stats as spst
 import aleatory.processes as alp
 
-from src.core.dynamics_heston import DynamicsParametersHeston
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.mesh import create_mesh
+from finite_element_options.core.dynamics_heston import DynamicsParametersHeston
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space.mesh import create_mesh
 
 
 class Sidebar:

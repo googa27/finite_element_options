@@ -183,12 +183,15 @@ Required layers are architecture, contract, unit, numerical, integration, shared
 Current repository commands include:
 
 ```bash
-python -m pip install -r requirements.txt
-python -m pip install -e .
+python -m pip install -e '.[dev]' -c constraints.txt
+python -m build --sdist --wheel
+python -m twine check dist/*
+python scripts/check_architecture_contract.py
+pytest -q tests/architecture tests/test_packaging_contract.py --no-cov
 pytest -q
 pytest tests/test_black_scholes_1d.py tests/test_fd_black_scholes.py tests/test_fenics_solver.py -q
 pytest tests/test_benchmark_black_scholes.py --benchmark-json=benchmark.json
-pydocstyle src
+pydocstyle src/finite_element_options
 ```
 
 After package modernization, also require lock validation, Ruff/type gates, `python -m build`, `twine check`, clean-wheel import tests and the Haircut backend conformance suite.

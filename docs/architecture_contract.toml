@@ -1,14 +1,15 @@
 # Machine-readable finite_element_options architecture contract.
-# The repo remains in a transitional literal `src` namespace; this contract
-# prevents more drift until the canonical finite_element_options package lands.
+# The repository now uses a real PEP 621 package namespace under
+# src/finite_element_options. The top-level directory named src is only the
+# standard source-layout container and must not be exported as an import package.
 
 [contract]
-schema_version = 1
+schema_version = 2
 name = "finite_element_options"
-mode = "transitional-src-namespace"
+mode = "namespaced-src-layout"
 
 [paths]
-package_root = "src"
+package_root = "src/finite_element_options"
 tests_root = "tests"
 
 [topology]
@@ -29,7 +30,7 @@ required_top_level_packages = [
   "examples",
   "problems",
   "space",
-  "time",
+  "time_integration",
   "validation",
 ]
 allowed_top_level_packages = [
@@ -39,23 +40,27 @@ allowed_top_level_packages = [
   "examples",
   "problems",
   "space",
-  "time",
+  "time_integration",
   "validation",
 ]
 max_top_level_package_count = 8
 ignore_top_level_dirs = []
 
 [repository_root]
-allowed_python_files = ["setup.py"]
+allowed_python_files = []
 
 [documentation]
 required_docs = ["docs/ARCHITECTURE.md", "README.md"]
-required_fragments = ["docs/architecture_contract.toml", "architecture contract"]
+required_fragments = ["docs/architecture_contract.toml", "architecture contract", "finite_element_options"]
 
 [ci]
 workflow_paths = [".github/workflows/ci.yml"]
-required_fragments = ["scripts/check_architecture_contract.py", "tests/architecture"]
+required_fragments = ["scripts/check_architecture_contract.py", "tests/architecture", "tests/test_packaging_contract.py"]
 
 [[import_rules]]
-source = "src/core"
+source = "src/finite_element_options/core"
 forbidden_prefixes = ["streamlit", "matplotlib", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
+
+[[import_rules]]
+source = "src/finite_element_options/space"
+forbidden_prefixes = ["streamlit", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]

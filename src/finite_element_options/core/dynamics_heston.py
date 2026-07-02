@@ -59,7 +59,7 @@ class DynamicsParametersHeston(
             Initial variance.
         config:
             Optional numerical configuration. If not provided a default
-            :class:`~src.core.config.Config` instance is used.
+            :class:`~finite_element_options.core.config.Config` instance is used.
         """
         cfg = config or Config()
         x = self.kappa * th + cfg.eps

@@ -4,15 +4,15 @@ import numpy as np
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.core.dynamics_heston_3d import (  # noqa: E402
+from finite_element_options.core.dynamics_heston_3d import (  # noqa: E402
     DynamicsParametersHeston3D,
 )
-from src.core.market import Market  # noqa: E402
-from src.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
-from src.space.mesh import create_mesh  # noqa: E402
-from src.space.solver import SpaceSolver  # noqa: E402
-from src.space.boundary import DirichletBC  # noqa: E402
-from src.time.stepper import ThetaScheme  # noqa: E402
+from finite_element_options.core.market import Market  # noqa: E402
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
+from finite_element_options.space.mesh import create_mesh  # noqa: E402
+from finite_element_options.space.solver import SpaceSolver  # noqa: E402
+from finite_element_options.space.boundary import DirichletBC  # noqa: E402
+from finite_element_options.time_integration.stepper import ThetaScheme  # noqa: E402
 
 
 def test_heston_3d_runs():

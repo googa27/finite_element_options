@@ -8,8 +8,8 @@ import skfem as fem
 from .forms import Forms, PDEForms
 from .boundary import apply_dirichlet
 from .adaptive import AdaptiveMesh
-from src.transform import CoordinateTransform
-from src.core.config import Config
+from finite_element_options.transform import CoordinateTransform
+from finite_element_options.core.config import Config
 
 
 class SpaceSolver:
@@ -78,7 +78,7 @@ class SpaceSolver:
     ) -> np.ndarray:
         """Return projected payoff or boundary values for coordinates ``x``.
 
-        The helper performs :meth:`~src.transform.CoordinateTransform.untransform_state` once and reuses
+        The helper performs :meth:`~finite_element_options.transform.CoordinateTransform.untransform_state` once and reuses
         the extracted variance inputs when computing mean-variance terms.
         """
 

@@ -6,7 +6,7 @@ import skfem.helpers as fh
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.space.adaptive import AdaptiveMesh
+from finite_element_options.space.adaptive import AdaptiveMesh
 
 ELEM = fem.ElementTriP1()
 BOUNDARIES = {

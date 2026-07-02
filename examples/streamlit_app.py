@@ -2,11 +2,11 @@
 
 import streamlit as st
 
-import src.sidebar as sdb
-import src.plots as splt
-from src.space.solver import SpaceSolver
-from src.space.boundary import DirichletBC
-from src.time.stepper import ThetaScheme
+import finite_element_options.sidebar as sdb
+import finite_element_options.plots as splt
+from finite_element_options.space.solver import SpaceSolver
+from finite_element_options.space.boundary import DirichletBC
+from finite_element_options.time_integration.stepper import ThetaScheme
 
 from skfem.visuals.matplotlib import plot #there is a bug that does not allow to plot unless this is imported (even if not used)   
 

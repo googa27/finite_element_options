@@ -24,7 +24,7 @@ from ..core.vanilla_bs import EuropeanOptionBs
 from ..space.boundary import DirichletBC
 from ..space.mesh import create_mesh
 from ..space.solver import SpaceSolver
-from ..time.stepper import ThetaScheme
+from ..time_integration.stepper import ThetaScheme
 
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
@@ -36,7 +36,7 @@ DEFAULT_DELTA_TOLERANCE_ABSOLUTE = 1e-3
 DEFAULT_GAMMA_TOLERANCE_ABSOLUTE = 2e-5
 
 
-FIXTURE_ROOT = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "fem_bs_001"
+FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "fem_bs_001"
 FEM_BS_001_PROBLEM_SPEC_PATH = FIXTURE_ROOT / "problem_spec.json"
 FEM_BS_001_RESULT_EXPORT_PATH = FIXTURE_ROOT / "result_export.json"
 

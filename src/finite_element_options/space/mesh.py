@@ -5,7 +5,7 @@ from typing import Sequence
 import numpy as np
 import skfem as fem
 
-from src.core.config import Config
+from finite_element_options.core.config import Config
 
 
 def create_mesh(
