@@ -29,6 +29,7 @@ dependencies = [
 [project.optional-dependencies]
 fd = [
     "findiff>=0.10,<1",
+    "pandas>=2,<3",
     "xarray>=2024.1,<2027",
 ]
 jax = ["jax>=0.4,<1"]
@@ -43,7 +44,10 @@ io = [
     "pyarrow>=14,<22",
     "xarray>=2024.1,<2027",
 ]
-viz = ["matplotlib>=3.7,<4"]
+viz = [
+    "matplotlib>=3.7,<4",
+    "streamlit>=1.30,<2",
+]
 ui = [
     "aleatory>=1.1,<2",
     "matplotlib>=3.7,<4",

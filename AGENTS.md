@@ -62,7 +62,7 @@ examples / apps / research workflows
 
 Rules:
 
-- The stable import package is `finite_element_options`; no new public `finite_element_options.*` imports.
+- The stable import package is `finite_element_options`; no new public `src.*` imports.
 - Contracts do not import scikit-fem internals, JAX, FEniCSx, PETSc, pandas, PyMC, Streamlit, plotting or Haircut.
 - Numerical core does not import products, calibration, UI, examples or integration adapters.
 - Optional imports are lazy and name the required extra.

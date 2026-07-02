@@ -46,23 +46,59 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert "finite_element_options/time/stepper.py" not in names
 
 
+def _requires_dist() -> list[str]:
+    return metadata.metadata("finite-element-options").get_all("Requires-Dist") or []
+
+
+def _has_extra_dependency(requires_dist: list[str], extra: str, dependency: str) -> bool:
+    return any(
+        item.lower().startswith(dependency.lower())
+        and f'extra == "{extra.lower()}"' in item.lower()
+        for item in requires_dist
+    )
+
+
 def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
-    project = metadata.metadata("finite-element-options")
-    requires_dist = project.get_all("Requires-Dist") or []
-    requires_text = "\n".join(requires_dist)
-    forbidden_core = ["jax", "fenics", "dolfin", "streamlit", "pymc", "statsmodels"]
+    requires_dist = _requires_dist()
+    forbidden_core = [
+        "aleatory",
+        "findiff",
+        "jax",
+        "fenics",
+        "dolfin",
+        "matplotlib",
+        "pandas",
+        "pymc",
+        "statsmodels",
+        "streamlit",
+        "xarray",
+    ]
     offenders = [
-        name
+        item
+        for item in requires_dist
+        if "extra ==" not in item.lower()
         for name in forbidden_core
-        if name in requires_text.lower() and "extra ==" not in requires_text.lower()
+        if item.lower().startswith(name)
     ]
     assert not offenders, (
-        f"Optional stacks leaked into core dependencies: {offenders}\n{requires_text}"
+        f"Optional stacks leaked into core dependencies: {offenders}\n"
+        + "\n".join(requires_dist)
     )
-    assert any(
-        item.lower().startswith("aleatory") and 'extra == "ui"' in item.lower()
-        for item in requires_dist
-    ), "The advertised UI extra must install aleatory for sidebar imports."
+
+
+def test_advertised_extras_cover_eager_import_dependencies() -> None:
+    requires_dist = _requires_dist()
+    assert _has_extra_dependency(requires_dist, "fd", "pandas"), (
+        "The advertised FD extra must install pandas because fdsolver imports "
+        "data_utils.snapshot at module import time."
+    )
+    assert _has_extra_dependency(requires_dist, "viz", "streamlit"), (
+        "The advertised viz extra must install streamlit because plots imports "
+        "streamlit at module import time."
+    )
+    assert _has_extra_dependency(requires_dist, "ui", "aleatory"), (
+        "The advertised UI extra must install aleatory for sidebar imports."
+    )
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path: Path) -> None:
