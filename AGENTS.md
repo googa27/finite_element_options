@@ -187,14 +187,19 @@ python -m pip install -e '.[dev]' -c constraints.txt
 python -m build --sdist --wheel
 python -m twine check dist/*
 python scripts/check_architecture_contract.py
+python scripts/check_ci_contract.py
 pytest -q tests/architecture tests/test_packaging_contract.py --no-cov
 pytest -q
 pytest tests/test_black_scholes_1d.py tests/test_fd_black_scholes.py tests/test_fenics_solver.py -q
 pytest tests/test_benchmark_black_scholes.py --benchmark-json=benchmark.json
+ruff check src tests scripts
+mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation scripts/check_ci_contract.py
+python -m pip_audit --progress-spinner=off --skip-editable
+cyclonedx-py environment --of JSON -o sbom.json
 pydocstyle src/finite_element_options
 ```
 
-After package modernization, also require lock validation, Ruff/type gates, `python -m build`, `twine check`, clean-wheel import tests and the Haircut backend conformance suite.
+CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel package checks on Python 3.11/3.12, run separate optional-profile imports for advertised extras, upload package/test/benchmark/SBOM artifacts, and keep least-privilege permissions plus explicit job timeouts.
 
 Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 

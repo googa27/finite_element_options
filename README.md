@@ -195,12 +195,16 @@ potential future migration.
 
 ## Continuous Integration
 
-This project uses a GitHub Actions workflow to run the test suite on every
-push and pull request, ensuring that the codebase remains reliable.
+This project uses a GitHub Actions workflow to run package, test, optional-profile, and supply-chain gates on every push and pull request. Third-party Actions are pinned to full commit SHAs.
 
+CI evidence includes:
 
+- sdist/wheel builds on Python 3.11 and 3.12, `twine check`, and installed-wheel import checks outside the checkout;
+- docstring, Ruff, mypy-on-contract-critical-modules, architecture, CI-contract, packaging, coverage, JUnit, and validated benchmark-smoke gates;
+- clean-wheel optional-profile imports for `fd`, `jax`, `calibration`, `viz`, and `ui` extras;
+- `pip-audit --skip-editable`, CycloneDX SBOM generation, and uploaded package/test/supply-chain artifacts.
 
-The package topology is guarded by the architecture contract in `docs/architecture_contract.toml`, `scripts/check_architecture_contract.py`, `tests/architecture`, and `tests/test_packaging_contract.py` in CI. CI builds sdists/wheels, checks the installed import contract outside the repository checkout, and verifies that no top-level package named `src` is exported.
+The package topology is guarded by the architecture contract in `docs/architecture_contract.toml`, `scripts/check_architecture_contract.py`, `scripts/check_ci_contract.py`, `tests/architecture`, and `tests/test_packaging_contract.py` in CI. CI builds sdists/wheels, checks the installed import contract outside the repository checkout, and verifies that no top-level package named `src` is exported.
 
 ## Project Structure
 

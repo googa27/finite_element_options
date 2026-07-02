@@ -65,8 +65,8 @@ Cross-repository integration uses independently versioned wheels, semantic contr
 | Historical `requirements.txt` combined `scikit-fem[all]`, UI, FD, JAX, PyMC, dataframes and test tools | Large mandatory environment and fragile compatibility | #44 splits core dependencies from published extras and dev/test groups |
 | FEM, FD, products, calibration, plotting and Streamlit coexist in one distribution | Ambiguous ownership and reverse dependencies | Ownership cleanup remains under #50; #44 keeps optional stacks out of core dependencies |
 | Historical `src/time` package name | Conceptual collision with standard-library `time` | #44 renames it to `finite_element_options.time_integration` |
-| CI tested only Python 3.11 and one all-dependencies environment | No package/profile or support-edge confidence | #44 adds build/install checks across Python 3.11 and 3.12 plus package contract tests |
-| Benchmark runs are not accuracy-normalized | Faster but less accurate results can look better | Numerical validation before performance budgets |
+| Historical CI tested only Python 3.11 and one all-dependencies environment | No package/profile or support-edge confidence | #44 adds build/install checks; #59 pins Actions, tests profile-specific wheels, uploads evidence artifacts, and adds supply-chain audit/SBOM gates |
+| Benchmark runs are not accuracy-normalized | Faster but less accurate results can look better | #59 keeps a validated benchmark smoke artifact; calibrated performance budgets remain a successor release-maturity task |
 | Agent guide points to `main` while default is `master` and records state in `.gemini_project` | Workflow drift and non-versioned source of truth | Correct branch and make GitHub/docs/tests authoritative |
 | External backend integration is aspirational | Private-module coupling risk | Thin entry-point adapter under #49 after package/interface gates |
 
@@ -386,24 +386,35 @@ Default tests are deterministic and offline. Heavy FEniCSx/PETSc/JAX/Bayesian pr
 
 ## 21. Architecture fitness gates and CI release topology
 
-The package gate for #44 is `pytest -q tests/architecture tests/test_packaging_contract.py`. It is ratcheted around the real `src/finite_element_options` package: new package-root source modules/packages require an architecture-doc and TOML-contract update, FEM core cannot import application or research-only stacks, the base package import stays lightweight, and a built wheel must not export a top-level package named `src`.
+The package and CI gates for #44/#59 are:
+
+```bash
+python scripts/check_architecture_contract.py
+python scripts/check_ci_contract.py
+pytest -q tests/architecture tests/test_packaging_contract.py --no-cov
+python -m build --sdist --wheel
+python -m twine check dist/*
+ruff check src tests scripts
+mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation scripts/check_ci_contract.py
+python -m pip_audit --progress-spinner=off --skip-editable
+cyclonedx-py environment --of JSON -o sbom.json
+```
+
+These gates are ratcheted around the real `src/finite_element_options` package: new package-root source modules/packages require an architecture-doc and TOML-contract update, FEM core cannot import application or research-only stacks, the base package import stays lightweight, a built wheel must not export a top-level package named `src`, and `.github/workflows/ci.yml` must keep pinned Actions plus explicit package/test/profile/supply-chain jobs.
 
 Ownership cleanup #50 remains the successor for retiring FD/application duplicates. Until then, the architecture gate carries explicit baseline exceptions only for the known FD compatibility module and keeps optional-profile import checks for FEniCSx/PETSc/JAX isolated from core packaging evidence.
 
 | Job | Purpose | Policy |
 |---|---|---|
-| Core minimum | Clean wheel, minimum supported Python/deps | Blocking |
-| Core latest | Latest compatible core | Blocking |
-| Numerical baseline | Manufactured/BS/convergence/BC/Greek tests | Blocking |
-| Package architecture | Public namespace/import contracts | Blocking |
-| Optional JAX/Numba | Accelerated routes | Changed/scheduled |
-| FEniCSx/PETSc | Platform-specific adapters | Scheduled/opt-in until support is stable |
-| UI/calibration | Optional applications | Changed/scheduled |
+| `package` | Build sdist/wheel on Python 3.11 and 3.12, run `twine check`, install the wheel outside the checkout, and upload dist artifacts | Blocking |
+| `test` | Dev-profile tests, Ruff, mypy over contract-critical modules, docstrings, architecture/CI/packaging contracts, coverage XML, JUnit, and validated benchmark smoke artifact | Blocking |
+| `optional_imports` | Clean-wheel imports for `fd`, `jax`, `calibration`, `viz`, and `ui` extras | Blocking for advertised extras |
+| `supply_chain` | `pip-audit --skip-editable`, CycloneDX SBOM, and uploaded evidence | Blocking |
+| FEniCSx/PETSc/MPI | Platform-specific solver adapters | Scheduled/opt-in until support is stable |
 | Haircut parity | Clean-wheel plugin and shared fixtures | Blocking for compatibility changes |
-| Performance | Stable subset and artifact | Regression policy |
-| Release | Build, twine/wheel inspection, SBOM, vulnerabilities and licenses | Release blocking |
+| Performance budgets | Accuracy-equivalent runtime/memory thresholds | Successor release-maturity policy |
 
-Python 3.11-only CI and one all-dependencies environment are insufficient evidence of support.
+Python 3.11-only CI and one all-dependencies environment are insufficient evidence of support. The issue #59 workflow intentionally exercises clean wheels and optional profiles separately so skipped optional-backend tests cannot masquerade as production support.
 
 ## 22. Compatibility and deprecation policy
 
@@ -426,7 +437,8 @@ This policy maps #57 to its successor issues: #44 creates the replacement namesp
 ### Phase 1 — Package foundation
 
 - #44 complete: `pyproject.toml`, real `finite_element_options` namespace, build metadata, clean-wheel CI, and `src` import-package retirement.
-- Architecture contracts and package/install tests guard the public namespace and optional dependency split.
+- #59 complete: full-SHA-pinned GitHub Actions, installed-wheel/profile CI, CI-contract tests, coverage/JUnit/benchmark artifacts, `pip-audit`, and CycloneDX SBOM generation.
+- Architecture contracts and package/install/CI tests guard the public namespace, workflow supply chain, and optional dependency split.
 - Contributor guidance uses the repository's `master` default branch.
 
 ### Phase 2 — Canonical FEM modules
@@ -472,11 +484,13 @@ This policy maps #57 to its successor issues: #44 creates the replacement namesp
 | FEM-ADR-008 | Compatibility shims are time-bounded boundary code | One canonical implementation |
 | FEM-ADR-009 | GitHub/docs/tests are authoritative, not agent scratch state | Durable governance |
 | FEM-ADR-010 | Profile-specific CI replaces one all-dependency job | Honest support and maintainable dependencies |
+| FEM-ADR-011 | GitHub Actions are pinned to full commit SHAs | Immutable CI supply-chain inputs |
+| FEM-ADR-012 | CI produces coverage, benchmark, package and SBOM artifacts | Reviewable release evidence |
 
 ## 25. Issue map
 
 - Numerical verification and model correctness: #33–#42
-- Modernization and package foundation: #43, #44
+- Modernization and package foundation: #43, #44, #59
 - Interfaces, calibration, Greeks and solver policy: #45–#48
 - Haircut backend adapter: #49, FEM parity fixture extension: `finite_element_options` #74
 - Ownership and duplicate retirement: #50

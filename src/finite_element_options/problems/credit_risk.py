@@ -8,7 +8,7 @@ from typing import Iterable
 import numpy as np
 import pydantic as pyd
 
-from finite_element_options.core.interfaces import Payoff, DynamicsModel, StochasticDynamicsModel
+from finite_element_options.core.interfaces import Payoff, DynamicsModel
 from finite_element_options.core.market import Market
 from finite_element_options.space.boundary import DirichletBC
 
