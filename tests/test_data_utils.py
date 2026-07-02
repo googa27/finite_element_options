@@ -1,7 +1,5 @@
 """Tests for data utility helpers."""
 
-import pandas as pd
-
 from finite_element_options.data_utils import (
     make_market_dataframe,
     df_to_csv,

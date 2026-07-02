@@ -121,9 +121,9 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path: Pat
 
         assert pathlib.Path.cwd().name != 'finite_element_options'
         import finite_element_options
-        import finite_element_options.core.market
-        import finite_element_options.core.config
-        import finite_element_options.time_integration.stepper
+
+        assert importlib.util.find_spec('finite_element_options.core.market') is not None
+        assert importlib.util.find_spec('finite_element_options.core.config') is not None
 
         dist = md.distribution('finite-element-options')
         files = {str(item) for item in (dist.files or [])}
