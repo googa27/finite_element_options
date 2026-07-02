@@ -330,6 +330,8 @@ Issue #64 adds `finite_element_options.contracts.backend_capabilities` and `fini
 
 Issue #74 publishes the public arxiv-lab contract artifacts in `tests/fixtures/fem_bs_001/` alongside the executable report: `problem_spec.json` (fixture/problem spec), deterministic mesh/time-step configuration and boundary metadata, `result_export.json` (convergence rows and summary), and explicit equal-error comparison policy for parity consumers.
 
+Issue #78 extends the same adapter-screening architecture to Pinares without importing Pinares domain modules. `finite_element_options.validation.pinares_fixed_price_proxy` publishes `PINARES-FEM-FIXED-PRICE-PROXY-V0` and `PINARES-QPS-FIXED-PRICE-PROXY-V0` artifacts in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/` plus the shared `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json`. The executable route solves the public-synthetic fixed-price option proxy as a normalized Black-Scholes weak form (`x=S/K`, UF value = survival probability × `K_uf` × normalized call value), records mesh/time/weak-form/boundary metadata, and checks value/Delta/Gamma plus no-arbitrage bounds. `PINARES-FEM-FAIL-CLOSED-V0` is the negative contract: full family contract, ROFR, legal/tax, obstacle/free-boundary, jump/liquidity and HJB/control requests are rejected by `FEMRouteRequest` diagnostics before mesh or assembly work.
+
 
 ## 17. Ownership cleanup
 

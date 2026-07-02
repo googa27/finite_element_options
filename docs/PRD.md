@@ -176,6 +176,8 @@ Issue #64 provides the first executable Project #5 compatibility slice before th
 
 Issue #74 extends this to a public arxiv-lab compatible FEM oracle artifact set for the same European call benchmark. It adds deterministic public problem/contract files, explicit weak-form sign metadata, typed boundary metadata (`S=0`, `S=S_max`), mesh/time-step and results exports, and an equal-error comparison policy so parity consumers can compare results against matching error budgets using public files/contracts.
 
+Issue #78 adds the Pinares-specific public-synthetic fixed-price proxy weak-form fixture. It consumes/exports a `quant-problem-spec/v0` record with UF units, `Q*` proxy measure, maturity date/time domain, survival-scaled terminal payoff, one-dimensional drift/diffusion/reaction terms, endpoint Dirichlet/linear-growth boundary metadata, Lagrange-P2 line mesh controls, theta stepping and SciPy-direct solve evidence. The route is validated only for the fixed-price option proxy; full family-contract, ROFR, obstacle/free-boundary, jump/liquidity, HJB/control and legal/tax-output requests fail closed with diagnostics before mesh allocation.
+
 ### FR-FEM-012 — Module ownership and duplicate retirement
 
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.

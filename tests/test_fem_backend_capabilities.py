@@ -70,6 +70,8 @@ def test_default_manifest_declares_fem_support_without_claiming_unvalidated_rout
     assert {"measure", "numeraire", "units", "valuation_date", "maturity_or_time_domain"} <= set(
         manifest.required_conventions
     )
+    assert any("Pinares fixed-price proxy" in note for note in manifest.notes)
+    assert any("obstacles/free boundaries" in note for note in manifest.notes)
 
 
 def test_quant_problem_spec_mapping_preserves_conventions_mesh_and_outputs() -> None:
@@ -366,7 +368,10 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
         "gamma_absolute": report.gamma_tolerance_absolute,
     }
     assert payload["mesh_metadata"]["mesh_family"] == report.mesh_metadata.mesh_family
-    assert payload["mesh_metadata"]["solver_backing"] == spec_payload["mesh_metadata"]["solver_backing"]
+    assert (
+        payload["mesh_metadata"]["solver_backing"]
+        == spec_payload["mesh_metadata"]["solver_backing"]
+    )
     assert payload["mesh_metadata"]["refinement_levels"] == list(
         report.mesh_metadata.refinement_levels
     )
