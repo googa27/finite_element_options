@@ -8,9 +8,10 @@
 - Introduced an `AdaptiveMesh` utility enabling residual- or gradient-based
   adaptive refinement. Demo and solver now support configurable criteria and
   tests assert element counts increase or decrease accordingly.
-- Added `src/problems` package with `OptionPricingProblem` and
-  `CreditRiskProblem` classes bundling dynamics, payoff and boundary defaults,
-  plus a Streamlit demo showcasing their instantiation.
+- Added `src/problems` package with `OptionPricingProblem` and an explicit
+  reduced-form `CreditRiskProblem` for constant-intensity defaultable zero-coupon
+  claims.  The credit route now exposes analytical bond/loss/survival/recovery
+  outputs and fails closed if routed through a spatial FEM solver.
 - Integrated `pytest-benchmark` for performance tracking and configured CI to
   run tests with coverage reporting.
 - Added mesh creation tests covering domain extent accuracy and invalid
