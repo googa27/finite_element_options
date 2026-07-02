@@ -48,10 +48,21 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
 
 def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
     project = metadata.metadata("finite-element-options")
-    requires_dist = "\n".join(project.get_all("Requires-Dist") or [])
+    requires_dist = project.get_all("Requires-Dist") or []
+    requires_text = "\n".join(requires_dist)
     forbidden_core = ["jax", "fenics", "dolfin", "streamlit", "pymc", "statsmodels"]
-    offenders = [name for name in forbidden_core if name in requires_dist.lower() and "extra ==" not in requires_dist.lower()]
-    assert not offenders, f"Optional stacks leaked into core dependencies: {offenders}\n{requires_dist}"
+    offenders = [
+        name
+        for name in forbidden_core
+        if name in requires_text.lower() and "extra ==" not in requires_text.lower()
+    ]
+    assert not offenders, (
+        f"Optional stacks leaked into core dependencies: {offenders}\n{requires_text}"
+    )
+    assert any(
+        item.lower().startswith("aleatory") and 'extra == "ui"' in item.lower()
+        for item in requires_dist
+    ), "The advertised UI extra must install aleatory for sidebar imports."
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path: Path) -> None:
