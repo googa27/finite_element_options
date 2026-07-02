@@ -15,6 +15,8 @@ Finite Element Options is a reusable, library-first finite-element toolkit for p
 
 Option pricing and credit-risk examples are validation clients of the numerical library, not the definition of its internal architecture. Streamlit, plotting, calibration, JAX experiments, FEniCSx/PETSc integrations and product-specific workflows are optional profiles or examples.
 
+Issue #55 narrows the credit-risk example to a constant-intensity reduced-form defaultable zero-coupon claim with fractional recovery of par paid at default. Because that claim has no spatial state, its supported route is an analytical/ODE reference that separates bond value, default-free value, credit loss, survival/default probabilities, recovery leg and LGD; attempts to route it through spatial FEM assembly fail closed until a stochastic-intensity PDE is explicitly specified.
+
 The repository is one numerical backend in a federated portfolio. It may implement the Haircut Engine solver contract through a thin plugin, but it must not depend on Haircut domain entities or PDP internals.
 
 ## 2. Portfolio role and boundaries

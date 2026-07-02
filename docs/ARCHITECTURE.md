@@ -29,6 +29,8 @@ solution + sensitivities + residual/error/performance diagnostics
 
 No layer may invent missing model coefficients or hide an unsupported boundary, discretization or solver choice.
 
+Issue #55 applies this rule to the credit-risk example: the supported constant-intensity defaultable zero-coupon claim is state-free, so it is represented by the scalar ODE/closed-form reduced-form reference rather than a fake one-node FEM domain. A stochastic-intensity credit PDE must declare its state process, generator, domain, boundaries and benchmark evidence before becoming a FEM route.
+
 ## 2. Federated portfolio context
 
 ```mermaid
