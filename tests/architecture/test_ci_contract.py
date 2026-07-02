@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import importlib.util
 import re
 from pathlib import Path
 
-from scripts.check_ci_contract import check_ci_contract
-
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+CI_CONTRACT = ROOT / "scripts" / "check_ci_contract.py"
+
+spec = importlib.util.spec_from_file_location("check_ci_contract", CI_CONTRACT)
+assert spec is not None and spec.loader is not None
+check_ci_contract_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(check_ci_contract_module)
+check_ci_contract = check_ci_contract_module.check_ci_contract
 
 
 def test_ci_contract_script_passes() -> None:
