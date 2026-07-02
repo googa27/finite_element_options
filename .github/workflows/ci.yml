@@ -37,7 +37,7 @@ jobs:
           import finite_element_options.core.market
 
           dist = md.distribution('finite-element-options')
-          top_level = {name.split('/')[0] for name in (dist.files or []) if str(name).endswith('.py')}
+          top_level = {str(name).split('/')[0] for name in (dist.files or []) if str(name).endswith('.py')}
           assert 'finite_element_options' in top_level
           assert 'src' not in top_level
           assert importlib.util.find_spec('src') is None
