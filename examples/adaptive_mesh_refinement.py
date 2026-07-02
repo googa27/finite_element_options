@@ -4,8 +4,8 @@ import numpy as np
 import skfem as fem
 import skfem.helpers as fh
 
-import src.plots as splt
-from src.space.adaptive import AdaptiveMesh
+import finite_element_options.plots as splt
+from finite_element_options.space.adaptive import AdaptiveMesh
 
 # Finite element and domain size
 ELEM = fem.ElementTriP1()

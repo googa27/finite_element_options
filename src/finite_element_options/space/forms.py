@@ -7,8 +7,8 @@ from abc import ABC, abstractmethod
 import skfem as fem
 import skfem.helpers as fhl
 
-from src.core.interfaces import DynamicsModel, Payoff
-from src.transform import CoordinateTransform
+from finite_element_options.core.interfaces import DynamicsModel, Payoff
+from finite_element_options.transform import CoordinateTransform
 
 
 class Forms(ABC):

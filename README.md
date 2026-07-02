@@ -10,9 +10,9 @@ Streamlit-based user interface for interactive exploration.
 Install the dependencies and run a simple Black–Scholes pricing example:
 
 ```bash
-pip install -r requirements.txt
+pip install -e '.[validation]'
 python - <<'PY'
-from src.examples.bs_1d import price_call
+from finite_element_options.examples.bs_1d import price_call
 grid = price_call()
 print(grid[-1])  # option values at maturity
 PY
@@ -54,9 +54,19 @@ This reproduces the same call option pricing workflow in a standalone file.
 
 ## Installation
 
+The core wheel uses the real `finite_element_options` package namespace and keeps optional stacks out of the base install:
+
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
+
+Install development/test tooling with:
+
+```bash
+pip install -e '.[dev]' -c constraints.txt
+```
+
+Optional profiles are published as extras, for example `.[ui]`, `.[jax]`, `.[calibration]`, `.[io]`, `.[fd]`, and `.[validation]`.
 
 ## Usage
 
@@ -81,14 +91,14 @@ timestepping interact:
 ```python
 import numpy as np
 
-from src.core.dynamics_black_scholes import DynamicsParametersBlackScholes
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.mesh import create_mesh
-from src.space.solver import SpaceSolver
-from src.space.boundary import DirichletBC
-from src.time.stepper import ThetaScheme
-from src.jax_greeks import compute_greeks
+from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space.mesh import create_mesh
+from finite_element_options.space.solver import SpaceSolver
+from finite_element_options.space.boundary import DirichletBC
+from finite_element_options.time_integration.stepper import ThetaScheme
+from finite_element_options.jax_greeks import compute_greeks
 from skfem import Function
 
 # 1. Define market and model parameters
@@ -158,7 +168,7 @@ Benchmarks leveraging `pytest-benchmark` can be executed alongside the test
 suite. Coverage reports are generated via `pytest-cov`:
 
 ```bash
-pytest --cov=src
+pytest --cov=finite_element_options
 ```
 
 ## Benchmarking
@@ -190,15 +200,17 @@ push and pull request, ensuring that the codebase remains reliable.
 
 
 
-The package topology is guarded by `docs/architecture_contract.toml` and the `scripts/check_architecture_contract.py` architecture contract gate in CI.
+The package topology is guarded by the architecture contract in `docs/architecture_contract.toml`, `scripts/check_architecture_contract.py`, `tests/architecture`, and `tests/test_packaging_contract.py` in CI. CI builds sdists/wheels, checks the installed import contract outside the repository checkout, and verifies that no top-level package named `src` is exported.
 
 ## Project Structure
 
 ```
-src/            Core library modules
-examples/       Runnable demos, including the Streamlit entry point
-requirements.txt  Project dependencies
-tests/          Pytest-based test suite
+pyproject.toml                     PEP 621 package metadata and extras
+src/finite_element_options/        Installable core package namespace
+examples/                          Runnable demos, including the Streamlit entry point
+requirements.txt                   Legacy all-in developer requirements mirror
+constraints.txt                    CI/test compatibility constraints
+tests/                             Pytest-based test suite
 ```
 
 ## Roadmap

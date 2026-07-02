@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from src.estimation import (
+from finite_element_options.estimation import (
     HestonCalibrator,
     StatsmodelsCalibrator,
     PyMCCalibrator,

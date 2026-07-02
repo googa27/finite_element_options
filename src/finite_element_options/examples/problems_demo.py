@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from src.problems import CreditRiskProblem, OptionPricingProblem
+from finite_element_options.problems import CreditRiskProblem, OptionPricingProblem
 
 
 def main() -> None:

@@ -27,7 +27,7 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - imported lazily
     fem = mesh = ufl = MPI = PETSc = None
 
-from src.core.interfaces import DynamicsModel, Payoff, SpaceDiscretization
+from finite_element_options.core.interfaces import DynamicsModel, Payoff, SpaceDiscretization
 
 
 @dataclass

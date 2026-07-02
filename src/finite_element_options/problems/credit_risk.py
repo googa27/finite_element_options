@@ -8,9 +8,9 @@ from typing import Iterable
 import numpy as np
 import pydantic as pyd
 
-from src.core.interfaces import Payoff, DynamicsModel, StochasticDynamicsModel
-from src.core.market import Market
-from src.space.boundary import DirichletBC
+from finite_element_options.core.interfaces import Payoff, DynamicsModel, StochasticDynamicsModel
+from finite_element_options.core.market import Market
+from finite_element_options.space.boundary import DirichletBC
 
 from .base import Problem
 

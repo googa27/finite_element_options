@@ -7,9 +7,9 @@ import pytest
 import scipy.sparse as sps
 from hypothesis import given, strategies as st
 
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.boundary import apply_dirichlet
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space.boundary import apply_dirichlet
 
 
 @given(

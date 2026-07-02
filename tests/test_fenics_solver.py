@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 
-from src.space import fenics_solver
-from src.space.fenics_solver import FenicsSolver
-from src.core.dynamics_black_scholes import DynamicsParametersBlackScholes
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space import fenics_solver
+from finite_element_options.space.fenics_solver import FenicsSolver
+from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 
 HAS_FENICS = fenics_solver.fem is not None
 

@@ -8,7 +8,7 @@ from typing import Iterable
 import numpy as np
 import skfem as fem
 
-from src.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
 
 
 class TimeStepper(ABC):

@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from src.core.dynamics_black_scholes import DynamicsParametersBlackScholes
-from src.core.market import Market
-from src.core.vanilla_bs import EuropeanOptionBs
-from src.space.boundary import DirichletBC
+from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space.boundary import DirichletBC
 
 from .base import Problem
 

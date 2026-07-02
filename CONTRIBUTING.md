@@ -23,12 +23,11 @@ Thank you for your interest in improving `finite_element_options`.
 
 1. Create a virtual environment and install dependencies:
    ```bash
-   pip install -r requirements.txt
-   pip install -e .
+   python -m pip install -e '.[dev]' -c constraints.txt
    ```
 2. Run the linters and test suite before submitting a pull request:
    ```bash
-   pydocstyle src
+   pydocstyle src/finite_element_options
    pytest
    ```
 3. Code formatting or lint warnings may be suppressed with `# noqa:`

@@ -5,12 +5,12 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.fdsolver import FDSolver, solve_system, delta  # noqa: E402
-from src.core.dynamics_black_scholes import (
+from finite_element_options.fdsolver import FDSolver, solve_system, delta  # noqa: E402
+from finite_element_options.core.dynamics_black_scholes import (
     DynamicsParametersBlackScholes,
 )  # noqa: E402
-from src.core.market import Market  # noqa: E402
-from src.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
+from finite_element_options.core.market import Market  # noqa: E402
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs  # noqa: E402
 
 
 def test_fd_black_scholes_price():

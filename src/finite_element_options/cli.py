@@ -8,7 +8,7 @@ from .core.market import Market
 from .core.vanilla_bs import EuropeanOptionBs
 from .space.mesh import create_mesh
 from .space.solver import SpaceSolver
-from .time.stepper import ThetaScheme
+from .time_integration.stepper import ThetaScheme
 
 
 def main(args=None):

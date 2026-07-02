@@ -7,7 +7,7 @@ from typing import Iterable
 
 import skfem as fem
 
-from src.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
 
 
 def apply_dirichlet(A, b, Vh, bcs, x):

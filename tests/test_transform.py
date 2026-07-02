@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.transform import (
+from finite_element_options.transform import (
     CoordinateTransform,
     LogPrice,
     SqrtVol,

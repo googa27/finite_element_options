@@ -10,7 +10,7 @@ import pytest
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.contracts import (  # noqa: E402
+from finite_element_options.contracts import (  # noqa: E402
     DEFAULT_FEM_CAPABILITY_MANIFEST,
     FEMRouteRequest,
     UnsupportedReason,
@@ -18,8 +18,8 @@ from src.contracts import (  # noqa: E402
     diagnose_unsupported_route,
     ensure_route_supported,
 )
-from src.validation import black_scholes_parity as parity_module  # noqa: E402
-from src.validation.black_scholes_parity import (  # noqa: E402
+from finite_element_options.validation import black_scholes_parity as parity_module  # noqa: E402
+from finite_element_options.validation.black_scholes_parity import (  # noqa: E402
     FEM_BS_001_PROBLEM_SPEC_PATH,
     FEM_BS_001_RESULT_EXPORT_PATH,
     PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID,

@@ -1,6 +1,6 @@
 """Tests for JAX-based Greek computation."""
 
-from src.jax_greeks import compute_greeks
+from finite_element_options.jax_greeks import compute_greeks
 
 
 def test_greeks_consistency():
