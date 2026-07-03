@@ -184,7 +184,7 @@ The stable package owns FEM numerical mechanics. The embedded FD implementation,
 
 Production FD behavior migrates to `finite_difference_options`; only time-bounded benchmark or compatibility code may remain. Owner: #50.
 
-Issue #51 repairs the remaining benchmark-oracle role for `fdsolver.py`: it is now documented as a narrow one-dimensional Black-Scholes reference over validated uniform spot/time-to-maturity grids, not a production FD backend. The route fails closed for invalid/nonuniform grids and time grids, uses carry-aware endpoint Dirichlet boundaries, eliminates nonzero Dirichlet columns from interior equations, propagates payoff domain errors instead of broad scalar fallback, reuses a constant factorization, and returns labeled xarray coordinates plus route/time/residual/convergence metadata.
+Issue #51 repairs the remaining benchmark-oracle role for `fdsolver.py`: it is now documented as a narrow one-dimensional Black-Scholes reference over validated uniform spot/time-to-maturity grids, not a production FD backend. The route fails closed for invalid/nonuniform grids and time grids, uses carry-aware endpoint Dirichlet boundaries with a nonnegative call far-field clamp, eliminates nonzero Dirichlet columns from interior equations, propagates payoff domain errors instead of broad scalar fallback, reuses a constant factorization, and returns labeled xarray coordinates plus route/time/residual/convergence metadata.
 
 ### FR-FEM-013 — Optional research and application profiles
 

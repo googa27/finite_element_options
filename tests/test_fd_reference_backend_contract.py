@@ -72,6 +72,17 @@ def test_fd_reference_call_boundary_includes_dividend_carry() -> None:
     )
 
 
+def test_fd_reference_call_boundary_never_returns_negative_far_field() -> None:
+    dynamics, option = _model(rate=0.03, carry=1.00)
+    s_grid = np.linspace(0.0, 2.0, 41)
+    solver = FDSolver(s_grid, dynamics, option, is_call=True)
+
+    boundary = solver.dirichlet(1.0)
+
+    assert boundary[0] == 0.0
+    assert boundary[-1] == 0.0
+
+
 def test_dirichlet_elimination_adjusts_interior_rhs_and_zeroes_boundary_columns() -> None:
     dynamics, option = _model(rate=0.05, carry=0.02)
     solver = FDSolver(np.linspace(0.0, 2.0, 5), dynamics, option, is_call=True)

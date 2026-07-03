@@ -340,7 +340,7 @@ Issue #78 extends the same adapter-screening architecture to Pinares without imp
 | FEM mesh/space/form/assembly | Stable core |
 | Time stepping and FEM state transfer | Stable core |
 | Sparse solver/factorization policies | Core plus optional solver adapters |
-| `fdsolver.py` or production FD routes | Migrate/remove production FD ownership; keep only the #51 time-bounded, uniform-grid 1D Black-Scholes benchmark oracle with fail-closed route validation, carry-aware boundaries, Dirichlet RHS elimination, residual/convergence metadata and factorization-reuse diagnostics. |
+| `fdsolver.py` or production FD routes | Migrate/remove production FD ownership; keep only the #51 time-bounded, uniform-grid 1D Black-Scholes benchmark oracle with fail-closed route validation, carry-aware/nonnegative-call boundaries, Dirichlet RHS elimination, residual/convergence metadata and factorization-reuse diagnostics. |
 | Black–Scholes/Heston/product classes | Thin validation/example adapters, not core ownership |
 | Calibration and statistical workflows | Optional profile or downstream consumer |
 | pandas/xarray/Arrow persistence | Optional experiment/interop profile |

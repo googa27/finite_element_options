@@ -148,7 +148,8 @@ class FDSolver:
 
         ``th`` is the forward transformed time ``tau = T - t``.  The high-call
         boundary uses the affine Black-Scholes far-field
-        ``S_max exp(-q tau) - K exp(-r tau)``; the low-put boundary uses
+        ``S_max exp(-q tau) - K exp(-r tau)`` clamped at zero for finite
+        boundary/no-arbitrage safety; the low-put boundary uses
         ``K exp(-r tau)``.
         """
         tau = float(th)
@@ -160,7 +161,10 @@ class FDSolver:
         values = np.zeros(self.N, dtype=float)
         if self.is_call:
             values[0] = 0.0
-            values[-1] = self.s_grid[-1] * np.exp(-carry * tau) - strike * np.exp(-rate * tau)
+            values[-1] = max(
+                self.s_grid[-1] * np.exp(-carry * tau) - strike * np.exp(-rate * tau),
+                0.0,
+            )
         else:
             values[0] = strike * np.exp(-rate * tau)
             values[-1] = 0.0
