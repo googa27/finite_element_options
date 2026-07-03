@@ -61,7 +61,7 @@ Cross-repository integration uses independently versioned wheels, semantic contr
 
 | Finding | Risk | Decision / owner |
 |---|---|---|
-| Historical `setup.py` declared `packages=['src']` | Built wheels did not represent the intended nested package API | #44 replaces it with PEP 621 metadata and `src/finite_element_options` package discovery |
+| Historical `setup.py` declared the repository `src` directory itself as a package | Built wheels did not represent the intended nested package API | #44 replaces it with PEP 621 metadata and `src/finite_element_options` package discovery |
 | Historical README/source imported `src.*` | Checkout success masked broken distribution installs | #44 removes `src` as a public package and adds clean-wheel tests |
 | Historical metadata lived outside `pyproject.toml` | Runtime dependencies, Python support, extras and entry points were undefined | #44 makes `pyproject.toml` the package source of truth |
 | Historical `requirements.txt` combined `scikit-fem[all]`, UI, FD, JAX, PyMC, dataframes and test tools | Large mandatory environment and fragile compatibility | #44 splits core dependencies from published extras and dev/test groups |
@@ -330,7 +330,7 @@ Issue #64 adds `finite_element_options.contracts.backend_capabilities` and `fini
 
 Issue #74 publishes the public arxiv-lab contract artifacts in `tests/fixtures/fem_bs_001/` alongside the executable report: `problem_spec.json` (fixture/problem spec), deterministic mesh/time-step configuration and boundary metadata, `result_export.json` (convergence rows and summary), and explicit equal-error comparison policy for parity consumers.
 
-Issue #78 extends the same adapter-screening architecture to Pinares without importing Pinares domain modules. `finite_element_options.validation.pinares_fixed_price_proxy` publishes `PINARES-FEM-FIXED-PRICE-PROXY-V0` and `PINARES-QPS-FIXED-PRICE-PROXY-V0` artifacts in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/` plus the shared `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json`. The executable route solves the public-synthetic fixed-price option proxy as a normalized Black-Scholes weak form (`x=S/K`, UF value = survival probability × `K_uf` × normalized call value), records mesh/time/weak-form/boundary metadata, and checks value/Delta/Gamma plus no-arbitrage bounds. `PINARES-FEM-FAIL-CLOSED-V0` is the negative contract: full family contract, ROFR, legal/tax, obstacle/free-boundary, jump/liquidity and HJB/control requests are rejected by `FEMRouteRequest` diagnostics before mesh or assembly work.
+Issue #78 extends the same adapter-screening architecture to Pinares without importing Pinares domain modules. `finite_element_options.validation.pinares_fixed_price_proxy` publishes `PINARES-FEM-FIXED-PRICE-PROXY-V0` and `PINARES-QPS-FIXED-PRICE-PROXY-V0` artifacts in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/` plus the shared `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json`. The executable route solves the public-synthetic fixed-price option proxy as a normalized Black-Scholes weak form ($x=S/K$, UF value = survival probability × $K_{uf}$ × normalized call value), records mesh/time/weak-form/boundary metadata, and checks value/Delta/Gamma plus no-arbitrage bounds. `PINARES-FEM-FAIL-CLOSED-V0` is the negative contract: full family contract, ROFR, legal/tax, obstacle/free-boundary, jump/liquidity and HJB/control requests are rejected by `FEMRouteRequest` diagnostics before mesh or assembly work.
 
 
 ## 17. Ownership cleanup
@@ -340,7 +340,7 @@ Issue #78 extends the same adapter-screening architecture to Pinares without imp
 | FEM mesh/space/form/assembly | Stable core |
 | Time stepping and FEM state transfer | Stable core |
 | Sparse solver/factorization policies | Core plus optional solver adapters |
-| `fdsolver.py` or production FD routes | Migrate/remove; optional time-bounded benchmark oracle only |
+| `fdsolver.py` or production FD routes | Migrate/remove production FD ownership; keep only the #51 time-bounded, uniform-grid 1D Black-Scholes benchmark oracle with fail-closed route validation, carry-aware/nonnegative-call boundaries, Dirichlet RHS elimination, residual/convergence metadata and factorization-reuse diagnostics. |
 | Black–Scholes/Heston/product classes | Thin validation/example adapters, not core ownership |
 | Calibration and statistical workflows | Optional profile or downstream consumer |
 | pandas/xarray/Arrow persistence | Optional experiment/interop profile |

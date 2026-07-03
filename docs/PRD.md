@@ -174,7 +174,7 @@ Owner: #49.
 
 Issue #64 provides the first executable Project #5 compatibility slice before the full entry-point plugin: a public-synthetic QuantProblemSpec adapter manifest, fail-closed route diagnostics and the `fem-bs-001` Black-Scholes parity fixture. This slice is deliberately narrow and validates only the one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct route against the Haircut analytical oracle with named endpoint boundary enforcement and value/Delta/Gamma error evidence; unsupported dimensions, adaptive meshes, unvalidated elements, American exercise, jump terms and HJB/control terms fail before mesh or weak-form allocation.
 
-Issue #74 extends this to a public arxiv-lab compatible FEM oracle artifact set for the same European call benchmark. It adds deterministic public problem/contract files, explicit weak-form sign metadata, typed boundary metadata (`S=0`, `S=S_max`), mesh/time-step and results exports, and an equal-error comparison policy so parity consumers can compare results against matching error budgets using public files/contracts.
+Issue #74 extends this to a public arxiv-lab compatible FEM oracle artifact set for the same European call benchmark. It adds deterministic public problem/contract files, explicit weak-form sign metadata, typed boundary metadata ($S=0$, $S=S_{\max}$), mesh/time-step and results exports, and an equal-error comparison policy so parity consumers can compare results against matching error budgets using public files/contracts.
 
 Issue #78 adds the Pinares-specific public-synthetic fixed-price proxy weak-form fixture. It consumes/exports a `quant-problem-spec/v0` record with UF units, `Q*` proxy measure, maturity date/time domain, survival-scaled terminal payoff, one-dimensional drift/diffusion/reaction terms, endpoint Dirichlet/linear-growth boundary metadata, Lagrange-P2 line mesh controls, theta stepping and SciPy-direct solve evidence. The route is validated only for the fixed-price option proxy; full family-contract, ROFR, obstacle/free-boundary, jump/liquidity, HJB/control and legal/tax-output requests fail closed with diagnostics before mesh allocation.
 
@@ -183,6 +183,8 @@ Issue #78 adds the Pinares-specific public-synthetic fixed-price proxy weak-form
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.
 
 Production FD behavior migrates to `finite_difference_options`; only time-bounded benchmark or compatibility code may remain. Owner: #50.
+
+Issue #51 repairs the remaining benchmark-oracle role for `fdsolver.py`: it is now documented as a narrow one-dimensional Black-Scholes reference over validated uniform spot/time-to-maturity grids, not a production FD backend. The route fails closed for invalid/nonuniform grids and time grids, uses carry-aware endpoint Dirichlet boundaries with a nonnegative call far-field clamp, eliminates nonzero Dirichlet columns from interior equations, propagates payoff domain errors instead of broad scalar fallback, reuses a constant factorization, and returns labeled xarray coordinates plus route/time/residual/convergence metadata.
 
 ### FR-FEM-013 — Optional research and application profiles
 
