@@ -35,9 +35,9 @@ This reproduces the same call option pricing workflow in a standalone file.
 
 ## Features
 
-- Black-Scholes option pricer with call and put payoffs
+- Black-Scholes option pricer with call/put payoffs, explicit volatility vs. variance APIs, and tested zero-maturity/zero-volatility limits
 - Finite-difference solver on regular grids using ``findiff``
-- Greek estimators (Delta, Gamma, Vega) via finite differences
+- Greek estimators (Delta, Gamma, volatility Vega) via finite differences
 - Experimental JAX-based Greek computation via automatic differentiation
 - Configurable mesh generation supporting 1D, 2D and 3D problems
 - Central ``Config`` dataclass for numerical parameters
@@ -137,7 +137,8 @@ put_fn = Function(put_space.Vh, put_grid[-1])
 put_price = float(put_fn(np.array([[1.0]])))
 
 # 5. Compare numerical results with analytic Greeks for sanity checks
-delta, vega = compute_greeks(
+#    compute_greeks returns Delta and volatility Vega dV/dsigma.
+delta, volatility_vega = compute_greeks(
     s=1.0,
     k=option.k,
     r=market.r,
@@ -146,7 +147,10 @@ delta, vega = compute_greeks(
     t=time_grid[-1],
 )
 
-print(f"European call: price={call_price:.4f}, delta={delta:.4f}, vega={vega:.4f}")
+print(
+    f"European call: price={call_price:.4f}, delta={delta:.4f}, "
+    f"volatility_vega={volatility_vega:.4f}"
+)
 print(f"European put:  price={put_price:.4f}")
 ```
 

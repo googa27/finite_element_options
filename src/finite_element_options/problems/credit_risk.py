@@ -16,6 +16,7 @@ import numpy as np
 import skfem as fem
 
 from finite_element_options.core.interfaces import (
+    ArrayLikeFloat,
     BoundaryCondition,
     DynamicsModel,
     Payoff,
@@ -109,22 +110,26 @@ class DefaultableZeroCouponClaim(Payoff):
             "or CreditRiskProblem.value() instead of option-space pricing."
         )
 
-    def call_payoff(self, s: float) -> float:  # pylint: disable=unused-argument
+    def call_payoff(self, s: ArrayLikeFloat) -> ArrayLikeFloat:  # pylint: disable=unused-argument
         """Fail closed for generic call-option routes."""
 
         self._unsupported_option_route()
 
-    def put_payoff(self, s: float) -> float:  # pylint: disable=unused-argument
+    def put_payoff(self, s: ArrayLikeFloat) -> ArrayLikeFloat:  # pylint: disable=unused-argument
         """Fail closed for generic put-option routes."""
 
         self._unsupported_option_route()
 
-    def call(self, th: float, s: float, v: float) -> float:  # pylint: disable=unused-argument
+    def call(
+        self, th: float, s: ArrayLikeFloat, variance: ArrayLikeFloat
+    ) -> ArrayLikeFloat:  # pylint: disable=unused-argument
         """Fail closed for generic call-option routes."""
 
         self._unsupported_option_route()
 
-    def put(self, th: float, s: float, v: float) -> float:  # pylint: disable=unused-argument
+    def put(
+        self, th: float, s: ArrayLikeFloat, variance: ArrayLikeFloat
+    ) -> ArrayLikeFloat:  # pylint: disable=unused-argument
         """Fail closed for generic put-option routes."""
 
         self._unsupported_option_route()
@@ -190,7 +195,9 @@ class ReducedFormCreditRiskModel:
         """PV of notional paid at maturity conditional on survival."""
 
         self._validate_maturity(maturity)
-        return claim.terminal_payoff * exp(-(self.r + self.default_intensity) * maturity)
+        return claim.terminal_payoff * exp(
+            -(self.r + self.default_intensity) * maturity
+        )
 
     def recovery_leg_pv(
         self, claim: DefaultableZeroCouponClaim, maturity: float
@@ -292,7 +299,9 @@ class ReducedFormCreditRiskModel:
         self._unsupported_spatial_route()
 
     def boundary_term(
-        self, is_call: bool, payoff: Payoff  # pylint: disable=unused-argument
+        self,
+        is_call: bool,
+        payoff: Payoff,  # pylint: disable=unused-argument
     ) -> fem.LinearForm:
         """Reject natural boundary assembly for a state-free ODE model."""
 
@@ -316,7 +325,9 @@ class CreditRiskIntensitySampler:
         if not isfinite(self.log_std) or self.log_std < 0.0:
             raise ValueError("log_std must be finite and nonnegative")
         if self.base_model.default_intensity <= 0.0 and self.log_std > 0.0:
-            raise ValueError("positive base default_intensity is required for lognormal sampling")
+            raise ValueError(
+                "positive base default_intensity is required for lognormal sampling"
+            )
 
     def sample(self, rng: np.random.Generator) -> ReducedFormCreditRiskModel:
         """Return a model with sampled default intensity."""
@@ -395,7 +406,9 @@ class CreditRiskProblem(Problem):
     def value(self, maturity: float) -> float:
         """Return analytical defaultable zero-coupon value."""
 
-        return self.reduced_form_model.defaultable_zero_coupon_value(self.claim, maturity)
+        return self.reduced_form_model.defaultable_zero_coupon_value(
+            self.claim, maturity
+        )
 
     def value_components(self, maturity: float) -> DefaultableZeroCouponOutputs:
         """Return separated value, probability and loss outputs."""
