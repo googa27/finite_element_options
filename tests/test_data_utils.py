@@ -123,6 +123,24 @@ def test_atomic_write_failure_leaves_no_partial_dataframe_files(
     assert list(tmp_path.iterdir()) == []
 
 
+def test_failed_lock_contender_does_not_remove_active_writer_lock(tmp_path) -> None:
+    df = make_market_dataframe([90], [0.5], [1.1], metadata=_metadata())
+    path = tmp_path / "market.csv"
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    lock_path.write_text("active-writer", encoding="utf-8")
+
+    with pytest.raises(FileExistsError):
+        df_to_csv(df, path)
+
+    assert lock_path.read_text(encoding="utf-8") == "active-writer"
+    assert not path.exists()
+    assert not path.with_suffix(path.suffix + ".manifest.json").exists()
+
+    lock_path.unlink()
+    df_to_csv(df, path)
+    assert path.exists()
+
+
 def test_concurrent_style_writers_cannot_overwrite_existing_artifact(tmp_path) -> None:
     first = make_market_dataframe([90], [0.5], [1.1], metadata=_metadata())
     second = make_market_dataframe(

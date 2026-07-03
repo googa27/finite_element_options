@@ -64,17 +64,20 @@ def _sha256(path: Path) -> str:
 def _artifact_lock(path: Path) -> Iterator[None]:
     lock_path = path.with_suffix(path.suffix + ".lock")
     fd: int | None = None
+    acquired = False
     try:
         fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        acquired = True
         os.write(fd, str(os.getpid()).encode("utf-8"))
         yield
     finally:
         if fd is not None:
             os.close(fd)
-        try:
-            lock_path.unlink()
-        except FileNotFoundError:
-            pass
+        if acquired:
+            try:
+                lock_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
