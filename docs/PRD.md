@@ -144,6 +144,8 @@ The public result must identify:
 
 Finite-difference, adjoint and automatic-differentiation routes remain distinct capabilities. JAX support is optional and cannot make JAX a mandatory core dependency.
 
+Black-Scholes analytical-oracle APIs must name whether an input is volatility `sigma` or variance `sigma**2`. Volatility Vega `dV/dsigma` and variance sensitivity `dV/d(sigma**2)` are separate quantities connected by the chain rule only when variance is strictly positive. Zero-maturity, zero-volatility, zero-spot and invalid-input limiting cases are part of the public numerical contract.
+
 ### FR-FEM-010 — Numerical validation
 
 The repository must maintain method-specific tests for:

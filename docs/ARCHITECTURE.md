@@ -306,6 +306,8 @@ Sensitivity methods are distinct adapters:
 
 Each result names the differentiated parameter/state coordinate, units, evaluation point, method, smoothing policy and error evidence. Nonsmooth payoff behavior is explicitly tested rather than hidden by optimistic tolerances.
 
+The Black-Scholes analytical oracle distinguishes volatility `sigma` from variance `sigma**2` at the API boundary. Legacy variance-based `call`/`put` methods are compatibility wrappers; new code uses `*_from_volatility` or `*_from_variance`. Volatility Vega (`dV/dsigma`) and variance sensitivity (`dV/d(sigma**2)`) are not interchangeable; the variance route raises at zero variance where the chain-rule sensitivity is singular. Expiry, deterministic zero-volatility, zero-spot and invalid-input branches are explicit tests rather than implicit division-by-zero behavior.
+
 ## 16. Backend plugin architecture
 
 Candidate entry point:

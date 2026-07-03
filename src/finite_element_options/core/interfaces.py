@@ -3,30 +3,36 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, Protocol
+from typing import Iterable, Protocol, TypeAlias
 import numpy as np
 import skfem as fem
 import scipy.sparse as sps
+
+ArrayLikeFloat: TypeAlias = float | np.ndarray
 
 
 class Payoff(ABC):
     """Payoff contract for option instruments."""
 
     @abstractmethod
-    def call_payoff(self, s: float) -> float:
+    def call_payoff(self, s: ArrayLikeFloat) -> ArrayLikeFloat:
         """Return intrinsic value of a call option at spot ``s``."""
 
     @abstractmethod
-    def put_payoff(self, s: float) -> float:
+    def put_payoff(self, s: ArrayLikeFloat) -> ArrayLikeFloat:
         """Return intrinsic value of a put option at spot ``s``."""
 
     @abstractmethod
-    def call(self, th: float, s: float, v: float) -> float:
-        """Return price of the call option."""
+    def call(
+        self, th: float, s: ArrayLikeFloat, variance: ArrayLikeFloat
+    ) -> ArrayLikeFloat:
+        """Return call price from variance ``sigma**2``."""
 
     @abstractmethod
-    def put(self, th: float, s: float, v: float) -> float:
-        """Return price of the put option."""
+    def put(
+        self, th: float, s: ArrayLikeFloat, variance: ArrayLikeFloat
+    ) -> ArrayLikeFloat:
+        """Return put price from variance ``sigma**2``."""
 
 
 class DynamicsModel(Protocol):
@@ -67,7 +73,9 @@ class SpaceDiscretization(Protocol):
     def initial_condition(self) -> np.ndarray:
         """Return the initial condition projected on the space."""
 
-    def matrices(self, theta: float, dt: float) -> tuple[sps.csr_matrix, sps.csr_matrix]:
+    def matrices(
+        self, theta: float, dt: float
+    ) -> tuple[sps.csr_matrix, sps.csr_matrix]:
         """Return system matrices for the θ-scheme."""
 
     def boundary_term(self, th: float) -> np.ndarray:
