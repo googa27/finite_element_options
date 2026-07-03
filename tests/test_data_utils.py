@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import builtins
 import hashlib
 import json
+import os
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -139,6 +141,57 @@ def test_failed_lock_contender_does_not_remove_active_writer_lock(tmp_path) -> N
     lock_path.unlink()
     df_to_csv(df, path)
     assert path.exists()
+
+
+def test_manifest_publish_failure_rolls_back_existing_artifact(
+    tmp_path, monkeypatch
+) -> None:
+    original = make_market_dataframe([90], [0.5], [1.1], metadata=_metadata())
+    replacement = make_market_dataframe(
+        [100], [1.0], [2.2], metadata={**_metadata(), "run_id": "run-002"}
+    )
+    path = tmp_path / "market.csv"
+    df_to_csv(original, path)
+    original_manifest = _manifest(path)
+    real_replace = os.replace
+    manifest_path = path.with_suffix(path.suffix + ".manifest.json")
+
+    def fail_final_manifest_replace(src, dst):  # noqa: ANN001
+        if os.fspath(dst) == os.fspath(manifest_path) and os.fspath(src).endswith(
+            ".tmp"
+        ):
+            raise OSError("simulated manifest publish failure")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", fail_final_manifest_replace)
+
+    with pytest.raises(OSError, match="simulated manifest publish failure"):
+        df_to_csv(replacement, path, overwrite=True)
+
+    assert _manifest(path) == original_manifest
+    loaded = df_from_csv(path)
+    assert loaded.attrs["run_id"] == "run-001"
+    assert loaded.iloc[0]["strike"] == 90
+    assert not any(
+        child.name.endswith((".tmp", ".bak", ".lock")) for child in tmp_path.iterdir()
+    )
+
+
+def test_parquet_helpers_name_required_io_extra_when_pyarrow_missing(
+    tmp_path, monkeypatch
+) -> None:
+    df = make_market_dataframe([90], [0.5], [1.1], metadata=_metadata())
+    real_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
+        if name.startswith("pyarrow"):
+            raise ModuleNotFoundError(name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+    with pytest.raises(ImportError, match=r"finite-element-options\[io\]"):
+        df_to_parquet(df, tmp_path / "market.parquet")
 
 
 def test_concurrent_style_writers_cannot_overwrite_existing_artifact(tmp_path) -> None:

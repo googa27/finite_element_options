@@ -95,6 +95,20 @@ def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
             pass
 
 
+def _missing_io_extra_message() -> str:
+    """Return a useful optional-dependency error message for Parquet helpers."""
+
+    return (
+        "Parquet artifact helpers require the 'io' extra: "
+        "install finite-element-options[io] to enable pyarrow-backed reads/writes."
+    )
+
+
+def _restore_publish_backup(backup_path: Path, final_path: Path) -> None:
+    if backup_path.exists():
+        os.replace(backup_path, final_path)
+
+
 def _artifact_manifest(
     *,
     path: Path,
@@ -129,10 +143,20 @@ def _atomic_publish(
     final_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path = _manifest_path(final_path)
     tmp_data = final_path.with_name(f".{final_path.name}.{uuid.uuid4().hex}.tmp")
+    tmp_manifest = manifest_path.with_name(
+        f".{manifest_path.name}.{uuid.uuid4().hex}.tmp"
+    )
+    backup_data = final_path.with_name(f".{final_path.name}.{uuid.uuid4().hex}.bak")
+    backup_manifest = manifest_path.with_name(
+        f".{manifest_path.name}.{uuid.uuid4().hex}.bak"
+    )
 
     with _artifact_lock(final_path):
         if not overwrite and (final_path.exists() or manifest_path.exists()):
             raise FileExistsError(f"artifact already exists: {final_path}")
+        data_backed_up = False
+        manifest_backed_up = False
+        data_published = False
         try:
             writer(tmp_data)
             manifest = _artifact_manifest(
@@ -142,15 +166,39 @@ def _atomic_publish(
                 extra=extra,
             )
             manifest["data_path"] = final_path.name
+            manifest["data_sha256"] = _sha256(tmp_data)
+            tmp_manifest.write_text(
+                json.dumps(manifest, indent=2, sort_keys=True, default=_json_default)
+                + "\n",
+                encoding="utf-8",
+            )
+            if final_path.exists():
+                os.replace(final_path, backup_data)
+                data_backed_up = True
+            if manifest_path.exists():
+                os.replace(manifest_path, backup_manifest)
+                manifest_backed_up = True
             os.replace(tmp_data, final_path)
-            manifest["data_sha256"] = _sha256(final_path)
-            _write_json_atomic(manifest_path, manifest)
+            data_published = True
+            os.replace(tmp_manifest, manifest_path)
+            backup_data.unlink(missing_ok=True)
+            backup_manifest.unlink(missing_ok=True)
             return manifest
+        except Exception:
+            if data_published:
+                final_path.unlink(missing_ok=True)
+            if not manifest_backed_up:
+                manifest_path.unlink(missing_ok=True)
+            _restore_publish_backup(backup_data, final_path)
+            _restore_publish_backup(backup_manifest, manifest_path)
+            raise
         finally:
-            try:
-                tmp_data.unlink()
-            except FileNotFoundError:
-                pass
+            tmp_data.unlink(missing_ok=True)
+            tmp_manifest.unlink(missing_ok=True)
+            if not data_backed_up:
+                backup_data.unlink(missing_ok=True)
+            if not manifest_backed_up:
+                backup_manifest.unlink(missing_ok=True)
 
 
 def _load_manifest(path: str | Path, expected_artifact_type: str) -> dict[str, Any]:
@@ -182,8 +230,13 @@ def _write_parquet_with_metadata(
 ) -> None:
     """Write a Parquet table with finite-element-options metadata in the schema."""
 
-    import pyarrow as pa  # type: ignore[import-untyped]
-    import pyarrow.parquet as pq  # type: ignore[import-untyped]
+    try:
+        import pyarrow as pa  # type: ignore[import-untyped]
+        import pyarrow.parquet as pq  # type: ignore[import-untyped]
+    except (
+        ModuleNotFoundError
+    ) as exc:  # pragma: no cover - covered via import monkeypatch.
+        raise ImportError(_missing_io_extra_message()) from exc
 
     table = pa.Table.from_pandas(df, preserve_index=False)
     existing = table.schema.metadata or {}
@@ -199,7 +252,12 @@ def _write_parquet_with_metadata(
 def _read_parquet_metadata(path: str | Path) -> dict[str, Any]:
     """Read finite-element-options metadata embedded in a Parquet schema."""
 
-    import pyarrow.parquet as pq  # type: ignore[import-untyped]
+    try:
+        import pyarrow.parquet as pq  # type: ignore[import-untyped]
+    except (
+        ModuleNotFoundError
+    ) as exc:  # pragma: no cover - covered via import monkeypatch.
+        raise ImportError(_missing_io_extra_message()) from exc
 
     metadata = pq.read_schema(path).metadata or {}
     raw = metadata.get(b"finite_element_options.metadata")
