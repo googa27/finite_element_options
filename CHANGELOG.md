@@ -2,9 +2,12 @@
 
 ## Unreleased
 
-- Added `src/estimation` module with a generic `Calibrator` base class and a
-  sample `HestonCalibrator` demonstrating least-squares calibration on synthetic
-  data. Documented expected input formats for future data integration.
+- Reworked `src/estimation` calibration outputs to return structured
+  `CalibrationResult` diagnostics. Synthetic fixture calibration now lives behind
+  `SyntheticSurfaceCalibrator`; `HestonCalibrator` fails closed until a real
+  Heston pricing engine is available, and `StatsmodelsCalibrator` is a
+  deprecation shim that delegates to supported SciPy least squares without
+  private Statsmodels imports or monkeypatches.
 - Introduced an `AdaptiveMesh` utility enabling residual- or gradient-based
   adaptive refinement. Demo and solver now support configurable criteria and
   tests assert element counts increase or decrease accordingly.

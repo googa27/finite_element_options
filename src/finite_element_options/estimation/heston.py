@@ -1,78 +1,138 @@
-"""Heston model calibration utilities."""
+"""Calibration adapters and synthetic surface fixtures.
+
+The historical module name is retained for compatibility, but the Heston-named
+calibrator is fail-closed until a real Heston pricing engine is wired in. The
+toy formula used by tests and examples lives behind explicitly synthetic class
+names so it cannot be mistaken for production Heston calibration.
+"""
 
 from __future__ import annotations
 
-from typing import Sequence
+import warnings
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
-from statsmodels.miscmodels.nonlinls import NonlinearLS
-import pymc as pm
 
-from .calibrator import Calibrator
+from .calibrator import CalibrationResult, Calibrator, ParameterVector
+
+_SYNTHETIC_PARAMETER_NAMES = (
+    "level",
+    "strike_slope",
+    "maturity_slope",
+    "sqrt_strike_slope",
+    "maturity_quadratic",
+)
 
 
-class HestonCalibrator(Calibrator):
-    """Calibrate simplified Heston parameters using least squares.
+class SyntheticSurfaceCalibrator(Calibrator):
+    """Calibrate a documented synthetic option-surface fixture.
 
-    The pricing formula is intentionally simplistic and serves only as a
-    placeholder.  It allows the calibration workflow to be demonstrated with
-    synthetic data without relying on a full Heston implementation.
+    This class is intentionally not a Heston model. It exists for deterministic
+    examples and tests while real Heston calibration remains blocked behind a
+    supported pricing engine and model-risk diagnostics.
     """
+
+    parameter_names = _SYNTHETIC_PARAMETER_NAMES
 
     @staticmethod
     def price_formula(
-        strikes: np.ndarray, maturities: np.ndarray, params: Sequence[float]
+        strikes: np.ndarray, maturities: np.ndarray, params: ParameterVector
     ) -> np.ndarray:
-        """Synthetic pricing formula used for demo purposes.
+        """Synthetic pricing formula used for fixtures only.
 
         Parameters
         ----------
         strikes, maturities:
             Arrays defining the option surface.
         params:
-            Sequence ``[v0, kappa, theta, sigma, rho]``.
+            Sequence ``[level, strike_slope, maturity_slope,
+            sqrt_strike_slope, maturity_quadratic]``.
         """
 
-        v0, kappa, theta, sigma, rho = params
+        level, strike_slope, maturity_slope, sqrt_strike_slope, maturity_quadratic = (
+            params
+        )
         return (
-            v0
-            + 1e-2 * kappa * strikes
-            + theta * maturities
-            + 1e-1 * sigma * np.sqrt(strikes)
-            + rho * maturities**2
+            level
+            + 1e-2 * strike_slope * strikes
+            + maturity_slope * maturities
+            + 1e-1 * sqrt_strike_slope * np.sqrt(strikes)
+            + maturity_quadratic * maturities**2
         )
 
-    def model_prices(self, params: Sequence[float]) -> np.ndarray:
+    def model_prices(self, params: ParameterVector) -> np.ndarray:
         """Return prices implied by ``params`` across the market grid."""
         return self.price_formula(self.strikes, self.maturities, params)
 
 
-class StatsmodelsCalibrator(HestonCalibrator):
-    """Calibrate using ``statsmodels`` nonlinear least squares."""
+class HestonCalibrator(Calibrator):
+    """Fail-closed placeholder for real Heston calibration.
 
-    def calibrate(self, initial_guess: Sequence[float]) -> np.ndarray:  # type: ignore[override]
-        """Return parameters estimated via ``statsmodels`` NLS solver."""
-        strikes, maturities = self.strikes, self.maturities
+    The previous implementation used a toy polynomial under a Heston name. That
+    is model-risk unsafe, so this compatibility class refuses to calibrate until
+    a real Heston pricing route and diagnostics are implemented.
+    """
 
-        class _NLS(NonlinearLS):
-            def _predict(self, params: Sequence[float]) -> np.ndarray:
-                return HestonCalibrator.price_formula(strikes, maturities, params)
+    parameter_names = ("v0", "kappa", "theta", "sigma", "rho")
 
-        # Work around missing RegressionResults symbol in statsmodels.miscmodels
-        from statsmodels.regression.linear_model import RegressionResults
-        import statsmodels.regression as regression
+    @staticmethod
+    def _unsupported_message() -> str:
+        return (
+            "HestonCalibrator requires a real Heston pricing engine and model-risk "
+            "diagnostics; use SyntheticSurfaceCalibrator only for synthetic fixtures."
+        )
 
-        if not hasattr(regression, "RegressionResults"):
-            regression.RegressionResults = RegressionResults
+    def model_prices(self, params: ParameterVector) -> np.ndarray:
+        """Refuse to price through a toy Heston route."""
+        raise NotImplementedError(self._unsupported_message())
 
-        model = _NLS(endog=self.prices)
-        res = model.fit(start_value=np.asarray(initial_guess), nparams=len(initial_guess))
-        return res.params
+    def calibrate(
+        self,
+        initial_guess: ParameterVector,
+        *,
+        bounds: tuple[Sequence[float] | float, Sequence[float] | float] | None = None,
+        weights: Sequence[float] | None = None,
+        loss: str = "linear",
+    ) -> CalibrationResult:
+        """Refuse Heston calibration until a real model implementation exists."""
+        del initial_guess, bounds, weights, loss
+        raise NotImplementedError(self._unsupported_message())
 
 
-class PyMCCalibrator(HestonCalibrator):
-    """Bayesian calibration with :mod:`pymc` and simple priors."""
+class StatsmodelsCalibrator(SyntheticSurfaceCalibrator):
+    """Deprecated compatibility shim for the removed Statsmodels NLS adapter."""
+
+    def calibrate(
+        self,
+        initial_guess: ParameterVector,
+        *,
+        bounds: tuple[Sequence[float] | float, Sequence[float] | float] | None = None,
+        weights: Sequence[float] | None = None,
+        loss: str = "linear",
+    ) -> CalibrationResult:
+        """Delegate to the supported SciPy least-squares adapter."""
+        warnings.warn(
+            "StatsmodelsCalibrator no longer uses private statsmodels NLS APIs; "
+            "it delegates to SciPy least_squares and will be removed after the "
+            "compatibility window.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return super().calibrate(
+            initial_guess,
+            bounds=bounds,
+            weights=weights,
+            loss=loss,
+        )
+
+
+class PyMCCalibrator(SyntheticSurfaceCalibrator):
+    """Bayesian calibration of the synthetic fixture with :mod:`pymc`.
+
+    This is not a Heston calibration route. It returns posterior means plus a
+    structured diagnostic shell for fixture experiments only.
+    """
 
     def calibrate(  # type: ignore[override]
         self,
@@ -81,8 +141,10 @@ class PyMCCalibrator(HestonCalibrator):
         tune: int | None = None,
         random_seed: int | None = 123,
         target_accept: float = 0.9,
-    ) -> np.ndarray:
-        """Return posterior means of the Heston parameters."""
+    ) -> CalibrationResult:
+        """Return posterior means for the synthetic fixture parameters."""
+
+        import pymc as pm
 
         if tune is None:
             tune = draws
@@ -90,13 +152,21 @@ class PyMCCalibrator(HestonCalibrator):
         strikes, maturities = self.strikes, self.maturities
 
         with pm.Model():
-            v0 = pm.Normal("v0", mu=0.04, sigma=0.1)
-            kappa = pm.Normal("kappa", mu=1.0, sigma=0.5)
-            theta = pm.Normal("theta", mu=0.04, sigma=0.1)
-            sigma = pm.HalfNormal("sigma", sigma=0.3)
-            rho = pm.Uniform("rho", lower=-1.0, upper=1.0)
-            params = pm.math.stack([v0, kappa, theta, sigma, rho])
-            mu = HestonCalibrator.price_formula(strikes, maturities, params)
+            level = pm.Normal("level", mu=0.04, sigma=0.1)
+            strike_slope = pm.Normal("strike_slope", mu=1.0, sigma=0.5)
+            maturity_slope = pm.Normal("maturity_slope", mu=0.04, sigma=0.1)
+            sqrt_strike_slope = pm.HalfNormal("sqrt_strike_slope", sigma=0.3)
+            maturity_quadratic = pm.Uniform("maturity_quadratic", lower=-1.0, upper=1.0)
+            params = pm.math.stack(
+                [
+                    level,
+                    strike_slope,
+                    maturity_slope,
+                    sqrt_strike_slope,
+                    maturity_quadratic,
+                ]
+            )
+            mu = SyntheticSurfaceCalibrator.price_formula(strikes, maturities, params)
             pm.Normal("obs", mu=mu, sigma=0.01, observed=self.prices)
             trace = pm.sample(
                 draws=draws,
@@ -108,55 +178,66 @@ class PyMCCalibrator(HestonCalibrator):
             )
 
         posterior = trace.posterior
-        means = [posterior[var].mean().item() for var in ["v0", "kappa", "theta", "sigma", "rho"]]
-        return np.asarray(means)
+        means = np.asarray(
+            [posterior[var].mean().item() for var in _SYNTHETIC_PARAMETER_NAMES],
+            dtype=float,
+        )
+        residuals = self.residuals(means)
+        return CalibrationResult(
+            parameters=means,
+            success=True,
+            status=1,
+            message="PyMC posterior mean computed for synthetic fixture",
+            residuals=np.asarray(residuals, dtype=float),
+            cost=float(0.5 * np.dot(residuals, residuals)),
+            optimality=float("nan"),
+            jacobian_rank=0,
+            jacobian_condition=np.inf,
+            bounds=(
+                np.full(means.shape, -np.inf, dtype=float),
+                np.full(means.shape, np.inf, dtype=float),
+            ),
+            active_mask=np.zeros(means.shape, dtype=int),
+            nfev=int(draws * chains),
+            njev=None,
+            method="pymc.sample",
+            parameter_names=_SYNTHETIC_PARAMETER_NAMES,
+        )
 
 
-def sample_calibration() -> np.ndarray:
-    """Run a toy calibration against synthetic market data.
-
-    Returns
-    -------
-    numpy.ndarray
-        Estimated parameter vector close to the ground truth.
-    """
-
+def _synthetic_market_data() -> tuple[pd.DataFrame, np.ndarray]:
     s = np.linspace(80, 120, 5)
     t = np.linspace(0.1, 1.0, 5)
-    strikes, maturities = np.meshgrid(s, t)
-    strikes, maturities = strikes.ravel(), maturities.ravel()
+    strikes_grid, maturities_grid = np.meshgrid(s, t)
+    strikes = strikes_grid.ravel()
+    maturities = maturities_grid.ravel()
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
-    prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
+    prices = SyntheticSurfaceCalibrator.price_formula(strikes, maturities, true_params)
     data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
-    calibrator = HestonCalibrator(data)
+    return data, true_params
+
+
+def sample_calibration() -> CalibrationResult:
+    """Run a toy calibration against explicitly synthetic market data."""
+
+    data, true_params = _synthetic_market_data()
+    calibrator = SyntheticSurfaceCalibrator(data)
     initial_guess = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
     return calibrator.calibrate(initial_guess)
 
 
-def sample_statsmodels_calibration() -> np.ndarray:
-    """Example calibration using :class:`StatsmodelsCalibrator`."""
+def sample_statsmodels_calibration() -> CalibrationResult:
+    """Example calibration through the deprecated Statsmodels shim."""
 
-    s = np.linspace(80, 120, 5)
-    t = np.linspace(0.1, 1.0, 5)
-    strikes, maturities = np.meshgrid(s, t)
-    strikes, maturities = strikes.ravel(), maturities.ravel()
-    true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
-    prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
-    data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
+    data, true_params = _synthetic_market_data()
     calibrator = StatsmodelsCalibrator(data)
     initial_guess = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
     return calibrator.calibrate(initial_guess)
 
 
-def sample_pymc_calibration() -> np.ndarray:
-    """Example Bayesian calibration returning posterior means."""
+def sample_pymc_calibration() -> CalibrationResult:
+    """Example Bayesian calibration returning synthetic posterior means."""
 
-    s = np.linspace(80, 120, 5)
-    t = np.linspace(0.1, 1.0, 5)
-    strikes, maturities = np.meshgrid(s, t)
-    strikes, maturities = strikes.ravel(), maturities.ravel()
-    true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
-    prices = HestonCalibrator.price_formula(strikes, maturities, true_params)
-    data = pd.DataFrame({"strike": strikes, "maturity": maturities, "price": prices})
+    data, _ = _synthetic_market_data()
     calibrator = PyMCCalibrator(data)
     return calibrator.calibrate(draws=500, chains=2, random_seed=123)
