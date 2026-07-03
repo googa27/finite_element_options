@@ -8,6 +8,7 @@ the canonical Black-Scholes oracle so edge semantics stay aligned.
 
 from __future__ import annotations
 
+import math
 import time
 import tracemalloc
 from typing import Any, Literal, Tuple
@@ -49,6 +50,17 @@ def _bs_price_jax(
     ) * jspst.norm.cdf(d2)
 
 
+def _requires_canonical_greek_path(
+    s: float, k: float, r: float, q: float, sigma: float, t: float
+) -> bool:
+    """Return whether JAX autodiff would hit a singular Black-Scholes expression."""
+
+    values = (s, k, r, q, sigma, t)
+    if not all(math.isfinite(value) for value in values):
+        return True
+    return s <= 0.0 or k <= 0.0 or t <= 0.0 or sigma <= 0.0
+
+
 def _greeks_numpy(
     s: float, k: float, r: float, q: float, sigma: float, t: float
 ) -> Tuple[float, float]:
@@ -65,7 +77,7 @@ def _greeks_jax(
 ) -> Tuple[float, float]:
     """Return ``delta`` and volatility ``vega`` via JAX automatic differentiation."""
 
-    if t <= 0.0 or sigma <= 0.0:
+    if _requires_canonical_greek_path(s, k, r, q, sigma, t):
         return _greeks_numpy(s, k, r, q, sigma, t)
     price = _bs_price_jax
     delta = jax.grad(lambda _s: price(_s, k, r, q, sigma, t))(s)
