@@ -1,0 +1,117 @@
+{
+  "artifact_manifest": {
+    "benchmark_ids": [
+      "PINARES-FEM-FAIL-CLOSED-V0"
+    ],
+    "fixture_id": "public-synthetic.pinares-fem-fixed-price-proxy.v1",
+    "issue_refs": [
+      "googa27/finite_element_options#78"
+    ],
+    "manifest_id": "pinares-fem-fixed-price-proxy-public-synthetic-v1",
+    "schema_version": "artifact-manifest/v0"
+  },
+  "benchmark_ids": [
+    "PINARES-FEM-FAIL-CLOSED-V0"
+  ],
+  "contract_id": "9980c896f76d71b2081d0e02ac4edfebee240d1b955b4b8a0ed0067316fae8fe",
+  "financial_graph": {
+    "instrument": {
+      "contains_rofr": true,
+      "kind": "family_real_estate_use_right_full_contract",
+      "legal_coordination": "proposal_assumption",
+      "unit": "UF"
+    }
+  },
+  "mathematical_problem": {
+    "boundary_conditions": {
+      "legal_coordination": "legal_coordination_constraint",
+      "rofr_exercise": "free_boundary_with_linear_continuation",
+      "sale_or_stress": "absorbing"
+    },
+    "dimension": 4,
+    "exercise_style": "rofr_full_family_contract",
+    "measure_id": "P/Q*_mixed_unsupported",
+    "numeraire_id": "UF_money_market_account_proxy",
+    "pde_terms": [
+      "drift",
+      "diffusion",
+      "reaction",
+      "hazard_killing",
+      "liquidity_jump",
+      "hjb_control",
+      "obstacle"
+    ],
+    "requested_outputs": [
+      "value",
+      "delta",
+      "gamma",
+      "legal_tax_conclusion"
+    ],
+    "state_variables": [
+      "property_value",
+      "father_alive",
+      "liquidity_state",
+      "legal_coordination_state"
+    ]
+  },
+  "privacy_class": "public_synthetic",
+  "problem_hash": "publicsyntheticpinaresfullunsupported001",
+  "problem_id": "pinares.full_family_contract.unsupported.v1",
+  "result_bundle": {
+    "benchmark_ids": [
+      "PINARES-FEM-FAIL-CLOSED-V0"
+    ]
+  },
+  "schema_version": "quant-problem-spec/v0",
+  "solver_plan": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "element_family": "lagrange_p2",
+    "error_budgets": {
+      "delta_abs": 0.001,
+      "gamma_abs": 5e-06,
+      "price_abs_uf": 1.0
+    },
+    "formulation_kind": "weak_form",
+    "linear_solver": "scipy_direct",
+    "mesh_family": "line_uniform",
+    "method_id": "pinares-fem-fixed-price-proxy-weak-form-p2-theta",
+    "method_kind": "finite_element",
+    "requested_outputs": [
+      "value",
+      "delta",
+      "gamma",
+      "legal_tax_conclusion"
+    ],
+    "resource_controls": {
+      "deterministic": "true",
+      "max_refinement_level": 7,
+      "refinement_levels": [
+        5,
+        6,
+        7
+      ],
+      "time_steps": 160
+    },
+    "stability_controls": [
+      "theta"
+    ],
+    "time_controls": {
+      "theta": 0.5
+    }
+  },
+  "valuation_context": {
+    "maturity_date": "2027-06-30",
+    "measure": "Q*",
+    "numeraire": "UF_money_market_account_proxy",
+    "privacy_tier": "public_synthetic",
+    "time_domain": "[0, 1]",
+    "units": {
+      "S": "UF",
+      "rate": "1/year",
+      "time": "year",
+      "underlying": "UF",
+      "value": "UF"
+    },
+    "valuation_date": "2026-06-30"
+  }
+}

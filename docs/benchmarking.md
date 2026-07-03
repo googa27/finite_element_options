@@ -53,3 +53,34 @@ The payoff tests cover call/put parity against the NumPy formulas, including
 non-contiguous grid views.  Because Numba is not imported by the payoff path and
 is no longer a runtime requirement, absent or incompatible Numba installations
 cannot silently change solver behavior.
+
+## Public Pinares fixed-price proxy fixture
+
+Project #12 issue #78 adds a public-synthetic FEM weak-form fixture for the
+Pinares fixed-price purchase-option proxy. It is intentionally a numerical
+compatibility benchmark, not a family-contract/legal/tax valuation. Refresh the
+published JSON artifacts with:
+
+```bash
+python scripts/export_pinares_fixed_price_proxy_fixture.py
+```
+
+The script writes:
+
+- `tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json`
+- `tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json`
+- `tests/fixtures/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json`
+- `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json`
+
+Verification is the deterministic analytical-oracle and fail-closed test slice:
+
+```bash
+pytest -q --override-ini addopts= tests/test_pinares_fem_proxy.py tests/test_fem_backend_capabilities.py
+```
+
+The supported route is only one-dimensional, public-synthetic, `Q*` proxy,
+UF-denominated, Lagrange-P2 on a uniform line mesh, theta/Crank-Nicolson time
+stepping, SciPy direct solve, endpoint Dirichlet/linear-growth boundaries, and
+value/Delta/Gamma outputs. Full Pinares deal routes (ROFR, legal coordination,
+liquidity jumps/default, HJB/control, obstacle/free boundary or legal/tax output)
+must produce diagnostics before mesh allocation.

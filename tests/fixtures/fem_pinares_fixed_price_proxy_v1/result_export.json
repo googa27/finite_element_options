@@ -1,0 +1,124 @@
+{
+  "benchmark_id": "PINARES-FEM-FIXED-PRICE-PROXY-V0",
+  "boundary_conditions": [
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "0",
+      "location": "S=0"
+    },
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "linear_growth_call_far_field",
+      "location": "S=S_max",
+      "s_max_uf": 12000.0
+    }
+  ],
+  "config_hash": "c37aa963488c714e9a7f53576646850bfe5028b6996c9c030b334b9379997062",
+  "format_version": "fem-pinares-fixed-price-proxy-result-v1",
+  "mesh_metadata": {
+    "domain_max": 1.93548387097,
+    "domain_min": 0.0,
+    "element_family": "lagrange_p2",
+    "mesh_family": "line_uniform",
+    "refinement_levels": [
+      5,
+      6,
+      7
+    ],
+    "solver_backing": "scikit-fem+sparse-direct",
+    "spatial_domain": "[0, 1.93548387097] normalized spot S/K"
+  },
+  "no_arbitrage": {
+    "delta_lower_bound_ok": true,
+    "delta_upper_bound_ok": true,
+    "gamma_non_negative_ok": true,
+    "survival_scale_ok": true,
+    "upper_bound_ok": true,
+    "upper_gap_uf": 5588.21424031,
+    "value_bound_ok": true,
+    "value_minus_intrinsic_uf": 231.785759687
+  },
+  "privacy_class": "public_synthetic",
+  "problem_hash": "publicsyntheticpinares001",
+  "problem_id": "pinares.fixed_price_option_proxy.v1",
+  "route_id": "fem.pinares_fixed_price_proxy.weak_form_p2_theta",
+  "rows": [
+    {
+      "absolute_error_uf": 0.751581609012,
+      "degrees_of_freedom": 65,
+      "delta_absolute_error": 0.000525538736252,
+      "expected_delta": 0.450894388491,
+      "expected_gamma": 0.000535375143682,
+      "expected_price_uf": 231.799493826,
+      "gamma_absolute_error": 1.18439161796e-05,
+      "observed_delta": 0.450368849755,
+      "observed_gamma": 0.000523531227503,
+      "observed_price_uf": 231.047912217,
+      "refinement_level": 5,
+      "relative_error": 0.00324237812865,
+      "time_steps": 160
+    },
+    {
+      "absolute_error_uf": 0.0385313354793,
+      "degrees_of_freedom": 129,
+      "delta_absolute_error": 0.000119557842531,
+      "expected_delta": 0.450894388491,
+      "expected_gamma": 0.000535375143682,
+      "expected_price_uf": 231.799493826,
+      "gamma_absolute_error": 3.27388704802e-06,
+      "observed_delta": 0.450774830649,
+      "observed_gamma": 0.000532101256634,
+      "observed_price_uf": 231.76096249,
+      "refinement_level": 6,
+      "relative_error": 0.000166227004397,
+      "time_steps": 160
+    },
+    {
+      "absolute_error_uf": 0.0137341390588,
+      "degrees_of_freedom": 257,
+      "delta_absolute_error": 3.17289694128e-05,
+      "expected_delta": 0.450894388491,
+      "expected_gamma": 0.000535375143682,
+      "expected_price_uf": 231.799493826,
+      "gamma_absolute_error": 8.14326605289e-07,
+      "observed_delta": 0.450862659522,
+      "observed_gamma": 0.000534560817077,
+      "observed_price_uf": 231.785759687,
+      "refinement_level": 7,
+      "relative_error": 5.92500821816e-05,
+      "time_steps": 160
+    }
+  ],
+  "summary": {
+    "delta_absolute_error": 3.17289694128e-05,
+    "delta_tolerance_absolute": 0.001,
+    "expected_delta": 0.450894388491,
+    "expected_gamma": 0.000535375143682,
+    "expected_price_uf": 231.799493826,
+    "gamma_absolute_error": 8.14326605289e-07,
+    "gamma_tolerance_absolute": 5e-06,
+    "observed_delta": 0.450862659522,
+    "observed_gamma": 0.000534560817077,
+    "observed_price_uf": 231.785759687,
+    "price_absolute_error_uf": 0.0137341390588,
+    "price_relative_error": 5.92500821816e-05,
+    "price_tolerance_absolute_uf": 1.0
+  },
+  "time_metadata": {
+    "end_time": 1.0,
+    "integrator": "theta_crank_nicolson",
+    "start_time": 0.0,
+    "theta": 0.5,
+    "time_domain": "[0, 1]",
+    "time_steps": 160
+  },
+  "weak_form": {
+    "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+    "equation_id": "pinares_fixed_price_proxy_black_scholes_weak_form",
+    "payoff_scaling": "UF value = survival_probability * K_uf * normalized_call_value",
+    "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+    "time_transformation": "tau = T - t"
+  }
+}

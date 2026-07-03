@@ -140,33 +140,57 @@ class FEMRouteRequest:
                     default="line_uniform",
                 )
             ),
-            element_family=str(_first_present(solver, ("element_family", "element", "space_family"), default="lagrange_p2")),
+            element_family=str(
+                _first_present(
+                    solver, ("element_family", "element", "space_family"), default="lagrange_p2"
+                )
+            ),
             pde_terms=_tuple_of_strings(
-                _first_present(math, ("pde_terms", "terms"), default=("drift", "diffusion", "reaction"))
+                _first_present(
+                    math, ("pde_terms", "terms"), default=("drift", "diffusion", "reaction")
+                )
             ),
             boundary_conditions=_boundary_condition_classes(
-                _first_present(math, ("boundary_types", "boundaries", "boundary_conditions"), default=("dirichlet",))
+                _first_present(
+                    math,
+                    ("boundary_types", "boundaries", "boundary_conditions"),
+                    default=("dirichlet",),
+                )
             ),
-            exercise_style=str(_first_present(math, ("exercise_style", "exercise"), default="european")),
+            exercise_style=str(
+                _first_present(math, ("exercise_style", "exercise"), default="european")
+            ),
             requested_outputs=_tuple_of_strings(
-                _first_present(solver, ("requested_outputs", "required_outputs", "outputs"), default=("value",))
+                _first_present(
+                    solver, ("requested_outputs", "required_outputs", "outputs"), default=("value",)
+                )
             ),
             stability_controls=_tuple_of_strings(
                 _first_present(solver, ("stability_controls", "stability"), default=("theta",))
             ),
-            linear_solver=str(_first_present(solver, ("linear_solver", "solver", "linear_solver_policy"), default="scipy_direct")),
+            linear_solver=str(
+                _first_present(
+                    solver,
+                    ("linear_solver", "solver", "linear_solver_policy"),
+                    default="scipy_direct",
+                )
+            ),
             measure=_optional_string(
                 _first_present(
                     context,
                     ("measure",),
-                    default=_first_present(math, ("measure_id", "measure"), default=conventions.get("measure")),
+                    default=_first_present(
+                        math, ("measure_id", "measure"), default=conventions.get("measure")
+                    ),
                 )
             ),
             numeraire=_optional_string(
                 _first_present(
                     context,
                     ("numeraire",),
-                    default=_first_present(math, ("numeraire_id", "numeraire"), default=conventions.get("numeraire")),
+                    default=_first_present(
+                        math, ("numeraire_id", "numeraire"), default=conventions.get("numeraire")
+                    ),
                 )
             ),
             units=_mapping(
@@ -178,12 +202,20 @@ class FEMRouteRequest:
             ),
             boundary_details={str(key): str(value) for key, value in boundary_details.items()},
             valuation_date=_optional_string(
-                _first_present(context, ("valuation_date", "as_of_date"), default=vintage.get("valuation_date"))
+                _first_present(
+                    context, ("valuation_date", "as_of_date"), default=vintage.get("valuation_date")
+                )
             ),
-            maturity_date=_optional_string(_first_present(context, ("maturity_date",), default=vintage.get("maturity_date"))),
-            time_domain=_optional_string(_first_present(context, ("time_domain",), default=domain.get("t"))),
+            maturity_date=_optional_string(
+                _first_present(context, ("maturity_date",), default=vintage.get("maturity_date"))
+            ),
+            time_domain=_optional_string(
+                _first_present(context, ("time_domain",), default=domain.get("t"))
+            ),
             source_schema_version=_optional_string(payload.get("schema_version")),
-            backend_id=_optional_string(_first_present(solver, ("backend_id", "backend"), default=None)),
+            backend_id=_optional_string(
+                _first_present(solver, ("backend_id", "backend"), default=None)
+            ),
         )
 
 
@@ -200,7 +232,13 @@ DEFAULT_FEM_CAPABILITY_MANIFEST = FEMCapabilityManifest(
     outputs=("value", "delta", "gamma"),
     stability_controls=("theta", "crank_nicolson"),
     linear_solvers=("scipy_direct",),
-    required_conventions=("measure", "numeraire", "units", "valuation_date", "maturity_or_time_domain"),
+    required_conventions=(
+        "measure",
+        "numeraire",
+        "units",
+        "valuation_date",
+        "maturity_or_time_domain",
+    ),
     diagnostics=(
         "unsupported dimension",
         "unsupported mesh family",
@@ -213,8 +251,9 @@ DEFAULT_FEM_CAPABILITY_MANIFEST = FEMCapabilityManifest(
     ),
     notes=(
         "The executable parity fixture validates the 1D public-synthetic Black-Scholes call value.",
-        "Adaptive meshes, higher-order elements, American exercise, HJB/control and jump terms fail closed until evidenced.",
-        "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixture; broader kink-aware production evidence remains separate.",
+        "The Pinares fixed-price proxy validates the same 1D weak-form envelope with public-synthetic UF units, survival-scaled terminal payoff, Lagrange P2 line mesh, theta stepping and SciPy direct solves.",
+        "Adaptive meshes, higher-order elements, American exercise, obstacles/free boundaries, HJB/control and jump terms fail closed until evidenced.",
+        "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixtures; broader kink-aware production evidence remains separate.",
     ),
 )
 
@@ -249,7 +288,13 @@ def diagnose_unsupported_route(
             )
         )
 
-    _extend_set_diagnostics(diagnostics, UnsupportedReason.UNSUPPORTED_MESH, "mesh_family", (request.mesh_family,), manifest.mesh_families)
+    _extend_set_diagnostics(
+        diagnostics,
+        UnsupportedReason.UNSUPPORTED_MESH,
+        "mesh_family",
+        (request.mesh_family,),
+        manifest.mesh_families,
+    )
     _extend_set_diagnostics(
         diagnostics,
         UnsupportedReason.UNSUPPORTED_ELEMENT,
@@ -257,7 +302,13 @@ def diagnose_unsupported_route(
         (request.element_family,),
         manifest.element_families,
     )
-    _extend_set_diagnostics(diagnostics, UnsupportedReason.UNSUPPORTED_TERM, "pde_terms", request.pde_terms, manifest.pde_terms)
+    _extend_set_diagnostics(
+        diagnostics,
+        UnsupportedReason.UNSUPPORTED_TERM,
+        "pde_terms",
+        request.pde_terms,
+        manifest.pde_terms,
+    )
     if request.boundary_conditions:
         _extend_set_diagnostics(
             diagnostics,
