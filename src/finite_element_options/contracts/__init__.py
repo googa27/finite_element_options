@@ -11,6 +11,11 @@ from .backend_capabilities import (
     diagnose_unsupported_route,
     ensure_route_supported,
 )
+from .formula_bundle import (
+    finite_element_formula_bundle,
+    formula_bundle_json,
+    validate_formula_bundle,
+)
 
 __all__ = [
     "CapabilityStatus",
@@ -22,4 +27,7 @@ __all__ = [
     "UnsupportedRouteError",
     "diagnose_unsupported_route",
     "ensure_route_supported",
+    "finite_element_formula_bundle",
+    "formula_bundle_json",
+    "validate_formula_bundle",
 ]
