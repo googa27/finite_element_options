@@ -79,10 +79,10 @@ class _ScalarOnlyPayoffWithStrike:
 
 def test_fd_solver_initial_condition_honors_custom_payoff_semantics():
     dh = DynamicsParametersBlackScholes(r=0.03, q=0.0, sig=0.2)
-    s_grid = np.array([0.0, 1.0, 1.5, 2.0], dtype=float)
+    s_grid = np.array([0.0, 0.5, 1.0, 1.5], dtype=float)
     solver = FDSolver(s_grid, dh, _CappedPayoffWithStrike(), is_call=True)
 
-    np.testing.assert_allclose(solver.initial_condition(), [0.0, 0.0, 0.25, 0.25])
+    np.testing.assert_allclose(solver.initial_condition(), [0.0, 0.0, 0.0, 0.25])
 
 
 def test_fd_solver_initial_condition_falls_back_for_scalar_only_payoffs():
