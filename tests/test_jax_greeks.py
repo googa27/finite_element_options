@@ -35,6 +35,21 @@ def test_jax_backend_uses_canonical_limits_for_zero_spot():
     assert vega_jax == pytest.approx(vega_np)
 
 
+def test_jax_backend_uses_canonical_limits_for_subnormal_tail_spot():
+    """Positive subnormal tail spots must not be differentiated through JAX log."""
+
+    params = dict(s=1e-40, k=100.0, r=0.05, q=0.0, sigma=0.2, t=1.0)
+    delta_jax, vega_jax = compute_greeks(**params, backend="jax")
+    delta_np, vega_np = compute_greeks(**params, backend="numpy")
+    delta_auto, vega_auto = compute_greeks(**params, backend="auto")
+    assert math.isfinite(delta_jax)
+    assert math.isfinite(vega_jax)
+    assert delta_jax == pytest.approx(delta_np)
+    assert vega_jax == pytest.approx(vega_np)
+    assert delta_auto == pytest.approx(delta_np)
+    assert vega_auto == pytest.approx(vega_np)
+
+
 def test_jax_backend_delegates_invalid_spot_validation():
     """Invalid non-regular inputs should fail exactly like the canonical oracle."""
 

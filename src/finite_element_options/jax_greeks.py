@@ -53,12 +53,20 @@ def _bs_price_jax(
 def _requires_canonical_greek_path(
     s: float, k: float, r: float, q: float, sigma: float, t: float
 ) -> bool:
-    """Return whether JAX autodiff would hit a singular Black-Scholes expression."""
+    """Return whether JAX autodiff would hit a singular or saturated expression."""
 
     values = (s, k, r, q, sigma, t)
     if not all(math.isfinite(value) for value in values):
         return True
-    return s <= 0.0 or k <= 0.0 or t <= 0.0 or sigma <= 0.0
+    if s <= 0.0 or k <= 0.0 or t <= 0.0 or sigma <= 0.0:
+        return True
+    sqrt_t = math.sqrt(t)
+    variance_time = sigma * sigma * t
+    d1 = (math.log(s / k) + (r - q) * t + 0.5 * variance_time) / (sigma * sqrt_t)
+    d2 = d1 - sigma * sqrt_t
+    if not math.isfinite(d1) or not math.isfinite(d2):
+        return True
+    return max(abs(d1), abs(d2)) > 12.0
 
 
 def _greeks_numpy(
