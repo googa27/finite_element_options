@@ -57,12 +57,23 @@ class DynamicsModel(Protocol):
 
     def A(self, *coords) -> list[list[float]]:
         """Diffusion matrix of the state variables."""
+        ...
 
     def dA(self, *coords) -> list[float]:
         """Divergence of the diffusion matrix."""
+        ...
 
     def b(self, *coords) -> list[float]:
         """Drift vector of the state variables."""
+        ...
+
+    def discount(self, state: np.ndarray, time: float) -> ArrayLikeFloat:
+        """Return the reaction/discount coefficient field ``c(x,t)``."""
+        ...
+
+    def source(self, state: np.ndarray, time: float) -> ArrayLikeFloat:
+        """Return the running source/load field ``f(x,t)``."""
+        ...
 
     def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:
         """Return natural boundary contribution if available."""
@@ -85,9 +96,14 @@ class SpaceDiscretization(Protocol):
         """Return the initial condition projected on the space."""
 
     def matrices(
-        self, theta: float, dt: float
+        self,
+        theta: float,
+        dt: float,
+        *,
+        start: float | None = None,
+        end: float | None = None,
     ) -> tuple[sps.csr_matrix, sps.csr_matrix]:
-        """Return system matrices for the θ-scheme."""
+        """Return system matrices for the θ-scheme endpoint interval."""
 
     def boundary_term(self, th: float) -> np.ndarray:
         """Return natural boundary vector at time ``th``."""

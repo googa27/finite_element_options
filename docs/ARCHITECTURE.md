@@ -206,6 +206,16 @@ Issue #35 makes coordinate transforms part of the generator, not just mesh cosme
 \]
 with row divergence \(\nabla_y\cdot\widetilde A\) recomputed in transformed coordinates before forming \(\mu=\widetilde b-\frac12\nabla_y\cdot\widetilde A\). This covers identity, log-price and square-root-variance maps and fails closed at singular physical boundaries such as \(v=0\) for \(y=\sqrt v\). A mesh grading/reparameterization is a different object and must not be advertised as a state-variable transform unless these Jacobian/Hessian/measure terms are applied.
 
+Issue #36 extends the same contract to reaction/source coefficients. The generic scikit-fem form assembles the operator contribution
+\[
+\ell_\tau(u,v)=-\frac12\int_\Omega\nabla v^\top A\nabla u\,dx+\int_\Omega v\,\mu\cdot\nabla u\,dx-\int_\Omega c(x,\tau)vu\,dx
+\]
+using quadrature-point `discount(state, time)` values, and cell loads use `source(state, time)`. Theta steps assemble endpoint operators \(L_{t_n}\), \(L_{t_{n+1}}\) as
+\[
+(M-\theta\Delta t L_{t_{n+1}})u^{n+1}=(M+(1-\theta)\Delta t L_{t_n})u^n+\Delta t[\theta f_{t_{n+1}}+(1-\theta)f_{t_n}],
+\]
+so callable coefficients are refreshed with the same endpoint semantics as boundary data and cannot be silently frozen into a constant matrix. For Heston 3D, the third coordinate is the short-rate state used by `discount(state, time)`; constant-rate states reproduce the 2D Heston reaction limit.
+
 ## 8. Native contract model
 
 ```text

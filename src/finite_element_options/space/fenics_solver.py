@@ -84,8 +84,16 @@ class FenicsSolver(SpaceDiscretization):
             return np.array([self.payoff.call_payoff(s) for s in coords])
         return np.array([self.payoff.put_payoff(s) for s in coords])
 
-    def matrices(self, theta: float, dt: float):
+    def matrices(
+        self,
+        theta: float,
+        dt: float,
+        *,
+        start: float | None = None,
+        end: float | None = None,
+    ):
         """Return PETSc system matrices for the θ-scheme."""
+        del start, end
         A = self.mass.copy()
         A.axpy(-theta * dt, self.stiffness)
         B = self.mass.copy()

@@ -75,7 +75,10 @@ class SpaceSolver:
             "config" in dynamics.mean_variance.__code__.co_varnames
         )
         self.mass = self.forms.id_bil().assemble(self.Vh)
-        self.stiffness = self.forms.l_bil().assemble(self.Vh)
+        self._operator_matrix_cache: dict[float, object] = {}
+        self.matrix_time_calls: list[tuple[float, float]] = []
+        self.last_coefficient_diagnostics: dict[str, str] = {}
+        self.stiffness = self.operator_matrix(0.0)
 
     def domain_diagnostics(
         self, *, horizon: float, tail_mass: float = 1.0e-6
@@ -149,16 +152,53 @@ class SpaceSolver:
         """Initial spatial values from the payoff."""
         return self.Vh.project(lambda x: self._projected_payoff(x))
 
-    def matrices(self, theta: float, dt: float):
-        """Return the system matrices for the θ-scheme."""
-        A = self.mass - theta * dt * self.stiffness
-        B = self.mass + (1 - theta) * dt * self.stiffness
+    def operator_matrix(self, th: float = 0.0):
+        """Assemble or reuse the spatial PDE operator at time ``th``.
+
+        ``th`` is supplied in the solver time coordinate and transformed back
+        before coefficient fields are evaluated.  The resulting matrix includes
+        diffusion, advection and the quadrature-evaluated reaction/discount
+        field.
+        """
+
+        time_key = float(np.asarray(th, dtype=float))
+        if not np.isfinite(time_key):
+            raise ValueError("operator assembly time must be finite")
+        if time_key not in self._operator_matrix_cache:
+            th_phys = float(np.asarray(self.transform.untransform_time(time_key)))
+            matrix = self.forms.operator_form(th_phys).assemble(self.Vh, th=th_phys)
+            self._operator_matrix_cache[time_key] = matrix
+            diagnostics = getattr(self.forms, "coefficient_diagnostics", {})
+            self.last_coefficient_diagnostics = dict(diagnostics)
+        return self._operator_matrix_cache[time_key]
+
+    def matrices(
+        self,
+        theta: float,
+        dt: float,
+        *,
+        start: float | None = None,
+        end: float | None = None,
+    ):
+        """Return the endpoint-refreshed system matrices for the θ-scheme."""
+
+        start_time = 0.0 if start is None else float(start)
+        end_time = start_time if end is None else float(end)
+        self.matrix_time_calls.append((start_time, end_time))
+        start_operator = self.operator_matrix(start_time)
+        end_operator = self.operator_matrix(end_time)
+        A = self.mass - theta * dt * end_operator
+        B = self.mass + (1 - theta) * dt * start_operator
         return A, B
 
     def boundary_term(self, th: float) -> np.ndarray:
-        """Assemble the natural boundary contribution at time ``th``."""
+        """Assemble natural-boundary and source contributions at time ``th``."""
         th_phys = float(np.asarray(self.transform.untransform_time(th)))
-        return self.forms.b_lin().assemble(self.dVh, th=th_phys)
+        natural = self.forms.b_lin().assemble(self.dVh, th=th_phys)
+        source = self.forms.source_lin(th_phys).assemble(self.Vh, th=th_phys)
+        diagnostics = getattr(self.forms, "coefficient_diagnostics", {})
+        self.last_coefficient_diagnostics = dict(diagnostics)
+        return np.asarray(natural, dtype=float) + np.asarray(source, dtype=float)
 
     def dirichlet(self, th: float) -> np.ndarray:
         """Return nodal Dirichlet values at time ``th``.
@@ -226,7 +266,8 @@ class SpaceSolver:
         self.Vh = fem.CellBasis(self.mesh, self.config.elem)
         self.dVh = fem.FacetBasis(self.mesh, self.config.elem)
         self.mass = self.forms.id_bil().assemble(self.Vh)
-        self.stiffness = self.forms.l_bil().assemble(self.Vh)
+        self._operator_matrix_cache.clear()
+        self.stiffness = self.operator_matrix(0.0)
         self.last_adaptive_diagnostics = result.diagnostics
         return result
 

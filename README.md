@@ -55,6 +55,7 @@ This reproduces the same call option pricing workflow without depending on a che
 - Public-synthetic Pinares fixed-price option weak-form proxy fixture (`PINARES-FEM-FIXED-PRICE-PROXY-V0`) with UF units, survival-scaled terminal payoff, Lagrange-P2 line mesh evidence and fail-closed full-deal diagnostics in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/`.
 - Released public FEM solver contract (`finite-element-options-fem-solver-contract-v0.1`) plus solver-cache benchmark evidence (`FEM-SOLVER-CACHE-001`) for repeated 1D line-uniform SciPy-direct solves with sparse LU factorization reuse; banded, AMG and PETSc routes fail closed in the capability manifest until separately evidenced.
 - Theta-family time stepping validates finite increasing grids, uses each nonuniform local step, canonicalizes roundoff-uniform grids for deterministic reuse, enforces Dirichlet data at the new time node, and supports Rannacher startup through a recorded theta/internal-step schedule.
+- State/time-dependent `discount(state, time)` and `source(state, time)` coefficient fields are evaluated at FEM quadrature points and refreshed at theta-scheme endpoint times; Heston 3D uses the third state coordinate as the stochastic short-rate reaction coefficient.
 
 ## Installation
 
