@@ -241,10 +241,13 @@ Public contracts are immutable or snapshot-able and serialization-tested. `tests
 
 Mesh APIs declare dimension, coordinate system, topology, geometric mapping, boundary markers, refinement lineage and deterministic identity. Element spaces declare family, polynomial order, continuity and quadrature assumptions.
 
+Issue #39 makes tensor-product domains explicit through `DomainSpec` and `DomainAxis`: legacy numeric extents still mean `[0, upper]`, while axis records and `(lower, upper)` pairs support negative-rate/OU states and transformed-coordinate meshes. Mesh construction attaches canonical facet labels such as `s_min`, `s_max`, `v_min`, and `v_max`, plus public domain metadata. Solver diagnostics now report state-domain metadata, named facets, mesh size, and variance-domain tail evidence for each theta solve.
+
 Validation includes:
 
 - nondegenerate elements and orientation;
-- domain and boundary-marker consistency;
+- explicit lower/upper domain bounds, including nonzero or negative lower bounds;
+- domain and named boundary-marker consistency;
 - dimensional compatibility;
 - interpolation/projection shape checks;
 - refinement lineage and state-transfer stability.
@@ -275,7 +278,7 @@ BoundaryCondition
 └── optional periodic/asymptotic adapter when validated
 ```
 
-Each BC declares whether it contributes to the weak form, algebraic elimination or both. Tests inspect boundary residuals, interior RHS correction and corner/intersection policy.
+Each BC declares whether it contributes to the weak form, algebraic elimination or both. Tests inspect boundary residuals, interior RHS correction and corner/intersection policy. Dirichlet elimination validates named facets before enforcement, materializes boundary iterables exactly once, rejects duplicate labels, and evaluates boundary oracles at finite-element degree-of-freedom coordinates rather than through an `L2` projection that can smear endpoint values. Black-Scholes boundary values therefore retain full carry, strike, maturity and coordinate-transform semantics at `s_min`/`s_max`.
 
 ## 12. Time integration and state transfer
 

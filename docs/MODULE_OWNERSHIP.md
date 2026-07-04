@@ -26,7 +26,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | `__init__.py` | core | Lightweight package marker; no broad re-exports | Base import only | core | Keep narrow |
 | `contracts/` | core | Immutable native FEM/portfolio compatibility contracts, formula bundles and capability records | Stable public contracts | core | Stabilize under #48/#49 |
 | `core/` | core | Market/model coefficient helpers and analytical references used by FEM tests | Public but FEM-owned | core | Consolidate with typed contracts under #48 |
-| `space/` | core | Meshes, finite-element spaces, weak forms, BCs, solvers and adaptivity | Public FEM mechanics | core | Stabilize under #48 |
+| `space/` | core | Domain specs, meshes, finite-element spaces, weak forms, named BCs, solvers and adaptivity | Public FEM mechanics | core | Stabilize under #48; domain/boundary metadata under #39 |
 | `time_integration/` | core | Theta stepping and time-policy mechanics | Public FEM mechanics | core | Stabilize under #48 |
 | `transform.py` | core | Coordinate/time transforms plus componentwise generator chain-rule coefficients | Public utility | core | Keep only convention-explicit transforms with Jacobian/Hessian evidence |
 | `problems/` | validation | Thin backend-neutral problem fixtures and examples; not product ownership | Transitional public fixtures | core | Move problem identity into typed contracts under #48 |

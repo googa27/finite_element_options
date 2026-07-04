@@ -8,6 +8,7 @@ import skfem as fem
 from .forms import Forms, PDEForms
 from .boundary import apply_dirichlet
 from .adaptive import AdaptiveMesh
+from finite_element_options.space.domain import DomainSpec
 from finite_element_options.transform import CoordinateTransform
 from finite_element_options.core.config import Config
 
@@ -75,6 +76,40 @@ class SpaceSolver:
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self.stiffness = self.forms.l_bil().assemble(self.Vh)
 
+    def domain_diagnostics(
+        self, *, horizon: float, tail_mass: float = 1.0e-6
+    ) -> dict[str, object]:
+        """Return public domain, boundary, and model-tail diagnostics."""
+
+        domain = getattr(self.mesh, "domain_spec", None)
+        if isinstance(domain, DomainSpec):
+            state_domain = [axis.to_public_dict() for axis in domain.axes]
+        else:
+            state_domain = [
+                {
+                    "name": f"x{axis}",
+                    "lower": float(np.min(self.mesh.p[axis])),
+                    "upper": float(np.max(self.mesh.p[axis])),
+                    "scale": "unknown",
+                    "truncation_policy": "mesh-extents",
+                    "tail_mass": None,
+                }
+                for axis in range(int(self.mesh.dim()))
+            ]
+        diagnostics: dict[str, object] = {
+            "horizon": float(horizon),
+            "coordinate_system": getattr(domain, "coordinate_system", "unknown"),
+            "state_domain": state_domain,
+            "boundary_facets": tuple((getattr(self.mesh, "boundaries", None) or {})),
+            "mesh_dimension": int(self.mesh.dim()),
+            "mesh_elements": int(self.mesh.nelements),
+        }
+        diagnostics["variance_domain"] = self.variance_domain_diagnostics(
+            horizon=horizon,
+            tail_mass=tail_mass,
+        )
+        return diagnostics
+
     def _projected_payoff(
         self, x: np.ndarray, *, th_phys: float | None = None
     ) -> np.ndarray:
@@ -121,14 +156,22 @@ class SpaceSolver:
 
     def boundary_term(self, th: float) -> np.ndarray:
         """Assemble the natural boundary contribution at time ``th``."""
-        th_phys = self.transform.untransform_time(th)
+        th_phys = float(np.asarray(self.transform.untransform_time(th)))
         return self.forms.b_lin().assemble(self.dVh, th=th_phys)
 
     def dirichlet(self, th: float) -> np.ndarray:
-        """Return Dirichlet values at time ``th``."""
-        th_phys = self.transform.untransform_time(th)
+        """Return nodal Dirichlet values at time ``th``.
 
-        return self.Vh.project(lambda x: self._projected_payoff(x, th_phys=th_phys))
+        Dirichlet elimination consumes one value per degree of freedom, so this
+        evaluates the boundary oracle at ``Vh.doflocs`` instead of using an
+        ``L2`` projection that can smear endpoint values.
+        """
+
+        th_phys = float(np.asarray(self.transform.untransform_time(th)))
+        return np.asarray(
+            self._projected_payoff(self.Vh.doflocs, th_phys=th_phys),
+            dtype=float,
+        )
 
     def variance_domain_diagnostics(
         self, *, horizon: float, tail_mass: float = 1.0e-6

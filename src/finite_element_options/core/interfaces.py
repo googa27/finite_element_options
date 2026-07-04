@@ -95,6 +95,10 @@ class SpaceDiscretization(Protocol):
     def dirichlet(self, th: float) -> np.ndarray:
         """Return Dirichlet values at time ``th``."""
 
+    def domain_diagnostics(self, *, horizon: float, tail_mass: float = 1.0e-6) -> dict:
+        """Return public domain and boundary diagnostics."""
+        ...
+
     def apply_dirichlet(
         self,
         A,

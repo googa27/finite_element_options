@@ -48,19 +48,19 @@ class Mapping(Protocol):
 
     # The following methods define the expected interface and are not
     # executed directly; hence they are excluded from coverage metrics.
-    def transform(self, x: np.ndarray) -> np.ndarray:  # pragma: no cover
+    def transform(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
         """Map ``x`` from the physical to the transformed domain."""
         ...
 
-    def untransform(self, x: np.ndarray) -> np.ndarray:  # pragma: no cover
+    def untransform(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
         """Map ``x`` from the transformed back to the physical domain."""
         ...
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:  # pragma: no cover
+    def derivative(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
         r"""Return ``dy/dx`` for the physical-to-transformed map."""
         ...
 
-    def second_derivative(self, x: np.ndarray) -> np.ndarray:  # pragma: no cover
+    def second_derivative(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
         r"""Return ``d²y/dx²`` for the physical-to-transformed map."""
         ...
 
@@ -69,19 +69,19 @@ class Mapping(Protocol):
 class Identity:
     """Trivial mapping leaving values unchanged."""
 
-    def transform(self, x: np.ndarray) -> np.ndarray:
+    def transform(self, x: float | np.ndarray) -> float | np.ndarray:
         """Return ``x`` unchanged."""
         return _match_input_shape(x, _as_float_array("identity coordinate", x))
 
-    def untransform(self, x: np.ndarray) -> np.ndarray:
+    def untransform(self, x: float | np.ndarray) -> float | np.ndarray:
         """Return ``x`` unchanged."""
         return _match_input_shape(x, _as_float_array("identity coordinate", x))
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:
+    def derivative(self, x: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``dy/dx = 1`` for the identity map."""
         return np.ones_like(_as_float_array("identity coordinate", x), dtype=float)
 
-    def second_derivative(self, x: np.ndarray) -> np.ndarray:
+    def second_derivative(self, x: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``d²y/dx² = 0`` for the identity map."""
         return np.zeros_like(_as_float_array("identity coordinate", x), dtype=float)
 
@@ -94,20 +94,20 @@ class LogPrice:
     ``log(s)`` and the inverse applies the exponential map.
     """
 
-    def transform(self, s: np.ndarray) -> np.ndarray:
+    def transform(self, s: float | np.ndarray) -> float | np.ndarray:
         r"""Map strictly positive spot price ``s`` to log space ``\log s``."""
         return _match_input_shape(s, np.log(_require_strictly_positive("log-price transform", s)))
 
-    def untransform(self, x: np.ndarray) -> np.ndarray:
+    def untransform(self, x: float | np.ndarray) -> float | np.ndarray:
         """Recover price ``s = e^x`` from log space."""
         return _match_input_shape(x, np.exp(_as_float_array("log-price coordinate", x)))
 
-    def derivative(self, s: np.ndarray) -> np.ndarray:
+    def derivative(self, s: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``d log(s) / ds = 1 / s``."""
         spot = _require_strictly_positive("log-price transform", s)
         return 1.0 / spot
 
-    def second_derivative(self, s: np.ndarray) -> np.ndarray:
+    def second_derivative(self, s: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``d² log(s) / ds² = -1 / s²``."""
         spot = _require_strictly_positive("log-price transform", s)
         return -1.0 / np.square(spot)
@@ -117,26 +117,26 @@ class LogPrice:
 class SqrtVol:
     """Square-root mapping for (co)variance variables."""
 
-    def transform(self, v: np.ndarray) -> np.ndarray:
+    def transform(self, v: float | np.ndarray) -> float | np.ndarray:
         r"""Map non-negative variance ``v`` to its root ``\sqrt{v}``."""
         variance = _as_float_array("sqrt-variance transform", v)
         if np.any(variance < 0.0):
             raise ValueError("sqrt-variance transform requires non-negative values")
         return _match_input_shape(v, np.sqrt(variance))
 
-    def untransform(self, y: np.ndarray) -> np.ndarray:
+    def untransform(self, y: float | np.ndarray) -> float | np.ndarray:
         """Square a non-negative root coordinate to recover variance ``v = y^2``."""
         root_variance = _as_float_array("sqrt-variance coordinate", y)
         if np.any(root_variance < 0.0):
             raise ValueError("sqrt-variance coordinate requires non-negative values")
         return _match_input_shape(y, np.square(root_variance))
 
-    def derivative(self, v: np.ndarray) -> np.ndarray:
+    def derivative(self, v: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``d sqrt(v) / dv = 1/(2 sqrt(v))``."""
         variance = _require_strictly_positive("sqrt-variance transform", v)
         return 0.5 / np.sqrt(variance)
 
-    def second_derivative(self, v: np.ndarray) -> np.ndarray:
+    def second_derivative(self, v: float | np.ndarray) -> float | np.ndarray:
         r"""Return ``d² sqrt(v) / dv² = -1/(4 v^{3/2})``."""
         variance = _require_strictly_positive("sqrt-variance transform", v)
         return -0.25 / np.power(variance, 1.5)
@@ -148,12 +148,12 @@ class TimeToMaturity:
 
     maturity: float
 
-    def transform(self, t: np.ndarray) -> np.ndarray:
+    def transform(self, t: float | np.ndarray) -> float | np.ndarray:
         """Return the time-to-maturity ``T - t``."""
 
         return _match_input_shape(t, self.maturity - _as_float_array("time coordinate", t))
 
-    def untransform(self, tau: np.ndarray) -> np.ndarray:
+    def untransform(self, tau: float | np.ndarray) -> float | np.ndarray:
         """Recover the original time from time-to-maturity ``tau``."""
 
         return _match_input_shape(
@@ -315,12 +315,12 @@ class CoordinateTransform:
             diffusion_divergence.append(row_divergence)
         return diffusion, diffusion_divergence, drift
 
-    def transform_time(self, t: np.ndarray) -> np.ndarray:
+    def transform_time(self, t: float | np.ndarray) -> float | np.ndarray:
         """Transform time variable."""
 
         return self.time.transform(t)
 
-    def untransform_time(self, tau: np.ndarray) -> np.ndarray:
+    def untransform_time(self, tau: float | np.ndarray) -> float | np.ndarray:
         """Inverse mapping of :meth:`transform_time`."""
 
         return self.time.untransform(tau)

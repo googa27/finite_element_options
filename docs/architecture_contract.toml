@@ -96,7 +96,7 @@ public_surface = "public FEM-owned helpers"
 path = "space"
 layer = "core"
 owner = "finite_element_options"
-treatment = "meshes, finite-element spaces, weak forms, BCs, solvers, and adaptivity"
+treatment = "domain specs, meshes, finite-element spaces, weak forms, named BCs, solvers, and adaptivity"
 public_surface = "public FEM mechanics"
 
 [[module_ownership]]

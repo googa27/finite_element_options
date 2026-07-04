@@ -31,6 +31,8 @@ GitHub issues, canonical docs, tests and release manifests are authoritative. Lo
 
 This repository owns meshes, finite-element spaces, weak forms, assembly, boundary treatment, time integration, adaptivity, sparse solver policies, sensitivities and FEM diagnostics.
 
+Issue #39 domain/boundary rule: use explicit `DomainSpec`/`DomainAxis` or bound pairs whenever lower bounds, transformed coordinates or tail truncation matter. Meshes must carry named facets (`s_min`, `s_max`, `v_min`, `v_max`, ...), Dirichlet BCs must validate those names before enforcement, and boundary oracles must be evaluated at finite-element degrees of freedom rather than through an `L2` projection.
+
 It does not own Haircut Engine domain or CASCADE policy, PDP internals, or a second production finite-difference implementation.
 
 Cross-repository integration uses released wheels, a versioned solver contract, entry points and parity fixtures. Do not add production Git submodules, local-path release dependencies, branch dependencies or repository-relative imports.

@@ -94,6 +94,7 @@ class ThetaScheme(TimeStepper):
             factorization_cache_key="not_run",
             stage_timings_sec={"factorization": 0.0, "solve": 0.0},
         )
+        self.last_domain_diagnostics: dict[str, object] = {}
 
     def solve(
         self,
@@ -105,6 +106,12 @@ class ThetaScheme(TimeStepper):
         """Return solution grid for the supplied time nodes ``t``."""
         t = tuple(float(item) for item in t)
         dt = t[1] - t[0]
+        if hasattr(space, "domain_diagnostics"):
+            self.last_domain_diagnostics = space.domain_diagnostics(
+                horizon=t[-1] - t[0]
+            )
+        else:
+            self.last_domain_diagnostics = {}
         v_tsv = np.empty((len(t), space.Vh.N))
         v_tsv[0] = space.initial_condition()
         A, B = space.matrices(self.theta, dt)
