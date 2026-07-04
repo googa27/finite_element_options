@@ -209,19 +209,22 @@ def cir_variance_domain_diagnostics(
     ratio = feller_ratio(
         kappa=kappa, theta=theta, volatility_of_variance=volatility_of_variance
     )
+    initial_variance_array = _as_float_array("initial_variance", initial_variance)
+    initial_variance_min = float(np.min(initial_variance_array))
+    initial_variance_max = float(np.max(initial_variance_array))
     return {
         "policy": "cir-chebyshev-tail-bound",
         "horizon": float(horizon),
         "kappa": float(kappa),
         "theta": float(theta),
         "volatility_of_variance": float(volatility_of_variance),
-        "initial_variance_min": float(np.min(_as_float_array("initial_variance", initial_variance))),
-        "initial_variance_max": float(np.max(_as_float_array("initial_variance", initial_variance))),
+        "initial_variance_min": initial_variance_min,
+        "initial_variance_max": initial_variance_max,
         "mean_variance_min": mean_min,
         "mean_variance_max": mean_max,
         "variance_of_variance_max": variance_max,
         "domain_lower": 0.0,
-        "domain_upper": max(0.0, mean_max + radius),
+        "domain_upper": max(0.0, initial_variance_max, mean_max + radius),
         "tail_mass": float(tail_mass),
         "estimated_omitted_mass": float(tail_mass),
         "feller_ratio": ratio,
