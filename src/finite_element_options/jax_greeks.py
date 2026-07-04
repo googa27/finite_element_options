@@ -156,7 +156,8 @@ def _bs_price_jax(
     """Black-Scholes call price in JAX space for regular positive-volatility cases."""
 
     assert jnp is not None and jspst is not None
-    d1 = (jnp.log(s / k) + (r - q + 0.5 * sigma**2) * t) / (sigma * jnp.sqrt(t))
+    log_moneyness = jnp.log(s) - jnp.log(k)
+    d1 = (log_moneyness + (r - q + 0.5 * sigma**2) * t) / (sigma * jnp.sqrt(t))
     d2 = d1 - sigma * jnp.sqrt(t)
     return s * jnp.exp(-q * t) * jspst.norm.cdf(d1) - k * jnp.exp(
         -r * t
@@ -197,6 +198,14 @@ def _requires_canonical_greek_path(
         return True
     if s <= 0.0 or k <= 0.0 or t <= 0.0 or sigma <= 0.0:
         return True
+    if (
+        JAX_AVAILABLE
+        and jax is not None
+        and not bool(getattr(jax.config, "jax_enable_x64", False))
+    ):
+        float32 = np.finfo(np.float32)
+        if s < float32.tiny or k < float32.tiny or s > float32.max or k > float32.max:
+            return True
     sqrt_t = math.sqrt(t)
     variance_time = sigma * sigma * t
     log_moneyness = math.log(s) - math.log(k)

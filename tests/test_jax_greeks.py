@@ -138,6 +138,22 @@ def test_numpy_backend_keeps_finite_extreme_tail_greeks() -> None:
     assert report.delta.method == "analytical_oracle_limit"
 
 
+def test_jax_backend_avoids_ratio_underflow_for_offset_log_moneyness() -> None:
+    """Extreme scale ratios should return finite JAX-requested diagnostics."""
+
+    params = dict(s=1.0e-100, k=1.0e100, r=460.5, q=0.0, sigma=0.2, t=1.0)
+    report = compute_greeks_report(**params, backend="jax")
+    numpy_report = compute_greeks_report(**params, backend="numpy")
+    assert math.isfinite(report.delta.value)
+    assert math.isfinite(report.vega.value)
+    assert report.delta.value == pytest.approx(
+        numpy_report.delta.value, rel=1.0e-5, abs=1.0e-12
+    )
+    assert report.vega.value == pytest.approx(
+        numpy_report.vega.value, rel=1.0e-5, abs=1.0e-12
+    )
+
+
 def test_report_marks_nonfinite_greeks_undefined() -> None:
     """Overflowed analytical Greeks should not be reported as finite diagnostics."""
 
