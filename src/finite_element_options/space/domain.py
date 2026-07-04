@@ -108,14 +108,15 @@ class DomainSpec:
                 axes.append(item)
                 continue
             name = _DEFAULT_AXIS_NAMES[axis] if axis < len(_DEFAULT_AXIS_NAMES) else f"x{axis}"
-            if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
-                if len(item) != 2:
-                    raise ValueError("domain bound sequences must be (lower, upper) pairs")
-                lower, upper = item
-            elif isinstance(item, (str, bytes)):
+            if isinstance(item, (str, bytes)):
                 raise ValueError("domain extents must be numeric bounds, not strings")
+            values = np.asarray(item, dtype=float)
+            if values.ndim == 0:
+                lower, upper = 0.0, float(values)
+            elif values.shape == (2,):
+                lower, upper = values
             else:
-                lower, upper = 0.0, float(item)
+                raise ValueError("domain bound sequences must be (lower, upper) pairs")
             axes.append(DomainAxis(name, float(lower), float(upper)))
         return cls(tuple(axes))
 
