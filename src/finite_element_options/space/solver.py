@@ -128,6 +128,44 @@ class SpaceSolver:
 
         return self.Vh.project(lambda x: self._projected_payoff(x, th_phys=th_phys))
 
+    def variance_domain_diagnostics(
+        self, *, horizon: float, tail_mass: float = 1.0e-6
+    ) -> dict:
+        """Return model/domain diagnostics for the variance coordinate.
+
+        Heston-like dynamics expose exact CIR moment diagnostics.  The spatial
+        solver enriches those model diagnostics with the current mesh variance
+        extent so downstream evidence can tell whether the numerical domain is
+        a model-driven tail bound or only an ad-hoc mesh size.
+        """
+
+        if not hasattr(self.dynamics, "variance_domain_diagnostics"):
+            return {
+                "policy": "no-stochastic-variance-coordinate",
+                "horizon": float(horizon),
+                "mesh_dimension": int(self.mesh.dim()),
+            }
+
+        state = self.transform.untransform_state(self.mesh.p)
+        variance_seed = state[1] if state.shape[0] > 1 else np.zeros_like(state[0])
+        diagnostics = dict(
+            self.dynamics.variance_domain_diagnostics(
+                horizon=horizon,
+                initial_variance=variance_seed,
+                tail_mass=tail_mass,
+            )
+        )
+        if state.shape[0] > 1:
+            diagnostics["mesh_variance_min"] = float(np.min(variance_seed))
+            diagnostics["mesh_variance_max"] = float(np.max(variance_seed))
+            diagnostics["mesh_contains_tail_bound"] = bool(
+                diagnostics["mesh_variance_min"] <= diagnostics["domain_lower"]
+                and diagnostics["domain_upper"] <= diagnostics["mesh_variance_max"]
+            )
+        diagnostics["mesh_dimension"] = int(self.mesh.dim())
+        diagnostics["mesh_elements"] = int(self.mesh.nelements)
+        return diagnostics
+
     def apply_dirichlet(self, A, b, dirichlet_bcs, u_dirichlet):
         """Apply Dirichlet boundary conditions to ``A`` and ``b``."""
         return apply_dirichlet(A, b, self.Vh, dirichlet_bcs, u_dirichlet)

@@ -19,6 +19,14 @@ Issue #55 narrows the credit-risk example to a constant-intensity reduced-form d
 
 The repository is one numerical backend in a federated portfolio. It may implement the Haircut Engine solver contract through a thin plugin, but it must not depend on Haircut domain entities or PDP internals.
 
+Issue #34 fixes Heston variance moment semantics before any higher-dimensional domain claims are advertised. The two- and three-dimensional Heston helpers share one CIR kernel for
+
+\[
+E[V_{t+\tau}\mid V_t=v]=\theta+(v-\theta)e^{-\kappa\tau},
+\]
+
+including zero-horizon, zero-mean-reversion, small-product and long-horizon limits. Boundary pricing now uses the exact CIR time-average mean variance, while solver evidence includes conservative variance-domain diagnostics built from the exact terminal first two CIR moments, the Feller ratio and an explicit Chebyshev tail-mass bound.
+
 ## 2. Portfolio role and boundaries
 
 | Concern | This repository owns | This repository must not own |

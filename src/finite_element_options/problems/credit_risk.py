@@ -272,7 +272,12 @@ class ReducedFormCreditRiskModel:
             loss_given_default=claim.loss_given_default,
         )
 
-    def mean_variance(self, th: float, v: float) -> float:  # pylint: disable=unused-argument
+    def mean_variance(
+        self,
+        th: float,
+        v: float,
+        config=None,
+    ) -> float:  # pylint: disable=unused-argument
         """Return zero variance for the scalar ODE reference."""
 
         return 0.0

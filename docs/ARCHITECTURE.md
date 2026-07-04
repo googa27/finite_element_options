@@ -31,6 +31,17 @@ No layer may invent missing model coefficients or hide an unsupported boundary, 
 
 Issue #55 applies this rule to the credit-risk example: the supported constant-intensity defaultable zero-coupon claim is state-free, so it is represented by the scalar ODE/closed-form reduced-form reference rather than a fake one-node FEM domain. A stochastic-intensity credit PDE must declare its state process, generator, domain, boundaries and benchmark evidence before becoming a FEM route.
 
+Issue #34 establishes the shared Heston/CIR moment kernel used by the two- and three-dimensional Heston helpers. The finite-time Black-Scholes boundary oracle receives the exact expected average variance
+\[
+\frac{1}{\tau}\,E\!\left[\int_t^{t+\tau} V_s\,ds\mid V_t=v\right]
+=\theta+(v-\theta)\frac{1-e^{-\kappa\tau}}{\kappa\tau},
+\]
+with the zero-horizon and zero-mean-reversion limit equal to \(v\). Domain diagnostics remain terminal-moment diagnostics: they use
+\[
+E[V_{t+\tau}\mid V_t=v]=\theta+(v-\theta)e^{-\kappa\tau},
+\]
+and the exact CIR conditional variance plus a conservative Chebyshev tail-mass bound until distribution-quantile truncation evidence is added.
+
 ## 2. Federated portfolio context
 
 ```mermaid
