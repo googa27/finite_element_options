@@ -526,7 +526,7 @@ def build_pinares_fem_proxy_hash(payload: dict[str, Any]) -> str:
 def _stable_public_float(value: float) -> float:
     """Round public numeric evidence past platform-noise precision."""
 
-    return float(f"{float(value):.11g}")
+    return float(f"{float(value):.9g}")
 
 
 def _stable_public_payload(value: Any) -> Any:
