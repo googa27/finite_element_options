@@ -319,6 +319,8 @@ solve → estimate → mark → refine/coarsen → transfer → verify → conti
 
 The estimator, norm or goal functional, marking fraction, mesh limits, transfer operator and stopping condition are typed. Diagnostics include estimator totals/local values, marked elements, degrees of freedom, transfer error, effectivity where reference error exists and target-functional evolution.
 
+`AdaptiveMesh.refine_with_transfer` is the canonical refinement entry point: it validates positive element measures and unchanged domain measure, materializes a non-empty scikit-fem marking set, restores named boundary/domain metadata after `Mesh.refined()` invalidates it, transfers nodal values to the refined basis by interpolation, and returns `AdaptiveDiagnostics`. `SpaceSolver.refine_with_transfer` rebuilds the mesh, basis and assembled matrices from that transferred state. Coarsening raises `NotImplementedError` until parent/child hierarchy, restriction/prolongation and coverage invariants are implemented.
+
 ## 15. Sensitivities and Greeks
 
 Sensitivity methods are distinct adapters:

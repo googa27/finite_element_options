@@ -141,6 +141,8 @@ Invariant matrices and factorizations should be reused where mathematically vali
 
 Adaptive refinement requires an explicit estimator, marking policy, refinement limits, transfer operator and goal quantity. Experimental demos cannot be exposed as production capability without effectivity, convergence and stability evidence.
 
+The current validated core supports residual or gradient-driven refinement through `AdaptiveMesh.refine_with_transfer`: it checks positive simplex measures, preserves total domain measure, carries named boundary/domain metadata across scikit-fem remeshing, transfers nodal values by interpolation, emits estimator/marking/transfer diagnostics and disables coarsening until a reversible hierarchy and coverage proof exist.
+
 Goal-oriented estimators must identify the target functional and adjoint assumptions.
 
 ### FR-FEM-009 — Values, Greeks and sensitivities

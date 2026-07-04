@@ -30,14 +30,21 @@ from finite_element_options.space.boundary import DirichletBC  # noqa: E402
 from finite_element_options.time_integration.stepper import ThetaScheme  # noqa: E402
 
 
-def _build_space_solver(is_call: bool):
+def _build_space_solver(is_call: bool, *, adaptive_criterion: str | None = None):
     dh = DynamicsParametersHeston(
         r=0.03, q=0.03, kappa=0.5, theta=0.5, sig=0.2, rho=0.5
     )
     mkt = Market(r=dh.r)
     bsopt = EuropeanOptionBs(k=0.4, q=dh.q, mkt=mkt)
     mesh, cfg = create_mesh([1.0, 1.0], 1)
-    space = SpaceSolver(mesh, dh, bsopt, is_call=is_call, config=cfg)
+    space = SpaceSolver(
+        mesh,
+        dh,
+        bsopt,
+        is_call=is_call,
+        config=cfg,
+        adaptive_criterion=adaptive_criterion,
+    )
     return space, dh, bsopt
 
 
@@ -79,3 +86,22 @@ def test_dirichlet_matches_model_prices(is_call, price_attr):
     mean_var = dynamics.mean_variance(th_phys, variance_seed, **kwargs)
     expected = getattr(payoff, price_attr)(th_phys, spots, mean_var)
     np.testing.assert_allclose(values, expected)
+
+
+def test_refine_with_transfer_rebuilds_basis_and_returns_values():
+    space, _, _ = _build_space_solver(is_call=True, adaptive_criterion="gradient")
+    old_elements = space.mesh.nelements
+    old_domain = space.mesh.domain_spec
+    values = space.initial_condition()
+
+    result = space.refine_with_transfer(values)
+
+    assert space.mesh.nelements > old_elements
+    assert result.mesh is space.mesh
+    assert result.values.shape == (space.Vh.N,)
+    assert result.diagnostics.old_elements == old_elements
+    assert result.diagnostics.new_elements == space.mesh.nelements
+    assert space.last_adaptive_diagnostics == result.diagnostics
+    assert space.mesh.domain_spec == old_domain
+    assert set(space.mesh.boundaries) == {"s_min", "s_max", "v_min", "v_max"}
+    assert space.Vh.get_dofs(["s_min"]).nodal["u"].size > 0

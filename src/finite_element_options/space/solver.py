@@ -7,7 +7,7 @@ import skfem as fem
 
 from .forms import Forms, PDEForms
 from .boundary import apply_dirichlet
-from .adaptive import AdaptiveMesh
+from .adaptive import AdaptiveDiagnostics, AdaptiveMesh, AdaptiveResult
 from finite_element_options.space.domain import DomainSpec
 from finite_element_options.transform import CoordinateTransform
 from finite_element_options.core.config import Config
@@ -62,6 +62,7 @@ class SpaceSolver:
             if adaptive_criterion is not None
             else None
         )
+        self.last_adaptive_diagnostics: AdaptiveDiagnostics | None = None
         if forms is None:
             self.transform.validate_transformed_state_domain(mesh.p)
         self.forms = forms or PDEForms(
@@ -215,6 +216,20 @@ class SpaceSolver:
         """Apply Dirichlet boundary conditions to ``A`` and ``b``."""
         return apply_dirichlet(A, b, self.Vh, boundaries, u_dirichlet)
 
+    def refine_with_transfer(self, u: np.ndarray) -> AdaptiveResult:
+        """Refine the internal mesh and transfer ``u`` to the new basis."""
+
+        if self.adapt is None:
+            raise ValueError("Adaptive mesh not configured for this solver.")
+        result = self.adapt.refine_with_transfer(self.mesh, u)
+        self.mesh = result.mesh
+        self.Vh = fem.CellBasis(self.mesh, self.config.elem)
+        self.dVh = fem.FacetBasis(self.mesh, self.config.elem)
+        self.mass = self.forms.id_bil().assemble(self.Vh)
+        self.stiffness = self.forms.l_bil().assemble(self.Vh)
+        self.last_adaptive_diagnostics = result.diagnostics
+        return result
+
     def refine_mesh(self, u: np.ndarray) -> fem.Mesh:
         """Refine the internal mesh using adaptive criterion.
 
@@ -223,11 +238,4 @@ class SpaceSolver:
         u:
             Current solution vector used to compute refinement indicators.
         """
-        if self.adapt is None:
-            raise ValueError("Adaptive mesh not configured for this solver.")
-        self.mesh = self.adapt.refine(self.mesh, u)
-        self.Vh = fem.CellBasis(self.mesh, self.config.elem)
-        self.dVh = fem.FacetBasis(self.mesh, self.config.elem)
-        self.mass = self.forms.id_bil().assemble(self.Vh)
-        self.stiffness = self.forms.l_bil().assemble(self.Vh)
-        return self.mesh
+        return self.refine_with_transfer(u).mesh
