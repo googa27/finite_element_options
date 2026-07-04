@@ -146,7 +146,8 @@ def _bs_price_numpy(
 ) -> float:
     """Black-Scholes call price using the canonical NumPy oracle."""
 
-    return float(_option(k, r, q).call_from_volatility(t, s, sigma))
+    with np.errstate(divide="ignore", over="ignore", under="ignore"):
+        return float(_option(k, r, q).call_from_volatility(t, s, sigma))
 
 
 def _bs_price_jax(
@@ -198,7 +199,8 @@ def _requires_canonical_greek_path(
         return True
     sqrt_t = math.sqrt(t)
     variance_time = sigma * sigma * t
-    d1 = (math.log(s / k) + (r - q) * t + 0.5 * variance_time) / (sigma * sqrt_t)
+    log_moneyness = math.log(s) - math.log(k)
+    d1 = (log_moneyness + (r - q) * t + 0.5 * variance_time) / (sigma * sqrt_t)
     d2 = d1 - sigma * sqrt_t
     if not math.isfinite(d1) or not math.isfinite(d2):
         return True
@@ -211,8 +213,9 @@ def _greeks_numpy(
     """Return ``delta`` and volatility ``vega`` using canonical analytic derivatives."""
 
     option = _option(k, r, q)
-    delta = option.call_delta_from_volatility(t, s, sigma)
-    vega = option.vega_volatility(t, s, sigma)
+    with np.errstate(divide="ignore", over="ignore", under="ignore"):
+        delta = option.call_delta_from_volatility(t, s, sigma)
+        vega = option.vega_volatility(t, s, sigma)
     return float(delta), float(vega)
 
 

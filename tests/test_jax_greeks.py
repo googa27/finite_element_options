@@ -126,6 +126,18 @@ def test_numpy_report_labels_boundary_inputs_as_analytical_limits() -> None:
     assert report.delta.fallback_reason == report.fallback_reason
 
 
+def test_numpy_backend_keeps_finite_extreme_tail_greeks() -> None:
+    """JAX tail classification must not make requested NumPy Greeks raise."""
+
+    params = dict(s=1.0e-308, k=1.0e308, r=0.0, q=0.0, sigma=0.2, t=1.0)
+    delta, vega = compute_greeks(**params, backend="numpy")
+    report = compute_greeks_report(**params, backend="numpy")
+    assert delta == pytest.approx(0.0)
+    assert vega == pytest.approx(0.0)
+    assert math.isfinite(report.delta.value)
+    assert report.delta.method == "analytical_oracle_limit"
+
+
 def test_benchmark_greeks_separates_jax_compile_transfer_and_warm_execution() -> None:
     """JAX benchmark metadata should synchronize and split runtime phases."""
 
