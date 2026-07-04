@@ -25,7 +25,7 @@ The manifest intentionally advertises only the validated route:
 - boundary class: endpoint Dirichlet, including public linear-growth far-field metadata
 - exercise style: European
 - outputs: value, Delta, Gamma
-- time control: theta/Crank-Nicolson
+- time control: theta/Crank-Nicolson with validated increasing grids, nonuniform local steps, new-time Dirichlet enforcement and optional Rannacher startup schedule diagnostics
 - linear solver: `scipy_direct` with per invariant theta-system sparse LU factorization reuse
 
 Unsupported solver routes fail closed in the manifest:

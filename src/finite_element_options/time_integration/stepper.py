@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
 from time import perf_counter
-from typing import Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 import scipy.sparse as sps  # type: ignore[import-untyped]
@@ -46,6 +46,17 @@ class LinearSolveDiagnostics:
         }
 
 
+@dataclass(frozen=True)
+class _InternalThetaStep:
+    """One internal theta step, possibly part of a subdivided output interval."""
+
+    output_index: int
+    start: float
+    end: float
+    dt: float
+    theta: float
+
+
 class TimeStepper(ABC):
     """Abstract base class for time-stepping schemes."""
 
@@ -70,8 +81,18 @@ class ThetaScheme(TimeStepper):
         *,
         linear_solver: str = "scipy_direct",
         reuse_factorization: bool = True,
+        startup_theta: float | None = None,
+        startup_steps: int = 0,
+        startup_substeps: int = 1,
     ):
-        """Store θ and sparse-direct solver-cache policy."""
+        """Store θ and sparse-direct solver-cache policy.
+
+        ``startup_theta``/``startup_steps``/``startup_substeps`` encode the same
+        step API for pure-theta and Rannacher-style startup.  For example,
+        ``ThetaScheme(theta=0.5, startup_theta=1.0, startup_steps=2,
+        startup_substeps=2)`` replaces the first two Crank-Nicolson intervals
+        by four backward-Euler half-steps.
+        """
 
         if linear_solver != "scipy_direct":
             msg = (
@@ -80,7 +101,16 @@ class ThetaScheme(TimeStepper):
                 "capability manifest."
             )
             raise ValueError(msg)
-        self.theta = theta
+        self.theta = _validate_theta(theta, "theta")
+        self.startup_theta = (
+            None if startup_theta is None else _validate_theta(startup_theta, "startup_theta")
+        )
+        if startup_steps < 0:
+            raise ValueError("startup_steps must be non-negative")
+        if startup_substeps < 1:
+            raise ValueError("startup_substeps must be at least one")
+        self.startup_steps = int(startup_steps)
+        self.startup_substeps = int(startup_substeps)
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
         self.last_solve_diagnostics = LinearSolveDiagnostics(
@@ -95,6 +125,7 @@ class ThetaScheme(TimeStepper):
             stage_timings_sec={"factorization": 0.0, "solve": 0.0},
         )
         self.last_domain_diagnostics: dict[str, object] = {}
+        self.last_time_grid_diagnostics: dict[str, object] = {}
 
     def solve(
         self,
@@ -104,70 +135,89 @@ class ThetaScheme(TimeStepper):
         is_american: bool = False,
     ) -> np.ndarray:
         """Return solution grid for the supplied time nodes ``t``."""
-        t = tuple(float(item) for item in t)
-        dt = t[1] - t[0]
+
+        time_grid = _validate_time_grid(t)
+        internal_steps = self._internal_steps(time_grid)
         if hasattr(space, "domain_diagnostics"):
             self.last_domain_diagnostics = space.domain_diagnostics(
-                horizon=t[-1] - t[0]
+                horizon=time_grid[-1] - time_grid[0]
             )
         else:
             self.last_domain_diagnostics = {}
-        v_tsv = np.empty((len(t), space.Vh.N))
-        v_tsv[0] = space.initial_condition()
-        A, B = space.matrices(self.theta, dt)
-        assembly_cache_key = _theta_cache_key(space, A, dt, self.theta, boundary_condition)
-        factorization_cache_key = "not_factorized"
-        factorized_solver = None
-        factorized_matrix = None
+        self.last_time_grid_diagnostics = _time_grid_diagnostics(
+            time_grid=time_grid,
+            internal_steps=internal_steps,
+            startup_theta=self.startup_theta,
+            startup_steps=self.startup_steps,
+            startup_substeps=self.startup_substeps,
+        )
+
+        v_tsv = np.empty((len(time_grid), space.Vh.N))
+        current_values = np.asarray(space.initial_condition(), dtype=float)
+        v_tsv[0] = current_values
+
+        factorized_solvers: dict[str, Callable[[np.ndarray], np.ndarray]] = {}
         factorization_count = 0
         factorization_reuse_count = 0
         solve_count = 0
         max_residual = 0.0
         factorization_time = 0.0
         solve_time = 0.0
+        assembly_cache_keys: list[str] = []
+        factorization_cache_keys: list[str] = []
 
-        for i, th_i in enumerate(t[:-1]):
-            b_previous = B @ v_tsv[i]
-            b_inhom = self.theta * space.boundary_term(th_i + dt) + (
-                1 - self.theta
-            ) * space.boundary_term(th_i)
-            b = b_previous + dt * b_inhom
+        for step in internal_steps:
+            A, B = space.matrices(step.theta, step.dt)
+            b_previous = B @ current_values
+            b_inhom = step.theta * space.boundary_term(step.end) + (
+                1.0 - step.theta
+            ) * space.boundary_term(step.start)
+            b = b_previous + step.dt * b_inhom
 
             if boundary_condition:
-                A_enf, b_enf = boundary_condition.apply(space, A, b, th_i)
+                A_enf, b_enf = boundary_condition.apply(space, A, b, step.end)
             else:
                 A_enf, b_enf = A, b
 
+            cache_key = _theta_cache_key(
+                space, A_enf, step.dt, step.theta, boundary_condition
+            )
+            assembly_cache_keys.append(cache_key)
+
             if self.reuse_factorization:
-                if factorized_solver is None:
+                if cache_key in factorized_solvers:
+                    factorization_reuse_count += 1
+                    solver = factorized_solvers[cache_key]
+                else:
                     started = perf_counter()
                     factorized_matrix = sps.csc_matrix(A_enf)
                     lu = spla.splu(factorized_matrix)
-                    factorized_solver = lu.solve
+                    solver = lu.solve
+                    factorized_solvers[cache_key] = solver
                     factorization_time += perf_counter() - started
                     factorization_count += 1
-                    factorization_cache_key = _matrix_cache_key(factorized_matrix)
-                else:
-                    factorization_reuse_count += 1
+                    factorization_cache_keys.append(_matrix_cache_key(factorized_matrix))
                 started = perf_counter()
-                next_values = factorized_solver(b_enf)
+                next_values = solver(np.asarray(b_enf, dtype=float))
                 solve_time += perf_counter() - started
             else:
                 started = perf_counter()
                 next_values = fem.solve(A_enf, b_enf)
                 solve_time += perf_counter() - started
                 factorization_count += 1
-                factorized_matrix = sps.csr_matrix(A_enf)
-                factorization_cache_key = _matrix_cache_key(factorized_matrix)
+                factorization_cache_keys.append(_matrix_cache_key(sps.csr_matrix(A_enf)))
 
-            v_tsv[i + 1] = next_values
+            current_values = np.asarray(next_values, dtype=float)
             solve_count += 1
-            residual = np.asarray(A_enf @ next_values - b_enf, dtype=float)
+            residual = np.asarray(A_enf @ current_values - b_enf, dtype=float)
             if residual.size:
                 max_residual = max(max_residual, float(np.max(np.abs(residual))))
 
             if is_american:
-                v_tsv[i + 1] = np.maximum(v_tsv[i + 1], v_tsv[0])
+                current_values = np.maximum(current_values, v_tsv[0])
+
+            if np.isclose(step.end, time_grid[step.output_index]):
+                v_tsv[step.output_index] = current_values
 
         self.last_solve_diagnostics = LinearSolveDiagnostics(
             linear_solver=self.linear_solver,
@@ -176,14 +226,117 @@ class ThetaScheme(TimeStepper):
             factorization_reuse_count=factorization_reuse_count,
             solve_count=solve_count,
             max_linear_residual_abs=max_residual,
-            assembly_cache_key=assembly_cache_key,
-            factorization_cache_key=factorization_cache_key,
+            assembly_cache_key=_sequence_cache_key(assembly_cache_keys),
+            factorization_cache_key=_sequence_cache_key(factorization_cache_keys),
             stage_timings_sec={
                 "factorization": factorization_time,
                 "solve": solve_time,
             },
         )
         return v_tsv
+
+    def _internal_steps(self, time_grid: tuple[float, ...]) -> tuple[_InternalThetaStep, ...]:
+        """Return internal steps after optional startup subdivision."""
+
+        steps: list[_InternalThetaStep] = []
+        local_steps = _canonical_local_steps(time_grid)
+        for interval_index, (start, end, width) in enumerate(
+            zip(time_grid[:-1], time_grid[1:], local_steps)
+        ):
+            use_startup = self.startup_theta is not None and interval_index < self.startup_steps
+            theta = self.theta
+            if use_startup:
+                if self.startup_theta is None:  # pragma: no cover - guarded above
+                    raise RuntimeError("startup_theta unexpectedly missing")
+                theta = self.startup_theta
+            substeps = self.startup_substeps if use_startup else 1
+            dt = width / substeps
+            for substep in range(substeps):
+                fraction_start = substep / substeps
+                fraction_end = (substep + 1) / substeps
+                sub_start = start + fraction_start * (end - start)
+                sub_end = start + fraction_end * (end - start)
+                steps.append(
+                    _InternalThetaStep(
+                        output_index=interval_index + 1,
+                        start=sub_start,
+                        end=sub_end,
+                        dt=dt,
+                        theta=theta,
+                    )
+                )
+        return tuple(steps)
+
+
+def _validate_theta(value: float, name: str) -> float:
+    """Return a validated theta parameter."""
+
+    theta = float(value)
+    if not np.isfinite(theta):
+        raise ValueError(f"{name} must be finite")
+    if theta < 0.0 or theta > 1.0:
+        raise ValueError(f"{name} must lie in [0, 1]")
+    return theta
+
+
+def _validate_time_grid(t: Iterable[float]) -> tuple[float, ...]:
+    """Materialize and validate a strictly increasing finite time grid."""
+
+    time_grid = tuple(float(item) for item in t)
+    if len(time_grid) < 2:
+        raise ValueError("time grid must contain at least two nodes")
+    arr = np.asarray(time_grid, dtype=float)
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("time grid nodes must be finite")
+    steps = np.diff(arr)
+    if not np.all(steps > 0.0):
+        raise ValueError("time grid nodes must be strictly increasing")
+    return time_grid
+
+
+def _canonical_local_steps(time_grid: tuple[float, ...]) -> tuple[float, ...]:
+    """Return local widths, canonicalizing roundoff-uniform grids.
+
+    ``np.linspace`` grids often differ by a few ulps between adjacent
+    intervals.  Treating those artifacts as distinct PDE steps defeats sparse
+    factorization reuse without adding mathematical information.  Genuinely
+    nonuniform grids keep their local widths exactly.
+    """
+
+    raw = np.diff(np.asarray(time_grid, dtype=float))
+    representative = (time_grid[-1] - time_grid[0]) / (len(time_grid) - 1)
+    if np.allclose(raw, representative, rtol=1.0e-12, atol=1.0e-15):
+        return tuple(float(representative) for _ in raw)
+    return tuple(float(item) for item in raw)
+
+
+def _time_grid_diagnostics(
+    *,
+    time_grid: tuple[float, ...],
+    internal_steps: tuple[_InternalThetaStep, ...],
+    startup_theta: float | None,
+    startup_steps: int,
+    startup_substeps: int,
+) -> dict[str, object]:
+    """Return public diagnostics for result-history time orientation."""
+
+    local_steps = _canonical_local_steps(time_grid)
+    uniform = bool(np.allclose(local_steps, local_steps[0], rtol=1.0e-12, atol=1.0e-15))
+    return {
+        "time_grid": time_grid,
+        "time_orientation": "increasing",
+        "time_convention": "forward_in_supplied_coordinate",
+        "time_step_count": len(time_grid) - 1,
+        "output_time_count": len(time_grid),
+        "local_time_steps": local_steps,
+        "uniform_time_grid": uniform,
+        "internal_step_count": len(internal_steps),
+        "internal_time_steps": tuple(step.dt for step in internal_steps),
+        "theta_schedule": tuple(step.theta for step in internal_steps),
+        "startup_theta": startup_theta,
+        "startup_steps": startup_steps,
+        "startup_substeps": startup_substeps,
+    }
 
 
 def _matrix_cache_key(matrix) -> str:
@@ -195,6 +348,16 @@ def _matrix_cache_key(matrix) -> str:
     digest.update(np.asarray(sparse.indptr, dtype=np.int64).tobytes())
     digest.update(np.asarray(sparse.indices, dtype=np.int64).tobytes())
     digest.update(np.asarray(sparse.data, dtype=np.float64).tobytes())
+    return digest.hexdigest()
+
+
+def _sequence_cache_key(keys: Iterable[str]) -> str:
+    """Return a deterministic digest for a sequence of cache keys."""
+
+    digest = sha256()
+    for key in keys:
+        digest.update(str(key).encode("utf-8"))
+        digest.update(b";")
     return digest.hexdigest()
 
 

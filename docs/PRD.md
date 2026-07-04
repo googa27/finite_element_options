@@ -29,6 +29,8 @@ including zero-horizon, zero-mean-reversion, small-product and long-horizon limi
 
 Issue #39 makes state domains and boundary facets explicit before advertising broader Heston or transformed-domain solves. Mesh construction accepts `DomainSpec`/`DomainAxis` records, `(lower, upper)` pairs and legacy extents, attaches canonical named facets, and preserves transformed-coordinate bounds. Dirichlet boundary enforcement validates facet names, rejects duplicate labels, and evaluates oracle values at degrees of freedom so carry, strike, maturity and coordinate-transform semantics are not distorted by projection.
 
+Issue #40 makes theta stepping consume validated, strictly increasing time grids. Nonuniform grids use each local step, roundoff-uniform `linspace` grids canonicalize to one reusable invariant system, source terms use theta-consistent endpoint timing, Dirichlet data are enforced at the new time node, and Rannacher startup is encoded through the same theta schedule diagnostics.
+
 ## 2. Portfolio role and boundaries
 
 | Concern | This repository owns | This repository must not own |
@@ -125,9 +127,9 @@ Boundary residuals and far-field/asymptotic assumptions are part of validation e
 
 ### FR-FEM-006 — Time integration
 
-The library must provide explicit time-orientation semantics and validated theta-family integration, including Crank–Nicolson and backward Euler. Rannacher or adaptive time stepping may be added only with documented start-up, stability and error behavior.
+The library must provide explicit time-orientation semantics and validated theta-family integration, including Crank–Nicolson and backward Euler. Rannacher startup uses `startup_theta`, `startup_steps`, and `startup_substeps` on the same theta-step API. Each solve records the supplied output grid, local and internal step widths, theta schedule, uniform-grid status, and forward orientation.
 
-State transfer after remeshing must be explicit and included in diagnostics.
+Time grids must be finite and strictly increasing. Nonuniform grids use every local `dt_n`; roundoff-uniform grids are canonicalized only to prevent `np.linspace` ulps from defeating invariant-system factorization reuse. Boundary/source values are evaluated with scheme-consistent theta endpoint timing, and essential Dirichlet data are enforced at the new time node.
 
 ### FR-FEM-007 — Linear solver and factorization policy
 
