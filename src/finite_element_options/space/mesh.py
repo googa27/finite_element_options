@@ -2,44 +2,40 @@
 
 from typing import Sequence
 
-import numpy as np
 import skfem as fem
 
 from finite_element_options.core.config import Config
+from finite_element_options.space.domain import (
+    DomainAxis,
+    DomainSpec,
+    attach_domain_metadata,
+    ensure_domain_spec,
+)
 
 
 def create_mesh(
-    extents: Sequence[float], refine: int, config: Config | None = None
+    extents: DomainSpec | Sequence[float | Sequence[float] | DomainAxis],
+    refine: int,
+    config: Config | None = None,
 ) -> tuple[fem.Mesh, Config]:
-    """Create a tensor-product mesh of configurable dimension.
+    """Create a tensor-product mesh with explicit domain metadata.
 
-    Parameters
-    ----------
-    extents:
-        Sequence of domain maxima for each spatial dimension.
-    refine:
-        Number of uniform refinement steps.
-    config:
-        Optional configuration object updated with the element type.
-
-    Returns
-    -------
-    tuple[fem.Mesh, Config]
-        Refined mesh and the configuration containing the chosen element.
+    ``extents`` remains backward-compatible with the legacy API: a numeric
+    sequence means ``[0, upper]`` per axis.  It may also contain
+    :class:`~finite_element_options.space.domain.DomainAxis` records or
+    ``(lower, upper)`` pairs, allowing negative rate/OU states and transformed
+    coordinates without hidden zero lower bounds.
     """
 
     cfg = config or Config()
-    dim = len(extents)
-    grids = [np.linspace(0.0, e, 2) for e in extents]
+    domain = ensure_domain_spec(extents)
+    dim = domain.dimension
+    grids = domain.tensor_endpoints()
     if dim == 1:
-        mesh = fem.MeshLine(np.linspace(0.0, extents[0], 2)).refined(refine)
+        mesh = fem.MeshLine(grids[0]).refined(refine)
         cfg.elem = fem.ElementLineP2()
     elif dim == 2:
-        mesh = (
-            fem.MeshTri()
-            .init_tensor(x=grids[0], y=grids[1])
-            .refined(refine)
-        )
+        mesh = fem.MeshTri().init_tensor(x=grids[0], y=grids[1]).refined(refine)
         cfg.elem = fem.ElementTriP2()
     elif dim == 3:
         mesh = (
@@ -50,7 +46,8 @@ def create_mesh(
         cfg.elem = fem.ElementTetP1()
     else:
         raise ValueError("Only 1D, 2D and 3D meshes are supported.")
-    return mesh, cfg
+    mesh = mesh.with_boundaries(domain.boundary_predicates())
+    return attach_domain_metadata(mesh, domain), cfg
 
 
 def create_rectangular_mesh(

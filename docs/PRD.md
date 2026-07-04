@@ -27,6 +27,8 @@ E[V_{t+\tau}\mid V_t=v]=\theta+(v-\theta)e^{-\kappa\tau},
 
 including zero-horizon, zero-mean-reversion, small-product and long-horizon limits. Boundary pricing now uses the exact CIR time-average mean variance, while solver evidence includes conservative variance-domain diagnostics built from the exact terminal first two CIR moments, the Feller ratio and an explicit Chebyshev tail-mass bound.
 
+Issue #39 makes state domains and boundary facets explicit before advertising broader Heston or transformed-domain solves. Mesh construction accepts `DomainSpec`/`DomainAxis` records, `(lower, upper)` pairs and legacy extents, attaches canonical named facets, and preserves transformed-coordinate bounds. Dirichlet boundary enforcement validates facet names, rejects duplicate labels, and evaluates oracle values at degrees of freedom so carry, strike, maturity and coordinate-transform semantics are not distorted by projection.
+
 ## 2. Portfolio role and boundaries
 
 | Concern | This repository owns | This repository must not own |

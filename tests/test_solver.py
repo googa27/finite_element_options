@@ -70,16 +70,12 @@ def test_dirichlet_matches_model_prices(is_call, price_attr):
     space, dynamics, payoff = _build_space_solver(is_call=is_call)
     th = 0.25
     values = space.dirichlet(th)
-    th_phys = space.transform.untransform_time(th)
+    th_phys = float(np.asarray(space.transform.untransform_time(th)))
     supports_config = "config" in dynamics.mean_variance.__code__.co_varnames
-
-    def _expected(x):
-        state = space.transform.untransform_state(x)
-        spots = state[0]
-        variance_seed = state[1] if state.shape[0] > 1 else np.zeros_like(spots)
-        kwargs = {"config": space.config} if supports_config else {}
-        mean_var = dynamics.mean_variance(th_phys, variance_seed, **kwargs)
-        return getattr(payoff, price_attr)(th_phys, spots, mean_var)
-
-    expected = space.Vh.project(_expected)
+    state = space.transform.untransform_state(space.Vh.doflocs)
+    spots = state[0]
+    variance_seed = state[1] if state.shape[0] > 1 else np.zeros_like(spots)
+    kwargs = {"config": space.config} if supports_config else {}
+    mean_var = dynamics.mean_variance(th_phys, variance_seed, **kwargs)
+    expected = getattr(payoff, price_attr)(th_phys, spots, mean_var)
     np.testing.assert_allclose(values, expected)

@@ -59,15 +59,9 @@ def test_black_scholes_dirichlet_matches_price():
 
     th = 0.5
     dirichlet_vals = space.dirichlet(th)
-    th_phys = space.transform.untransform_time(th)
-    expected = space.Vh.project(
-        lambda x: bsopt.call(
-            th_phys,
-            space.transform.untransform_state(x)[0],
-            dh.mean_variance(
-                th_phys,
-                np.zeros_like(space.transform.untransform_state(x)[0]),
-            ),
-        )
-    )
+    th_phys = float(np.asarray(space.transform.untransform_time(th)))
+    state = space.transform.untransform_state(space.Vh.doflocs)
+    spots = state[0]
+    variance = dh.mean_variance(th_phys, np.zeros_like(spots))
+    expected = bsopt.call(th_phys, spots, variance)
     np.testing.assert_allclose(dirichlet_vals, expected)
