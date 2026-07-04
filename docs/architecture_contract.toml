@@ -48,10 +48,16 @@ ignore_top_level_dirs = []
 
 [repository_root]
 allowed_python_files = []
+forbidden_python_dirs = ["examples"]
 
 [documentation]
-required_docs = ["docs/ARCHITECTURE.md", "README.md"]
-required_fragments = ["docs/architecture_contract.toml", "architecture contract", "finite_element_options"]
+required_docs = ["docs/ARCHITECTURE.md", "docs/MODULE_OWNERSHIP.md", "README.md"]
+required_fragments = [
+  "docs/architecture_contract.toml",
+  "architecture contract",
+  "finite_element_options",
+  "module ownership",
+]
 
 [ci]
 workflow_paths = [".github/workflows/ci.yml"]
@@ -64,3 +70,126 @@ forbidden_prefixes = ["streamlit", "matplotlib", "plotly", "pandas", "pymc", "ja
 [[import_rules]]
 source = "src/finite_element_options/space"
 forbidden_prefixes = ["streamlit", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
+
+[[module_ownership]]
+path = "__init__.py"
+layer = "core"
+owner = "finite_element_options"
+treatment = "lightweight base package marker with no broad re-exports"
+public_surface = "base import only"
+
+[[module_ownership]]
+path = "contracts"
+layer = "core"
+owner = "finite_element_options"
+treatment = "native FEM contracts, formula bundles, and backend capability records"
+public_surface = "stable public contracts"
+
+[[module_ownership]]
+path = "core"
+layer = "core"
+owner = "finite_element_options"
+treatment = "market/model coefficient helpers and analytical references used by FEM tests"
+public_surface = "public FEM-owned helpers"
+
+[[module_ownership]]
+path = "space"
+layer = "core"
+owner = "finite_element_options"
+treatment = "meshes, finite-element spaces, weak forms, BCs, solvers, and adaptivity"
+public_surface = "public FEM mechanics"
+
+[[module_ownership]]
+path = "time_integration"
+layer = "core"
+owner = "finite_element_options"
+treatment = "theta stepping and time-policy mechanics"
+public_surface = "public FEM mechanics"
+
+[[module_ownership]]
+path = "transform.py"
+layer = "core"
+owner = "finite_element_options"
+treatment = "Black-Scholes coordinate and time transforms"
+public_surface = "public convention-explicit utility"
+
+[[module_ownership]]
+path = "problems"
+layer = "validation"
+owner = "finite_element_options"
+treatment = "thin backend-neutral problem fixtures and examples, not product ownership"
+public_surface = "transitional public fixtures"
+
+[[module_ownership]]
+path = "validation"
+layer = "validation"
+owner = "finite_element_options"
+treatment = "analytical, manufactured, and public-synthetic evidence and parity artifacts"
+public_surface = "public validation helpers"
+
+[[module_ownership]]
+path = "fdsolver.py"
+layer = "compatibility"
+owner = "finite_difference_options"
+treatment = "legacy FD reference route retained only for benchmark/parity transition"
+public_surface = "not re-exported by base package"
+extra = "fd"
+removal_target = "remove or replace with a benchmark oracle after FD parity and backend adapter gates"
+warning = "DeprecationWarning on FDSolver/solve_system/Greek helper use"
+migration_example = "Use finite_difference_options for production finite-difference solves; keep this module only as finite_element_options benchmark/parity oracle"
+removal_version = "0.3.0"
+removal_date = "2026-10-31"
+
+[[module_ownership]]
+path = "data_utils.py"
+layer = "optional"
+owner = "finite_element_options"
+treatment = "experiment snapshot IO and dataframe/xarray utilities"
+public_surface = "optional utility"
+extra = "io"
+
+[[module_ownership]]
+path = "estimation"
+layer = "optional"
+owner = "finite_element_options"
+treatment = "SciPy/PyMC calibration research adapters; synthetic unless evidence says otherwise"
+public_surface = "optional research/calibration"
+extra = "calibration"
+
+[[module_ownership]]
+path = "jax_greeks.py"
+layer = "optional"
+owner = "finite_element_options"
+treatment = "experimental AD Greek route"
+public_surface = "optional research helper"
+extra = "jax"
+
+[[module_ownership]]
+path = "plots.py"
+layer = "optional"
+owner = "finite_element_options"
+treatment = "plotting helpers"
+public_surface = "optional visualization"
+extra = "viz"
+
+[[module_ownership]]
+path = "sidebar.py"
+layer = "app"
+owner = "finite_element_options"
+treatment = "Streamlit sidebar/application support"
+public_surface = "UI helper only"
+extra = "ui"
+
+[[module_ownership]]
+path = "cli.py"
+layer = "cli"
+owner = "finite_element_options"
+treatment = "thin CLI shell over validated public APIs"
+public_surface = "console entry edge"
+
+[[module_ownership]]
+path = "examples"
+layer = "example"
+owner = "finite_element_options"
+treatment = "single installed-package example tree; no duplicate repository-root examples"
+public_surface = "example-only"

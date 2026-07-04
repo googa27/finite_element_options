@@ -9,9 +9,10 @@ finite-difference defects.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from types import SimpleNamespace
 from typing import Callable, Iterable
+import warnings
 
 import numpy as np
 import scipy.sparse as sps
@@ -23,6 +24,24 @@ from .data_utils import snapshot
 
 _GRID_ATOL = 1.0e-12
 _GRID_RTOL = 1.0e-10
+_FD_COMPAT_REMOVAL_VERSION = "0.3.0"
+_FD_COMPAT_REMOVAL_DATE = "2026-10-31"
+_FD_COMPAT_MIGRATION = (
+    "Use finite_difference_options for production finite-difference solves; "
+    "keep finite_element_options.fdsolver only as a finite_element_options "
+    "benchmark/parity oracle."
+)
+
+
+def _warn_fdsolver_compatibility(api: str) -> None:
+    """Emit the issue #50 compatibility warning for legacy FD entry points."""
+    warnings.warn(
+        f"finite_element_options.fdsolver.{api} is compatibility-only and will be "
+        f"removed in version {_FD_COMPAT_REMOVAL_VERSION} on {_FD_COMPAT_REMOVAL_DATE}. "
+        f"Migration: {_FD_COMPAT_MIGRATION}",
+        DeprecationWarning,
+        stacklevel=3,
+    )
 
 
 @dataclass
@@ -49,9 +68,12 @@ class FDSolver:
     dynamics: object
     payoff: object
     is_call: bool = True
+    warn_on_compatibility: InitVar[bool] = True
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, warn_on_compatibility: bool) -> None:
         """Validate inputs and assemble the reference tridiagonal operator."""
+        if warn_on_compatibility:
+            _warn_fdsolver_compatibility("FDSolver")
         self.s_grid = _validate_uniform_spot_grid(self.s_grid)
         self.ds = float(self.s_grid[1] - self.s_grid[0])
         self.N = len(self.s_grid)
@@ -76,7 +98,9 @@ class FDSolver:
         if not hasattr(self.payoff, "k"):
             raise ValueError("Black-Scholes FD reference payoff must expose strike k")
         if not np.isfinite(float(self.payoff.k)) or float(self.payoff.k) <= 0.0:
-            raise ValueError("Black-Scholes FD reference strike k must be finite and positive")
+            raise ValueError(
+                "Black-Scholes FD reference strike k must be finite and positive"
+            )
         method = "call_payoff" if self.is_call else "put_payoff"
         if not callable(getattr(self.payoff, method, None)):
             raise ValueError(f"Black-Scholes FD reference payoff must define {method}")
@@ -124,10 +148,14 @@ class FDSolver:
         by vectorized payoff code propagate instead of being hidden.
         """
 
-        payoff_fn = getattr(self.payoff, "call_payoff" if self.is_call else "put_payoff")
+        payoff_fn = getattr(
+            self.payoff, "call_payoff" if self.is_call else "put_payoff"
+        )
         return _evaluate_payoff_grid(payoff_fn, self.s_grid)
 
-    def matrices(self, theta: float, dt: float) -> tuple[sps.csr_matrix, sps.csr_matrix]:
+    def matrices(
+        self, theta: float, dt: float
+    ) -> tuple[sps.csr_matrix, sps.csr_matrix]:
         """Return system matrices for the theta-scheme."""
         theta = float(theta)
         dt = float(dt)
@@ -139,7 +167,9 @@ class FDSolver:
         b_matrix = self.I + (1.0 - theta) * dt * self.L
         return a_matrix.tocsr(), b_matrix.tocsr()
 
-    def boundary_term(self, th: float) -> np.ndarray:  # pragma: no cover - no natural BC
+    def boundary_term(
+        self, th: float
+    ) -> np.ndarray:  # pragma: no cover - no natural BC
         """Return natural boundary vector (unused for Black-Scholes)."""
         return np.zeros(self.N)
 
@@ -154,7 +184,9 @@ class FDSolver:
         """
         tau = float(th)
         if not np.isfinite(tau) or tau < 0.0:
-            raise ValueError("Dirichlet time-to-maturity th must be finite and non-negative")
+            raise ValueError(
+                "Dirichlet time-to-maturity th must be finite and non-negative"
+            )
         strike = float(self.payoff.k)
         rate = float(self.dynamics.r)
         carry = float(self.dynamics.q)
@@ -200,24 +232,32 @@ class FDSolver:
 # ----------------------------------------------------------------------
 # Greeks via finite differences
 
+
 def delta(v: np.ndarray, ds: float) -> np.ndarray:
     """Compute Delta from a one-dimensional price grid ``v``."""
+    _warn_fdsolver_compatibility("delta")
     values = _validate_1d_values(v, "delta")
     return np.gradient(values, _validate_spacing(ds), edge_order=2)
 
 
 def gamma(v: np.ndarray, ds: float) -> np.ndarray:
     """Compute Gamma from a one-dimensional price grid ``v``."""
+    _warn_fdsolver_compatibility("gamma")
     values = _validate_1d_values(v, "gamma")
     spacing = _validate_spacing(ds)
-    return np.gradient(np.gradient(values, spacing, edge_order=2), spacing, edge_order=2)
+    return np.gradient(
+        np.gradient(values, spacing, edge_order=2), spacing, edge_order=2
+    )
 
 
 def vega(v: np.ndarray, dv: float) -> np.ndarray:
     """Compute Vega only when an explicit volatility axis is present."""
+    _warn_fdsolver_compatibility("vega")
     values = np.asarray(v, dtype=float)
     if values.ndim != 2:
-        raise ValueError("vega requires a two-dimensional grid with an explicit volatility axis")
+        raise ValueError(
+            "vega requires a two-dimensional grid with an explicit volatility axis"
+        )
     return np.gradient(values, _validate_spacing(dv), axis=1, edge_order=2)
 
 
@@ -248,6 +288,7 @@ def _evaluate_payoff_grid(
 # ----------------------------------------------------------------------
 # Convenience solver function
 
+
 def solve_system(
     s_grid: np.ndarray,
     t: Iterable[float],
@@ -264,7 +305,14 @@ def solve_system(
     documenting the reference route, grid/time semantics and linear residuals.
     """
 
-    solver = FDSolver(s_grid, dynamics, payoff, is_call=is_call)
+    _warn_fdsolver_compatibility("solve_system")
+    solver = FDSolver(
+        s_grid,
+        dynamics,
+        payoff,
+        is_call=is_call,
+        warn_on_compatibility=False,
+    )
     tau_grid = _validate_uniform_time_grid(t)
     dt = float(tau_grid[1] - tau_grid[0])
     a_matrix, b_matrix = solver.matrices(theta, dt)
@@ -321,7 +369,9 @@ def _validate_uniform_spot_grid(s_grid: Iterable[float]) -> np.ndarray:
     if np.any(diffs <= 0.0):
         raise ValueError("s_grid must be strictly increasing")
     if not np.allclose(diffs, diffs[0], rtol=_GRID_RTOL, atol=_GRID_ATOL):
-        raise ValueError("s_grid must be uniform for the Black-Scholes FD reference backend")
+        raise ValueError(
+            "s_grid must be uniform for the Black-Scholes FD reference backend"
+        )
     return grid
 
 
@@ -351,7 +401,9 @@ def _validate_spacing(spacing: float) -> float:
 def _validate_1d_values(values: np.ndarray, name: str) -> np.ndarray:
     array = np.asarray(values, dtype=float)
     if array.ndim != 1 or len(array) < 3:
-        raise ValueError(f"{name} requires a one-dimensional grid with at least three values")
+        raise ValueError(
+            f"{name} requires a one-dimensional grid with at least three values"
+        )
     if not np.all(np.isfinite(array)):
         raise ValueError(f"{name} input values must be finite")
     return array

@@ -28,8 +28,18 @@ def _read_list(section: dict[str, object], key: str) -> list[str]:
     return list(value)
 
 
+def _read_required_string(section: dict[str, object], key: str) -> str:
+    value = section.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise TypeError(f"{key} must be a non-empty string")
+    return value
+
+
 def _has_python(path: Path) -> bool:
-    return any(child.suffix == ".py" and "__pycache__" not in child.parts for child in path.rglob("*.py"))
+    return any(
+        child.suffix == ".py" and "__pycache__" not in child.parts
+        for child in path.rglob("*.py")
+    )
 
 
 def _module_imports(path: Path) -> set[str]:
@@ -52,7 +62,10 @@ def _module_imports(path: Path) -> set[str]:
 
 
 def _matches_prefix(import_name: str, prefixes: Iterable[str]) -> bool:
-    return any(import_name == prefix or import_name.startswith(f"{prefix}.") for prefix in prefixes)
+    return any(
+        import_name == prefix or import_name.startswith(f"{prefix}.")
+        for prefix in prefixes
+    )
 
 
 def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
@@ -76,9 +89,15 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
     ignored_dirs = set(_read_list(topology, "ignore_top_level_dirs")) | {"__pycache__"}
     allowed_modules = set(_read_list(topology, "allowed_root_modules"))
     allowed_packages = set(_read_list(topology, "allowed_top_level_packages"))
-    required_packages = set(_read_list(topology, "required_top_level_packages")) or allowed_packages
+    required_packages = (
+        set(_read_list(topology, "required_top_level_packages")) or allowed_packages
+    )
 
-    root_modules = sorted(path.name for path in package_root.iterdir() if path.is_file() and path.suffix == ".py")
+    root_modules = sorted(
+        path.name
+        for path in package_root.iterdir()
+        if path.is_file() and path.suffix == ".py"
+    )
     unexpected_modules = sorted(set(root_modules) - allowed_modules)
     if unexpected_modules:
         failures.append(
@@ -89,7 +108,10 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
     top_level_packages = sorted(
         path.name
         for path in package_root.iterdir()
-        if path.is_dir() and path.name not in ignored_dirs and not path.name.endswith(".egg-info") and _has_python(path)
+        if path.is_dir()
+        and path.name not in ignored_dirs
+        and not path.name.endswith(".egg-info")
+        and _has_python(path)
     )
     unexpected_packages = sorted(set(top_level_packages) - allowed_packages)
     missing_packages = sorted(required_packages - set(top_level_packages))
@@ -114,6 +136,62 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
                 f"{top_level_packages}"
             )
 
+    module_ownership = contract.get("module_ownership", [])
+    if module_ownership:
+        if not isinstance(module_ownership, list):
+            raise TypeError("[[module_ownership]] must be an array of TOML tables")
+        valid_layers = {
+            "app",
+            "cli",
+            "compatibility",
+            "core",
+            "example",
+            "optional",
+            "validation",
+        }
+        actual_entries = set(root_modules) | set(top_level_packages)
+        ownership_paths: dict[str, str] = {}
+        duplicates: set[str] = set()
+        for index, rule in enumerate(module_ownership):
+            if not isinstance(rule, dict):
+                raise TypeError(f"module_ownership[{index}] must be a TOML table")
+            entry_path = _read_required_string(rule, "path")
+            layer = _read_required_string(rule, "layer")
+            _read_required_string(rule, "owner")
+            _read_required_string(rule, "treatment")
+            _read_required_string(rule, "public_surface")
+            if entry_path in ownership_paths:
+                duplicates.add(entry_path)
+            ownership_paths[entry_path] = layer
+            if entry_path not in actual_entries:
+                failures.append(
+                    f"module_ownership entry {entry_path!r} does not match a current package-root module/package"
+                )
+            if layer not in valid_layers:
+                failures.append(
+                    f"module_ownership entry {entry_path!r} has unknown layer {layer!r}"
+                )
+            if layer in {"app", "optional"}:
+                _read_required_string(rule, "extra")
+            if layer == "compatibility":
+                _read_required_string(rule, "extra")
+                _read_required_string(rule, "removal_target")
+                _read_required_string(rule, "warning")
+                _read_required_string(rule, "migration_example")
+                _read_required_string(rule, "removal_version")
+                _read_required_string(rule, "removal_date")
+        if duplicates:
+            failures.append(f"Duplicate module_ownership paths: {sorted(duplicates)}")
+        missing_ownership = sorted(actual_entries - set(ownership_paths))
+        stale_ownership = sorted(set(ownership_paths) - actual_entries)
+        if missing_ownership:
+            failures.append(
+                "Every package-root module/package must have a reviewed [[module_ownership]] entry. "
+                f"Missing: {missing_ownership}"
+            )
+        if stale_ownership:
+            failures.append(f"Stale [[module_ownership]] paths: {stale_ownership}")
+
     repo_root_policy = contract.get("repository_root", {})
     if repo_root_policy:
         if not isinstance(repo_root_policy, dict):
@@ -126,6 +204,13 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
                 f"Unexpected repository-root Python files: {unexpected_repo_py}. "
                 "Use scripts/, examples/, or package entry points instead."
             )
+        for forbidden_dir in _read_list(repo_root_policy, "forbidden_python_dirs"):
+            directory = repo_root / forbidden_dir
+            if directory.exists() and any(directory.rglob("*.py")):
+                failures.append(
+                    f"Forbidden repository-root Python directory contains executable examples/apps: {forbidden_dir}. "
+                    "Move them into the installed package example tree."
+                )
 
     documentation = contract.get("documentation", {})
     if documentation:
@@ -134,12 +219,16 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
         for doc_path in _read_list(documentation, "required_docs"):
             full = repo_root / doc_path
             if not full.is_file():
-                failures.append(f"Required architecture documentation file missing: {doc_path}")
+                failures.append(
+                    f"Required architecture documentation file missing: {doc_path}"
+                )
                 continue
             text = full.read_text(encoding="utf-8")
             for fragment in _read_list(documentation, "required_fragments"):
                 if fragment not in text:
-                    failures.append(f"{doc_path} must mention architecture-contract fragment: {fragment!r}")
+                    failures.append(
+                        f"{doc_path} must mention architecture-contract fragment: {fragment!r}"
+                    )
 
     ci = contract.get("ci", {})
     if ci:
@@ -153,7 +242,9 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
             text = full.read_text(encoding="utf-8")
             for fragment in _read_list(ci, "required_fragments"):
                 if fragment not in text:
-                    failures.append(f"{workflow} must contain CI architecture-contract fragment: {fragment!r}")
+                    failures.append(
+                        f"{workflow} must contain CI architecture-contract fragment: {fragment!r}"
+                    )
 
     import_rules = contract.get("import_rules", [])
     if import_rules:
@@ -169,12 +260,20 @@ def validate_contract(repo_root: Path, contract_path: Path) -> list[str]:
             source_path = repo_root / source
             if not source_path.exists():
                 continue
-            files = [source_path] if source_path.is_file() else sorted(source_path.rglob("*.py"))
+            files = (
+                [source_path]
+                if source_path.is_file()
+                else sorted(source_path.rglob("*.py"))
+            )
             violations: dict[str, list[str]] = {}
             for path in files:
                 if "__pycache__" in path.parts:
                     continue
-                hits = sorted(imported for imported in _module_imports(path) if _matches_prefix(imported, forbidden))
+                hits = sorted(
+                    imported
+                    for imported in _module_imports(path)
+                    if _matches_prefix(imported, forbidden)
+                )
                 if hits:
                     violations[str(path.relative_to(repo_root))] = hits
             if violations:
@@ -189,9 +288,14 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
-    contract_path = args.contract if args.contract.is_absolute() else repo_root / args.contract
+    contract_path = (
+        args.contract if args.contract.is_absolute() else repo_root / args.contract
+    )
     if not contract_path.is_file():
-        print(f"Architecture contract missing: {contract_path.relative_to(repo_root)}", file=sys.stderr)
+        print(
+            f"Architecture contract missing: {contract_path.relative_to(repo_root)}",
+            file=sys.stderr,
+        )
         return 2
 
     failures = validate_contract(repo_root, contract_path)
