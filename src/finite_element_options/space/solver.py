@@ -211,9 +211,9 @@ class SpaceSolver:
         diagnostics["mesh_elements"] = int(self.mesh.nelements)
         return diagnostics
 
-    def apply_dirichlet(self, A, b, dirichlet_bcs, u_dirichlet):
+    def apply_dirichlet(self, A, b, boundaries, u_dirichlet):
         """Apply Dirichlet boundary conditions to ``A`` and ``b``."""
-        return apply_dirichlet(A, b, self.Vh, dirichlet_bcs, u_dirichlet)
+        return apply_dirichlet(A, b, self.Vh, boundaries, u_dirichlet)
 
     def refine_mesh(self, u: np.ndarray) -> fem.Mesh:
         """Refine the internal mesh using adaptive criterion.
