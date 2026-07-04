@@ -108,9 +108,8 @@ src/finite_element_options/
   integrations/
     haircut_backend.py
   _compat/                     # time-bounded legacy import shims only
+  examples/                    # installed-package examples and app entry points
 
-examples/                      # installed-package examples
-apps/                          # optional Streamlit application
 benchmarks/                    # reproducible benchmark registry/harness
 experiments/                   # explicit research-only profiles
 
@@ -127,7 +126,11 @@ Do not create a subpackage merely for visual symmetry. Boundaries are justified 
 
 
 
-The machine-readable architecture contract is `docs/architecture_contract.toml`. It is the CI-enforced source of truth for the `src/finite_element_options` package-root allowlist, repository-root Python-file policy, topology-count ratchet, and optional-stack import boundaries; update it with `tests/architecture` and `scripts/check_architecture_contract.py` in every hierarchy-changing PR.
+The machine-readable architecture contract is `docs/architecture_contract.toml`. It is the CI-enforced source of truth for the `src/finite_element_options` package-root allowlist, repository-root Python-file policy, topology-count ratchet, optional-stack import boundaries, and module ownership inventory; update it with `docs/MODULE_OWNERSHIP.md`, `tests/architecture`, and `scripts/check_architecture_contract.py` in every hierarchy-changing PR.
+
+### Module ownership
+
+Issue #50 is governed by `docs/MODULE_OWNERSHIP.md` and the `[[module_ownership]]` table in `docs/architecture_contract.toml`. Every package-root module or package is classified exactly once as `core`, `validation`, `compatibility`, `optional`, `example`, `app`, or `cli`. The finite-difference route `fdsolver.py` is compatibility-only, belongs to `finite_difference_options` for production ownership, requires the `fd` extra, emits targeted `DeprecationWarning`s, and must not be re-exported by the base package. UI, plotting, calibration, JAX and IO modules remain optional outer layers and are forbidden from the FEM core import graph. Executable examples live under `finite_element_options.examples`; duplicate root `examples/` Python files are forbidden by the architecture contract.
 
 ## 6. Dependency direction
 
@@ -346,9 +349,9 @@ Issue #78 extends the same adapter-screening architecture to Pinares without imp
 | Black–Scholes/Heston/product classes | Thin validation/example adapters, not core ownership |
 | Calibration and statistical workflows | Optional profile or downstream consumer |
 | pandas/xarray/Arrow persistence | Optional experiment/interop profile |
-| Streamlit/sidebar/plotting | `apps/` and `viz` extra |
+| Streamlit/sidebar/plotting | Installed `finite_element_options.examples.streamlit_app`, `ui` extra and `viz` extra |
 | JAX/Numba/FEniCSx/PETSc | Explicit experimental/optional profiles |
-| Duplicate `src/examples` and top-level examples | One installed-package example tree |
+| Duplicate `src/examples` and top-level examples | Consolidated into the installed `finite_element_options.examples` tree; repository-root `examples/` Python files are forbidden. |
 
 Moves should first preserve behavior, then change numerics in separate commits/PRs. Legacy imports live only in `_compat` with warnings and removal milestones.
 

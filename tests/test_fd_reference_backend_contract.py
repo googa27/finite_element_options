@@ -12,7 +12,9 @@ import numpy as np
 import pytest
 import scipy.sparse as sps
 
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.fdsolver import FDSolver, solve_system, vega
@@ -22,6 +24,19 @@ def _model(rate: float = 0.03, carry: float = 0.01, sigma: float = 0.2):
     dynamics = DynamicsParametersBlackScholes(r=rate, q=carry, sig=sigma)
     option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=Market(r=dynamics.r))
     return dynamics, option
+
+
+def test_fd_reference_entry_points_emit_targeted_compatibility_warnings() -> None:
+    dynamics, option = _model()
+    s_grid = np.linspace(0.0, 2.0, 41)
+    message = "compatibility-only.*0.3.0.*2026-10-31.*finite_difference_options"
+
+    with pytest.warns(DeprecationWarning, match=message):
+        FDSolver(s_grid, dynamics, option, is_call=True)
+    with pytest.warns(DeprecationWarning, match=message):
+        solve_system(s_grid, np.linspace(0.0, 1.0, 4), dynamics, option, is_call=True)
+    with pytest.warns(DeprecationWarning, match=message):
+        vega(np.ones((3, 3)), 0.1)
 
 
 @pytest.mark.parametrize(
@@ -50,7 +65,9 @@ def test_fd_reference_rejects_invalid_or_nonuniform_spot_grids(grid, message) ->
         ([0.0, 0.25, 0.75, 1.0], "uniform"),
     ],
 )
-def test_solve_system_rejects_invalid_or_nonuniform_time_grids(time_grid, message) -> None:
+def test_solve_system_rejects_invalid_or_nonuniform_time_grids(
+    time_grid, message
+) -> None:
     dynamics, option = _model()
     s_grid = np.linspace(0.0, 2.0, 41)
 
@@ -83,7 +100,9 @@ def test_fd_reference_call_boundary_never_returns_negative_far_field() -> None:
     assert boundary[-1] == 0.0
 
 
-def test_dirichlet_elimination_adjusts_interior_rhs_and_zeroes_boundary_columns() -> None:
+def test_dirichlet_elimination_adjusts_interior_rhs_and_zeroes_boundary_columns() -> (
+    None
+):
     dynamics, option = _model(rate=0.05, carry=0.02)
     solver = FDSolver(np.linspace(0.0, 2.0, 5), dynamics, option, is_call=True)
     matrix = sps.csr_matrix(
@@ -140,7 +159,9 @@ class _ScalarOnlyPayoff:
 
 def test_payoff_domain_value_errors_are_not_swallowed_as_scalar_fallback() -> None:
     dynamics, _ = _model()
-    solver = FDSolver(np.linspace(0.0, 2.0, 5), dynamics, _BrokenVectorizedPayoff(), is_call=True)
+    solver = FDSolver(
+        np.linspace(0.0, 2.0, 5), dynamics, _BrokenVectorizedPayoff(), is_call=True
+    )
 
     with pytest.raises(ValueError, match="domain bug"):
         solver.initial_condition()
@@ -148,12 +169,16 @@ def test_payoff_domain_value_errors_are_not_swallowed_as_scalar_fallback() -> No
 
 def test_scalar_only_payoff_type_error_still_uses_explicit_scalar_fallback() -> None:
     dynamics, _ = _model()
-    solver = FDSolver(np.linspace(0.0, 2.0, 5), dynamics, _ScalarOnlyPayoff(), is_call=True)
+    solver = FDSolver(
+        np.linspace(0.0, 2.0, 5), dynamics, _ScalarOnlyPayoff(), is_call=True
+    )
 
     np.testing.assert_allclose(solver.initial_condition(), [0.0, 0.0, 0.0, 0.5, 1.0])
 
 
-def test_solve_system_reports_time_orientation_residual_and_factorization_reuse() -> None:
+def test_solve_system_reports_time_orientation_residual_and_factorization_reuse() -> (
+    None
+):
     dynamics, option = _model(rate=0.03, carry=0.01)
     s_grid = np.linspace(0.0, 2.0, 81)
     tau_grid = np.linspace(0.0, 1.0, 41)

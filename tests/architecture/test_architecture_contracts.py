@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,8 @@ SRC_LAYOUT_ROOT = ROOT / "src"
 PACKAGE_ROOT = SRC_LAYOUT_ROOT / "finite_element_options"
 PACKAGE = "finite_element_options"
 ARCHITECTURE_DOC = ROOT / "docs" / "ARCHITECTURE.md"
+MODULE_OWNERSHIP_DOC = ROOT / "docs" / "MODULE_OWNERSHIP.md"
+ARCHITECTURE_CONTRACT = ROOT / "docs" / "architecture_contract.toml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 PACKAGE_ROOT_ENTRIES = {
@@ -45,7 +48,6 @@ PACKAGE_ROOT_ENTRIES = {
 FEM_CORE_PACKAGES_AND_MODULES = {
     "contracts",
     "core",
-    "fdsolver.py",
     "problems",
     "space",
     "time_integration",
@@ -58,6 +60,7 @@ OUTER_LAYER_PACKAGES_AND_MODULES = {
     "data_utils.py",
     "estimation",
     "examples",
+    "fdsolver.py",
     "jax_greeks.py",
     "plots.py",
     "sidebar.py",
@@ -110,6 +113,7 @@ REQUIRED_ARCHITECTURE_PHRASES = {
     "Optional capability, optional dependency",
     "No module imports the distribution as `src`",
     "Compatibility and deprecation policy",
+    "Module ownership",
     "Architecture fitness gates",
     "haircut-engine",
     "executable FEM adapter evidence",
@@ -179,6 +183,28 @@ def _imports(path: Path) -> set[str]:
     return _imports_from_tree(tree, path)
 
 
+def _load_architecture_contract() -> dict[str, object]:
+    return tomllib.loads(ARCHITECTURE_CONTRACT.read_text(encoding="utf-8"))
+
+
+def _actual_package_root_entries() -> set[str]:
+    return {
+        path.name
+        for path in PACKAGE_ROOT.iterdir()
+        if (path.is_file() and path.suffix == ".py")
+        or (
+            path.is_dir() and not path.name.startswith("__") and any(path.rglob("*.py"))
+        )
+    }
+
+
+def _module_ownership_entries() -> dict[str, dict[str, object]]:
+    contract = _load_architecture_contract()
+    entries = contract.get("module_ownership", [])
+    assert isinstance(entries, list), "[[module_ownership]] must be an array."
+    return {str(entry["path"]): entry for entry in entries if isinstance(entry, dict)}
+
+
 def _top_level_import(import_name: str) -> str:
     return import_name.split(".")[0]
 
@@ -208,7 +234,9 @@ def test_architecture_document_exists_and_covers_required_transition_rules() -> 
         "docs/ARCHITECTURE.md is the architecture source of truth."
     )
     text = ARCHITECTURE_DOC.read_text(encoding="utf-8")
-    missing = sorted(phrase for phrase in REQUIRED_ARCHITECTURE_PHRASES if phrase not in text)
+    missing = sorted(
+        phrase for phrase in REQUIRED_ARCHITECTURE_PHRASES if phrase not in text
+    )
     assert not missing, (
         "docs/ARCHITECTURE.md is missing required package-transition language: "
         + ", ".join(missing)
@@ -219,13 +247,10 @@ def test_source_layout_exports_only_finite_element_options_package() -> None:
     assert not (SRC_LAYOUT_ROOT / "__init__.py").exists(), (
         "The source-layout container must not itself be importable as package `src`."
     )
-    assert PACKAGE_ROOT.is_dir(), "The real package root must be src/finite_element_options."
-    actual = {
-        path.name
-        for path in PACKAGE_ROOT.iterdir()
-        if (path.is_file() and path.suffix == ".py")
-        or (path.is_dir() and not path.name.startswith("__") and any(path.rglob("*.py")))
-    }
+    assert PACKAGE_ROOT.is_dir(), (
+        "The real package root must be src/finite_element_options."
+    )
+    actual = _actual_package_root_entries()
     unexpected = actual - PACKAGE_ROOT_ENTRIES
     missing = PACKAGE_ROOT_ENTRIES - actual
     assert not unexpected, (
@@ -238,25 +263,121 @@ def test_source_layout_exports_only_finite_element_options_package() -> None:
     )
 
 
-def test_package_root_entries_are_classified_as_core_or_outer_layer() -> None:
-    classified = FEM_CORE_PACKAGES_AND_MODULES | OUTER_LAYER_PACKAGES_AND_MODULES | {
-        "__init__.py"
+def test_module_ownership_contract_covers_every_package_root_entry() -> None:
+    entries = _module_ownership_entries()
+    actual = _actual_package_root_entries()
+    assert set(entries) == actual, (
+        "docs/architecture_contract.toml [[module_ownership]] must classify every current "
+        f"package-root entry exactly once. Missing={sorted(actual - set(entries))}; "
+        f"stale={sorted(set(entries) - actual)}"
+    )
+    allowed_layers = {
+        "app",
+        "cli",
+        "compatibility",
+        "core",
+        "example",
+        "optional",
+        "validation",
     }
+    for entry_path, entry in entries.items():
+        assert entry.get("layer") in allowed_layers, (
+            f"Unknown module layer for {entry_path}: {entry}"
+        )
+        for key in ("owner", "treatment", "public_surface"):
+            assert isinstance(entry.get(key), str) and entry[key], (
+                f"{entry_path} must declare non-empty module ownership {key}."
+            )
+        if entry.get("layer") in {"app", "optional"}:
+            assert entry.get("extra"), (
+                f"{entry_path} optional/app layer must name an extra."
+            )
+        if entry.get("layer") == "compatibility":
+            assert entry.get("extra"), (
+                f"{entry_path} compatibility layer must name an extra."
+            )
+            assert entry.get("removal_target"), (
+                f"{entry_path} compatibility layer must name a removal target."
+            )
+            assert entry.get("warning"), (
+                f"{entry_path} compatibility layer must name a warning."
+            )
+            assert entry.get("migration_example"), (
+                f"{entry_path} compatibility layer must include a migration example."
+            )
+            assert entry.get("removal_version"), (
+                f"{entry_path} compatibility layer must name a removal version."
+            )
+            assert entry.get("removal_date"), (
+                f"{entry_path} compatibility layer must name a removal date."
+            )
+
+
+def test_module_ownership_doc_matches_executable_contract() -> None:
+    assert MODULE_OWNERSHIP_DOC.is_file(), (
+        "docs/MODULE_OWNERSHIP.md owns #50's reviewed inventory."
+    )
+    text = MODULE_OWNERSHIP_DOC.read_text(encoding="utf-8")
+    for entry_path, entry in _module_ownership_entries().items():
+        documented = f"`{entry_path}`" in text or f"`{entry_path}/`" in text
+        assert documented, f"docs/MODULE_OWNERSHIP.md must document {entry_path}."
+        assert str(entry["layer"]) in text, (
+            f"docs/MODULE_OWNERSHIP.md must document {entry_path}'s layer."
+        )
+
+
+def test_fdsolver_is_compatibility_only_and_not_base_public_api() -> None:
+    entry = _module_ownership_entries()["fdsolver.py"]
+    assert entry["layer"] == "compatibility"
+    assert entry["owner"] == "finite_difference_options"
+    assert entry["extra"] == "fd"
+    assert entry["removal_version"] == "0.3.0"
+    assert entry["removal_date"] == "2026-10-31"
+    imported = _imports(PACKAGE_ROOT / "__init__.py")
+    assert "fdsolver" not in imported
+    assert f"{PACKAGE}.fdsolver" not in imported
+
+
+def test_examples_are_consolidated_into_installed_package_tree() -> None:
+    root_examples = ROOT / "examples"
+    if root_examples.exists():
+        assert not any(root_examples.rglob("*.py")), (
+            "Executable examples must live under finite_element_options.examples, "
+            "not a duplicate repository-root examples tree."
+        )
+    installed_examples = PACKAGE_ROOT / "examples"
+    for module in ("basic_usage.py", "adaptive_mesh_refinement.py", "streamlit_app.py"):
+        assert (installed_examples / module).is_file(), (
+            f"{module} must live in the installed package example tree."
+        )
+
+
+def test_package_root_entries_are_classified_as_core_or_outer_layer() -> None:
+    classified = (
+        FEM_CORE_PACKAGES_AND_MODULES
+        | OUTER_LAYER_PACKAGES_AND_MODULES
+        | {"__init__.py"}
+    )
     duplicated = FEM_CORE_PACKAGES_AND_MODULES & OUTER_LAYER_PACKAGES_AND_MODULES
     unclassified = PACKAGE_ROOT_ENTRIES - classified
     stale_classifications = classified - PACKAGE_ROOT_ENTRIES
-    assert not duplicated, "Entries cannot be both FEM core and outer-layer modules: " + repr(
-        sorted(duplicated)
+    assert not duplicated, (
+        "Entries cannot be both FEM core and outer-layer modules: "
+        + repr(sorted(duplicated))
     )
-    assert not unclassified, "Every package root must be classified before it is accepted: " + repr(
-        sorted(unclassified)
+    assert not unclassified, (
+        "Every package root must be classified before it is accepted: "
+        + repr(sorted(unclassified))
     )
-    assert not stale_classifications, "Removed roots must also be removed from layer classifications: " + repr(
-        sorted(stale_classifications)
+    assert not stale_classifications, (
+        "Removed roots must also be removed from layer classifications: "
+        + repr(sorted(stale_classifications))
     )
 
 
-def test_import_parser_detects_package_prefixed_and_relative_application_imports() -> None:
+def test_import_parser_detects_package_prefixed_and_relative_application_imports() -> (
+    None
+):
     tree = ast.parse(
         "from finite_element_options import plots\n"
         "from finite_element_options.sidebar import render\n"
@@ -313,8 +434,8 @@ def test_fem_core_does_not_import_application_or_research_stacks() -> None:
             )
             if forbidden:
                 violations[relative_path] = forbidden
-    assert not violations, "FEM core imported application/research-only layers: " + repr(
-        violations
+    assert not violations, (
+        "FEM core imported application/research-only layers: " + repr(violations)
     )
 
 
@@ -325,10 +446,14 @@ def test_base_package_import_surface_stays_lightweight() -> None:
         for name in imported
         if _is_forbidden_core_import(name) or name.startswith(f"{PACKAGE}.")
     )
-    assert not forbidden, "Base package import must remain lightweight: " + repr(forbidden)
+    assert not forbidden, "Base package import must remain lightweight: " + repr(
+        forbidden
+    )
 
 
 def test_ci_exposes_architecture_and_packaging_gates() -> None:
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
     assert "tests/architecture" in workflow, "CI must run the architecture gate."
-    assert "tests/test_packaging_contract.py" in workflow, "CI must run packaging import gates."
+    assert "tests/test_packaging_contract.py" in workflow, (
+        "CI must run packaging import gates."
+    )

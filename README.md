@@ -25,13 +25,13 @@ Mesh creation utilities now return both the mesh and a ``Config`` instance
 carrying numerical parameters such as the finite element. Pass this
 configuration to ``SpaceSolver`` when constructing spatial discretisations.
 
-Alternatively, run the bundled example script:
+Alternatively, run the bundled installed-package example module:
 
 ```bash
-python examples/basic_usage.py
+python -m finite_element_options.examples.basic_usage
 ```
 
-This reproduces the same call option pricing workflow in a standalone file.
+This reproduces the same call option pricing workflow without depending on a checkout-local `examples/` tree.
 
 ## Features
 
@@ -69,18 +69,22 @@ pip install -e '.[dev]' -c constraints.txt
 
 Optional profiles are published as extras, for example `.[ui]`, `.[jax]`, `.[calibration]`, `.[io]`, `.[fd]`, and `.[validation]`.
 
+## Architecture and module ownership
+
+The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional-stack import boundaries, and the module ownership table used by `docs/MODULE_OWNERSHIP.md` for issue #50. Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, and UI/plotting code uses `ui` or `viz`.
+
 ## Usage
 
-Launch the Streamlit application:
+Launch the Streamlit application from the installed package tree:
 
 ```bash
-streamlit run examples/streamlit_app.py
+streamlit run "$(python -c 'import importlib.util; print(importlib.util.find_spec("finite_element_options.examples.streamlit_app").origin)')"
 ```
 
 Run the adaptive mesh demo:
 
 ```bash
-python examples/adaptive_mesh_refinement.py
+python -m finite_element_options.examples.adaptive_mesh_refinement
 ```
 
 ### Python API example
@@ -216,7 +220,7 @@ The package topology is guarded by the architecture contract in `docs/architectu
 ```
 pyproject.toml                     PEP 621 package metadata and extras
 src/finite_element_options/        Installable core package namespace
-examples/                          Runnable demos, including the Streamlit entry point
+src/finite_element_options/examples/ Installed-package examples and Streamlit entry point
 requirements.txt                   Legacy all-in developer requirements mirror
 constraints.txt                    CI/test compatibility constraints
 tests/                             Pytest-based test suite
