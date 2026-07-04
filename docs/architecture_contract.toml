@@ -160,7 +160,7 @@ extra = "calibration"
 path = "jax_greeks.py"
 layer = "optional"
 owner = "finite_element_options"
-treatment = "experimental AD Greek route"
+treatment = "experimental AD Greek route with method/object diagnostics and synchronized JAX timing"
 public_surface = "optional research helper"
 extra = "jax"
 

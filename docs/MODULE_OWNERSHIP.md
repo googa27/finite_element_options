@@ -34,7 +34,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | `fdsolver.py` | compatibility | Legacy finite-difference reference route retained only for benchmark/parity transition; production FD ownership belongs to `finite_difference_options` | Not re-exported by base package; emits `DeprecationWarning` on `FDSolver`, `solve_system`, and Greek helper use | fd | Removal version `0.3.0`, removal date `2026-10-31`; remove or replace with a benchmark oracle after FD parity and adapter gates (#49/#50) |
 | `data_utils.py` | optional | Experiment snapshot IO and dataframe/xarray utilities | Optional utility | io | Keep outside core import graph |
 | `estimation/` | optional | SciPy/PyMC calibration research adapters; synthetic unless evidence says otherwise | Optional research/calibration | calibration | Production Heston Bayesian route remains #54 |
-| `jax_greeks.py` | optional | Experimental AD Greek route | Optional research helper | jax | Keep separate from core sensitivity claims |
+| `jax_greeks.py` | optional | Experimental AD Greek route with method/object diagnostics and synchronized JAX timing | Optional research helper | jax | Keep separate from core sensitivity claims; no AD-through-FEM claim until differentiable assembly/solve is validated (#46) |
 | `plots.py` | optional | Plotting helpers | Optional visualization | viz | Keep outside core import graph |
 | `sidebar.py` | app | Streamlit sidebar/application support | UI helper only | ui | Keep outside core import graph |
 | `cli.py` | cli | Thin CLI shell over validated public APIs | Console entry edge | core plus selected extras | Do not encode solver semantics here |
