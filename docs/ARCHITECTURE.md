@@ -293,7 +293,7 @@ Theta-family integration is explicit:
 +\Delta\tau\left[\theta f_{n+1}+(1-\theta)f_n\right],
 \]
 
-subject to the repository's declared operator sign. Time-dependent operators require explicit assembly/reuse rules. Rannacher smoothing, adaptive stepping and remeshing transfer are separate capabilities with independent validation.
+subject to the repository's declared operator sign. Time grids are materialized and validated as finite, strictly increasing output coordinates. Nonuniform grids use each local `dt_n`; roundoff-uniform `np.linspace` grids are canonicalized to a single width for deterministic factorization reuse. Source terms use theta-consistent endpoint timing, while essential Dirichlet conditions are enforced at the new time node. Rannacher startup is represented by subdividing the first `startup_steps` intervals into `startup_substeps` with `startup_theta`, and the result exposes output grid, internal step widths, theta schedule, uniform-grid status and forward orientation diagnostics. Adaptive stepping and remeshing transfer remain separate capabilities with independent validation.
 
 ## 13. Linear solver architecture
 
