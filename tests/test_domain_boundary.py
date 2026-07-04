@@ -57,6 +57,12 @@ def test_dirichlet_bc_materializes_generators_and_rejects_bad_facets() -> None:
     with pytest.raises(ValueError, match="Unknown boundary facet"):
         DirichletBC(["not_a_facet"]).apply(space, space.mass.copy(), values.copy(), 0.5)
 
+    single = DirichletBC("s_min")
+    assert single.boundaries == ("s_min",)
+    single_A, single_b = single.apply(space, space.mass.copy(), values.copy(), 0.5)
+    assert single_A.shape == space.mass.shape
+    assert single_b.shape == values.shape
+
 
 def test_black_scholes_dirichlet_facets_include_carry_strike_and_maturity() -> None:
     """Named endpoint facets must use the full Black-Scholes oracle semantics."""

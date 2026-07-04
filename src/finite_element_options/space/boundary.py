@@ -10,10 +10,16 @@ import skfem as fem
 from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
 
 
-def _materialize_boundaries(boundaries: Iterable[str]) -> tuple[str, ...]:
+def _materialize_boundaries(boundaries: Iterable[str] | str | bytes) -> tuple[str, ...]:
     """Return a validated tuple of boundary names."""
 
-    names = tuple(str(boundary) for boundary in boundaries)
+    names: tuple[str, ...]
+    if isinstance(boundaries, bytes):
+        names = (boundaries.decode(),)
+    elif isinstance(boundaries, str):
+        names = (boundaries,)
+    else:
+        names = tuple(str(boundary) for boundary in boundaries)
     duplicates = sorted({name for name in names if names.count(name) > 1})
     if duplicates:
         raise ValueError(f"duplicate boundary facet(s): {', '.join(duplicates)}")
