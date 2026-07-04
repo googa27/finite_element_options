@@ -42,6 +42,7 @@ This reproduces the same call option pricing workflow without depending on a che
 - Configurable mesh generation supporting 1D, 2D and 3D problems
 - Central ``Config`` dataclass for numerical parameters
 - Sample problems for 1D Black–Scholes and 3D Heston models
+- Shared Heston/CIR moment diagnostics with exact time-average boundary variance, terminal conditional moments, and conservative variance-domain tail bounds
 - Simple market abstraction with discount factors
 - Streamlit UI and plotting helpers
 - Example demo for adaptive mesh refinement

@@ -4,6 +4,13 @@ import pydantic as pyd
 import numpy as np
 import skfem as fem
 
+from .cir import (
+    cir_conditional_mean,
+    cir_time_average_mean,
+    cir_variance_domain_diagnostics,
+    feller_ratio,
+    validate_cir_variance_parameters,
+)
 from .config import Config
 from .interfaces import DynamicsModel, Payoff
 
@@ -27,21 +34,78 @@ class DynamicsParametersHeston3D(
     theta_r: float
     sig_r: float
 
-    def mean_variance(self, th, v, config: Config | None = None):
-        """Mean of the variance process under Heston dynamics.
+    @pyd.model_validator(mode="after")
+    def _validate_cir_parameters(self) -> "DynamicsParametersHeston3D":
+        validate_cir_variance_parameters(
+            kappa=self.kappa,
+            theta=self.theta,
+            volatility_of_variance=self.sig_v,
+            rho=self.rho,
+        )
+        if not np.isfinite(float(self.kappa_r)) or self.kappa_r < 0.0:
+            raise ValueError("kappa_r must be finite and non-negative")
+        if not np.isfinite(float(self.theta_r)):
+            raise ValueError("theta_r must be finite")
+        if not np.isfinite(float(self.sig_r)) or self.sig_r < 0.0:
+            raise ValueError("sig_r must be finite and non-negative")
+        return self
 
-        Parameters
-        ----------
-        th:
-            Time horizon.
-        v:
-            Initial variance.
-        config:
-            Optional numerical configuration providing ``eps``.
+    @property
+    def variance_volatility(self) -> float:
+        """Return the volatility-of-variance parameter ``sigma_v``."""
+
+        return self.sig_v
+
+    def cir_number(self) -> float:
+        """Return the Cox–Ingersoll–Ross (CIR) Feller ratio."""
+
+        return feller_ratio(
+            kappa=self.kappa,
+            theta=self.theta,
+            volatility_of_variance=self.variance_volatility,
+        )
+
+    def mean_variance(self, th, v, config: Config | None = None):
+        r"""Return expected average variance over ``[t, t+th]``.
+
+        The 3D model shares the same CIR variance process as 2D Heston; use
+        the time-average mean for finite-horizon boundary values and keep the
+        terminal conditional moments in ``variance_domain_diagnostics``.
         """
-        cfg = config or Config()
-        x = self.kappa * th + cfg.eps
-        return -np.expm1(-x) / x * (v - self.theta) + self.theta
+        del config
+        return cir_time_average_mean(
+            kappa=self.kappa,
+            theta=self.theta,
+            horizon=th,
+            initial_variance=v,
+        )
+
+    def terminal_mean_variance(self, th, v):
+        r"""Return ``\mathbb{E}[V_{t+th} \mid V_t = v]`` under CIR dynamics."""
+        return cir_conditional_mean(
+            kappa=self.kappa,
+            theta=self.theta,
+            horizon=th,
+            initial_variance=v,
+        )
+
+    def variance_domain_diagnostics(
+        self,
+        *,
+        horizon: float,
+        initial_variance,
+        tail_mass: float = 1.0e-6,
+    ) -> dict:
+        """Return conservative variance-domain truncation diagnostics."""
+
+        return cir_variance_domain_diagnostics(
+            kappa=self.kappa,
+            theta=self.theta,
+            volatility_of_variance=self.variance_volatility,
+            horizon=horizon,
+            initial_variance=initial_variance,
+            tail_mass=tail_mass,
+        )
 
     def A(self, s, v, r_val):  # pylint: disable=unused-argument
         """Covariance matrix for the three-dimensional system."""

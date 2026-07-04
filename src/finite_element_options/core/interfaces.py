@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, Protocol, TypeAlias
+from typing import Any, Iterable, Protocol, TypeAlias
 import numpy as np
 import skfem as fem
 import scipy.sparse as sps
@@ -41,8 +41,19 @@ class DynamicsModel(Protocol):
     r: float
     q: float
 
-    def mean_variance(self, th: float, v: float) -> float:
-        """Return expected variance at ``t+th`` given state ``v``."""
+    def mean_variance(
+        self,
+        th: ArrayLikeFloat,
+        v: ArrayLikeFloat,
+        config: Any | None = None,
+    ) -> ArrayLikeFloat:
+        """Return effective average variance over the pricing horizon.
+
+        This method feeds finite-time boundary oracles that consume a constant
+        variance over ``[t, t+th]``. Models that also need terminal moments
+        should expose those via a separate method/diagnostic.
+        """
+        raise NotImplementedError
 
     def A(self, *coords) -> list[list[float]]:
         """Diffusion matrix of the state variables."""

@@ -3,6 +3,7 @@
 import pydantic as pyd
 import skfem as fem
 
+from .cir import ArrayLikeFloat
 from .interfaces import DynamicsModel, Payoff
 
 
@@ -19,7 +20,12 @@ class DynamicsParametersBlackScholes(
     q: float
     sig: float
 
-    def mean_variance(self, th, _):  # pylint: disable=unused-argument
+    def mean_variance(
+        self,
+        th: ArrayLikeFloat,
+        v: ArrayLikeFloat,
+        config=None,
+    ) -> float:  # pylint: disable=unused-argument
         """Return the constant variance ``sig^2``."""
         return self.sig ** 2
 

@@ -100,6 +100,7 @@ Product classes and UI defaults are not substitutes for this specification.
 - Neumann and Robin contributions must be retained in the weak form where required.
 - Test boundary residuals, corners, time-dependent data and unsupported conditions.
 - Generic FEM code must not guess financial far-field boundaries.
+- Heston variance domains use the shared CIR diagnostics: exact time-average boundary variance, exact terminal conditional variance mean, exact CIR variance, Feller ratio and an explicit tail-mass policy.
 
 ## 8. Time integration and linear solvers
 
