@@ -78,7 +78,7 @@
     {
       "absolute_error_uf": 0.013734139059,
       "degrees_of_freedom": 257,
-      "delta_absolute_error": 3.1728969413e-05,
+      "delta_absolute_error": 3.1728969414e-05,
       "expected_delta": 0.45089438849,
       "expected_gamma": 0.00053537514368,
       "expected_price_uf": 231.79949383,
@@ -87,12 +87,12 @@
       "observed_gamma": 0.00053456081708,
       "observed_price_uf": 231.78575969,
       "refinement_level": 7,
-      "relative_error": 5.9250082182e-05,
+      "relative_error": 5.9250082183e-05,
       "time_steps": 160
     }
   ],
   "summary": {
-    "delta_absolute_error": 3.1728969413e-05,
+    "delta_absolute_error": 3.1728969414e-05,
     "delta_tolerance_absolute": 0.001,
     "expected_delta": 0.45089438849,
     "expected_gamma": 0.00053537514368,
@@ -103,7 +103,7 @@
     "observed_gamma": 0.00053456081708,
     "observed_price_uf": 231.78575969,
     "price_absolute_error_uf": 0.013734139059,
-    "price_relative_error": 5.9250082182e-05,
+    "price_relative_error": 5.9250082183e-05,
     "price_tolerance_absolute_uf": 1.0
   },
   "time_metadata": {

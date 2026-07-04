@@ -337,6 +337,8 @@ Issue #74 publishes the public arxiv-lab contract artifacts in `tests/fixtures/f
 
 Issue #78 extends the same adapter-screening architecture to Pinares without importing Pinares domain modules. `finite_element_options.validation.pinares_fixed_price_proxy` publishes `PINARES-FEM-FIXED-PRICE-PROXY-V0` and `PINARES-QPS-FIXED-PRICE-PROXY-V0` artifacts in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/` plus the shared `tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json`. The executable route solves the public-synthetic fixed-price option proxy as a normalized Black-Scholes weak form ($x=S/K$, UF value = survival probability × $K_{uf}$ × normalized call value), records mesh/time/weak-form/boundary metadata, and checks value/Delta/Gamma plus no-arbitrage bounds. `PINARES-FEM-FAIL-CLOSED-V0` is the negative contract: full family contract, ROFR, legal/tax, obstacle/free-boundary, jump/liquidity and HJB/control requests are rejected by `FEMRouteRequest` diagnostics before mesh or assembly work.
 
+Project #17 exposes `DEFAULT_RELEASED_FEM_SOLVER_CONTRACT` as the public released FEM solver contract for fixed-price proxy parity. The contract points only at public-synthetic fixtures and the validated `line_uniform`/`lagrange_p2`/theta/`scipy_direct` route. `finite_element_options.validation.solver_cache_benchmark` provides `FEM-SOLVER-CACHE-001` residual evidence: invariant theta systems are assembled once per solve, factorized once with SciPy sparse LU, reused for repeated time-step right-hand sides, and checked by max linear residual. Banded, AMG and PETSc routes are listed as unsupported solver backends and fail closed until separate equal-error residual evidence lands.
+
 
 ## 17. Ownership cleanup
 

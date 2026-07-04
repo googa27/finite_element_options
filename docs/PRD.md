@@ -180,6 +180,8 @@ Issue #74 extends this to a public arxiv-lab compatible FEM oracle artifact set 
 
 Issue #78 adds the Pinares-specific public-synthetic fixed-price proxy weak-form fixture. It consumes/exports a `quant-problem-spec/v0` record with UF units, `Q*` proxy measure, maturity date/time domain, survival-scaled terminal payoff, one-dimensional drift/diffusion/reaction terms, endpoint Dirichlet/linear-growth boundary metadata, Lagrange-P2 line mesh controls, theta stepping and SciPy-direct solve evidence. The route is validated only for the fixed-price option proxy; full family-contract, ROFR, obstacle/free-boundary, jump/liquidity, HJB/control and legal/tax-output requests fail closed with diagnostics before mesh allocation.
 
+Project #17 publishes a released public FEM solver contract for Pinares fixed-price proxy parity and closes the residual solver-cache evidence for #47/#71. The validated solver route remains `scipy_direct`; repeated one-dimensional line-uniform theta solves reuse one sparse LU factorization per invariant system and record factorization reuse counts plus max residual. Banded, AMG and PETSc routes are explicit unsupported capabilities until their own dependency/profile, convergence and equal-error benchmark evidence exists.
+
 ### FR-FEM-012 — Module ownership and duplicate retirement
 
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.

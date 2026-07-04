@@ -47,6 +47,14 @@ from .pinares_fixed_price_proxy import (
     write_public_pinares_quant_problem_spec,
     write_public_pinares_unsupported_problem_spec,
 )
+from .solver_cache_benchmark import (
+    SOLVER_CACHE_BENCHMARK_ID,
+    SOLVER_CACHE_CONTRACT_VERSION,
+    SolverCacheBenchmarkCase,
+    SolverCacheBenchmarkReport,
+    SolverCacheBenchmarkRow,
+    run_solver_cache_benchmark,
+)
 
 __all__ = [
     "DEFAULT_TOLERANCE_ABSOLUTE",
@@ -92,4 +100,10 @@ __all__ = [
     "write_public_pinares_fixed_price_result_export",
     "write_public_pinares_quant_problem_spec",
     "write_public_pinares_unsupported_problem_spec",
+    "SOLVER_CACHE_BENCHMARK_ID",
+    "SOLVER_CACHE_CONTRACT_VERSION",
+    "SolverCacheBenchmarkCase",
+    "SolverCacheBenchmarkReport",
+    "SolverCacheBenchmarkRow",
+    "run_solver_cache_benchmark",
 ]
