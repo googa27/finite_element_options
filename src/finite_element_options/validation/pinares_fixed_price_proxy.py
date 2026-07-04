@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import scipy.stats as spst
+import scipy.stats as spst  # type: ignore[import-untyped]
 
 from finite_element_options.contracts import DEFAULT_FEM_CAPABILITY_MANIFEST
 from finite_element_options.core.dynamics_black_scholes import (
@@ -40,29 +40,16 @@ PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS = (
 )
 PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_ID = "pinares.fixed_price_option_proxy.v1"
 PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_HASH = "publicsyntheticpinares001"
-PINARES_FEM_FIXED_PRICE_PROXY_FIXTURE_ID = (
-    "public-synthetic.pinares-fem-fixed-price-proxy.v1"
-)
-PINARES_FEM_FIXED_PRICE_PROXY_ROUTE_ID = (
-    "fem.pinares_fixed_price_proxy.weak_form_p2_theta"
-)
-PINARES_FEM_FIXED_PRICE_PROXY_SCHEMA_VERSION = (
-    "finite-element-pinares-fixed-price-proxy/v0"
-)
+PINARES_FEM_FIXED_PRICE_PROXY_FIXTURE_ID = "public-synthetic.pinares-fem-fixed-price-proxy.v1"
+PINARES_FEM_FIXED_PRICE_PROXY_ROUTE_ID = "fem.pinares_fixed_price_proxy.weak_form_p2_theta"
+PINARES_FEM_FIXED_PRICE_PROXY_SCHEMA_VERSION = "finite-element-pinares-fixed-price-proxy/v0"
 PINARES_FEM_PROXY_REFINEMENT_LEVELS = (5, 6, 7)
 PINARES_FEM_PROXY_TIME_STEPS = 160
 PINARES_FEM_PROXY_FIXTURE_ROOT = (
-    Path(__file__).resolve().parents[3]
-    / "tests"
-    / "fixtures"
-    / "fem_pinares_fixed_price_proxy_v1"
+    Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "fem_pinares_fixed_price_proxy_v1"
 )
-PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
-)
-PINARES_FEM_PROXY_RESULT_EXPORT_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
-)
+PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
+PINARES_FEM_PROXY_RESULT_EXPORT_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
 PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH = (
     PINARES_FEM_PROXY_FIXTURE_ROOT / "unsupported_full_deal_problem_spec.json"
 )
@@ -228,11 +215,7 @@ class PinaresFEMProxyReport:
             self.price_absolute_error_uf <= self.case.price_abs_tolerance_uf
             and self.delta_absolute_error <= self.case.delta_abs_tolerance
             and self.gamma_absolute_error <= self.case.gamma_abs_tolerance
-            and all(
-                bool(value)
-                for key, value in self.no_arbitrage.items()
-                if key.endswith("_ok")
-            )
+            and all(bool(value) for key, value in self.no_arbitrage.items() if key.endswith("_ok"))
         )
 
     def to_public_dict(self) -> dict[str, Any]:
@@ -462,9 +445,7 @@ def public_pinares_fixed_price_problem_spec(
                 "survival_probability": case.survival_probability,
             },
             "valuation_graph": {
-                "solver_hints": {
-                    "benchmark_ids": list(PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS)
-                }
+                "solver_hints": {"benchmark_ids": list(PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS)}
             },
         },
         "result_bundle": {
@@ -538,9 +519,7 @@ def public_pinares_full_deal_unsupported_problem_spec() -> dict[str, Any]:
 def build_pinares_fem_proxy_hash(payload: dict[str, Any]) -> str:
     """Compute a deterministic hash for Pinares FEM fixture contracts."""
 
-    payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return sha256(payload_bytes).hexdigest()
 
 
@@ -570,9 +549,7 @@ def run_public_pinares_fixed_price_proxy_fixture(
     """Run the public-synthetic Pinares fixed-price weak-form proxy fixture."""
 
     case = case or PinaresFixedPriceProxyCase()
-    rows = tuple(
-        _run_row(case, refinement_level=level) for level in case.refinement_levels
-    )
+    rows = tuple(_run_row(case, refinement_level=level) for level in case.refinement_levels)
     final = rows[-1]
     intrinsic = case.survival_probability * max(case.spot_uf - case.strike_uf, 0.0)
     upper_bound = case.survival_probability * case.spot_uf
@@ -582,8 +559,7 @@ def run_public_pinares_fixed_price_proxy_fixture(
         "value_bound_ok": final.observed_price_uf >= intrinsic - 1e-12,
         "upper_bound_ok": final.observed_price_uf <= upper_bound + 1e-12,
         "delta_lower_bound_ok": final.observed_delta >= -1e-12,
-        "delta_upper_bound_ok": final.observed_delta
-        <= case.survival_probability + 1e-12,
+        "delta_upper_bound_ok": final.observed_delta <= case.survival_probability + 1e-12,
         "gamma_non_negative_ok": final.observed_gamma >= -1e-12,
         "survival_scale_ok": 0.0 <= case.survival_probability <= 1.0,
     }
@@ -603,9 +579,7 @@ def run_public_pinares_fixed_price_proxy_fixture(
         no_arbitrage=no_arbitrage,
         config_hash="",
     )
-    report = PinaresFEMProxyReport(
-        **{**report.__dict__, "config_hash": _config_hash(report)}
-    )
+    report = PinaresFEMProxyReport(**{**report.__dict__, "config_hash": _config_hash(report)})
     if refresh_exports:
         write_public_pinares_fixed_price_problem_spec(report=report)
         write_public_pinares_fixed_price_result_export(report=report, refresh=True)
@@ -625,9 +599,7 @@ def write_public_pinares_fixed_price_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
-    target.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return target
 
 
@@ -660,9 +632,7 @@ def write_public_pinares_unsupported_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
         payload = public_pinares_full_deal_unsupported_problem_spec()
-        target.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return target
 
 
@@ -677,18 +647,14 @@ def write_public_pinares_quant_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
-    target.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return target
 
 
 def _run_row(
     case: PinaresFixedPriceProxyCase, *, refinement_level: int
 ) -> PinaresFEMProxyConvergenceRow:
-    dynamics = DynamicsParametersBlackScholes(
-        r=case.risk_free_rate, q=0.0, sig=case.volatility
-    )
+    dynamics = DynamicsParametersBlackScholes(r=case.risk_free_rate, q=0.0, sig=case.volatility)
     market = Market(r=dynamics.r)
     option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=market)
     times = np.linspace(0.0, case.maturity_years, case.time_steps + 1)
@@ -704,10 +670,8 @@ def _run_row(
         solution = ThetaScheme(theta=0.5).solve(
             times, space, boundary_condition=DirichletBC(["left", "right"])
         )
-    normalized_price, normalized_delta, normalized_gamma = (
-        _interpolate_solution_and_greeks(
-            space.Vh.doflocs[0], solution[-1], case.spot_ratio
-        )
+    normalized_price, normalized_delta, normalized_gamma = _interpolate_solution_and_greeks(
+        space.Vh.doflocs[0], solution[-1], case.spot_ratio
     )
     expected_price, expected_delta, expected_gamma = _analytical_reference(case)
     observed_price = case.survival_probability * case.strike_uf * normalized_price

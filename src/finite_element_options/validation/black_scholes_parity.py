@@ -16,7 +16,7 @@ import json
 from typing import Any
 
 import numpy as np
-import scipy.stats as spst
+import scipy.stats as spst  # type: ignore[import-untyped]
 
 from ..core.dynamics_black_scholes import DynamicsParametersBlackScholes
 from ..core.market import Market

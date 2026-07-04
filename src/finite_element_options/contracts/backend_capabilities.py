@@ -50,6 +50,32 @@ class UnsupportedRouteDiagnostic:
 
 
 @dataclass(frozen=True)
+class SolverBackendCapability:
+    """One linear-solver route advertised by the FEM backend contract."""
+
+    name: str
+    status: CapabilityStatus
+    method: str
+    factorization_reuse: bool
+    cache_scope: str
+    extra: str | None = None
+    unsupported_reason: str | None = None
+
+    def to_public_dict(self) -> dict[str, str | bool | None]:
+        """Return a JSON-safe solver-route declaration."""
+
+        return {
+            "name": self.name,
+            "status": self.status.value,
+            "method": self.method,
+            "factorization_reuse": self.factorization_reuse,
+            "cache_scope": self.cache_scope,
+            "extra": self.extra,
+            "unsupported_reason": self.unsupported_reason,
+        }
+
+
+@dataclass(frozen=True)
 class FEMCapabilityManifest:
     """Declarative finite-element backend support matrix.
 
@@ -74,12 +100,65 @@ class FEMCapabilityManifest:
     linear_solvers: tuple[str, ...]
     required_conventions: tuple[str, ...]
     diagnostics: tuple[str, ...]
+    solver_backends: tuple[SolverBackendCapability, ...] = ()
     notes: tuple[str, ...] = ()
 
     def supports(self, request: FEMRouteRequest) -> bool:
         """Return ``True`` only when no fail-closed diagnostics are produced."""
 
         return not diagnose_unsupported_route(request, self)
+
+    def to_public_dict(self) -> dict[str, Any]:
+        """Return the public adapter/capability manifest as primitive values."""
+
+        return {
+            "backend_id": self.backend_id,
+            "contract_version": self.contract_version,
+            "status": self.status.value,
+            "supported_dimensions": list(self.supported_dimensions),
+            "mesh_families": list(self.mesh_families),
+            "element_families": list(self.element_families),
+            "pde_terms": list(self.pde_terms),
+            "boundary_conditions": list(self.boundary_conditions),
+            "exercise_styles": list(self.exercise_styles),
+            "outputs": list(self.outputs),
+            "stability_controls": list(self.stability_controls),
+            "linear_solvers": list(self.linear_solvers),
+            "required_conventions": list(self.required_conventions),
+            "diagnostics": list(self.diagnostics),
+            "solver_backends": [item.to_public_dict() for item in self.solver_backends],
+            "notes": list(self.notes),
+        }
+
+
+@dataclass(frozen=True)
+class FEMSolverContract:
+    """Released public FEM solver contract for downstream parity consumers."""
+
+    contract_id: str
+    contract_version: str
+    backend_id: str
+    privacy_class: str
+    manifest: FEMCapabilityManifest
+    public_fixture_ids: tuple[str, ...]
+    public_fixture_paths: tuple[str, ...]
+    compatibility_notes: tuple[str, ...]
+    forbidden_dependencies: tuple[str, ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        """Return a JSON-safe released solver contract."""
+
+        return {
+            "contract_id": self.contract_id,
+            "contract_version": self.contract_version,
+            "backend_id": self.backend_id,
+            "privacy_class": self.privacy_class,
+            "capability_manifest": self.manifest.to_public_dict(),
+            "public_fixture_ids": list(self.public_fixture_ids),
+            "public_fixture_paths": list(self.public_fixture_paths),
+            "compatibility_notes": list(self.compatibility_notes),
+            "forbidden_dependencies": list(self.forbidden_dependencies),
+        }
 
 
 @dataclass(frozen=True)
@@ -219,6 +298,43 @@ class FEMRouteRequest:
         )
 
 
+DEFAULT_LINEAR_SOLVER_CAPABILITIES = (
+    SolverBackendCapability(
+        name="scipy_direct",
+        status=CapabilityStatus.VALIDATED,
+        method="scipy.sparse.linalg.splu",
+        factorization_reuse=True,
+        cache_scope="per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+    ),
+    SolverBackendCapability(
+        name="scipy_banded",
+        status=CapabilityStatus.UNSUPPORTED,
+        method="scipy.linalg.solve_banded",
+        factorization_reuse=False,
+        cache_scope="not advertised for current FEM sparse boundary-eliminated matrices",
+        unsupported_reason="banded extraction/equal-error residual evidence is not part of the released FEM route",
+    ),
+    SolverBackendCapability(
+        name="amg",
+        status=CapabilityStatus.UNSUPPORTED,
+        method="pyamg or scipy iterative with AMG preconditioner",
+        factorization_reuse=False,
+        cache_scope="optional dependency route fails closed",
+        extra="amg",
+        unsupported_reason="AMG convergence, tolerance and equal-error benchmark evidence is absent",
+    ),
+    SolverBackendCapability(
+        name="petsc",
+        status=CapabilityStatus.UNSUPPORTED,
+        method="petsc4py/KSP",
+        factorization_reuse=False,
+        cache_scope="optional dependency route fails closed",
+        extra="petsc",
+        unsupported_reason="PETSc platform/profile and parity evidence is absent",
+    ),
+)
+
+
 DEFAULT_FEM_CAPABILITY_MANIFEST = FEMCapabilityManifest(
     backend_id="finite_element_options.fem_backend.v0",
     contract_version="0.1.0",
@@ -249,11 +365,46 @@ DEFAULT_FEM_CAPABILITY_MANIFEST = FEMCapabilityManifest(
         "unsupported output",
         "missing measure/numeraire/units/date convention",
     ),
+    solver_backends=DEFAULT_LINEAR_SOLVER_CAPABILITIES,
     notes=(
         "The executable parity fixture validates the 1D public-synthetic Black-Scholes call value.",
         "The Pinares fixed-price proxy validates the same 1D weak-form envelope with public-synthetic UF units, survival-scaled terminal payoff, Lagrange P2 line mesh, theta stepping and SciPy direct solves.",
         "Adaptive meshes, higher-order elements, American exercise, obstacles/free boundaries, HJB/control and jump terms fail closed until evidenced.",
         "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixtures; broader kink-aware production evidence remains separate.",
+    ),
+)
+
+
+DEFAULT_RELEASED_FEM_SOLVER_CONTRACT = FEMSolverContract(
+    contract_id="finite-element-options-fem-solver-contract-v0.1",
+    contract_version="0.1.0",
+    backend_id=DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id,
+    privacy_class="public_synthetic",
+    manifest=DEFAULT_FEM_CAPABILITY_MANIFEST,
+    public_fixture_ids=(
+        "fem-bs-001",
+        "PINARES-FEM-FIXED-PRICE-PROXY-V0",
+        "PINARES-QPS-FIXED-PRICE-PROXY-V0",
+        "PINARES-FEM-FAIL-CLOSED-V0",
+    ),
+    public_fixture_paths=(
+        "tests/fixtures/fem_bs_001/problem_spec.json",
+        "tests/fixtures/fem_bs_001/result_export.json",
+        "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+    ),
+    compatibility_notes=(
+        "Downstream consumers call released finite_element_options public contracts and fixtures, not Pinares private modules.",
+        "Only the public-synthetic fixed-price proxy route is supported for Pinares parity.",
+        "Full family-contract, ROFR, obstacle/free-boundary, jump/liquidity and HJB/control requests fail closed before mesh allocation.",
+    ),
+    forbidden_dependencies=(
+        "Pinares private modules",
+        "haircut-engine domain/application modules",
+        "PDP ingestion modules",
+        "UI/calibration/orchestration internals",
     ),
 )
 

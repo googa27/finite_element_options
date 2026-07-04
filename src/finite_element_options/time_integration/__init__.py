@@ -1,5 +1,5 @@
 """Time-stepping schemes for option valuation."""
 
-from .stepper import TimeStepper, ThetaScheme, CrankNicolson
+from .stepper import CrankNicolson, LinearSolveDiagnostics, ThetaScheme, TimeStepper
 
-__all__ = ["TimeStepper", "ThetaScheme", "CrankNicolson"]
+__all__ = ["CrankNicolson", "LinearSolveDiagnostics", "ThetaScheme", "TimeStepper"]

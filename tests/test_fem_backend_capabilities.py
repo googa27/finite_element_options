@@ -12,6 +12,8 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from finite_element_options.contracts import (  # noqa: E402
     DEFAULT_FEM_CAPABILITY_MANIFEST,
+    DEFAULT_RELEASED_FEM_SOLVER_CONTRACT,
+    CapabilityStatus,
     FEMRouteRequest,
     UnsupportedReason,
     UnsupportedRouteError,
@@ -72,6 +74,26 @@ def test_default_manifest_declares_fem_support_without_claiming_unvalidated_rout
     )
     assert any("Pinares fixed-price proxy" in note for note in manifest.notes)
     assert any("obstacles/free boundaries" in note for note in manifest.notes)
+
+
+def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_routes() -> None:
+    contract = DEFAULT_RELEASED_FEM_SOLVER_CONTRACT
+    manifest_payload = contract.to_public_dict()["capability_manifest"]
+    solver_statuses = {
+        backend.name: backend.status for backend in contract.manifest.solver_backends
+    }
+
+    assert contract.backend_id == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert contract.privacy_class == "public_synthetic"
+    assert "PINARES-FEM-FIXED-PRICE-PROXY-V0" in contract.public_fixture_ids
+    assert "PINARES-FEM-FAIL-CLOSED-V0" in contract.public_fixture_ids
+    assert all("private" not in path for path in contract.public_fixture_paths)
+    assert any("Pinares private modules" in item for item in contract.forbidden_dependencies)
+    assert solver_statuses["scipy_direct"] == CapabilityStatus.VALIDATED
+    assert solver_statuses["scipy_banded"] == CapabilityStatus.UNSUPPORTED
+    assert solver_statuses["amg"] == CapabilityStatus.UNSUPPORTED
+    assert solver_statuses["petsc"] == CapabilityStatus.UNSUPPORTED
+    assert manifest_payload["solver_backends"][0]["factorization_reuse"] is True
 
 
 def test_quant_problem_spec_mapping_preserves_conventions_mesh_and_outputs() -> None:

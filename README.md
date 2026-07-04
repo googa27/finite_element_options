@@ -52,6 +52,7 @@ This reproduces the same call option pricing workflow without depending on a che
 - Experimental FEniCSx solver for Black-Scholes PDE
 - Public-synthetic QuantProblemSpec FEM adapter manifest and `fem-bs-001` Black-Scholes parity fixture for cross-repo Haircut Engine and arxiv-lab compatibility checks. The published contract artifacts are in `tests/fixtures/fem_bs_001/`.
 - Public-synthetic Pinares fixed-price option weak-form proxy fixture (`PINARES-FEM-FIXED-PRICE-PROXY-V0`) with UF units, survival-scaled terminal payoff, Lagrange-P2 line mesh evidence and fail-closed full-deal diagnostics in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/`.
+- Released public FEM solver contract (`finite-element-options-fem-solver-contract-v0.1`) plus solver-cache benchmark evidence (`FEM-SOLVER-CACHE-001`) for repeated 1D line-uniform SciPy-direct solves with sparse LU factorization reuse; banded, AMG and PETSc routes fail closed in the capability manifest until separately evidenced.
 
 ## Installation
 

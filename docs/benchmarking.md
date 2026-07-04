@@ -54,6 +54,32 @@ non-contiguous grid views.  Because Numba is not imported by the payoff path and
 is no longer a runtime requirement, absent or incompatible Numba installations
 cannot silently change solver behavior.
 
+## Solver-cache/factorization acceptance evidence
+
+Project #17 issues #47/#71 add executable residual evidence for invariant
+one-dimensional line-uniform FEM solves.  The released route uses SciPy sparse
+LU (`splu`) once per theta-system and reuses that factorization for every time
+step right-hand side.  Each benchmark row records DOFs, nonzeros, assembly count,
+factorization count, factorization reuse count, solve count, max linear residual,
+cache keys and stage timings.  The direct SciPy route is validated; banded, AMG
+and PETSc routes remain fail-closed in the capability manifest until their own
+equal-error residual benchmarks are added.
+
+Run the focused evidence test with:
+
+```bash
+pytest -q --override-ini addopts= tests/test_solver_cache_benchmark.py
+```
+
+Programmatic access:
+
+```python
+from finite_element_options.validation.solver_cache_benchmark import run_solver_cache_benchmark
+
+report = run_solver_cache_benchmark()
+assert report.accepted
+```
+
 ## Public Pinares fixed-price proxy fixture
 
 Project #12 issue #78 adds a public-synthetic FEM weak-form fixture for the
