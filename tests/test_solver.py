@@ -89,10 +89,9 @@ def test_dirichlet_matches_model_prices(is_call, price_attr):
 
 
 def test_refine_with_transfer_rebuilds_basis_and_returns_values():
-    space, _, _ = _build_space_solver(
-        is_call=True, adaptive_criterion="gradient"
-    )
+    space, _, _ = _build_space_solver(is_call=True, adaptive_criterion="gradient")
     old_elements = space.mesh.nelements
+    old_domain = space.mesh.domain_spec
     values = space.initial_condition()
 
     result = space.refine_with_transfer(values)
@@ -103,3 +102,6 @@ def test_refine_with_transfer_rebuilds_basis_and_returns_values():
     assert result.diagnostics.old_elements == old_elements
     assert result.diagnostics.new_elements == space.mesh.nelements
     assert space.last_adaptive_diagnostics == result.diagnostics
+    assert space.mesh.domain_spec == old_domain
+    assert set(space.mesh.boundaries) == {"s_min", "s_max", "v_min", "v_max"}
+    assert space.Vh.get_dofs(["s_min"]).nodal["u"].size > 0

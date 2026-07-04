@@ -164,9 +164,10 @@ print(f"European put:  price={put_price:.4f}")
 ### Example Output
 
 The adaptive mesh demo refines the domain around sharp features. The validated
-adaptivity API preserves domain measure, transfers nodal values to the refined
-basis and keeps coarsening disabled until reversible hierarchy checks exist. The
-final solution after several refinement steps is shown below:
+adaptivity API preserves domain measure, carries named boundary/domain metadata,
+transfers nodal values to the refined basis and keeps coarsening disabled until
+reversible hierarchy checks exist. The final solution after several refinement
+steps is shown below:
 
 ![Adaptive mesh solution showing refined grid](docs/images/adaptive_solution.svg)
 

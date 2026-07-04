@@ -9,6 +9,8 @@ import numpy as np
 import skfem as fem
 import skfem.helpers as fh
 
+from finite_element_options.space.domain import attach_domain_metadata
+
 
 @dataclass(frozen=True)
 class AdaptiveDiagnostics:
@@ -259,6 +261,30 @@ class AdaptiveMesh:
         delta = np.asarray(roundtrip, dtype=float) - np.asarray(old_values, dtype=float)
         return float(np.linalg.norm(delta) / np.sqrt(delta.size))
 
+    def _metadata_boundary_predicates(
+        self, mesh: fem.Mesh
+    ) -> Dict[str, Callable[[np.ndarray], np.ndarray]]:
+        """Return boundary predicates stored on ``mesh`` domain metadata."""
+
+        domain = getattr(mesh, "domain_spec", None)
+        if domain is None:
+            return {}
+        return dict(domain.boundary_predicates())
+
+    def _restore_refined_metadata(self, original: fem.Mesh, refined: fem.Mesh) -> fem.Mesh:
+        """Restore named boundary and domain metadata after refinement."""
+
+        domain = getattr(original, "domain_spec", None)
+        domain_boundaries = self._metadata_boundary_predicates(original)
+        boundaries = self.boundaries or domain_boundaries
+        if boundaries:
+            refined = refined.with_boundaries(boundaries)
+        if domain is not None and set(boundaries) == set(domain_boundaries):
+            refined = attach_domain_metadata(refined, domain)
+        elif boundaries:
+            refined.boundary_names = tuple(boundaries)
+        return refined
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -272,8 +298,7 @@ class AdaptiveMesh:
         refined = mesh.refined(marked)
         if int(refined.dim()) > 1:
             refined = refined.smoothed()
-        if self.boundaries:
-            refined = refined.with_boundaries(self.boundaries)
+        refined = self._restore_refined_metadata(mesh, refined)
         measures = self._validate_topology(refined, reference_measure=old_measure)
         transferred = self.transfer_solution(mesh, refined, u)
         diagnostics = AdaptiveDiagnostics(
