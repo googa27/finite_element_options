@@ -264,20 +264,27 @@ def _bump_errors(
 
     if _requires_canonical_greek_path(s, k, r, q, sigma, t):
         return None, None, None, None
-    spot_bump = max(abs(s) * 1.0e-4, 1.0e-4)
+    spot_bump = max(abs(s) * 1.0e-4, float(np.spacing(s)))
+    spot_down = max(s - spot_bump, s * 0.5, float(np.nextafter(0.0, 1.0)))
+    spot_up = s + spot_bump
     vol_bump = max(abs(sigma) * 1.0e-4, 1.0e-4)
     vol_down = max(sigma - vol_bump, sigma * 0.5)
     vol_up = sigma + vol_bump
     effective_vol_bump = 0.5 * (vol_up - vol_down)
     bump_delta = (
-        _bs_price_numpy(s + spot_bump, k, r, q, sigma, t)
-        - _bs_price_numpy(s - spot_bump, k, r, q, sigma, t)
-    ) / (2.0 * spot_bump)
+        _bs_price_numpy(spot_up, k, r, q, sigma, t)
+        - _bs_price_numpy(spot_down, k, r, q, sigma, t)
+    ) / (spot_up - spot_down)
     bump_vega = (
         _bs_price_numpy(s, k, r, q, vol_up, t)
         - _bs_price_numpy(s, k, r, q, vol_down, t)
     ) / (2.0 * effective_vol_bump)
-    return abs(delta - bump_delta), abs(vega - bump_vega), spot_bump, effective_vol_bump
+    return (
+        abs(delta - bump_delta),
+        abs(vega - bump_vega),
+        0.5 * (spot_up - spot_down),
+        effective_vol_bump,
+    )
 
 
 def _observations(
@@ -451,7 +458,12 @@ def compute_greeks_report(
     fallback_reason = None
     if backend == "numpy":
         backend_used: Literal["numpy", "jax"] = "numpy"
-        method = "analytical_oracle"
+        method = "analytical_oracle" if regular_jax_path else "analytical_oracle_limit"
+        if not regular_jax_path:
+            fallback_reason = (
+                "requested NumPy backend evaluated singular/saturated input by "
+                "canonical analytical limit"
+            )
         delta, vega = _greeks_numpy(s, k, r, q, sigma, t)
     elif backend == "jax" and regular_jax_path:
         backend_used = "jax"

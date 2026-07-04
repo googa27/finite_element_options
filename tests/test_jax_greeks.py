@@ -64,6 +64,18 @@ def test_jax_backend_delegates_invalid_spot_validation():
         compute_greeks(s=-1.0, k=100.0, r=0.05, q=0.0, sigma=0.2, t=1.0, backend="jax")
 
 
+def test_bump_error_diagnostics_preserve_positive_small_spot() -> None:
+    """Finite bump diagnostics must not cross into negative spot values."""
+
+    params = dict(s=1.0e-6, k=1.0e-6, r=0.05, q=0.0, sigma=0.2, t=1.0)
+    report = compute_greeks_report(**params, backend="numpy")
+    assert report.delta.method == "analytical_oracle"
+    assert report.delta.bump_size is not None
+    assert 0.0 < report.delta.bump_size < params["s"]
+    assert report.delta.oracle_error_abs is not None
+    assert math.isfinite(report.delta.oracle_error_abs)
+
+
 def test_compute_greeks_report_identifies_object_method_units_and_errors() -> None:
     """Diagnostic report should name method, object, inputs, units and oracle error."""
 
@@ -101,6 +113,17 @@ def test_jax_report_uses_explicit_analytical_limit_for_expiry_boundary() -> None
     assert report.vega.fallback_reason == report.fallback_reason
     assert math.isfinite(report.delta.value)
     assert math.isfinite(report.vega.value)
+
+
+def test_numpy_report_labels_boundary_inputs_as_analytical_limits() -> None:
+    """Requested NumPy reports should still distinguish boundary limit semantics."""
+
+    params = dict(s=100.0, k=100.0, r=0.05, q=0.0, sigma=0.2, t=0.0)
+    report = compute_greeks_report(**params, backend="numpy")
+    assert report.backend_used == "numpy"
+    assert report.delta.method == "analytical_oracle_limit"
+    assert report.fallback_reason is not None
+    assert report.delta.fallback_reason == report.fallback_reason
 
 
 def test_benchmark_greeks_separates_jax_compile_transfer_and_warm_execution() -> None:
