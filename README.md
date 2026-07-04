@@ -38,7 +38,7 @@ This reproduces the same call option pricing workflow without depending on a che
 - Black-Scholes option pricer with call/put payoffs, explicit volatility vs. variance APIs, and tested zero-maturity/zero-volatility limits
 - Finite-difference solver on regular grids using ``findiff``
 - Greek estimators (Delta, Gamma, volatility Vega) via finite differences
-- Experimental JAX-based Greek computation via automatic differentiation
+- Experimental JAX-based Greek computation via automatic differentiation with explicit method/object diagnostics, synchronized compile/transfer/warm timing metadata, and documented non-AD-through-FEM limits
 - Configurable mesh generation supporting 1D, 2D and 3D problems
 - Central ``Config`` dataclass for numerical parameters
 - Sample problems for 1D Black–Scholes and 3D Heston models
