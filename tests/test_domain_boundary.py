@@ -37,6 +37,18 @@ def test_create_mesh_supports_negative_domains_and_named_facets() -> None:
     assert {"r_min", "r_max"} <= set(mesh.boundaries)
 
 
+def test_create_mesh_accepts_numpy_bound_pair_extents() -> None:
+    """Explicit bound-pair domains may come from numerical NumPy arrays."""
+
+    mesh, _ = create_mesh(np.array([[0.25, 1.75]]), refine=1)
+
+    assert np.min(mesh.p[0]) == pytest.approx(0.25)
+    assert np.max(mesh.p[0]) == pytest.approx(1.75)
+    assert mesh.domain_spec.axes[0].lower == pytest.approx(0.25)
+    assert mesh.domain_spec.axes[0].upper == pytest.approx(1.75)
+    assert {"s_min", "s_max"} <= set(mesh.boundaries)
+
+
 def test_dirichlet_bc_materializes_generators_and_rejects_bad_facets() -> None:
     """Boundary collections are consumed once and validated before enforcement."""
 
