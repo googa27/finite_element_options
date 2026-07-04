@@ -5,7 +5,7 @@ from .domain import DomainAxis, DomainSpec, ensure_domain_spec
 from .forms import Forms, PDEForms
 from .solver import SpaceSolver
 from .boundary import apply_dirichlet, DirichletBC
-from .adaptive import AdaptiveMesh
+from .adaptive import AdaptiveDiagnostics, AdaptiveMesh, AdaptiveResult, mesh_measure
 
 __all__ = [
     "create_mesh",
@@ -18,5 +18,8 @@ __all__ = [
     "SpaceSolver",
     "apply_dirichlet",
     "DirichletBC",
+    "AdaptiveDiagnostics",
     "AdaptiveMesh",
+    "AdaptiveResult",
+    "mesh_measure",
 ]
