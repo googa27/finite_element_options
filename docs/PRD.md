@@ -113,7 +113,7 @@ Mesh refinement, coarsening and mappings must preserve deterministic identity su
 
 Every operator must be defined through an explicit strong and weak form, sign convention and coefficient interpretation. Assembly must distinguish mass, diffusion, advection, reaction, source and optional coupling terms.
 
-Matrix and vector dimensions, symmetry, definiteness, sparsity and boundary modifications must be testable. Variable coefficients and mixed terms cannot be approximated by hidden constants.
+Coordinate transforms are model terms, not display metadata. If a state transform is used, assembly must apply the full componentwise chain rule: transformed diffusion, Hessian drift correction, transformed diffusion divergence, singular-Jacobian rejection and PSD covariance diagnostics where relevant. Matrix and vector dimensions, symmetry, definiteness, sparsity and boundary modifications must be testable. Variable coefficients and mixed terms cannot be approximated by hidden constants.
 
 ### FR-FEM-005 — Boundary conditions
 

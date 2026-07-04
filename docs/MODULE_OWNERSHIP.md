@@ -28,7 +28,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | `core/` | core | Market/model coefficient helpers and analytical references used by FEM tests | Public but FEM-owned | core | Consolidate with typed contracts under #48 |
 | `space/` | core | Meshes, finite-element spaces, weak forms, BCs, solvers and adaptivity | Public FEM mechanics | core | Stabilize under #48 |
 | `time_integration/` | core | Theta stepping and time-policy mechanics | Public FEM mechanics | core | Stabilize under #48 |
-| `transform.py` | core | Black-Scholes coordinate/time transforms | Public utility | core | Keep only convention-explicit transforms |
+| `transform.py` | core | Coordinate/time transforms plus componentwise generator chain-rule coefficients | Public utility | core | Keep only convention-explicit transforms with Jacobian/Hessian evidence |
 | `problems/` | validation | Thin backend-neutral problem fixtures and examples; not product ownership | Transitional public fixtures | core | Move problem identity into typed contracts under #48 |
 | `validation/` | validation | Analytical/manufactured/public-synthetic evidence and parity artifacts | Public validation helpers | validation | Feed generated capability matrix under #61 |
 | `fdsolver.py` | compatibility | Legacy finite-difference reference route retained only for benchmark/parity transition; production FD ownership belongs to `finite_difference_options` | Not re-exported by base package; emits `DeprecationWarning` on `FDSolver`, `solve_system`, and Greek helper use | fd | Removal version `0.3.0`, removal date `2026-10-31`; remove or replace with a benchmark oracle after FD parity and adapter gates (#49/#50) |

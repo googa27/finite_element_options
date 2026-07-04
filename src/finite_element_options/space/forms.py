@@ -72,10 +72,7 @@ class PDEForms(Forms):
 
         @fem.BilinearForm
         def _l(u, v, w):
-            coords = self.transform.untransform_state(w.x)
-            A = self.dynamics.A(*coords)
-            dA = self.dynamics.dA(*coords)
-            b = self.dynamics.b(*coords)
+            A, dA, b = self.transform.transformed_coefficients(self.dynamics, w.x)
             mu = [b_i - dA_i / 2 for b_i, dA_i in zip(b, dA)]
             return (
                 -(1 / 2) * fhl.dot(fhl.grad(v), fhl.mul(A, fhl.grad(u)))

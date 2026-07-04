@@ -61,6 +61,8 @@ class SpaceSolver:
             if adaptive_criterion is not None
             else None
         )
+        if forms is None:
+            self.transform.validate_transformed_state_domain(mesh.p)
         self.forms = forms or PDEForms(
             is_call=is_call,
             payoff=payoff,
