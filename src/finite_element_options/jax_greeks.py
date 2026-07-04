@@ -267,6 +267,8 @@ def _bump_errors(
 
     if _requires_canonical_greek_path(s, k, r, q, sigma, t):
         return None, None, None, None
+    if not math.isfinite(delta) or not math.isfinite(vega):
+        return None, None, None, None
     spot_bump = max(abs(s) * 1.0e-4, float(np.spacing(s)))
     spot_down = max(s - spot_bump, s * 0.5, float(np.nextafter(0.0, 1.0)))
     spot_up = s + spot_bump
@@ -309,7 +311,28 @@ def _observations(
         s, k, r, q, sigma, t, delta, vega
     )
     differentiated_object = "Black-Scholes European call price from volatility sigma"
-    status: Literal["finite", "undefined"] = "finite"
+    delta_status: Literal["finite", "undefined"] = (
+        "finite" if math.isfinite(delta) else "undefined"
+    )
+    vega_status: Literal["finite", "undefined"] = (
+        "finite" if math.isfinite(vega) else "undefined"
+    )
+    delta_reason = fallback_reason
+    if delta_status == "undefined":
+        nonfinite_reason = "non-finite delta returned by selected backend/oracle"
+        delta_reason = (
+            f"{delta_reason}; {nonfinite_reason}"
+            if delta_reason is not None
+            else nonfinite_reason
+        )
+    vega_reason = fallback_reason
+    if vega_status == "undefined":
+        nonfinite_reason = "non-finite vega returned by selected backend/oracle"
+        vega_reason = (
+            f"{vega_reason}; {nonfinite_reason}"
+            if vega_reason is not None
+            else nonfinite_reason
+        )
     return (
         GreekObservation(
             greek="delta",
@@ -318,10 +341,10 @@ def _observations(
             differentiated_object=differentiated_object,
             input_variable="spot",
             units="price / spot",
-            status=status,
+            status=delta_status,
             oracle_error_abs=delta_error,
             bump_size=spot_bump,
-            fallback_reason=fallback_reason,
+            fallback_reason=delta_reason,
         ),
         GreekObservation(
             greek="vega",
@@ -330,10 +353,10 @@ def _observations(
             differentiated_object=differentiated_object,
             input_variable="volatility sigma",
             units="price / volatility",
-            status=status,
+            status=vega_status,
             oracle_error_abs=vega_error,
             bump_size=vol_bump,
-            fallback_reason=fallback_reason,
+            fallback_reason=vega_reason,
         ),
     )
 

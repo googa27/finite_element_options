@@ -138,6 +138,19 @@ def test_numpy_backend_keeps_finite_extreme_tail_greeks() -> None:
     assert report.delta.method == "analytical_oracle_limit"
 
 
+def test_report_marks_nonfinite_greeks_undefined() -> None:
+    """Overflowed analytical Greeks should not be reported as finite diagnostics."""
+
+    params = dict(s=100.0, k=100.0, r=0.0, q=-1000.0, sigma=0.2, t=1.0)
+    report = compute_greeks_report(**params, backend="numpy")
+    assert not math.isfinite(report.delta.value)
+    assert report.delta.status == "undefined"
+    assert "non-finite delta returned by selected backend/oracle" in (
+        report.delta.fallback_reason or ""
+    )
+    assert report.delta.oracle_error_abs is None
+
+
 def test_benchmark_greeks_separates_jax_compile_transfer_and_warm_execution() -> None:
     """JAX benchmark metadata should synchronize and split runtime phases."""
 
