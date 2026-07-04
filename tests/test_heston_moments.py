@@ -214,6 +214,21 @@ def test_heston_domain_diagnostics_report_tail_bound_and_feller_state(factory) -
     )
 
 
+def test_variance_domain_upper_bound_contains_initial_variance() -> None:
+    """Sharp mean reversion must not truncate the starting variance state."""
+
+    diagnostics = cir_variance_domain_diagnostics(
+        kappa=10.0,
+        theta=0.01,
+        volatility_of_variance=0.01,
+        horizon=1.0,
+        initial_variance=np.array([1.0]),
+    )
+
+    assert diagnostics["mean_variance_max"] < diagnostics["initial_variance_max"]
+    assert diagnostics["domain_upper"] >= diagnostics["initial_variance_max"]
+
+
 def test_variance_domain_diagnostics_reject_empty_variance_samples() -> None:
     with pytest.raises(ValueError, match="initial_variance must be non-empty"):
         cir_variance_domain_diagnostics(
