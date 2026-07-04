@@ -199,6 +199,13 @@ m(u,v)=\int_\Omega vu\,dx.
 
 The exact signs depend on the declared strong-form convention; code and fixtures must agree. Product adapters cannot silently reinterpret them. Problem identity/hash is distinct from FEM method controls so Pinares, Haircut, and other consumers can ask FD/FEM/analytical methods to solve the same claim without rewriting its economics.
 
+Issue #35 makes coordinate transforms part of the generator, not just mesh cosmetics. For componentwise transformed coordinates \(y_i=h_i(x_i)\), the weak form assembles the transformed Itô generator
+\[
+\widetilde A_{ij}(y)=h_i'(x_i)h_j'(x_j)A_{ij}(x),\qquad
+\widetilde b_i(y)=h_i'(x_i)b_i(x)+\frac12 h_i''(x_i)A_{ii}(x),
+\]
+with row divergence \(\nabla_y\cdot\widetilde A\) recomputed in transformed coordinates before forming \(\mu=\widetilde b-\frac12\nabla_y\cdot\widetilde A\). This covers identity, log-price and square-root-variance maps and fails closed at singular physical boundaries such as \(v=0\) for \(y=\sqrt v\). A mesh grading/reparameterization is a different object and must not be advertised as a state-variable transform unless these Jacobian/Hessian/measure terms are applied.
+
 ## 8. Native contract model
 
 ```text

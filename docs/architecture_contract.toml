@@ -110,8 +110,8 @@ public_surface = "public FEM mechanics"
 path = "transform.py"
 layer = "core"
 owner = "finite_element_options"
-treatment = "Black-Scholes coordinate and time transforms"
-public_surface = "public convention-explicit utility"
+treatment = "coordinate/time transforms plus componentwise generator chain-rule coefficients"
+public_surface = "public convention-explicit utility with Jacobian/Hessian evidence"
 
 [[module_ownership]]
 path = "problems"
