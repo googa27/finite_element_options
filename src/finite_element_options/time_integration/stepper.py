@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
+import inspect
 from time import perf_counter
 from typing import Callable, Iterable
 
@@ -167,7 +168,7 @@ class ThetaScheme(TimeStepper):
         factorization_cache_keys: list[str] = []
 
         for step in internal_steps:
-            A, B = space.matrices(step.theta, step.dt)
+            A, B = _space_matrices(space, step)
             b_previous = B @ current_values
             b_inhom = step.theta * space.boundary_term(step.end) + (
                 1.0 - step.theta
@@ -359,6 +360,19 @@ def _sequence_cache_key(keys: Iterable[str]) -> str:
         digest.update(str(key).encode("utf-8"))
         digest.update(b";")
     return digest.hexdigest()
+
+
+def _space_matrices(space: SpaceDiscretization, step: _InternalThetaStep):
+    """Return spatial matrices, passing endpoint times when supported."""
+
+    parameters = inspect.signature(space.matrices).parameters
+    supports_endpoint_times = "start" in parameters or any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )
+    if supports_endpoint_times:
+        return space.matrices(step.theta, step.dt, start=step.start, end=step.end)
+    return space.matrices(step.theta, step.dt)
 
 
 def _theta_cache_key(

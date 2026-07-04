@@ -134,6 +134,19 @@ class DynamicsParametersHeston3D(
             self.kappa_r * (self.theta_r - r_val),
         ]
 
+    def discount(self, state, time):  # pylint: disable=unused-argument
+        """Return the short-rate state coordinate for reaction/discount terms."""
+
+        state_array = np.asarray(state, dtype=float)
+        if state_array.ndim == 0 or state_array.shape[0] < 3:
+            raise ValueError("Heston3D discount requires state coordinates (s, v, r)")
+        return state_array[2]
+
+    def source(self, state, time):  # pylint: disable=unused-argument
+        """Return the default zero running source/load."""
+
+        return 0.0
+
     def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:  # pylint: disable=unused-argument
         """Return the natural boundary contribution, which is zero."""
 

@@ -154,9 +154,15 @@ class FDSolver:
         return _evaluate_payoff_grid(payoff_fn, self.s_grid)
 
     def matrices(
-        self, theta: float, dt: float
+        self,
+        theta: float,
+        dt: float,
+        *,
+        start: float | None = None,
+        end: float | None = None,
     ) -> tuple[sps.csr_matrix, sps.csr_matrix]:
         """Return system matrices for the theta-scheme."""
+        del start, end
         theta = float(theta)
         dt = float(dt)
         if not np.isfinite(theta) or theta < 0.0 or theta > 1.0:

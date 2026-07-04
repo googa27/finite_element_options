@@ -149,6 +149,16 @@ class DynamicsParametersHeston(
         return [(self.r - self.q)*x,
                 self.kappa*(self.theta - y)]
 
+    def discount(self, state, time):  # pylint: disable=unused-argument
+        """Return the constant short-rate reaction coefficient."""
+
+        return self.r
+
+    def source(self, state, time):  # pylint: disable=unused-argument
+        """Return the default zero running source/load."""
+
+        return 0.0
+
     def boundary_term(self, is_call: bool, payoff: Payoff) -> fem.LinearForm:  # pylint: disable=unused-argument
         """Return the natural boundary contribution, which is zero."""
 
