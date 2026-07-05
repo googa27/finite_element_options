@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from finite_element_options.validation.pinares_fixed_price_proxy import (
+    PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
     PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
     PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
     PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
@@ -20,6 +21,7 @@ def main() -> None:
     for path in (
         PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
         PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
+        PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
         PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
         PINARES_QPS_FIXTURE_PATH,
     ):
