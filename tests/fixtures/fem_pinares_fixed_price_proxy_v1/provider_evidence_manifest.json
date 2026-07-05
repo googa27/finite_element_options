@@ -1,0 +1,246 @@
+{
+  "cache_factorization_policy": {
+    "cache_scope": "per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+    "factorization_reuse": true,
+    "linear_solver": "scipy_direct",
+    "method": "scipy.sparse.linalg.splu"
+  },
+  "capability_manifest": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "boundary_conditions": [
+      "dirichlet"
+    ],
+    "contract_version": "0.1.0",
+    "diagnostics": [
+      "unsupported dimension",
+      "unsupported mesh family",
+      "unsupported element family",
+      "unsupported PDE term",
+      "unsupported boundary condition",
+      "unsupported exercise style",
+      "unsupported output",
+      "missing measure/numeraire/units/date convention"
+    ],
+    "element_families": [
+      "lagrange_p2"
+    ],
+    "exercise_styles": [
+      "european"
+    ],
+    "linear_solvers": [
+      "scipy_direct"
+    ],
+    "mesh_families": [
+      "line_uniform"
+    ],
+    "notes": [
+      "The executable parity fixture validates the 1D public-synthetic Black-Scholes call value.",
+      "The Pinares fixed-price proxy validates the same 1D weak-form envelope with public-synthetic UF units, survival-scaled terminal payoff, Lagrange P2 line mesh, theta stepping and SciPy direct solves.",
+      "Adaptive meshes, higher-order elements, American exercise, obstacles/free boundaries, HJB/control and jump terms fail closed until evidenced.",
+      "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixtures; broader kink-aware production evidence remains separate."
+    ],
+    "outputs": [
+      "value",
+      "delta",
+      "gamma"
+    ],
+    "pde_terms": [
+      "drift",
+      "diffusion",
+      "reaction"
+    ],
+    "required_conventions": [
+      "measure",
+      "numeraire",
+      "units",
+      "valuation_date",
+      "maturity_or_time_domain"
+    ],
+    "solver_backends": [
+      {
+        "cache_scope": "per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+        "extra": null,
+        "factorization_reuse": true,
+        "method": "scipy.sparse.linalg.splu",
+        "name": "scipy_direct",
+        "status": "validated",
+        "unsupported_reason": null
+      },
+      {
+        "cache_scope": "not advertised for current FEM sparse boundary-eliminated matrices",
+        "extra": null,
+        "factorization_reuse": false,
+        "method": "scipy.linalg.solve_banded",
+        "name": "scipy_banded",
+        "status": "unsupported",
+        "unsupported_reason": "banded extraction/equal-error residual evidence is not part of the released FEM route"
+      },
+      {
+        "cache_scope": "optional dependency route fails closed",
+        "extra": "amg",
+        "factorization_reuse": false,
+        "method": "pyamg or scipy iterative with AMG preconditioner",
+        "name": "amg",
+        "status": "unsupported",
+        "unsupported_reason": "AMG convergence, tolerance and equal-error benchmark evidence is absent"
+      },
+      {
+        "cache_scope": "optional dependency route fails closed",
+        "extra": "petsc",
+        "factorization_reuse": false,
+        "method": "petsc4py/KSP",
+        "name": "petsc",
+        "status": "unsupported",
+        "unsupported_reason": "PETSc platform/profile and parity evidence is absent"
+      }
+    ],
+    "stability_controls": [
+      "theta",
+      "crank_nicolson"
+    ],
+    "status": "validated",
+    "supported_dimensions": [
+      1
+    ]
+  },
+  "error_budgets": {
+    "delta_abs": 0.001,
+    "gamma_abs": 5e-06,
+    "price_abs_uf": 1.0
+  },
+  "evidence_class": "deterministic_proxy_not_full_family_contract_valuation",
+  "fixture_refs": {
+    "problem_spec": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+    "provider_evidence_manifest": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+    "quant_problem_spec": "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
+    "result_export": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json",
+    "unsupported_problem_spec": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json"
+  },
+  "issue_refs": [
+    "googa27/finite_element_options#104"
+  ],
+  "limitations": [
+    "fixed-price proxy only; ROFR is not a vanilla call",
+    "public-synthetic fixture only; no private family facts or PDP rows",
+    "FEM backend supplies numerical weak-form route evidence, not legal/tax advice"
+  ],
+  "parity_metrics": {
+    "converged": true,
+    "delta_abs": 3.1728918e-05,
+    "gamma_abs": 8.1432621e-07,
+    "no_arbitrage": {
+      "delta_lower_bound_ok": true,
+      "delta_upper_bound_ok": true,
+      "gamma_non_negative_ok": true,
+      "survival_scale_ok": true,
+      "upper_bound_ok": true,
+      "upper_gap_uf": 5588.2142,
+      "value_bound_ok": true,
+      "value_minus_intrinsic_uf": 231.78576
+    },
+    "price_abs_uf": 0.013734133,
+    "price_rel": 5.9250057e-05
+  },
+  "performance_sidecar": {
+    "degrees_of_freedom": 257,
+    "mesh_metadata": {
+      "domain_max": 1.9354839,
+      "domain_min": 0.0,
+      "element_family": "lagrange_p2",
+      "mesh_family": "line_uniform",
+      "refinement_levels": [
+        5,
+        6,
+        7
+      ],
+      "solver_backing": "scikit-fem+sparse-direct",
+      "spatial_domain": "[0, 1.93548387097] normalized spot S/K"
+    },
+    "runtime": {
+      "policy": "deterministic fixture omits wall-clock timing",
+      "seconds": null
+    },
+    "time_metadata": {
+      "end_time": 1.0,
+      "integrator": "theta_crank_nicolson",
+      "start_time": 0.0,
+      "theta": 0.5,
+      "time_domain": "[0, 1]",
+      "time_steps": 160
+    }
+  },
+  "privacy_class": "public_synthetic",
+  "problem": {
+    "fixture_id": "public-synthetic.pinares-fem-fixed-price-proxy.v1",
+    "maturity_date": "2027-06-30",
+    "measure": "Q*",
+    "numeraire": "UF_money_market_account_proxy",
+    "problem_hash": "publicsyntheticpinares001",
+    "problem_id": "pinares.fixed_price_option_proxy.v1",
+    "units": {
+      "S": "UF",
+      "rate": "1/year",
+      "time": "year",
+      "underlying": "UF",
+      "value": "UF"
+    },
+    "valuation_date": "2026-06-30"
+  },
+  "producer": "finite_element_options",
+  "project_ref": "googa27#19",
+  "provider_role": "weak-form-pde-provider",
+  "resource_controls": {
+    "deterministic": "true",
+    "max_degrees_of_freedom": 257,
+    "refinement_levels": [
+      5,
+      6,
+      7
+    ],
+    "time_steps": 160
+  },
+  "route": {
+    "boundary_conditions": [
+      {
+        "condition_type": "dirichlet",
+        "enforced_nodes": 1,
+        "expression": "0",
+        "location": "S=0"
+      },
+      {
+        "condition_type": "dirichlet",
+        "enforced_nodes": 1,
+        "expression": "linear_growth_call_far_field",
+        "location": "S=S_max",
+        "s_max_uf": 12000.0
+      }
+    ],
+    "element_family": "lagrange_p2",
+    "mesh_family": "line_uniform",
+    "method_kind": "finite_element",
+    "requested_outputs": [
+      "value",
+      "delta",
+      "gamma"
+    ],
+    "route_id": "fem.pinares_fixed_price_proxy.weak_form_p2_theta",
+    "time_integrator": "theta_crank_nicolson",
+    "weak_form": {
+      "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+      "equation_id": "pinares_fixed_price_proxy_black_scholes_weak_form",
+      "payoff_scaling": "UF value = survival_probability * K_uf * normalized_call_value",
+      "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+      "time_transformation": "tau = T - t"
+    }
+  },
+  "schema": "pinares.provider_evidence_manifest.v1",
+  "unsupported_routes": {
+    "adaptive_mesh": "fail_closed_until_separate_evidence",
+    "full_family_contract": "fail_closed",
+    "higher_dimensional_contract": "fail_closed_until_separate_evidence",
+    "legal_tax_conclusion": "fail_closed",
+    "liquidity_default": "fail_closed",
+    "market_rent_alternative": "fail_closed",
+    "rofr": "fail_closed"
+  }
+}

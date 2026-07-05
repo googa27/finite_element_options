@@ -50,6 +50,9 @@ PINARES_FEM_PROXY_FIXTURE_ROOT = (
 )
 PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
 PINARES_FEM_PROXY_RESULT_EXPORT_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
+PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH = (
+    PINARES_FEM_PROXY_FIXTURE_ROOT / "provider_evidence_manifest.json"
+)
 PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH = (
     PINARES_FEM_PROXY_FIXTURE_ROOT / "unsupported_full_deal_problem_spec.json"
 )
@@ -583,6 +586,7 @@ def run_public_pinares_fixed_price_proxy_fixture(
     if refresh_exports:
         write_public_pinares_fixed_price_problem_spec(report=report)
         write_public_pinares_fixed_price_result_export(report=report, refresh=True)
+        write_public_pinares_provider_evidence_manifest(report=report, refresh=True)
         write_public_pinares_unsupported_problem_spec(refresh=True)
         write_public_pinares_quant_problem_spec(report=report)
     return report
@@ -618,6 +622,130 @@ def write_public_pinares_fixed_price_result_export(
             report = run_public_pinares_fixed_price_proxy_fixture()
         target.write_text(
             json.dumps(report.export_payload(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    return target
+
+
+def build_pinares_fem_provider_evidence_manifest(
+    report: PinaresFEMProxyReport | None = None,
+) -> dict[str, Any]:
+    """Return dashboard-consumable FEM provider evidence for the Pinares proxy route."""
+
+    active_report = report or run_public_pinares_fixed_price_proxy_fixture()
+    manifest = DEFAULT_FEM_CAPABILITY_MANIFEST
+    case = active_report.case
+    scipy_direct = next(
+        backend for backend in manifest.solver_backends if backend.name == "scipy_direct"
+    )
+    final_row = active_report.rows[-1]
+    return _stable_public_payload(
+        {
+            "schema": "pinares.provider_evidence_manifest.v1",
+            "producer": "finite_element_options",
+            "provider_role": "weak-form-pde-provider",
+            "issue_refs": ["googa27/finite_element_options#104"],
+            "project_ref": "googa27#19",
+            "privacy_class": "public_synthetic",
+            "evidence_class": "deterministic_proxy_not_full_family_contract_valuation",
+            "problem": {
+                "problem_id": case.problem_id,
+                "problem_hash": case.problem_hash,
+                "fixture_id": case.fixture_id,
+                "measure": "Q*",
+                "numeraire": "UF_money_market_account_proxy",
+                "valuation_date": case.valuation_date,
+                "maturity_date": case.maturity_date,
+                "units": case.normalized_units(),
+            },
+            "fixture_refs": {
+                "problem_spec": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+                "result_export": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json",
+                "unsupported_problem_spec": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+                "provider_evidence_manifest": "tests/fixtures/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+                "quant_problem_spec": "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
+            },
+            "capability_manifest": manifest.to_public_dict(),
+            "route": {
+                "route_id": case.route_id,
+                "method_kind": "finite_element",
+                "mesh_family": "line_uniform",
+                "element_family": "lagrange_p2",
+                "time_integrator": "theta_crank_nicolson",
+                "weak_form": _weak_form_metadata(),
+                "boundary_conditions": _boundary_metadata(case),
+                "requested_outputs": ["value", "delta", "gamma"],
+            },
+            "cache_factorization_policy": {
+                "linear_solver": scipy_direct.name,
+                "method": scipy_direct.method,
+                "factorization_reuse": scipy_direct.factorization_reuse,
+                "cache_scope": scipy_direct.cache_scope,
+            },
+            "resource_controls": {
+                "refinement_levels": list(case.refinement_levels),
+                "time_steps": case.time_steps,
+                "max_degrees_of_freedom": final_row.degrees_of_freedom,
+                "deterministic": "true",
+            },
+            "error_budgets": {
+                "price_abs_uf": case.price_abs_tolerance_uf,
+                "delta_abs": case.delta_abs_tolerance,
+                "gamma_abs": case.gamma_abs_tolerance,
+            },
+            "parity_metrics": {
+                "price_abs_uf": active_report.price_absolute_error_uf,
+                "price_rel": active_report.price_relative_error,
+                "delta_abs": active_report.delta_absolute_error,
+                "gamma_abs": active_report.gamma_absolute_error,
+                "converged": active_report.converged,
+                "no_arbitrage": active_report.no_arbitrage,
+            },
+            "performance_sidecar": {
+                "runtime": {
+                    "seconds": None,
+                    "policy": "deterministic fixture omits wall-clock timing",
+                },
+                "degrees_of_freedom": final_row.degrees_of_freedom,
+                "mesh_metadata": _mesh_metadata(case),
+                "time_metadata": _time_metadata(case),
+            },
+            "unsupported_routes": {
+                "rofr": "fail_closed",
+                "full_family_contract": "fail_closed",
+                "legal_tax_conclusion": "fail_closed",
+                "liquidity_default": "fail_closed",
+                "market_rent_alternative": "fail_closed",
+                "adaptive_mesh": "fail_closed_until_separate_evidence",
+                "higher_dimensional_contract": "fail_closed_until_separate_evidence",
+            },
+            "limitations": [
+                "fixed-price proxy only; ROFR is not a vanilla call",
+                "public-synthetic fixture only; no private family facts or PDP rows",
+                "FEM backend supplies numerical weak-form route evidence, not legal/tax advice",
+            ],
+        }
+    )
+
+
+def write_public_pinares_provider_evidence_manifest(
+    path: Path | str = PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+    *,
+    refresh: bool = False,
+    report: PinaresFEMProxyReport | None = None,
+) -> Path:
+    """Write the public-synthetic Pinares FEM provider evidence manifest."""
+
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if (not target.exists()) or refresh:
+        if report is None:
+            report = run_public_pinares_fixed_price_proxy_fixture()
+        target.write_text(
+            json.dumps(
+                build_pinares_fem_provider_evidence_manifest(report), indent=2, sort_keys=True
+            )
+            + "\n",
             encoding="utf-8",
         )
     return target
@@ -845,6 +973,7 @@ __all__ = [
     "PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_HASH",
     "PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_ID",
     "PINARES_FEM_FIXED_PRICE_PROXY_ROUTE_ID",
+    "PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH",
     "PINARES_FEM_PROXY_PROBLEM_SPEC_PATH",
     "PINARES_FEM_PROXY_RESULT_EXPORT_PATH",
     "PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH",
@@ -853,12 +982,14 @@ __all__ = [
     "PinaresFEMProxyConvergenceRow",
     "PinaresFEMProxyReport",
     "PinaresFixedPriceProxyCase",
+    "build_pinares_fem_provider_evidence_manifest",
     "build_pinares_fem_proxy_hash",
     "public_pinares_fixed_price_problem_spec",
     "public_pinares_full_deal_unsupported_problem_spec",
     "run_public_pinares_fixed_price_proxy_fixture",
     "write_public_pinares_fixed_price_problem_spec",
     "write_public_pinares_fixed_price_result_export",
+    "write_public_pinares_provider_evidence_manifest",
     "write_public_pinares_quant_problem_spec",
     "write_public_pinares_unsupported_problem_spec",
 ]
