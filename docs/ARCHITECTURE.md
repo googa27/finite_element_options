@@ -319,6 +319,8 @@ A solver policy declares:
 
 Potential profiles include SciPy sparse direct/iterative baseline, optional AMG and optional PETSc. Broad exception fallback is prohibited. A failure returns a failed result/exception with residual and context, not a numerical field presented as success.
 
+Issue #38 pins the optional FEniCSx spike to supported DOLFINx/PETSc semantics: endpoint facets/DOFs are located geometrically rather than inferred from local vector order, Dirichlet data are represented as DOLFINx `dirichletbc` objects, system matrices are assembled with those BCs, RHS vectors receive `apply_lifting`/`set_bc`, KSP operators are set after boundary modification, and non-positive KSP convergence reasons raise with prefix, reason, iteration and residual diagnostics. The CI `fenicsx_contract` job executes backend contract tests even when the optional runtime is unavailable; true serial/MPI numerical parity remains conditional on a FEniCSx-compatible environment.
+
 ## 14. Adaptivity architecture
 
 Adaptivity pipeline:

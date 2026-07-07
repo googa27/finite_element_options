@@ -203,11 +203,13 @@ interpreting the output and contrasting runs.
 ### FEniCSx Spike
 
 An experimental `FenicsSolver` mirrors the existing scikit-fem backend using
-FEniCSx and UFL. On the Black–Scholes test problem the scikit-fem solver runs
-in roughly 2 ms per step on this environment. FEniCSx wheels are unavailable for
-Python 3.11, so its performance could not be measured here. The solver is
-therefore an optional dependency and currently best treated as a preview for a
-potential future migration.
+FEniCSx and UFL. The backend is deliberately optional, but its repository
+contract is now executable in CI: `tests/test_fenics_solver.py` checks that the
+implementation uses DOLFINx boundary-facet/DOF APIs instead of local first/last
+row assumptions, applies Dirichlet conditions through DOLFINx/PETSc lifting and
+`set_bc`, sets the KSP operator after boundary assembly, and raises on PETSc
+non-convergence. When a FEniCSx-compatible environment is available, the same
+test module also runs the serial Black--Scholes parity smoke.
 
 ## Continuous Integration
 

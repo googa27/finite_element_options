@@ -265,8 +265,8 @@ The current single `requirements.txt` combines core, FD, UI, calibration, datafr
 | `calibration` | Deterministic statistical calibration | pandas/xarray/Statsmodels as required |
 | `bayes` | Bayesian research workflow | PyMC and its stack |
 | `columnar` | Arrow/Parquet experiment exchange | PyArrow and optional dataframe packages |
-| `fenicsx` | Optional FEniCSx backend | FEniCSx-compatible environment |
-| `petsc` | PETSc/petsc4py solver policy | Platform-specific HPC environment |
+| `fenicsx` | Optional FEniCSx backend | FEniCSx-compatible environment; contract tests run in CI even without runtime |
+| `petsc` | PETSc/petsc4py solver policy | Platform-specific HPC environment; KSP convergence diagnostics fail closed |
 | `ui` | Streamlit demonstration | Streamlit plus visualization |
 | `validation` | Reference and benchmark tooling | Test/reference packages |
 | development groups | Test, lint, typing, docs, build and audit | pytest, Hypothesis, Ruff, mypy, build, twine |

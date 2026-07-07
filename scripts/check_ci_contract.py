@@ -22,6 +22,7 @@ JOB_HEADER = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
 REQUIRED_JOBS = {
     "package",
     "test",
+    "fenicsx_contract",
     "optional_imports",
     "supply_chain",
 }
@@ -41,6 +42,8 @@ REQUIRED_SNIPPETS = {
     "packaging contract": "tests/test_packaging_contract.py",
     "coverage gate": "--cov=finite_element_options",
     "benchmark artifact": "--benchmark-json=benchmark.json",
+    "FEniCSx contract job": "fenicsx_contract",
+    "FEniCSx backend contract tests": "tests/test_fenics_solver.py",
     "pip audit": "python -m pip_audit",
     "cyclonedx sbom": "cyclonedx-py environment",
     "optional fd profile": "profile: fd",
