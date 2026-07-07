@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added constrained PyMC Heston calibration diagnostics: posterior draw validation
+  enforces positive variance parameters and bounded correlation, Feller handling is
+  explicit, MCMC acceptance gates cover rank-normalized R-hat, bulk/tail ESS,
+  divergences, tree-depth hits and held-out RMSE, and `CalibrationResult` can now
+  carry artifacts, diagnostics and sampler/pricing provenance.
 - Reworked `src/estimation` calibration outputs to return structured
   `CalibrationResult` diagnostics. Synthetic fixture calibration now lives behind
   `SyntheticSurfaceCalibrator`; `HestonCalibrator` fails closed until a real

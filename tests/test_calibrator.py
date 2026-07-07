@@ -17,9 +17,13 @@ import pytest
 from finite_element_options.estimation import (
     CalibrationResult,
     HestonCalibrator,
+    HestonMCMCDiagnosticThresholds,
     PyMCCalibrator,
     StatsmodelsCalibrator,
     SyntheticSurfaceCalibrator,
+    build_heston_bayesian_calibration_result,
+    evaluate_heston_mcmc_diagnostics,
+    validate_heston_posterior_draws,
 )
 
 
@@ -58,9 +62,7 @@ def test_synthetic_calibration_returns_full_diagnostics() -> None:
     assert result.method == "scipy.least_squares"
 
 
-def test_calibration_reports_rank_deficiency_without_claiming_full_identification() -> (
-    None
-):
+def test_calibration_reports_rank_deficiency_without_claiming_full_identification() -> None:
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
     strikes = np.full(8, 100.0)
     maturities = np.full(8, 0.5)
@@ -76,9 +78,7 @@ def test_calibration_reports_rank_deficiency_without_claiming_full_identificatio
     assert result.jacobian_condition == np.inf
 
 
-def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypatch() -> (
-    None
-):
+def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypatch() -> None:
     data, true_params = _surface()
     calibrator = StatsmodelsCalibrator(data)
     initial = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
@@ -100,9 +100,7 @@ def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypa
     assert np.allclose(result.parameters, true_params, atol=1e-2)
     if regression is not None:
         assert hasattr(regression, "RegressionResults") is had_regression_results
-        assert (
-            getattr(regression, "RegressionResults", None) is prior_regression_results
-        )
+        assert getattr(regression, "RegressionResults", None) is prior_regression_results
 
 
 def test_heston_named_calibrator_fails_closed_until_real_heston_engine_exists() -> None:
@@ -157,3 +155,130 @@ def test_pymc_calibration_recovers_parameters() -> None:
     assert isinstance(result, CalibrationResult)
     assert result.success is True
     assert np.allclose(result.parameters, true_params, atol=0.15)
+
+
+def _valid_heston_draws() -> dict[str, np.ndarray]:
+    return {
+        "v0": np.array([0.040, 0.045, 0.050]),
+        "kappa": np.array([2.20, 2.35, 2.50]),
+        "theta": np.array([0.040, 0.042, 0.044]),
+        "sigma": np.array([0.25, 0.26, 0.27]),
+        "rho": np.array([-0.45, -0.40, -0.35]),
+    }
+
+
+def test_heston_posterior_draws_enforce_constraints_and_report_feller_policy() -> None:
+    report = validate_heston_posterior_draws(
+        _valid_heston_draws(),
+        feller_policy="report",
+    )
+
+    assert report.constraints_satisfied is True
+    assert report.feller_policy == "report"
+    assert report.parameter_names == ("v0", "kappa", "theta", "sigma", "rho")
+    assert report.draw_count == 3
+    assert report.feller_ratio_min > 1.0
+    assert report.feller_condition_satisfied is True
+
+    invalid_rho = _valid_heston_draws()
+    invalid_rho["rho"] = np.array([-0.1, 1.0, 0.2])
+    with pytest.raises(ValueError, match="rho"):
+        validate_heston_posterior_draws(invalid_rho)
+
+    feller_violation = _valid_heston_draws()
+    feller_violation["sigma"] = np.array([1.0, 1.0, 1.0])
+    with pytest.raises(ValueError, match="Feller"):
+        validate_heston_posterior_draws(
+            feller_violation,
+            feller_policy="enforce",
+        )
+
+
+def test_heston_mcmc_diagnostic_gate_rejects_weak_or_divergent_runs() -> None:
+    thresholds = HestonMCMCDiagnosticThresholds(
+        max_r_hat=1.01,
+        min_bulk_ess=400.0,
+        min_tail_ess=400.0,
+        max_divergences=0,
+        max_tree_depth_hits=0,
+    )
+    weak_summary = pd.DataFrame(
+        {
+            "r_hat": [1.02, 1.0, 1.0, 1.0, 1.0],
+            "ess_bulk": [390.0, 500.0, 500.0, 500.0, 500.0],
+            "ess_tail": [500.0, 500.0, 350.0, 500.0, 500.0],
+        },
+        index=pd.Index(["v0", "kappa", "theta", "sigma", "rho"]),
+    )
+
+    report = evaluate_heston_mcmc_diagnostics(
+        weak_summary,
+        divergences=1,
+        tree_depth_hits=1,
+        thresholds=thresholds,
+    )
+
+    assert report.accepted is False
+    assert any("r_hat" in failure for failure in report.failures)
+    assert any("bulk ESS" in failure for failure in report.failures)
+    assert any("tail ESS" in failure for failure in report.failures)
+    assert any("divergence" in failure for failure in report.failures)
+    assert any("tree depth" in failure for failure in report.failures)
+
+
+def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance() -> None:
+    draws = _valid_heston_draws()
+    diagnostic_summary = pd.DataFrame(
+        {
+            "r_hat": [1.0, 1.0, 1.0, 1.0, 1.0],
+            "ess_bulk": [800.0, 820.0, 810.0, 805.0, 815.0],
+            "ess_tail": [700.0, 710.0, 705.0, 715.0, 720.0],
+        },
+        index=pd.Index(["v0", "kappa", "theta", "sigma", "rho"]),
+    )
+    observed = np.array([1.0, 1.5, 2.0])
+    fitted = np.array([1.01, 1.49, 2.02])
+
+    result = build_heston_bayesian_calibration_result(
+        posterior_draws=draws,
+        diagnostic_summary=diagnostic_summary,
+        observed_values=observed,
+        fitted_values=fitted,
+        inference_data_artifact="artifacts/heston-idata.nc",
+        pricing_engine="validated-fourier-heston",
+        likelihood_units="price",
+        observation_noise=0.02,
+        random_seed=123,
+        thresholds=HestonMCMCDiagnosticThresholds(),
+    )
+
+    assert isinstance(result, CalibrationResult)
+    assert result.success is True
+    assert result.method == "pymc.heston.diagnostics"
+    assert result.parameter_names == ("v0", "kappa", "theta", "sigma", "rho")
+    assert np.all(result.parameters[:4] > 0.0)
+    assert -1.0 < result.parameters[4] < 1.0
+    assert result.bounds[0].tolist() == [0.0, 0.0, 0.0, 0.0, -1.0]
+    assert result.bounds[1][-1] == 1.0
+    assert result.artifacts == ("artifacts/heston-idata.nc",)
+    assert result.provenance["pricing_engine"] == "validated-fourier-heston"
+    assert result.provenance["likelihood_units"] == "price"
+    mcmc_diagnostics = result.diagnostics["mcmc"]
+    constraint_diagnostics = result.diagnostics["constraints"]
+    assert isinstance(mcmc_diagnostics, Mapping)
+    assert isinstance(constraint_diagnostics, Mapping)
+    assert mcmc_diagnostics["accepted"] is True
+    assert constraint_diagnostics["feller_condition_satisfied"] is True
+
+    with pytest.raises(ValueError, match="validated Heston pricing engine"):
+        build_heston_bayesian_calibration_result(
+            posterior_draws=draws,
+            diagnostic_summary=diagnostic_summary,
+            observed_values=observed,
+            fitted_values=fitted,
+            inference_data_artifact="artifacts/heston-idata.nc",
+            pricing_engine="synthetic toy polynomial",
+            likelihood_units="price",
+            observation_noise=0.02,
+            random_seed=123,
+        )
