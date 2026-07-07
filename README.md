@@ -50,7 +50,7 @@ demo is not automatically a validated capability.
 | `FEM-FD-COMPAT-DEPRECATED` — Finite-difference compatibility shim | deprecated | tests/test_fd_black_scholes.py | Production finite-difference ownership belongs to finite_difference_options; removal target is published. Optional: The base wheel does not import findiff/pandas/xarray. |
 | `FEM-JAX-GREEKS-EXPERIMENTAL` — Optional JAX analytical Greek helper | experimental | tests/test_jax_greeks.py | Does not differentiate the FEM grid solution; numerical-solution sensitivities are separate capabilities. Optional: The base wheel does not import JAX; optional profile gates import it. |
 | `FEM-CALIBRATION-RESEARCH` — Calibration research adapters | experimental | tests/test_calibrator.py | Current Heston calibration paths are not production evidence and remain governed by issues #45 and #54. Optional: The base wheel does not import PyMC, ArviZ or Statsmodels. |
-| `FEM-STREAMLIT-UI-EXPERIMENTAL` — Streamlit exploration UI | experimental | .github/workflows/ci.yml#optional_imports-ui | Problem validation, route gating and work limits remain tracked under issue #58. Optional: The base wheel does not import Streamlit or aleatory. |
+| `FEM-STREAMLIT-UI-EXPERIMENTAL` — Streamlit exploration UI | experimental | .github/workflows/ci.yml#optional_imports-ui<br>tests/test_ui_config.py | The Streamlit surface remains exploratory; Heston and American routes fail closed until their numerical capabilities land. Optional: The base wheel does not import Streamlit or UI-only plotting packages. |
 <!-- capability-matrix:end -->
 
 ## Installation

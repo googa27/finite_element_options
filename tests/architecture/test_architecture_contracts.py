@@ -42,6 +42,7 @@ PACKAGE_ROOT_ENTRIES = {
     "space",
     "time_integration",
     "transform.py",
+    "ui_config.py",
     "validation",
 }
 
@@ -64,6 +65,7 @@ OUTER_LAYER_PACKAGES_AND_MODULES = {
     "jax_greeks.py",
     "plots.py",
     "sidebar.py",
+    "ui_config.py",
 }
 
 FORBIDDEN_CORE_IMPORT_PREFIXES = {
@@ -88,6 +90,7 @@ FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
     "jax_greeks",
     "plots",
     "sidebar",
+    "ui_config",
 }
 
 # Baseline-aware exception for the pre-existing FD compatibility module. This

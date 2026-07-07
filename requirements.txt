@@ -6,7 +6,6 @@ pydantic
 scipy
 findiff
 jax
-aleatory
 statsmodels
 pymc
 pandas

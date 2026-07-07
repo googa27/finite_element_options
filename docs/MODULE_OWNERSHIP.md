@@ -37,6 +37,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | `jax_greeks.py` | optional | Experimental AD Greek route with method/object diagnostics and synchronized JAX timing | Optional research helper | jax | Keep separate from core sensitivity claims; no AD-through-FEM claim until differentiable assembly/solve is validated (#46) |
 | `plots.py` | optional | Plotting helpers | Optional visualization | viz | Keep outside core import graph |
 | `sidebar.py` | app | Streamlit sidebar/application support | UI helper only | ui | Keep outside core import graph |
+| `ui_config.py` | app | Pure-Python UI input validation, capability gating, resource estimates, cache keys and shareable configuration | UI validation helper only | core | Keep import-light; no Streamlit/plotting eager imports |
 | `cli.py` | cli | Thin CLI shell over validated public APIs | Console entry edge | core plus selected extras | Do not encode solver semantics here |
 | `examples/` | example | Single installed-package example tree; root `examples/` Python files are forbidden | Example-only | selected extras | Execute against installed package under #61 |
 
