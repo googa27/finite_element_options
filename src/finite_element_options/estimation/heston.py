@@ -69,6 +69,8 @@ class HestonMCMCDiagnosticThresholds:
     max_heldout_rmse: float | None = None
 
     def __post_init__(self) -> None:
+        """Validate monotone sampler/predictive gate thresholds."""
+
         if self.max_r_hat < 1.0:
             raise ValueError("max_r_hat must be at least 1.0")
         if self.min_bulk_ess < 0.0 or self.min_tail_ess < 0.0:
