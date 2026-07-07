@@ -25,6 +25,9 @@ class _ScalarSpace:
     source_scale: float = 0.0
     Vh: _FakeBasis = field(default_factory=_FakeBasis)
     matrix_calls: list[tuple[float, float]] = field(default_factory=list)
+    matrix_endpoint_calls: list[tuple[float | None, float | None]] = field(
+        default_factory=list
+    )
     boundary_term_calls: list[float] = field(default_factory=list)
 
     def initial_condition(self) -> np.ndarray:
@@ -32,10 +35,18 @@ class _ScalarSpace:
 
         return np.array([1.0])
 
-    def matrices(self, theta: float, dt: float):
+    def matrices(
+        self,
+        theta: float,
+        dt: float,
+        *,
+        start: float | None = None,
+        end: float | None = None,
+    ):
         """Record each local theta/dt pair and return scalar matrices."""
 
         self.matrix_calls.append((theta, dt))
+        self.matrix_endpoint_calls.append((start, end))
         if self.matrix_mode == "growth":
             return sps.csr_matrix([[1.0]]), sps.csr_matrix([[1.0 + dt]])
         if self.matrix_mode == "dt_system":
@@ -82,6 +93,9 @@ def test_nonuniform_time_grid_uses_each_local_dt_once() -> None:
     solution = stepper.solve(iter([0.0, 0.25, 1.0, 1.5]), space)
 
     assert [dt for _, dt in space.matrix_calls] == pytest.approx([0.25, 0.75, 0.5])
+    assert space.matrix_endpoint_calls == pytest.approx(
+        [(0.0, 0.25), (0.25, 1.0), (1.0, 1.5)]
+    )
     assert solution[:, 0] == pytest.approx([1.0, 1.25, 2.1875, 3.28125])
     assert stepper.last_time_grid_diagnostics["local_time_steps"] == pytest.approx(
         (0.25, 0.75, 0.5)
