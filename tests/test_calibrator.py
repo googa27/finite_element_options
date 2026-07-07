@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import hashlib
 import importlib
 import importlib.util
 import sys
@@ -238,7 +239,9 @@ def test_heston_mcmc_diagnostic_gate_rejects_weak_or_divergent_runs() -> None:
         )
 
 
-def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance() -> None:
+def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance(
+    tmp_path: Path,
+) -> None:
     draws = _valid_heston_draws()
     diagnostic_summary = pd.DataFrame(
         {
@@ -250,6 +253,12 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
     )
     observed = np.array([[1.0, 1.5], [2.0, 2.5]])
     fitted = np.array([[1.01, 1.49], [2.02, 2.48]])
+    validation_artifact = tmp_path / "fourier-heston-validation.json"
+    validation_artifact.write_text(
+        '{"engine_family":"heston","validation_grid":"smoke"}\n',
+        encoding="utf-8",
+    )
+    validation_artifact_sha256 = hashlib.sha256(validation_artifact.read_bytes()).hexdigest()
 
     result = build_heston_bayesian_calibration_result(
         posterior_draws=draws,
@@ -261,8 +270,8 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
         pricing_engine_validation={
             "engine_family": "heston",
             "validated": True,
-            "validation_artifact": "artifacts/fourier-heston-validation.json",
-            "validation_artifact_sha256": "a" * 64,
+            "validation_artifact": str(validation_artifact),
+            "validation_artifact_sha256": validation_artifact_sha256,
             "version": "2026.7",
         },
         likelihood_units="price",
@@ -286,7 +295,8 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
     assert result.provenance["pricing_engine"] == "validated-fourier-heston"
     validation_metadata = result.provenance["pricing_engine_validation"]
     assert isinstance(validation_metadata, Mapping)
-    assert validation_metadata["validation_artifact"] == "artifacts/fourier-heston-validation.json"
+    assert validation_metadata["validation_artifact"] == str(validation_artifact)
+    assert validation_metadata["validation_artifact_sha256"] == validation_artifact_sha256
     assert result.provenance["likelihood_units"] == "price"
     mcmc_diagnostics = result.diagnostics["mcmc"]
     constraint_diagnostics = result.diagnostics["constraints"]
@@ -353,6 +363,46 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
                 "engine_family": "heston",
                 "validated": True,
                 "validation_artifact": "artifacts/fourier-heston-validation.json",
+                "version": "2026.7",
+            },
+            likelihood_units="price",
+            observation_noise=0.02,
+            random_seed=123,
+        )
+
+    with pytest.raises(ValueError, match="validation_artifact_sha256"):
+        build_heston_bayesian_calibration_result(
+            posterior_draws=draws,
+            diagnostic_summary=diagnostic_summary,
+            observed_values=observed,
+            fitted_values=fitted,
+            inference_data_artifact="artifacts/heston-idata.nc",
+            pricing_engine="validated-fourier-heston",
+            pricing_engine_validation={
+                "engine_family": "heston",
+                "validated": True,
+                "validation_artifact": str(validation_artifact),
+                "validation_artifact_sha256": "b" * 64,
+                "version": "2026.7",
+            },
+            likelihood_units="price",
+            observation_noise=0.02,
+            random_seed=123,
+        )
+
+    with pytest.raises(ValueError, match="validation_artifact"):
+        build_heston_bayesian_calibration_result(
+            posterior_draws=draws,
+            diagnostic_summary=diagnostic_summary,
+            observed_values=observed,
+            fitted_values=fitted,
+            inference_data_artifact="artifacts/heston-idata.nc",
+            pricing_engine="validated-fourier-heston",
+            pricing_engine_validation={
+                "engine_family": "heston",
+                "validated": True,
+                "validation_artifact": str(tmp_path / "missing-validation.json"),
+                "validation_artifact_sha256": validation_artifact_sha256,
                 "version": "2026.7",
             },
             likelihood_units="price",
