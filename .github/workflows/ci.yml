@@ -56,6 +56,8 @@ jobs:
           assert importlib.util.find_spec('src') is None
           print('installed import contract OK:', finite_element_options.__name__)
           PY
+      - name: Execute README examples from installed wheel
+        run: /tmp/feo-wheel-check/bin/python scripts/check_readme_examples.py README.md
       - name: Upload package artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -91,6 +93,10 @@ jobs:
         run: python scripts/check_architecture_contract.py
       - name: CI contract
         run: python scripts/check_ci_contract.py
+      - name: Documentation capability contract
+        run: |
+          python scripts/generate_capability_docs.py --check
+          python scripts/check_readme_examples.py README.md
       - name: Architecture fitness gate
         run: pytest -q tests/architecture --no-cov
       - name: Packaging contract
