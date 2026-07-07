@@ -439,6 +439,28 @@ def test_fem_core_does_not_import_application_or_research_stacks() -> None:
     )
 
 
+def test_solver_protocols_do_not_depend_on_signature_introspection() -> None:
+    forbidden_fragments = {
+        "__code__": "callable bytecode details",
+        "co_varnames": "callable local variable names",
+        "inspect.signature": "argument-name introspection",
+    }
+    violations: dict[str, list[str]] = {}
+    for relative in (
+        "space/solver.py",
+        "time_integration/stepper.py",
+    ):
+        text = (PACKAGE_ROOT / relative).read_text(encoding="utf-8")
+        hits = [label for fragment, label in forbidden_fragments.items() if fragment in text]
+        if hits:
+            violations[f"src/{PACKAGE}/{relative}"] = hits
+
+    assert not violations, (
+        "Solver protocols must use explicit typed contracts instead of introspection: "
+        + repr(violations)
+    )
+
+
 def test_base_package_import_surface_stays_lightweight() -> None:
     imported = _imports(PACKAGE_ROOT / "__init__.py")
     forbidden = sorted(

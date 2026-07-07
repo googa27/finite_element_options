@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
-import inspect
 from time import perf_counter
 from typing import Callable, Iterable
 
@@ -363,16 +362,9 @@ def _sequence_cache_key(keys: Iterable[str]) -> str:
 
 
 def _space_matrices(space: SpaceDiscretization, step: _InternalThetaStep):
-    """Return spatial matrices, passing endpoint times when supported."""
+    """Return spatial matrices through the explicit endpoint-aware protocol."""
 
-    parameters = inspect.signature(space.matrices).parameters
-    supports_endpoint_times = "start" in parameters or any(
-        parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters.values()
-    )
-    if supports_endpoint_times:
-        return space.matrices(step.theta, step.dt, start=step.start, end=step.end)
-    return space.matrices(step.theta, step.dt)
+    return space.matrices(step.theta, step.dt, start=step.start, end=step.end)
 
 
 def _theta_cache_key(

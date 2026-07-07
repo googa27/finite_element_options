@@ -71,9 +71,6 @@ class SpaceSolver:
             dynamics=dynamics,
             transform=self.transform,
         )
-        self._mean_variance_supports_config = (
-            "config" in dynamics.mean_variance.__code__.co_varnames
-        )
         self.mass = self.forms.id_bil().assemble(self.Vh)
         self._operator_matrix_cache: dict[float, object] = {}
         self.matrix_time_calls: list[tuple[float, float]] = []
@@ -140,11 +137,10 @@ class SpaceSolver:
         variance_seed = (
             variance_inputs if variance_inputs is not None else np.zeros_like(spot)
         )
-        kwargs = {"config": self.config} if self._mean_variance_supports_config else {}
         mean_variance = self.dynamics.mean_variance(
             th_phys,
             variance_seed,
-            **kwargs,
+            config=self.config,
         )
         return price_fn(th_phys, spot, mean_variance)
 
