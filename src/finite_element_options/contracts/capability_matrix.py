@@ -265,14 +265,20 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "Installed-package Streamlit entry point for exploratory demos, "
             "kept outside core FEM dependencies."
         ),
-        evidence_ids=(".github/workflows/ci.yml#optional_imports-ui",),
-        evidence_scope="Optional-profile import gate and documented entry point.",
+        evidence_ids=(
+            ".github/workflows/ci.yml#optional_imports-ui",
+            "tests/test_ui_config.py",
+        ),
+        evidence_scope=(
+            "Optional-profile import gate plus pure-Python validation for route "
+            "gating, shareable config, analytical limits and work estimates."
+        ),
         limitations=(
-            "Problem validation, route gating and work limits remain tracked "
-            "under issue #58."
+            "The Streamlit surface remains exploratory; Heston and American "
+            "routes fail closed until their numerical capabilities land."
         ),
         optional_extra="ui",
-        absence_behavior="The base wheel does not import Streamlit or aleatory.",
+        absence_behavior="The base wheel does not import Streamlit or UI-only plotting packages.",
     ),
 )
 

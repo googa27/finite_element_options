@@ -49,7 +49,6 @@ viz = [
     "streamlit>=1.30,<2",
 ]
 ui = [
-    "aleatory>=1.1,<2",
     "matplotlib>=3.7,<4",
     "streamlit>=1.30,<2",
 ]
@@ -67,7 +66,6 @@ build = [
     "twine>=5,<7",
 ]
 dev = [
-    "aleatory>=1.1,<2",
     "arviz>=0.23,<1",
     "build>=1,<2",
     "findiff>=0.10,<1",

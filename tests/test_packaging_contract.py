@@ -96,8 +96,12 @@ def test_advertised_extras_cover_eager_import_dependencies() -> None:
         "The advertised viz extra must install streamlit because plots imports "
         "streamlit at module import time."
     )
-    assert _has_extra_dependency(requires_dist, "ui", "aleatory"), (
-        "The advertised UI extra must install aleatory for sidebar imports."
+    assert _has_extra_dependency(requires_dist, "ui", "streamlit"), (
+        "The advertised UI extra must install streamlit because sidebar imports "
+        "it lazily when widgets are constructed."
+    )
+    assert not _has_extra_dependency(requires_dist, "ui", "aleatory"), (
+        "The UI domain policy should not depend on the auxiliary aleatory package."
     )
 
 

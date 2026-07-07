@@ -22,6 +22,7 @@ allowed_root_modules = [
   "plots.py",
   "sidebar.py",
   "transform.py",
+  "ui_config.py",
 ]
 required_top_level_packages = [
   "contracts",
@@ -179,6 +180,14 @@ owner = "finite_element_options"
 treatment = "Streamlit sidebar/application support"
 public_surface = "UI helper only"
 extra = "ui"
+
+[[module_ownership]]
+path = "ui_config.py"
+layer = "app"
+owner = "finite_element_options"
+treatment = "pure-Python Streamlit/input validation, capability gating, resource estimates and shareable UI configuration"
+public_surface = "UI validation helper only"
+extra = "core"
 
 [[module_ownership]]
 path = "cli.py"
