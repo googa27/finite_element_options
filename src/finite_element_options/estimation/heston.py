@@ -8,8 +8,11 @@ names so it cannot be mistaken for production Heston calibration.
 
 from __future__ import annotations
 
+import hashlib
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -23,6 +26,420 @@ _SYNTHETIC_PARAMETER_NAMES = (
     "sqrt_strike_slope",
     "maturity_quadratic",
 )
+
+HESTON_PARAMETER_NAMES = ("v0", "kappa", "theta", "sigma", "rho")
+_ALLOWED_FELLER_POLICIES = frozenset({"report", "enforce"})
+_ALLOWED_LIKELIHOOD_UNITS = frozenset({"price", "implied_volatility"})
+_FORBIDDEN_ENGINE_TOKENS = ("toy", "synthetic", "polynomial", "fixture")
+
+
+@dataclass(frozen=True)
+class HestonConstraintReport:
+    """Constraint and Feller diagnostics for Heston posterior draws."""
+
+    parameter_names: tuple[str, ...]
+    draw_count: int
+    feller_policy: str
+    feller_ratio_min: float
+    feller_ratio_max: float
+    feller_condition_satisfied: bool
+
+    def as_dict(self) -> dict[str, object]:
+        """Return JSON-friendly diagnostics for provenance records."""
+
+        return {
+            "parameter_names": self.parameter_names,
+            "draw_count": self.draw_count,
+            "feller_policy": self.feller_policy,
+            "feller_ratio_min": self.feller_ratio_min,
+            "feller_ratio_max": self.feller_ratio_max,
+            "feller_condition_satisfied": self.feller_condition_satisfied,
+        }
+
+
+@dataclass(frozen=True)
+class HestonMCMCDiagnosticThresholds:
+    """Acceptance thresholds for constrained Heston Bayesian calibration."""
+
+    max_r_hat: float = 1.01
+    min_bulk_ess: float = 400.0
+    min_tail_ess: float = 400.0
+    max_divergences: int = 0
+    max_tree_depth_hits: int = 0
+    max_heldout_rmse: float | None = None
+
+    def __post_init__(self) -> None:
+        """Validate monotone sampler/predictive gate thresholds."""
+
+        if self.max_r_hat < 1.0:
+            raise ValueError("max_r_hat must be at least 1.0")
+        if self.min_bulk_ess < 0.0 or self.min_tail_ess < 0.0:
+            raise ValueError("ESS thresholds must be non-negative")
+        if self.max_divergences < 0 or self.max_tree_depth_hits < 0:
+            raise ValueError("sampler failure thresholds must be non-negative")
+        if self.max_heldout_rmse is not None and self.max_heldout_rmse < 0.0:
+            raise ValueError("max_heldout_rmse must be non-negative")
+
+    def as_dict(self) -> dict[str, object]:
+        """Return JSON-friendly threshold metadata."""
+
+        return {
+            "max_r_hat": self.max_r_hat,
+            "min_bulk_ess": self.min_bulk_ess,
+            "min_tail_ess": self.min_tail_ess,
+            "max_divergences": self.max_divergences,
+            "max_tree_depth_hits": self.max_tree_depth_hits,
+            "max_heldout_rmse": self.max_heldout_rmse,
+        }
+
+
+@dataclass(frozen=True)
+class HestonMCMCDiagnosticReport:
+    """Result of applying MCMC and predictive acceptance gates."""
+
+    accepted: bool
+    failures: tuple[str, ...]
+    metrics: Mapping[str, object]
+    thresholds: HestonMCMCDiagnosticThresholds
+
+    def as_dict(self) -> dict[str, object]:
+        """Return JSON-friendly MCMC diagnostics."""
+
+        return {
+            "accepted": self.accepted,
+            "failures": self.failures,
+            "metrics": dict(self.metrics),
+            "thresholds": self.thresholds.as_dict(),
+        }
+
+
+def _coerce_heston_draws(
+    posterior_draws: Mapping[str, Sequence[float] | np.ndarray],
+) -> dict[str, np.ndarray]:
+    missing = [name for name in HESTON_PARAMETER_NAMES if name not in posterior_draws]
+    if missing:
+        raise ValueError(f"missing Heston posterior draw(s): {missing}")
+    arrays: dict[str, np.ndarray] = {}
+    shape: tuple[int, ...] | None = None
+    for name in HESTON_PARAMETER_NAMES:
+        arr = np.asarray(posterior_draws[name], dtype=float)
+        if arr.size == 0:
+            raise ValueError(f"{name} posterior draws must not be empty")
+        if not np.all(np.isfinite(arr)):
+            raise ValueError(f"{name} posterior draws must be finite")
+        if shape is None:
+            shape = arr.shape
+        elif arr.shape != shape:
+            raise ValueError("Heston posterior draws must have matching shapes")
+        arrays[name] = arr.reshape(-1)
+    return arrays
+
+
+def validate_heston_posterior_draws(
+    posterior_draws: Mapping[str, Sequence[float] | np.ndarray],
+    *,
+    feller_policy: str = "report",
+) -> HestonConstraintReport:
+    """Validate Heston posterior draws and report Feller diagnostics.
+
+    The Heston variance process requires positive ``v0``, ``kappa``, ``theta``
+    and volatility-of-variance ``sigma`` plus ``rho`` strictly between -1 and 1.
+    The Feller condition can be reported for model-risk review or enforced as a
+    hard acceptance gate when the solver route requires strict positivity away
+    from the boundary.
+    """
+
+    if feller_policy not in _ALLOWED_FELLER_POLICIES:
+        raise ValueError(f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}")
+    draws = _coerce_heston_draws(posterior_draws)
+    for name in ("v0", "kappa", "theta", "sigma"):
+        if np.any(draws[name] <= 0.0):
+            raise ValueError(f"{name} posterior draws must be strictly positive")
+    if np.any((draws["rho"] <= -1.0) | (draws["rho"] >= 1.0)):
+        raise ValueError("rho posterior draws must remain strictly between -1 and 1")
+
+    feller_ratio = 2.0 * draws["kappa"] * draws["theta"] / draws["sigma"] ** 2
+    feller_condition_satisfied = bool(np.all(feller_ratio >= 1.0))
+    if feller_policy == "enforce" and not feller_condition_satisfied:
+        raise ValueError("Feller condition violated by at least one posterior draw")
+    return HestonConstraintReport(
+        parameter_names=HESTON_PARAMETER_NAMES,
+        draw_count=int(draws["v0"].size),
+        feller_policy=feller_policy,
+        feller_ratio_min=float(np.min(feller_ratio)),
+        feller_ratio_max=float(np.max(feller_ratio)),
+        feller_condition_satisfied=feller_condition_satisfied,
+    )
+
+
+def _diagnostic_frame(
+    diagnostic_summary: pd.DataFrame | Mapping[str, Mapping[str, float]],
+) -> pd.DataFrame:
+    if isinstance(diagnostic_summary, pd.DataFrame):
+        frame = diagnostic_summary.copy()
+    else:
+        frame = pd.DataFrame.from_dict(dict(diagnostic_summary), orient="index")
+    required_columns = {"r_hat", "ess_bulk", "ess_tail"}
+    missing_columns = required_columns.difference(frame.columns)
+    if missing_columns:
+        raise ValueError(
+            "diagnostic_summary must contain r_hat, ess_bulk and ess_tail; "
+            f"missing {sorted(missing_columns)}"
+        )
+    missing_parameters = [name for name in HESTON_PARAMETER_NAMES if name not in frame.index]
+    if missing_parameters:
+        raise ValueError(f"diagnostic_summary is missing {missing_parameters}")
+    return frame.loc[list(HESTON_PARAMETER_NAMES), ["r_hat", "ess_bulk", "ess_tail"]].astype(float)
+
+
+def evaluate_heston_mcmc_diagnostics(
+    diagnostic_summary: pd.DataFrame | Mapping[str, Mapping[str, float]],
+    *,
+    divergences: int = 0,
+    tree_depth_hits: int = 0,
+    heldout_rmse: float | None = None,
+    thresholds: HestonMCMCDiagnosticThresholds | None = None,
+) -> HestonMCMCDiagnosticReport:
+    """Apply Heston Bayesian MCMC and predictive acceptance thresholds."""
+
+    if thresholds is None:
+        thresholds = HestonMCMCDiagnosticThresholds()
+    if divergences < 0 or tree_depth_hits < 0:
+        raise ValueError("sampler failure counts must be non-negative")
+    if heldout_rmse is not None:
+        if not np.isfinite(heldout_rmse):
+            raise ValueError("heldout_rmse must be finite when supplied")
+        if heldout_rmse < 0.0:
+            raise ValueError("heldout_rmse must be non-negative when supplied")
+    frame = _diagnostic_frame(diagnostic_summary)
+    if not np.all(np.isfinite(frame.to_numpy())):
+        raise ValueError("MCMC diagnostic summary must be finite")
+
+    failures: list[str] = []
+    max_r_hat = float(frame["r_hat"].max())
+    min_bulk_ess = float(frame["ess_bulk"].min())
+    min_tail_ess = float(frame["ess_tail"].min())
+    if max_r_hat > thresholds.max_r_hat:
+        failures.append(f"r_hat {max_r_hat:.4g} exceeds {thresholds.max_r_hat:.4g}")
+    if min_bulk_ess < thresholds.min_bulk_ess:
+        failures.append(f"bulk ESS {min_bulk_ess:.4g} below {thresholds.min_bulk_ess:.4g}")
+    if min_tail_ess < thresholds.min_tail_ess:
+        failures.append(f"tail ESS {min_tail_ess:.4g} below {thresholds.min_tail_ess:.4g}")
+    if divergences > thresholds.max_divergences:
+        failures.append(f"divergence count {divergences} exceeds {thresholds.max_divergences}")
+    if tree_depth_hits > thresholds.max_tree_depth_hits:
+        failures.append(
+            f"tree depth hit count {tree_depth_hits} exceeds {thresholds.max_tree_depth_hits}"
+        )
+    if thresholds.max_heldout_rmse is not None:
+        if heldout_rmse is None:
+            failures.append("heldout RMSE is required by thresholds")
+        elif heldout_rmse > thresholds.max_heldout_rmse:
+            failures.append(
+                f"heldout RMSE {heldout_rmse:.4g} exceeds {thresholds.max_heldout_rmse:.4g}"
+            )
+    metrics = {
+        "max_r_hat": max_r_hat,
+        "min_bulk_ess": min_bulk_ess,
+        "min_tail_ess": min_tail_ess,
+        "divergences": int(divergences),
+        "tree_depth_hits": int(tree_depth_hits),
+        "heldout_rmse": None if heldout_rmse is None else float(heldout_rmse),
+    }
+    return HestonMCMCDiagnosticReport(
+        accepted=not failures,
+        failures=tuple(failures),
+        metrics=metrics,
+        thresholds=thresholds,
+    )
+
+
+def _posterior_means(draws: Mapping[str, np.ndarray]) -> np.ndarray:
+    return np.asarray([np.mean(draws[name]) for name in HESTON_PARAMETER_NAMES], dtype=float)
+
+
+def _validate_heston_engine_name(pricing_engine: str) -> str:
+    normalized = pricing_engine.strip()
+    if not normalized:
+        raise ValueError("pricing_engine must name a validated Heston pricing engine")
+    lowered = normalized.lower()
+    if "heston" not in lowered or any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
+        raise ValueError("pricing_engine must name a validated Heston pricing engine")
+    return normalized
+
+
+def _validated_artifact_sha256(artifact: str, expected_sha256: str) -> str:
+    """Load a validation artifact and verify its content-addressed digest."""
+
+    artifact_path = Path(artifact).expanduser()
+    if not artifact_path.is_file():
+        raise ValueError("pricing_engine_validation validation_artifact must be an existing file")
+    actual_sha256 = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    if actual_sha256 != expected_sha256:
+        raise ValueError(
+            "pricing_engine_validation validation_artifact_sha256 does not match artifact"
+        )
+    return actual_sha256
+
+
+def _validate_heston_engine_metadata(
+    pricing_engine: str,
+    pricing_engine_validation: Mapping[str, object],
+) -> dict[str, object]:
+    """Validate non-lexical evidence for a Heston pricing engine."""
+
+    engine = _validate_heston_engine_name(pricing_engine)
+    metadata = dict(pricing_engine_validation)
+    if metadata.get("validated") is not True:
+        raise ValueError("pricing_engine_validation must mark the engine as validated")
+    if str(metadata.get("engine_family", "")).lower() != "heston":
+        raise ValueError("pricing_engine_validation must declare engine_family='heston'")
+    artifact = str(metadata.get("validation_artifact", "")).strip()
+    if not artifact:
+        raise ValueError("pricing_engine_validation must include a validation_artifact")
+    artifact_sha256 = str(metadata.get("validation_artifact_sha256", "")).strip().lower()
+    if len(artifact_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in artifact_sha256):
+        raise ValueError("pricing_engine_validation must include validation_artifact_sha256")
+    artifact_sha256 = _validated_artifact_sha256(artifact, artifact_sha256)
+    version = str(metadata.get("version", "")).strip()
+    if not version:
+        raise ValueError("pricing_engine_validation must include a pricing engine version")
+    metadata["pricing_engine"] = engine
+    metadata["validation_artifact"] = artifact
+    metadata["validation_artifact_sha256"] = artifact_sha256
+    metadata["version"] = version
+    return metadata
+
+
+def _active_parameter_mask(
+    parameters: np.ndarray,
+    lower_bounds: np.ndarray,
+    upper_bounds: np.ndarray,
+) -> np.ndarray:
+    """Return SciPy-style bound activity mask for posterior summary parameters."""
+
+    rtol = 1e-10
+    atol = 1e-12
+    lower_active = np.isfinite(lower_bounds) & np.isclose(
+        parameters,
+        lower_bounds,
+        rtol=rtol,
+        atol=atol,
+    )
+    upper_active = np.isfinite(upper_bounds) & np.isclose(
+        parameters,
+        upper_bounds,
+        rtol=rtol,
+        atol=atol,
+    )
+    mask = np.zeros(parameters.shape, dtype=int)
+    mask[lower_active] = -1
+    mask[upper_active & ~lower_active] = 1
+    return mask
+
+
+def build_heston_bayesian_calibration_result(
+    *,
+    posterior_draws: Mapping[str, Sequence[float] | np.ndarray],
+    diagnostic_summary: pd.DataFrame | Mapping[str, Mapping[str, float]],
+    observed_values: Sequence[float] | np.ndarray,
+    fitted_values: Sequence[float] | np.ndarray,
+    inference_data_artifact: str,
+    pricing_engine: str,
+    pricing_engine_validation: Mapping[str, object],
+    likelihood_units: str,
+    observation_noise: float,
+    random_seed: int | None,
+    thresholds: HestonMCMCDiagnosticThresholds | None = None,
+    feller_policy: str = "report",
+    divergences: int = 0,
+    tree_depth_hits: int = 0,
+    heldout_rmse: float | None = None,
+) -> CalibrationResult:
+    """Build an auditable PyMC Heston calibration result from validated artifacts.
+
+    This helper does not price options itself. It accepts posterior draws and
+    fitted values generated by a separately validated Heston pricing engine, then
+    applies constraint, likelihood and sampler diagnostics before marking the run
+    successful. It refuses toy/synthetic/polynomial engines so a fixture cannot be
+    mislabeled as Heston calibration evidence.
+    """
+
+    engine_metadata = _validate_heston_engine_metadata(pricing_engine, pricing_engine_validation)
+    if likelihood_units not in _ALLOWED_LIKELIHOOD_UNITS:
+        raise ValueError(f"likelihood_units must be one of {sorted(_ALLOWED_LIKELIHOOD_UNITS)}")
+    if observation_noise <= 0.0 or not np.isfinite(observation_noise):
+        raise ValueError("observation_noise must be finite and strictly positive")
+    if not inference_data_artifact:
+        raise ValueError("inference_data_artifact must name a retained artifact")
+
+    draws = _coerce_heston_draws(posterior_draws)
+    constraint_report = validate_heston_posterior_draws(
+        posterior_draws,
+        feller_policy=feller_policy,
+    )
+    observed = np.asarray(observed_values, dtype=float)
+    fitted = np.asarray(fitted_values, dtype=float)
+    if observed.shape != fitted.shape:
+        raise ValueError("observed_values and fitted_values must have matching shapes")
+    if observed.size == 0 or not np.all(np.isfinite(observed)) or not np.all(np.isfinite(fitted)):
+        raise ValueError("observed_values and fitted_values must be non-empty and finite")
+    residuals = fitted - observed
+    residuals_flat = np.ravel(residuals)
+    fit_rmse = float(np.sqrt(np.mean(residuals_flat**2)))
+    mcmc_report = evaluate_heston_mcmc_diagnostics(
+        diagnostic_summary,
+        divergences=divergences,
+        tree_depth_hits=tree_depth_hits,
+        heldout_rmse=heldout_rmse,
+        thresholds=thresholds,
+    )
+    parameters = _posterior_means(draws)
+    lower_bounds = np.array([0.0, 0.0, 0.0, 0.0, -1.0], dtype=float)
+    upper_bounds = np.array([np.inf, np.inf, np.inf, np.inf, 1.0], dtype=float)
+    diagnostics = {
+        "constraints": constraint_report.as_dict(),
+        "mcmc": mcmc_report.as_dict(),
+        "likelihood": {
+            "units": likelihood_units,
+            "observation_noise": float(observation_noise),
+            "fit_rmse": fit_rmse,
+            "heldout_rmse": None if heldout_rmse is None else float(heldout_rmse),
+        },
+    }
+    provenance = {
+        "pricing_engine": engine_metadata["pricing_engine"],
+        "pricing_engine_validation": engine_metadata,
+        "likelihood_units": likelihood_units,
+        "observation_noise": float(observation_noise),
+        "random_seed": random_seed,
+        "feller_policy": feller_policy,
+        "draw_count": constraint_report.draw_count,
+    }
+    return CalibrationResult(
+        parameters=parameters,
+        success=mcmc_report.accepted,
+        status=1 if mcmc_report.accepted else 0,
+        message=(
+            "PyMC Heston diagnostics accepted"
+            if mcmc_report.accepted
+            else "PyMC Heston diagnostics rejected: " + "; ".join(mcmc_report.failures)
+        ),
+        residuals=np.asarray(residuals, dtype=float),
+        cost=float(0.5 * np.sum(residuals_flat**2)),
+        optimality=float("nan"),
+        jacobian_rank=0,
+        jacobian_condition=np.inf,
+        bounds=(lower_bounds, upper_bounds),
+        active_mask=_active_parameter_mask(parameters, lower_bounds, upper_bounds),
+        nfev=constraint_report.draw_count,
+        njev=None,
+        method="pymc.heston.diagnostics",
+        parameter_names=HESTON_PARAMETER_NAMES,
+        diagnostics=diagnostics,
+        artifacts=(inference_data_artifact,),
+        provenance=provenance,
+    )
 
 
 class SyntheticSurfaceCalibrator(Calibrator):
@@ -50,9 +467,7 @@ class SyntheticSurfaceCalibrator(Calibrator):
             sqrt_strike_slope, maturity_quadratic]``.
         """
 
-        level, strike_slope, maturity_slope, sqrt_strike_slope, maturity_quadratic = (
-            params
-        )
+        level, strike_slope, maturity_slope, sqrt_strike_slope, maturity_quadratic = params
         return (
             level
             + 1e-2 * strike_slope * strikes

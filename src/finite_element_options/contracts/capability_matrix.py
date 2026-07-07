@@ -97,9 +97,7 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "then reuse sparse LU across repeated right-hand sides."
         ),
         evidence_ids=("tests/test_solver_cache_benchmark.py",),
-        evidence_scope=(
-            "Repeated 1D line-uniform SciPy-direct solves with residual checks."
-        ),
+        evidence_scope=("Repeated 1D line-uniform SciPy-direct solves with residual checks."),
         limitations=(
             "Banded, AMG, PETSc and equal-error work-precision routes remain "
             "fail-closed until separately evidenced."
@@ -162,8 +160,7 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         evidence_ids=("tests/test_heston_moments.py",),
         evidence_scope="Moment formulas and limiting cases for Heston variance domains.",
         limitations=(
-            "Moment/domain diagnostics are not a full Heston PDE validation or "
-            "calibration proof."
+            "Moment/domain diagnostics are not a full Heston PDE validation or calibration proof."
         ),
         reference_ids=("FR-FEM-004",),
     ),
@@ -196,8 +193,7 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         evidence_ids=("tests/test_fenics_solver.py", "tests/test_benchmark_fenics.py"),
         evidence_scope="Optional backend API contract and skip-visible smoke tests.",
         limitations=(
-            "Not part of the base install and not advertised as a production "
-            "solver route."
+            "Not part of the base install and not advertised as a production solver route."
         ),
         optional_extra="external FEniCSx environment",
         absence_behavior="Tests skip explicitly when dolfinx/petsc4py are unavailable.",
@@ -245,13 +241,19 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         workstream="Calibration",
         summary=(
             "SciPy, Statsmodels and PyMC research helpers are isolated behind "
-            "the calibration extra."
+            "the calibration extra, with constrained Heston posterior and MCMC "
+            "diagnostic gates for externally validated pricing engines."
         ),
         evidence_ids=("tests/test_calibrator.py",),
-        evidence_scope="Adapter smoke and optional-profile import boundaries.",
+        evidence_scope=(
+            "Adapter smoke, optional-profile import boundaries, Heston posterior "
+            "constraint checks, Feller policy, MCMC diagnostics, and provenance "
+            "retention for supplied PyMC artifacts."
+        ),
         limitations=(
-            "Current Heston calibration paths are not production evidence and "
-            "remain governed by issues #45 and #54."
+            "Heston diagnostics do not create a pricing engine; fitted values must "
+            "come from a separately validated Heston oracle, and production "
+            "calibration remains governed by issue #45."
         ),
         optional_extra="calibration",
         absence_behavior="The base wheel does not import PyMC, ArviZ or Statsmodels.",

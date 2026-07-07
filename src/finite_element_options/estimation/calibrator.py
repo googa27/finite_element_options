@@ -9,7 +9,7 @@ bounds and failure states are explicit at the call site.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import ClassVar, TypeAlias
 
@@ -44,6 +44,9 @@ class CalibrationResult:
     njev: int | None
     method: str
     parameter_names: tuple[str, ...] = ()
+    diagnostics: Mapping[str, object] = field(default_factory=dict)
+    artifacts: tuple[str, ...] = ()
+    provenance: Mapping[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -68,17 +71,14 @@ class Calibrator(ABC):
         missing = required.difference(self.market_data.columns)
         if missing:
             raise ValueError(
-                "market_data must contain strike, maturity and price; "
-                f"missing {sorted(missing)}"
+                f"market_data must contain strike, maturity and price; missing {sorted(missing)}"
             )
         df = self.market_data.loc[:, ["strike", "maturity", "price"]].astype(float)
         self.strikes = df["strike"].to_numpy()
         self.maturities = df["maturity"].to_numpy()
         self.prices = df["price"].to_numpy()
         if not (self.strikes.shape == self.maturities.shape == self.prices.shape):
-            raise ValueError(
-                "strike, maturity and price arrays must have matching shape"
-            )
+            raise ValueError("strike, maturity and price arrays must have matching shape")
 
     @abstractmethod
     def model_prices(self, params: ParameterVector) -> np.ndarray:
