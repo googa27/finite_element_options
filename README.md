@@ -1,101 +1,85 @@
 # Finite Element Options
 
-Finite Element Options demonstrates pricing of European options under various
-stochastic models using a finite element discretisation. The application is
-built around [scikit-fem](https://github.com/kinnala/scikit-fem) and provides a
-Streamlit-based user interface for interactive exploration.
+Finite Element Options is an installable, library-first finite-element toolkit
+for option-pricing PDE experiments. The stable import namespace is
+`finite_element_options`; optional UI, calibration, JAX, FD-compatibility and
+FEniCSx routes are documented as separate maturity levels rather than implied
+production features.
 
 ## Quickstart
 
-Install the dependencies and run a simple Black–Scholes pricing example:
+After installing the wheel or an editable checkout, run the Black-Scholes example
+from an installed-package context:
 
-```bash
-pip install -e '.[validation]'
-python - <<'PY'
+```python
 from finite_element_options.examples.bs_1d import price_call
+
 grid = price_call()
-print(grid[-1])  # option values at maturity
-PY
+print(round(float(grid[-1].max()), 6))
 ```
 
-The snippet solves a one-dimensional Black–Scholes problem using default
-parameters and prints the final price grid.
+The snippet solves the one-dimensional Black-Scholes example and prints a value
+from the final output slice. In this repository, the time grid is the forward
+PDE/output grid `tau`; option-pricing maturity is stated explicitly in examples
+and analytical oracle calls.
 
-Mesh creation utilities now return both the mesh and a ``Config`` instance
-carrying numerical parameters such as the finite element. Pass this
-configuration to ``SpaceSolver`` when constructing spatial discretisations.
-
-Alternatively, run the bundled installed-package example module:
+The bundled module form is also executable from an installed wheel:
 
 ```bash
 python -m finite_element_options.examples.basic_usage
 ```
 
-This reproduces the same call option pricing workflow without depending on a checkout-local `examples/` tree.
+## Capability matrix
 
-## Features
+Public capability claims are generated from
+`finite_element_options.contracts.capability_matrix` and checked in CI. The full
+matrix is in [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md). A module or
+demo is not automatically a validated capability.
 
-- Black-Scholes option pricer with call/put payoffs, explicit volatility vs. variance APIs, and tested zero-maturity/zero-volatility limits
-- Finite-difference solver on regular grids using ``findiff``
-- Greek estimators (Delta, Gamma, volatility Vega) via finite differences
-- Experimental JAX-based Greek computation via automatic differentiation with explicit method/object diagnostics, synchronized compile/transfer/warm timing metadata, and documented non-AD-through-FEM limits
-- Configurable mesh generation supporting 1D, 2D and 3D problems
-- Central ``Config`` dataclass for numerical parameters
-- Sample problems for 1D Black–Scholes and 3D Heston models
-- Shared Heston/CIR moment diagnostics with exact time-average boundary variance, terminal conditional moments, and conservative variance-domain tail bounds
-- Simple market abstraction with discount factors
-- Streamlit UI and plotting helpers
-- Example demo for adaptive mesh refinement
-- Comprehensive test suite using `pytest`
-- Parameter calibration helpers with SciPy, Statsmodels and Bayesian PyMC approaches
-- Market data handled via pandas DataFrames and solution snapshots via xarray
-- CSV/Parquet serialisation utilities for reproducible experiments
-- Experimental FEniCSx solver for Black-Scholes PDE
-- Public-synthetic QuantProblemSpec FEM adapter manifest and `fem-bs-001` Black-Scholes parity fixture for cross-repo Haircut Engine and arxiv-lab compatibility checks. The published contract artifacts are in `tests/fixtures/fem_bs_001/`.
-- Public-synthetic Pinares fixed-price option weak-form proxy fixture (`PINARES-FEM-FIXED-PRICE-PROXY-V0`) with UF units, survival-scaled terminal payoff, Lagrange-P2 line mesh evidence and fail-closed full-deal diagnostics in `tests/fixtures/fem_pinares_fixed_price_proxy_v1/`.
-- Released public FEM solver contract (`finite-element-options-fem-solver-contract-v0.1`) plus solver-cache benchmark evidence (`FEM-SOLVER-CACHE-001`) for repeated 1D line-uniform SciPy-direct solves with sparse LU factorization reuse; banded, AMG and PETSc routes fail closed in the capability manifest until separately evidenced.
-- Theta-family time stepping validates finite increasing grids, uses each nonuniform local step, canonicalizes roundoff-uniform grids for deterministic reuse, enforces Dirichlet data at the new time node, and supports Rannacher startup through a recorded theta/internal-step schedule.
-- State/time-dependent `discount(state, time)` and `source(state, time)` coefficient fields are evaluated at FEM quadrature points and refreshed at theta-scheme endpoint times; Heston 3D uses the third state coordinate as the stochastic short-rate reaction coefficient.
+<!-- capability-matrix:start -->
+| Capability | Maturity | Evidence / benchmark | Limitation / absence behavior |
+|---|---|---|---|
+| `FEM-BS-1D-EUROPEAN` — 1D European Black-Scholes FEM route | validated | tests/test_black_scholes_1d.py<br>tests/test_benchmark_black_scholes.py<br>benchmark:pytest-benchmark:black_scholes_benchmark<br>reference:EuropeanOptionBs analytical oracle | Does not validate American exercise, Heston calibration, or multi-dimensional production claims. |
+| `FEM-THETA-TIME-GRID` — Theta-family time integration | validated | tests/test_time_stepper.py<br>tests/test_state_time_coefficients.py<br>reference:FR-FEM-006 | Adaptive time stepping and nonlinear complementarity stepping are separate unsupported capabilities. |
+| `FEM-SOLVER-CACHE-001` — SciPy direct sparse factorization reuse | validated | tests/test_solver_cache_benchmark.py<br>benchmark:FEM-SOLVER-CACHE-001 | Banded, AMG, PETSc and equal-error work-precision routes remain fail-closed until separately evidenced. |
+| `FEM-HC-SOLVER-CONTRACT-V0.1` — Released public FEM solver contract | production-qualified | tests/test_fem_backend_capabilities.py<br>tests/fixtures/fem_bs_001/<br>benchmark:fem-bs-001<br>reference:finite-element-options-fem-solver-contract-v0.1 | Contract maturity does not imply every model/backend combination is production-qualified. |
+| `PINARES-FEM-FIXED-PRICE-PROXY-V0` — Pinares fixed-price weak-form proxy fixture | validated | tests/test_pinares_fem_proxy.py<br>tests/fixtures/fem_pinares_fixed_price_proxy_v1/<br>benchmark:PINARES-FEM-FIXED-PRICE-PROXY-V0 | ROFR, legal coordination, taxes, HJB controls, obstacles and liquidity/default jumps intentionally fail closed. |
+| `FEM-Heston-CIR-MOMENTS` — Heston/CIR moment diagnostics | implemented | tests/test_heston_moments.py<br>reference:FR-FEM-004 | Moment/domain diagnostics are not a full Heston PDE validation or calibration proof. |
+| `FEM-ADAPTIVE-REFINE-TRANSFER` — Adaptive mesh refinement with transfer diagnostics | implemented | tests/test_solver.py<br>reference:FR-FEM-008 | Goal-oriented estimators, reversible coarsening and convergence effectivity are not yet production claims. |
+| `FEM-FENICSX-EXPERIMENTAL` — Optional FEniCSx backend spike | experimental | tests/test_fenics_solver.py<br>tests/test_benchmark_fenics.py | Not part of the base install and not advertised as a production solver route. Optional: Tests skip explicitly when dolfinx/petsc4py are unavailable. |
+| `FEM-FD-COMPAT-DEPRECATED` — Finite-difference compatibility shim | deprecated | tests/test_fd_black_scholes.py | Production finite-difference ownership belongs to finite_difference_options; removal target is published. Optional: The base wheel does not import findiff/pandas/xarray. |
+| `FEM-JAX-GREEKS-EXPERIMENTAL` — Optional JAX analytical Greek helper | experimental | tests/test_jax_greeks.py | Does not differentiate the FEM grid solution; numerical-solution sensitivities are separate capabilities. Optional: The base wheel does not import JAX; optional profile gates import it. |
+| `FEM-CALIBRATION-RESEARCH` — Calibration research adapters | experimental | tests/test_calibrator.py | Current Heston calibration paths are not production evidence and remain governed by issues #45 and #54. Optional: The base wheel does not import PyMC, ArviZ or Statsmodels. |
+| `FEM-STREAMLIT-UI-EXPERIMENTAL` — Streamlit exploration UI | experimental | .github/workflows/ci.yml#optional_imports-ui | Problem validation, route gating and work limits remain tracked under issue #58. Optional: The base wheel does not import Streamlit or aleatory. |
+<!-- capability-matrix:end -->
 
 ## Installation
 
-The core wheel uses the real `finite_element_options` package namespace and keeps optional stacks out of the base install:
+The core wheel keeps optional stacks out of the base install. Use `pip install .`
+for a local wheel-style install or `pip install -e '.[dev]' -c constraints.txt`
+for development gates. Optional profiles are published as extras: `fd`, `jax`,
+`calibration`, `io`, `viz`, `ui`, `validation`, and `build`.
 
-```bash
-pip install .
-```
+## Architecture and ownership
 
-Install development/test tooling with:
+The CI-enforced architecture contract is `docs/architecture_contract.toml`. It
+records the `finite_element_options` source-layout package topology, optional
+stack import boundaries, and the module ownership table used by
+`docs/MODULE_OWNERSHIP.md`. Treat the base install as the FEM core;
+finite-difference compatibility uses the `fd` extra, calibration uses
+`calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, and
+UI/plotting code uses `ui` or `viz`.
 
-```bash
-pip install -e '.[dev]' -c constraints.txt
-```
+Launch the optional Streamlit application with the `ui` extra installed via the
+entry module path `finite_element_options.examples.streamlit_app`. Run the
+adaptive mesh demo via `python -m finite_element_options.examples.adaptive_mesh_refinement`
+when plotting dependencies are available.
 
-Optional profiles are published as extras, for example `.[ui]`, `.[jax]`, `.[calibration]`, `.[io]`, `.[fd]`, and `.[validation]`.
+## Python API example
 
-## Architecture and module ownership
-
-The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional-stack import boundaries, and the module ownership table used by `docs/MODULE_OWNERSHIP.md` for issue #50. Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, and UI/plotting code uses `ui` or `viz`.
-
-## Usage
-
-Launch the Streamlit application from the installed package tree:
-
-```bash
-streamlit run "$(python -c 'import importlib.util; print(importlib.util.find_spec("finite_element_options.examples.streamlit_app").origin)')"
-```
-
-Run the adaptive mesh demo:
-
-```bash
-python -m finite_element_options.examples.adaptive_mesh_refinement
-```
-
-### Python API example
-
-Interact with the building blocks directly to assemble a pricing pipeline and
-observe how market data, dynamics, payoffs, spatial discretisation, and
-timestepping interact:
+This example uses only the base FEM and analytical Black-Scholes APIs. It reports
+an FEM grid value and separately reports analytical Greeks; those Greeks are not
+claimed to be derivatives of the numerical FEM grid solution.
 
 ```python
 import numpy as np
@@ -103,141 +87,70 @@ import numpy as np
 from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
+from finite_element_options.space.boundary import DirichletBC
 from finite_element_options.space.mesh import create_mesh
 from finite_element_options.space.solver import SpaceSolver
-from finite_element_options.space.boundary import DirichletBC
 from finite_element_options.time_integration.stepper import ThetaScheme
-from finite_element_options.jax_greeks import compute_greeks
-from skfem import Function
 
-# 1. Define market and model parameters
 market = Market(r=0.03)
 dynamics = DynamicsParametersBlackScholes(r=market.r, q=0.0, sig=0.2)
 option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=market)
+mesh, config = create_mesh(extents=[2.0], refine=4)
+space = SpaceSolver(mesh=mesh, dynamics=dynamics, payoff=option, is_call=True, config=config)
 
-# 2. Build the spatial problem (mesh + finite element space)
-mesh, config = create_mesh(extents=[2.0], refine=5)
-call_space = SpaceSolver(
-    mesh=mesh,
-    dynamics=dynamics,
-    payoff=option,
-    is_call=True,
-    config=config,
-)
-
-# 3. March the forward-time PDE using a θ-scheme (Crank–Nicolson here)
-time_grid = np.linspace(0.0, 1.0, 80)
-solver = ThetaScheme(theta=0.5)
-call_grid = solver.solve(time_grid, call_space, boundary_condition=DirichletBC([]))
-call_fn = Function(call_space.Vh, call_grid[-1])
-call_price = float(call_fn(np.array([[1.0]])))  # price at S=1
-
-# 4. Reuse the same components for a put payoff
-put_space = SpaceSolver(
-    mesh=mesh,
-    dynamics=dynamics,
-    payoff=option,
-    is_call=False,
-    config=config,
-)
-put_grid = solver.solve(time_grid, put_space, boundary_condition=DirichletBC([]))
-put_fn = Function(put_space.Vh, put_grid[-1])
-put_price = float(put_fn(np.array([[1.0]])))
-
-# 5. Compare numerical results with analytic Greeks for sanity checks
-#    compute_greeks returns Delta and volatility Vega dV/dsigma.
-delta, volatility_vega = compute_greeks(
-    s=1.0,
-    k=option.k,
-    r=market.r,
-    q=option.q,
-    sigma=dynamics.sig,
-    t=time_grid[-1],
-)
+tau_grid = np.linspace(0.0, 1.0, 20)
+values = ThetaScheme(theta=0.5).solve(tau_grid, space, boundary_condition=DirichletBC([]))
+node = int(np.argmin(np.abs(space.Vh.doflocs[0] - 1.0)))
+fem_price = float(values[-1, node])
+analytical_price = float(option.call_from_volatility(tau_grid[-1], 1.0, dynamics.sig))
+analytical_delta = float(option.call_delta_from_volatility(tau_grid[-1], 1.0, dynamics.sig))
+analytical_volatility_vega = float(option.vega_volatility(tau_grid[-1], 1.0, dynamics.sig))
 
 print(
-    f"European call: price={call_price:.4f}, delta={delta:.4f}, "
-    f"volatility_vega={volatility_vega:.4f}"
+    f"FEM call={fem_price:.4f}; oracle={analytical_price:.4f}; "
+    f"analytical_delta={analytical_delta:.4f}; "
+    f"analytical_volatility_vega={analytical_volatility_vega:.4f}"
 )
-print(f"European put:  price={put_price:.4f}")
 ```
 
-### Example Output
+## Benchmarking and evidence
 
-The adaptive mesh demo refines the domain around sharp features. The validated
-adaptivity API preserves domain measure, carries named boundary/domain metadata,
-transfers nodal values to the refined basis and keeps coarsening disabled until
-reversible hierarchy checks exist. The final solution after several refinement
-steps is shown below:
+Benchmark and validation evidence is linked from the generated capability matrix.
+The currently validated performance evidence is the Black-Scholes benchmark smoke
+and the `FEM-SOLVER-CACHE-001` sparse-factorization reuse fixture. Faster routes
+without equal-error evidence remain experimental or unsupported.
 
-![Adaptive mesh solution showing refined grid](docs/images/adaptive_solution.svg)
+## FEniCSx spike
 
-## Testing
+The optional `FenicsSolver` mirrors selected scikit-fem behavior using FEniCSx
+and UFL. The backend is deliberately optional: CI runs contract tests that are
+visible when DOLFINx/PETSc are available and skip explicitly otherwise. It is not
+a base-install or production route.
 
-Execute the unit tests with `pytest`:
+## Continuous integration
 
-```bash
-pytest
-```
+CI evidence includes package builds for Python 3.11 and 3.12, installed-wheel
+import checks, README example execution from an installed package context,
+docstring/Ruff/mypy gates, architecture and packaging contracts, coverage,
+validated benchmark smoke artifacts, optional-profile import gates, `pip-audit`,
+and a CycloneDX SBOM.
 
-Benchmarks leveraging `pytest-benchmark` can be executed alongside the test
-suite. Coverage reports are generated via `pytest-cov`:
+## Project structure
 
-```bash
-pytest --cov=finite_element_options
-```
-
-## Benchmarking
-
-Solver performance is tracked with `pytest-benchmark`.  Run the dedicated
-benchmark suite locally to measure runtime on a fixed mesh:
-
-```bash
-pytest tests/test_benchmark_black_scholes.py --benchmark-only
-```
-
-Results can be saved for comparison and analysed with `pytest-benchmark compare`.
-See [docs/benchmarking.md](docs/benchmarking.md) for details on
-interpreting the output and contrasting runs.
-
-### FEniCSx Spike
-
-An experimental `FenicsSolver` mirrors the existing scikit-fem backend using
-FEniCSx and UFL. The backend is deliberately optional, but its repository
-contract is now executable in CI: `tests/test_fenics_solver.py` checks that the
-implementation uses DOLFINx boundary-facet/DOF APIs instead of local first/last
-row assumptions, applies Dirichlet conditions through DOLFINx/PETSc lifting and
-`set_bc`, sets the KSP operator after boundary assembly, and raises on PETSc
-non-convergence. When a FEniCSx-compatible environment is available, the same
-test module also runs the serial Black--Scholes parity smoke.
-
-## Continuous Integration
-
-This project uses a GitHub Actions workflow to run package, test, optional-profile, and supply-chain gates on every push and pull request. Third-party Actions are pinned to full commit SHAs.
-
-CI evidence includes:
-
-- sdist/wheel builds on Python 3.11 and 3.12, `twine check`, and installed-wheel import checks outside the checkout;
-- docstring, Ruff, mypy-on-contract-critical-modules, architecture, CI-contract, packaging, coverage, JUnit, and validated benchmark-smoke gates;
-- clean-wheel optional-profile imports for `fd`, `jax`, `calibration`, `viz`, and `ui` extras;
-- `pip-audit --skip-editable`, CycloneDX SBOM generation, and uploaded package/test/supply-chain artifacts.
-
-The package topology is guarded by the architecture contract in `docs/architecture_contract.toml`, `scripts/check_architecture_contract.py`, `scripts/check_ci_contract.py`, `tests/architecture`, and `tests/test_packaging_contract.py` in CI. CI builds sdists/wheels, checks the installed import contract outside the repository checkout, and verifies that no top-level package named `src` is exported.
-
-## Project Structure
-
-```
-pyproject.toml                     PEP 621 package metadata and extras
-src/finite_element_options/        Installable core package namespace
+```text
+pyproject.toml                      PEP 621 package metadata and extras
+src/finite_element_options/         Installable core package namespace
 src/finite_element_options/examples/ Installed-package examples and Streamlit entry point
-requirements.txt                   Legacy all-in developer requirements mirror
-constraints.txt                    CI/test compatibility constraints
-tests/                             Pytest-based test suite
+docs/CAPABILITY_MATRIX.md           Generated maturity/evidence matrix
+requirements.txt                    Legacy all-in developer requirements mirror
+constraints.txt                     CI/test compatibility constraints
+tests/                              Pytest-based test suite
 ```
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for development guidelines and prompt templates.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for development guidelines and prompt
+templates.
 
 ## License
 

@@ -15,6 +15,12 @@ from .backend_capabilities import (
     diagnose_unsupported_route,
     ensure_route_supported,
 )
+from .capability_matrix import (
+    DEFAULT_CAPABILITY_RECORDS,
+    CapabilityRecord,
+    CapabilityStatus as CapabilityMaturityStatus,
+    public_capability_records,
+)
 from .formula_bundle import (
     finite_element_formula_bundle,
     formula_bundle_json,
@@ -23,6 +29,9 @@ from .formula_bundle import (
 
 __all__ = [
     "CapabilityStatus",
+    "CapabilityMaturityStatus",
+    "DEFAULT_CAPABILITY_RECORDS",
+    "CapabilityRecord",
     "DEFAULT_FEM_CAPABILITY_MANIFEST",
     "DEFAULT_LINEAR_SOLVER_CAPABILITIES",
     "DEFAULT_RELEASED_FEM_SOLVER_CONTRACT",
@@ -37,5 +46,6 @@ __all__ = [
     "ensure_route_supported",
     "finite_element_formula_bundle",
     "formula_bundle_json",
+    "public_capability_records",
     "validate_formula_bundle",
 ]

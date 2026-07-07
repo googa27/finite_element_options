@@ -49,5 +49,7 @@ def test_supply_chain_and_artifact_gates_are_present() -> None:
         "coverage.xml",
         "backend_capabilities",
         "python scripts/check_ci_contract.py",
+        "python scripts/generate_capability_docs.py --check",
+        "python scripts/check_readme_examples.py README.md",
     ):
         assert snippet in text

@@ -35,6 +35,8 @@ REQUIRED_SNIPPETS = {
     "wheel build": "python -m build --sdist --wheel",
     "twine check": "python -m twine check dist/*",
     "installed wheel import contract": "installed import contract OK",
+    "installed wheel README examples": "scripts/check_readme_examples.py README.md",
+    "capability doc staleness check": "scripts/generate_capability_docs.py --check",
     "pydocstyle gate": "pydocstyle src/finite_element_options",
     "ruff gate": "ruff check src tests scripts",
     "type gate": "mypy --ignore-missing-imports",
