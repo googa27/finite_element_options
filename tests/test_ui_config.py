@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import pytest
+from skfem import Basis
 
+from finite_element_options.space.mesh import create_mesh
 from finite_element_options.ui_config import (
     UiGridSpec,
     UiModelSpec,
     UiResourceLimits,
     UiSolverOptions,
     UiValidationError,
+    estimate_ui_work,
     ui_problem_from_shareable,
     validate_ui_problem,
 )
@@ -115,22 +118,41 @@ def test_invalid_public_scalars_return_diagnostics_instead_of_crashing() -> None
 
 
 def test_tail_probability_changes_domain_width_monotonically() -> None:
-    narrow_tail = validate_ui_problem(
-        model=_valid_black_scholes_model(volatility=0.6, maturity=2.0),
-        grid=UiGridSpec(mesh_refine=4, time_steps=32, alpha_tail=0.01),
-        solver=UiSolverOptions(theta=0.5),
-        strict=True,
-    )
-    wide_tail = validate_ui_problem(
-        model=_valid_black_scholes_model(volatility=0.6, maturity=2.0),
-        grid=UiGridSpec(mesh_refine=4, time_steps=32, alpha_tail=0.30),
-        solver=UiSolverOptions(theta=0.5),
-        strict=True,
-    )
+    alpha_tails = (0.01, 0.10, 0.20, 0.30, 0.45)
+    widths = [
+        validate_ui_problem(
+            model=_valid_black_scholes_model(volatility=0.6, maturity=2.0),
+            grid=UiGridSpec(mesh_refine=4, time_steps=32, alpha_tail=alpha_tail),
+            solver=UiSolverOptions(theta=0.5),
+            strict=True,
+        ).domain_axes[0].upper
+        for alpha_tail in alpha_tails
+    ]
 
-    assert narrow_tail.domain_axes[0].upper > wide_tail.domain_axes[0].upper
-    assert narrow_tail.domain_axes[0].tail_mass == 0.01
-    assert wide_tail.domain_axes[0].tail_mass == 0.30
+    assert widths == sorted(widths, reverse=True)
+    assert len(set(widths)) == len(widths)
+
+    widest_tail = validate_ui_problem(
+        model=_valid_black_scholes_model(volatility=0.6, maturity=2.0),
+        grid=UiGridSpec(mesh_refine=4, time_steps=32, alpha_tail=alpha_tails[-1]),
+        solver=UiSolverOptions(theta=0.5),
+        strict=True,
+    )
+    assert widest_tail.domain_axes[0].tail_mass == 0.45
+
+
+def test_work_estimate_matches_create_mesh_element_orders_without_allocation_drift() -> None:
+    for dimension, extents in (
+        (1, [1.0]),
+        (2, [1.0, 1.0]),
+        (3, [1.0, 1.0, 1.0]),
+    ):
+        mesh, config = create_mesh(extents, refine=2)
+        actual_dofs = Basis(mesh, config.elem).N
+        estimate = estimate_ui_work(dimension=dimension, mesh_refine=2, time_steps=8)
+
+        assert estimate.estimated_dofs == actual_dofs
+        assert estimate.estimated_nodes == actual_dofs
 
 
 def test_zero_maturity_and_zero_volatility_are_explicit_analytical_limits() -> None:

@@ -398,22 +398,11 @@ def estimate_ui_work(dimension: int, mesh_refine: int, time_steps: int) -> UiWor
 
     refine = max(0, int(mesh_refine))
     intervals = 2**refine
-    if dimension == 1:
-        elements = intervals
-        nodes = 2 * intervals + 1  # P2 line nodes
-        stencil = 5
-    elif dimension == 2:
-        elements = 2 * intervals**2
-        nodes = (2 * intervals + 1) ** 2  # P2 tensor upper bound
-        stencil = 25
-    else:
-        elements = 6 * intervals**3
-        nodes = (2 * intervals + 1) ** 3
-        stencil = 81
+    elements, nodes, stencil = _ui_mesh_topology_counts(int(dimension), intervals)
     dofs = int(nodes)
     matrix_bytes = int(dofs * stencil * 16)  # value + index rough sparse footprint
     return UiWorkEstimate(
-        dimension=dimension,
+        dimension=int(dimension),
         mesh_refine=refine,
         time_steps=int(time_steps),
         estimated_nodes=int(nodes),
@@ -422,6 +411,18 @@ def estimate_ui_work(dimension: int, mesh_refine: int, time_steps: int) -> UiWor
         estimated_matrix_bytes=matrix_bytes,
         solve_count=max(0, int(time_steps) - 1),
     )
+
+
+def _ui_mesh_topology_counts(dimension: int, intervals: int) -> tuple[int, int, int]:
+    """Return element/node/stencil estimates aligned with ``space.mesh.create_mesh``."""
+
+    if dimension == 1:
+        return intervals, 2 * intervals + 1, 5  # ElementLineP2
+    if dimension == 2:
+        return 2 * intervals**2, (2 * intervals + 1) ** 2, 25  # ElementTriP2
+    if dimension == 3:
+        return 6 * intervals**3, (intervals + 1) ** 3, 81  # ElementTetP1
+    return 6 * intervals**3, (intervals + 1) ** 3, 81
 
 
 def ui_problem_from_shareable(payload: Mapping[str, Any]) -> ValidatedUiProblem:
@@ -671,9 +672,10 @@ def _spot_upper(model: UiModelSpec, alpha_tail: float) -> float:
     volatility = max(float(model.volatility), sqrt(max(float(model.long_run_variance or 0.0), 0.0)))
     maturity = max(float(model.maturity), 1.0e-12)
     drift = abs(float(model.rate - model.carry)) * maturity
-    z_score = max(1.0, NormalDist().inv_cdf(1.0 - float(alpha_tail)))
+    bounded_tail = max(min(float(alpha_tail), 0.5 - 1.0e-12), 1.0e-6)
+    z_score = NormalDist().inv_cdf(1.0 - bounded_tail)
     diffusion = z_score * max(volatility, 1.0e-12) * sqrt(maturity)
-    return max(2.0 * model.strike, model.strike * exp(drift + diffusion))
+    return model.strike * (1.0 + exp(drift + diffusion))
 
 
 def _variance_upper(model: UiModelSpec) -> float:
