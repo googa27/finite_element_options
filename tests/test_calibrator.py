@@ -230,6 +230,12 @@ def test_heston_mcmc_diagnostic_gate_rejects_weak_or_divergent_runs() -> None:
             heldout_rmse=float("nan"),
             thresholds=thresholds,
         )
+    with pytest.raises(ValueError, match="heldout_rmse"):
+        evaluate_heston_mcmc_diagnostics(
+            weak_summary,
+            heldout_rmse=-0.01,
+            thresholds=thresholds,
+        )
 
 
 def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance() -> None:
@@ -256,6 +262,7 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
             "engine_family": "heston",
             "validated": True,
             "validation_artifact": "artifacts/fourier-heston-validation.json",
+            "validation_artifact_sha256": "a" * 64,
             "version": "2026.7",
         },
         likelihood_units="price",
@@ -302,6 +309,46 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
             fitted_values=fitted,
             inference_data_artifact="artifacts/heston-idata.nc",
             pricing_engine="synthetic toy polynomial",
+            pricing_engine_validation={
+                "engine_family": "heston",
+                "validated": True,
+                "validation_artifact": "artifacts/fourier-heston-validation.json",
+                "validation_artifact_sha256": "a" * 64,
+                "version": "2026.7",
+            },
+            likelihood_units="price",
+            observation_noise=0.02,
+            random_seed=123,
+        )
+
+    with pytest.raises(ValueError, match="validated Heston pricing engine"):
+        build_heston_bayesian_calibration_result(
+            posterior_draws=draws,
+            diagnostic_summary=diagnostic_summary,
+            observed_values=observed,
+            fitted_values=fitted,
+            inference_data_artifact="artifacts/heston-idata.nc",
+            pricing_engine="validated-fourier-engine",
+            pricing_engine_validation={
+                "engine_family": "heston",
+                "validated": True,
+                "validation_artifact": "artifacts/fourier-heston-validation.json",
+                "validation_artifact_sha256": "a" * 64,
+                "version": "2026.7",
+            },
+            likelihood_units="price",
+            observation_noise=0.02,
+            random_seed=123,
+        )
+
+    with pytest.raises(ValueError, match="validation_artifact_sha256"):
+        build_heston_bayesian_calibration_result(
+            posterior_draws=draws,
+            diagnostic_summary=diagnostic_summary,
+            observed_values=observed,
+            fitted_values=fitted,
+            inference_data_artifact="artifacts/heston-idata.nc",
+            pricing_engine="validated-fourier-heston",
             pricing_engine_validation={
                 "engine_family": "heston",
                 "validated": True,

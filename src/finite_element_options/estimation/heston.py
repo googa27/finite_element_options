@@ -204,8 +204,11 @@ def evaluate_heston_mcmc_diagnostics(
         thresholds = HestonMCMCDiagnosticThresholds()
     if divergences < 0 or tree_depth_hits < 0:
         raise ValueError("sampler failure counts must be non-negative")
-    if heldout_rmse is not None and not np.isfinite(heldout_rmse):
-        raise ValueError("heldout_rmse must be finite when supplied")
+    if heldout_rmse is not None:
+        if not np.isfinite(heldout_rmse):
+            raise ValueError("heldout_rmse must be finite when supplied")
+        if heldout_rmse < 0.0:
+            raise ValueError("heldout_rmse must be non-negative when supplied")
     frame = _diagnostic_frame(diagnostic_summary)
     if not np.all(np.isfinite(frame.to_numpy())):
         raise ValueError("MCMC diagnostic summary must be finite")
@@ -258,7 +261,7 @@ def _validate_heston_engine_name(pricing_engine: str) -> str:
     if not normalized:
         raise ValueError("pricing_engine must name a validated Heston pricing engine")
     lowered = normalized.lower()
-    if any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
+    if "heston" not in lowered or any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
         raise ValueError("pricing_engine must name a validated Heston pricing engine")
     return normalized
 
@@ -278,11 +281,15 @@ def _validate_heston_engine_metadata(
     artifact = str(metadata.get("validation_artifact", "")).strip()
     if not artifact:
         raise ValueError("pricing_engine_validation must include a validation_artifact")
+    artifact_sha256 = str(metadata.get("validation_artifact_sha256", "")).strip().lower()
+    if len(artifact_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in artifact_sha256):
+        raise ValueError("pricing_engine_validation must include validation_artifact_sha256")
     version = str(metadata.get("version", "")).strip()
     if not version:
         raise ValueError("pricing_engine_validation must include a pricing engine version")
     metadata["pricing_engine"] = engine
     metadata["validation_artifact"] = artifact
+    metadata["validation_artifact_sha256"] = artifact_sha256
     metadata["version"] = version
     return metadata
 
@@ -294,10 +301,23 @@ def _active_parameter_mask(
 ) -> np.ndarray:
     """Return SciPy-style bound activity mask for posterior summary parameters."""
 
-    tolerance = 1e-12
+    rtol = 1e-10
+    atol = 1e-12
+    lower_active = np.isfinite(lower_bounds) & np.isclose(
+        parameters,
+        lower_bounds,
+        rtol=rtol,
+        atol=atol,
+    )
+    upper_active = np.isfinite(upper_bounds) & np.isclose(
+        parameters,
+        upper_bounds,
+        rtol=rtol,
+        atol=atol,
+    )
     mask = np.zeros(parameters.shape, dtype=int)
-    mask[np.isfinite(lower_bounds) & (parameters <= lower_bounds + tolerance)] = -1
-    mask[np.isfinite(upper_bounds) & (parameters >= upper_bounds - tolerance)] = 1
+    mask[lower_active] = -1
+    mask[upper_active & ~lower_active] = 1
     return mask
 
 
