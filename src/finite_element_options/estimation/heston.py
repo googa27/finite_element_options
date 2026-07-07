@@ -41,7 +41,6 @@ class HestonConstraintReport:
     feller_ratio_min: float
     feller_ratio_max: float
     feller_condition_satisfied: bool
-    constraints_satisfied: bool = True
 
     def as_dict(self) -> dict[str, object]:
         """Return JSON-friendly diagnostics for provenance records."""
@@ -53,7 +52,6 @@ class HestonConstraintReport:
             "feller_ratio_min": self.feller_ratio_min,
             "feller_ratio_max": self.feller_ratio_max,
             "feller_condition_satisfied": self.feller_condition_satisfied,
-            "constraints_satisfied": self.constraints_satisfied,
         }
 
 
@@ -206,6 +204,8 @@ def evaluate_heston_mcmc_diagnostics(
         thresholds = HestonMCMCDiagnosticThresholds()
     if divergences < 0 or tree_depth_hits < 0:
         raise ValueError("sampler failure counts must be non-negative")
+    if heldout_rmse is not None and not np.isfinite(heldout_rmse):
+        raise ValueError("heldout_rmse must be finite when supplied")
     frame = _diagnostic_frame(diagnostic_summary)
     if not np.all(np.isfinite(frame.to_numpy())):
         raise ValueError("MCMC diagnostic summary must be finite")
@@ -258,9 +258,47 @@ def _validate_heston_engine_name(pricing_engine: str) -> str:
     if not normalized:
         raise ValueError("pricing_engine must name a validated Heston pricing engine")
     lowered = normalized.lower()
-    if "heston" not in lowered or any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
+    if any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
         raise ValueError("pricing_engine must name a validated Heston pricing engine")
     return normalized
+
+
+def _validate_heston_engine_metadata(
+    pricing_engine: str,
+    pricing_engine_validation: Mapping[str, object],
+) -> dict[str, object]:
+    """Validate non-lexical evidence for a Heston pricing engine."""
+
+    engine = _validate_heston_engine_name(pricing_engine)
+    metadata = dict(pricing_engine_validation)
+    if metadata.get("validated") is not True:
+        raise ValueError("pricing_engine_validation must mark the engine as validated")
+    if str(metadata.get("engine_family", "")).lower() != "heston":
+        raise ValueError("pricing_engine_validation must declare engine_family='heston'")
+    artifact = str(metadata.get("validation_artifact", "")).strip()
+    if not artifact:
+        raise ValueError("pricing_engine_validation must include a validation_artifact")
+    version = str(metadata.get("version", "")).strip()
+    if not version:
+        raise ValueError("pricing_engine_validation must include a pricing engine version")
+    metadata["pricing_engine"] = engine
+    metadata["validation_artifact"] = artifact
+    metadata["version"] = version
+    return metadata
+
+
+def _active_parameter_mask(
+    parameters: np.ndarray,
+    lower_bounds: np.ndarray,
+    upper_bounds: np.ndarray,
+) -> np.ndarray:
+    """Return SciPy-style bound activity mask for posterior summary parameters."""
+
+    tolerance = 1e-12
+    mask = np.zeros(parameters.shape, dtype=int)
+    mask[np.isfinite(lower_bounds) & (parameters <= lower_bounds + tolerance)] = -1
+    mask[np.isfinite(upper_bounds) & (parameters >= upper_bounds - tolerance)] = 1
+    return mask
 
 
 def build_heston_bayesian_calibration_result(
@@ -271,6 +309,7 @@ def build_heston_bayesian_calibration_result(
     fitted_values: Sequence[float] | np.ndarray,
     inference_data_artifact: str,
     pricing_engine: str,
+    pricing_engine_validation: Mapping[str, object],
     likelihood_units: str,
     observation_noise: float,
     random_seed: int | None,
@@ -289,7 +328,7 @@ def build_heston_bayesian_calibration_result(
     mislabeled as Heston calibration evidence.
     """
 
-    engine = _validate_heston_engine_name(pricing_engine)
+    engine_metadata = _validate_heston_engine_metadata(pricing_engine, pricing_engine_validation)
     if likelihood_units not in _ALLOWED_LIKELIHOOD_UNITS:
         raise ValueError(f"likelihood_units must be one of {sorted(_ALLOWED_LIKELIHOOD_UNITS)}")
     if observation_noise <= 0.0 or not np.isfinite(observation_noise):
@@ -309,8 +348,8 @@ def build_heston_bayesian_calibration_result(
     if observed.size == 0 or not np.all(np.isfinite(observed)) or not np.all(np.isfinite(fitted)):
         raise ValueError("observed_values and fitted_values must be non-empty and finite")
     residuals = fitted - observed
-    if heldout_rmse is None:
-        heldout_rmse = float(np.sqrt(np.mean(residuals**2)))
+    residuals_flat = np.ravel(residuals)
+    fit_rmse = float(np.sqrt(np.mean(residuals_flat**2)))
     mcmc_report = evaluate_heston_mcmc_diagnostics(
         diagnostic_summary,
         divergences=divergences,
@@ -327,11 +366,13 @@ def build_heston_bayesian_calibration_result(
         "likelihood": {
             "units": likelihood_units,
             "observation_noise": float(observation_noise),
-            "heldout_rmse": float(heldout_rmse),
+            "fit_rmse": fit_rmse,
+            "heldout_rmse": None if heldout_rmse is None else float(heldout_rmse),
         },
     }
     provenance = {
-        "pricing_engine": engine,
+        "pricing_engine": engine_metadata["pricing_engine"],
+        "pricing_engine_validation": engine_metadata,
         "likelihood_units": likelihood_units,
         "observation_noise": float(observation_noise),
         "random_seed": random_seed,
@@ -348,12 +389,12 @@ def build_heston_bayesian_calibration_result(
             else "PyMC Heston diagnostics rejected: " + "; ".join(mcmc_report.failures)
         ),
         residuals=np.asarray(residuals, dtype=float),
-        cost=float(0.5 * np.dot(residuals, residuals)),
+        cost=float(0.5 * np.sum(residuals_flat**2)),
         optimality=float("nan"),
         jacobian_rank=0,
         jacobian_condition=np.inf,
         bounds=(lower_bounds, upper_bounds),
-        active_mask=np.zeros(parameters.shape, dtype=int),
+        active_mask=_active_parameter_mask(parameters, lower_bounds, upper_bounds),
         nfev=constraint_report.draw_count,
         njev=None,
         method="pymc.heston.diagnostics",

@@ -173,7 +173,6 @@ def test_heston_posterior_draws_enforce_constraints_and_report_feller_policy() -
         feller_policy="report",
     )
 
-    assert report.constraints_satisfied is True
     assert report.feller_policy == "report"
     assert report.parameter_names == ("v0", "kappa", "theta", "sigma", "rho")
     assert report.draw_count == 3
@@ -225,6 +224,13 @@ def test_heston_mcmc_diagnostic_gate_rejects_weak_or_divergent_runs() -> None:
     assert any("divergence" in failure for failure in report.failures)
     assert any("tree depth" in failure for failure in report.failures)
 
+    with pytest.raises(ValueError, match="heldout_rmse"):
+        evaluate_heston_mcmc_diagnostics(
+            weak_summary,
+            heldout_rmse=float("nan"),
+            thresholds=thresholds,
+        )
+
 
 def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance() -> None:
     draws = _valid_heston_draws()
@@ -236,8 +242,8 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
         },
         index=pd.Index(["v0", "kappa", "theta", "sigma", "rho"]),
     )
-    observed = np.array([1.0, 1.5, 2.0])
-    fitted = np.array([1.01, 1.49, 2.02])
+    observed = np.array([[1.0, 1.5], [2.0, 2.5]])
+    fitted = np.array([[1.01, 1.49], [2.02, 2.48]])
 
     result = build_heston_bayesian_calibration_result(
         posterior_draws=draws,
@@ -246,10 +252,17 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
         fitted_values=fitted,
         inference_data_artifact="artifacts/heston-idata.nc",
         pricing_engine="validated-fourier-heston",
+        pricing_engine_validation={
+            "engine_family": "heston",
+            "validated": True,
+            "validation_artifact": "artifacts/fourier-heston-validation.json",
+            "version": "2026.7",
+        },
         likelihood_units="price",
         observation_noise=0.02,
         random_seed=123,
-        thresholds=HestonMCMCDiagnosticThresholds(),
+        thresholds=HestonMCMCDiagnosticThresholds(max_heldout_rmse=0.05),
+        heldout_rmse=0.02,
     )
 
     assert isinstance(result, CalibrationResult)
@@ -260,15 +273,26 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
     assert -1.0 < result.parameters[4] < 1.0
     assert result.bounds[0].tolist() == [0.0, 0.0, 0.0, 0.0, -1.0]
     assert result.bounds[1][-1] == 1.0
+    assert result.active_mask.tolist() == [0, 0, 0, 0, 0]
+    assert result.cost == pytest.approx(0.5 * float(np.sum((fitted - observed).ravel() ** 2)))
     assert result.artifacts == ("artifacts/heston-idata.nc",)
     assert result.provenance["pricing_engine"] == "validated-fourier-heston"
+    validation_metadata = result.provenance["pricing_engine_validation"]
+    assert isinstance(validation_metadata, Mapping)
+    assert validation_metadata["validation_artifact"] == "artifacts/fourier-heston-validation.json"
     assert result.provenance["likelihood_units"] == "price"
     mcmc_diagnostics = result.diagnostics["mcmc"]
     constraint_diagnostics = result.diagnostics["constraints"]
+    likelihood_diagnostics = result.diagnostics["likelihood"]
     assert isinstance(mcmc_diagnostics, Mapping)
     assert isinstance(constraint_diagnostics, Mapping)
+    assert isinstance(likelihood_diagnostics, Mapping)
     assert mcmc_diagnostics["accepted"] is True
     assert constraint_diagnostics["feller_condition_satisfied"] is True
+    assert likelihood_diagnostics["fit_rmse"] == pytest.approx(
+        float(np.sqrt(np.mean((fitted - observed).ravel() ** 2)))
+    )
+    assert likelihood_diagnostics["heldout_rmse"] == 0.02
 
     with pytest.raises(ValueError, match="validated Heston pricing engine"):
         build_heston_bayesian_calibration_result(
@@ -278,6 +302,12 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
             fitted_values=fitted,
             inference_data_artifact="artifacts/heston-idata.nc",
             pricing_engine="synthetic toy polynomial",
+            pricing_engine_validation={
+                "engine_family": "heston",
+                "validated": True,
+                "validation_artifact": "artifacts/fourier-heston-validation.json",
+                "version": "2026.7",
+            },
             likelihood_units="price",
             observation_noise=0.02,
             random_seed=123,
