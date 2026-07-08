@@ -11,13 +11,21 @@ from __future__ import annotations
 import hashlib
 import warnings
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from .calibrator import CalibrationResult, Calibrator, ParameterVector
+from .calibrator import (
+    CalibrationObjective,
+    CalibrationResult,
+    Calibrator,
+    ParameterVector,
+    PricingCalibrationDataset,
+    PricingFunction,
+    PricingModelCalibrator,
+)
 
 _SYNTHETIC_PARAMETER_NAMES = (
     "level",
@@ -440,6 +448,110 @@ def build_heston_bayesian_calibration_result(
         artifacts=(inference_data_artifact,),
         provenance=provenance,
     )
+
+
+class HestonPricingCalibrator(PricingModelCalibrator):
+    """Calibrate Heston parameters through an injected validated pricing engine.
+
+    This class deliberately does not contain a toy Heston pricer. The caller must
+    supply a vectorized pricing function plus content-addressed validation
+    metadata for the Heston engine/oracle used during optimization.
+    """
+
+    def __init__(
+        self,
+        *,
+        dataset: PricingCalibrationDataset,
+        pricing_function: PricingFunction,
+        pricing_engine: str,
+        pricing_engine_validation: Mapping[str, object],
+        bounds: tuple[Sequence[float] | float, Sequence[float] | float] | None = None,
+        feller_policy: str = "report",
+    ) -> None:
+        """Create a bounded Heston pricing calibrator."""
+
+        engine_metadata = _validate_heston_engine_metadata(
+            pricing_engine,
+            pricing_engine_validation,
+        )
+        if feller_policy not in _ALLOWED_FELLER_POLICIES:
+            raise ValueError(f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}")
+        if bounds is None:
+            bounds = (
+                [1.0e-10, 1.0e-10, 1.0e-10, 1.0e-10, -0.999],
+                [np.inf, np.inf, np.inf, np.inf, 0.999],
+            )
+        self._heston_engine_metadata = engine_metadata
+        self._feller_policy = feller_policy
+        super().__init__(
+            dataset=dataset,
+            pricing_function=pricing_function,
+            parameter_names=HESTON_PARAMETER_NAMES,
+            bounds=bounds,
+            method_name="scipy.least_squares.heston_pricing",
+            metadata={
+                "pricing_engine": engine_metadata["pricing_engine"],
+                "pricing_engine_validation": engine_metadata,
+                "feller_policy": feller_policy,
+            },
+        )
+
+    def calibrate(
+        self,
+        initial_guess: ParameterVector,
+        *,
+        objective: CalibrationObjective | None = None,
+        holdout_mask: Sequence[bool] | np.ndarray | None = None,
+        candidate_initial_guesses: Sequence[ParameterVector] = (),
+        max_nfev: int | None = None,
+    ) -> CalibrationResult:
+        """Run calibration and attach Heston constraint diagnostics."""
+
+        result = super().calibrate(
+            initial_guess,
+            objective=objective,
+            holdout_mask=holdout_mask,
+            candidate_initial_guesses=candidate_initial_guesses,
+            max_nfev=max_nfev,
+        )
+        draws = {
+            name: np.array([value], dtype=float)
+            for name, value in zip(HESTON_PARAMETER_NAMES, result.parameters, strict=True)
+        }
+        constraint_failure: str | None = None
+        try:
+            constraint_report = validate_heston_posterior_draws(
+                draws,
+                feller_policy=self._feller_policy,
+            )
+            constraint_diagnostics: Mapping[str, object] = constraint_report.as_dict()
+        except ValueError as exc:
+            constraint_failure = str(exc)
+            constraint_diagnostics = {
+                "parameter_names": HESTON_PARAMETER_NAMES,
+                "draw_count": 1,
+                "feller_policy": self._feller_policy,
+                "failure": constraint_failure,
+            }
+        diagnostics = dict(result.diagnostics)
+        diagnostics["constraints"] = dict(constraint_diagnostics)
+        provenance = dict(result.provenance)
+        provenance.update(
+            {
+                "pricing_engine": self._heston_engine_metadata["pricing_engine"],
+                "pricing_engine_validation": self._heston_engine_metadata,
+                "feller_policy": self._feller_policy,
+            }
+        )
+        if constraint_failure is not None:
+            return replace(
+                result,
+                success=False,
+                message=f"Heston constraints rejected: {constraint_failure}",
+                diagnostics=diagnostics,
+                provenance=provenance,
+            )
+        return replace(result, diagnostics=diagnostics, provenance=provenance)
 
 
 class SyntheticSurfaceCalibrator(Calibrator):

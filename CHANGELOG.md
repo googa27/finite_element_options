@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added bounded, weighted pricing calibration primitives with explicit quote
+  units, bid-ask/vega/explicit weighting, robust-loss metadata, deterministic
+  multi-start diagnostics, holdout RMSE, fail-closed pricing-engine checks, and
+  validated-engine Heston calibration provenance.
 - Added validation meta-gates for benchmark coverage, separated convergence
   error budgets, manufactured residual canaries, no-arbitrage checks,
   same-input cross-backend parity, and American LCP complementarity evidence.
