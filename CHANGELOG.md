@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added validation meta-gates for benchmark coverage, separated convergence
+  error budgets, manufactured residual canaries, no-arbitrage checks,
+  same-input cross-backend parity, and American LCP complementarity evidence.
 - Replaced American post-step payoff clipping with a reference lower-obstacle
   LCP path in `ThetaScheme`: projected-SOR diagnostics report primal/dual,
   complementarity, projected residual, exercise set, iteration count and

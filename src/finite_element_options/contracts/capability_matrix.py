@@ -85,6 +85,7 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "Adaptive time stepping, large-scale PETSc variational inequalities, "
             "and financial-product validation remain separate capabilities."
         ),
+        benchmark_ids=("FEM-THETA-TIME-GRID",),
         reference_ids=("FR-FEM-006",),
     ),
     CapabilityRecord(
@@ -106,7 +107,30 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "This is the base SciPy reference solver, not a PETSc/SNES VI route "
             "or a full American-product benchmark suite against QuantLib."
         ),
+        benchmark_ids=("FEM-AMERICAN-LCP-REFERENCE",),
         reference_ids=("FEM-AMERICAN-LCP", "issue-41"),
+    ),
+    CapabilityRecord(
+        capability_id="FEM-VALIDATION-GATES-V0",
+        title="Convergence, arbitrage, manufactured-solution and backend gates",
+        status=CapabilityStatus.VALIDATED,
+        workstream="Validation",
+        summary=(
+            "Executable benchmark registry, separated error-budget convergence "
+            "studies, manufactured residual canaries, call arbitrage checks, "
+            "cross-backend parity, and American LCP complementarity gates."
+        ),
+        evidence_ids=("tests/test_validation_gates.py",),
+        evidence_scope=(
+            "Numerical verification meta-gates for production/validated claims; "
+            "failure reports carry actionable row tables."
+        ),
+        limitations=(
+            "The default suite is deterministic and lightweight; large external "
+            "QuantLib/FEniCSx work-precision studies remain separate evidence."
+        ),
+        benchmark_ids=("FEM-VALIDATION-GATES-V0",),
+        reference_ids=("issue-42",),
     ),
     CapabilityRecord(
         capability_id="FEM-SOLVER-CACHE-001",
