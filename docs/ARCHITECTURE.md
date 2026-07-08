@@ -436,6 +436,8 @@ Test layers:
 
 Default tests are deterministic and offline. Heavy FEniCSx/PETSc/JAX/Bayesian profiles run in explicit jobs.
 
+Issue #42 adds `finite_element_options.validation.verification_gates` as the executable validation meta-layer behind `FEM-VALIDATION-GATES-V0`. A `BenchmarkSpec` must name model, instrument, state convention, domain, grid, time schedule, oracle, norm, expected order and separated discretization/oracle/floating-point tolerance components before a capability record can cite it as evidence. `ConvergenceStudy` evaluates spatial, temporal and domain-truncation studies independently and raises with row-level actionable tables when observed order, final error budgets or non-finite tolerance components fail. `manufactured_solution_cases()` provides explicit smooth manufactured residual canaries for diffusion, convection-diffusion, mixed-derivative and state-dependent-reaction operators; unknown operators fail closed. `evaluate_call_arbitrage()` requires one contract surface (same strike/rate/maturity) and fails closed on duplicate spot coordinates, positivity/bounds, monotonicity, convexity, Delta and Gamma violations. `compare_backend_reports()` refuses cross-backend parity unless PDE-convention, grid and time-schedule hashes plus output metric sets match, and `evaluate_american_lcp_gate()` requires complementarity residuals plus a real exercise/continuation front transition. These gates deliberately stay lightweight; large QuantLib/FEniCSx work-precision studies can plug into the same report shapes later.
+
 ## 21. Architecture fitness gates and CI release topology
 
 The package and CI gates for #44/#59 are:
