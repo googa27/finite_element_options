@@ -82,10 +82,31 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         ),
         evidence_scope="Theta stepping mechanics and coefficient refresh behavior.",
         limitations=(
-            "Adaptive time stepping and nonlinear complementarity stepping are "
-            "separate unsupported capabilities."
+            "Adaptive time stepping, large-scale PETSc variational inequalities, "
+            "and financial-product validation remain separate capabilities."
         ),
         reference_ids=("FR-FEM-006",),
+    ),
+    CapabilityRecord(
+        capability_id="FEM-AMERICAN-LCP-REFERENCE",
+        title="Reference American lower-obstacle LCP solve",
+        status=CapabilityStatus.VALIDATED,
+        workstream="Numerics",
+        summary=(
+            "Projected-SOR lower-obstacle LCP stepping for American exercise, "
+            "with primal, dual, complementarity, exercise-set, nonconvergence, "
+            "and Rannacher schedule diagnostics."
+        ),
+        evidence_ids=("tests/test_american_lcp.py",),
+        evidence_scope=(
+            "Discrete sparse lower-obstacle LCP systems coupled into the theta "
+            "stepper; verifies complementarity residuals and explicit failure."
+        ),
+        limitations=(
+            "This is the base SciPy reference solver, not a PETSc/SNES VI route "
+            "or a full American-product benchmark suite against QuantLib."
+        ),
+        reference_ids=("FEM-AMERICAN-LCP", "issue-41"),
     ),
     CapabilityRecord(
         capability_id="FEM-SOLVER-CACHE-001",
@@ -276,8 +297,9 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "gating, shareable config, analytical limits and work estimates."
         ),
         limitations=(
-            "The Streamlit surface remains exploratory; Heston and American "
-            "routes fail closed until their numerical capabilities land."
+            "The Streamlit surface remains exploratory; Heston routes and "
+            "product-level American benchmarks fail closed until their numerical "
+            "capabilities land."
         ),
         optional_extra="ui",
         absence_behavior="The base wheel does not import Streamlit or UI-only plotting packages.",

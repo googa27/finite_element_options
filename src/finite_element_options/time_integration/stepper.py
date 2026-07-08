@@ -14,6 +14,13 @@ import scipy.sparse.linalg as spla  # type: ignore[import-untyped]
 import skfem as fem  # type: ignore[import-untyped]
 
 from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.time_integration.lcp import (
+    DiscreteLCP,
+    LCPConvergenceError,
+    LCPDiagnostics,
+    ProjectedSORSolver,
+    ProjectedSORSolverSettings,
+)
 
 
 @dataclass(frozen=True)
@@ -84,6 +91,7 @@ class ThetaScheme(TimeStepper):
         startup_theta: float | None = None,
         startup_steps: int = 0,
         startup_substeps: int = 1,
+        lcp_solver_settings: ProjectedSORSolverSettings | None = None,
     ):
         """Store θ and sparse-direct solver-cache policy.
 
@@ -113,6 +121,8 @@ class ThetaScheme(TimeStepper):
         self.startup_substeps = int(startup_substeps)
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
+        self.lcp_solver = ProjectedSORSolver(lcp_solver_settings)
+        self.last_lcp_diagnostics: list[LCPDiagnostics] = []
         self.last_solve_diagnostics = LinearSolveDiagnostics(
             linear_solver=linear_solver,
             factorization_reuse_enabled=reuse_factorization,
@@ -155,6 +165,7 @@ class ThetaScheme(TimeStepper):
         v_tsv = np.empty((len(time_grid), space.Vh.N))
         current_values = np.asarray(space.initial_condition(), dtype=float)
         v_tsv[0] = current_values
+        self.last_lcp_diagnostics = []
 
         factorized_solvers: dict[str, Callable[[np.ndarray], np.ndarray]] = {}
         factorization_count = 0
@@ -179,42 +190,58 @@ class ThetaScheme(TimeStepper):
             else:
                 A_enf, b_enf = A, b
 
-            cache_key = _theta_cache_key(
-                space, A_enf, step.dt, step.theta, boundary_condition
-            )
+            cache_key = _theta_cache_key(space, A_enf, step.dt, step.theta, boundary_condition)
             assembly_cache_keys.append(cache_key)
 
-            if self.reuse_factorization:
-                if cache_key in factorized_solvers:
-                    factorization_reuse_count += 1
-                    solver = factorized_solvers[cache_key]
+            if is_american:
+                lcp_result = self.lcp_solver.solve(
+                    DiscreteLCP(
+                        matrix=A_enf,
+                        rhs=np.asarray(b_enf, dtype=float),
+                        obstacle=v_tsv[0],
+                    ),
+                    initial=current_values,
+                    fail_on_nonconvergence=False,
+                )
+                self.last_lcp_diagnostics.append(lcp_result.diagnostics)
+                solve_time += lcp_result.diagnostics.solve_time_sec
+                solve_count += 1
+                max_residual = max(
+                    max_residual,
+                    lcp_result.diagnostics.projected_residual_max,
+                )
+                if not lcp_result.success:
+                    raise LCPConvergenceError(lcp_result.diagnostics)
+                current_values = np.asarray(lcp_result.values, dtype=float)
+            else:
+                if self.reuse_factorization:
+                    if cache_key in factorized_solvers:
+                        factorization_reuse_count += 1
+                        solver = factorized_solvers[cache_key]
+                    else:
+                        started = perf_counter()
+                        factorized_matrix = sps.csc_matrix(A_enf)
+                        lu = spla.splu(factorized_matrix)
+                        solver = lu.solve
+                        factorized_solvers[cache_key] = solver
+                        factorization_time += perf_counter() - started
+                        factorization_count += 1
+                        factorization_cache_keys.append(_matrix_cache_key(factorized_matrix))
+                    started = perf_counter()
+                    next_values = solver(np.asarray(b_enf, dtype=float))
+                    solve_time += perf_counter() - started
                 else:
                     started = perf_counter()
-                    factorized_matrix = sps.csc_matrix(A_enf)
-                    lu = spla.splu(factorized_matrix)
-                    solver = lu.solve
-                    factorized_solvers[cache_key] = solver
-                    factorization_time += perf_counter() - started
+                    next_values = fem.solve(A_enf, b_enf)
+                    solve_time += perf_counter() - started
                     factorization_count += 1
-                    factorization_cache_keys.append(_matrix_cache_key(factorized_matrix))
-                started = perf_counter()
-                next_values = solver(np.asarray(b_enf, dtype=float))
-                solve_time += perf_counter() - started
-            else:
-                started = perf_counter()
-                next_values = fem.solve(A_enf, b_enf)
-                solve_time += perf_counter() - started
-                factorization_count += 1
-                factorization_cache_keys.append(_matrix_cache_key(sps.csr_matrix(A_enf)))
+                    factorization_cache_keys.append(_matrix_cache_key(sps.csr_matrix(A_enf)))
 
-            current_values = np.asarray(next_values, dtype=float)
-            solve_count += 1
-            residual = np.asarray(A_enf @ current_values - b_enf, dtype=float)
-            if residual.size:
-                max_residual = max(max_residual, float(np.max(np.abs(residual))))
-
-            if is_american:
-                current_values = np.maximum(current_values, v_tsv[0])
+                current_values = np.asarray(next_values, dtype=float)
+                solve_count += 1
+                residual = np.asarray(A_enf @ current_values - b_enf, dtype=float)
+                if residual.size:
+                    max_residual = max(max_residual, float(np.max(np.abs(residual))))
 
             if np.isclose(step.end, time_grid[step.output_index]):
                 v_tsv[step.output_index] = current_values
