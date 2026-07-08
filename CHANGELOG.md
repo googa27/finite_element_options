@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced American post-step payoff clipping with a reference lower-obstacle
+  LCP path in `ThetaScheme`: projected-SOR diagnostics report primal/dual,
+  complementarity, projected residual, exercise set, iteration count and
+  explicit nonconvergence failures.
 - Added constrained PyMC Heston calibration diagnostics: posterior draw validation
   enforces positive variance parameters and bounded correlation, Feller handling is
   explicit, MCMC acceptance gates cover rank-normalized R-hat, bulk/tail ESS,

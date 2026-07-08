@@ -23,10 +23,10 @@ The manifest intentionally advertises only the validated route:
 - element family: `lagrange_p2`
 - PDE terms: drift, diffusion, reaction
 - boundary class: endpoint Dirichlet, including public linear-growth far-field metadata
-- exercise style: European
+- exercise style: European on the released downstream contract; the base library also exposes a validated reference lower-obstacle LCP stepper for American exercise diagnostics
 - outputs: value, Delta, Gamma
-- time control: theta/Crank-Nicolson with validated increasing grids, nonuniform local steps, new-time Dirichlet enforcement and optional Rannacher startup schedule diagnostics
-- linear solver: `scipy_direct` with per invariant theta-system sparse LU factorization reuse
+- time control: theta/Crank-Nicolson with validated increasing grids, nonuniform local steps, new-time Dirichlet enforcement, optional Rannacher startup schedule diagnostics, and American LCP residual diagnostics when `is_american=True`
+- linear solver: `scipy_direct` with per invariant theta-system sparse LU factorization reuse for European solves; projected-SOR for reference lower-obstacle LCP solves
 
 Unsupported solver routes fail closed in the manifest:
 
