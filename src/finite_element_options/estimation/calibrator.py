@@ -9,16 +9,28 @@ bounds and failure states are explicit at the call site.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import ClassVar, TypeAlias
+from typing import ClassVar, Protocol, TypeAlias
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import least_squares
 
 ParameterVector: TypeAlias = Sequence[float] | np.ndarray
-PricingFunction: TypeAlias = Callable[[np.ndarray, object], np.ndarray]
+
+
+class PricingFunction(Protocol):
+    """Callable pricing-engine contract for pricing-model calibration."""
+
+    def __call__(
+        self,
+        params: np.ndarray,
+        dataset: PricingCalibrationDataset,
+    ) -> np.ndarray:
+        """Return model quotes for ``params`` on ``dataset``."""
+        raise NotImplementedError
+
 
 _ALLOWED_RESIDUAL_UNITS = frozenset({"price", "implied_volatility"})
 _ALLOWED_WEIGHT_POLICIES = frozenset({"none", "explicit", "bid_ask", "vega"})
@@ -184,10 +196,11 @@ class PricingCalibrationDataset:
         if missing:
             raise ValueError(f"market frame is missing {sorted(missing)}")
 
-        def optional(column: str) -> np.ndarray | None:
-            if column not in frame.columns:
-                return None
-            return frame[column].to_numpy(dtype=float)
+        def optional(*columns: str) -> np.ndarray | None:
+            for column in columns:
+                if column in frame.columns:
+                    return frame[column].to_numpy(dtype=float)
+            return None
 
         return cls(
             spot=frame["spot"].to_numpy(dtype=float),
@@ -199,7 +212,7 @@ class PricingCalibrationDataset:
             quote_units=quote_units,
             bid=optional("bid"),
             ask=optional("ask"),
-            weights=optional("weight"),
+            weights=optional("weights", "weight"),
             vega=optional("vega"),
             metadata={} if metadata is None else dict(metadata),
         )
@@ -416,7 +429,11 @@ class PricingModelCalibrator:
                 raise ValueError("vega weight_policy requires a vega column")
             if np.any(self.dataset.vega <= 0.0):
                 raise ValueError("vega values must be strictly positive")
-            all_weights = 1.0 / np.maximum(self.dataset.vega, objective.min_scale)
+            scaled_vega = np.maximum(self.dataset.vega, objective.min_scale)
+            if objective.residual_units == "price":
+                all_weights = 1.0 / scaled_vega
+            else:
+                all_weights = scaled_vega
         else:  # pragma: no cover - objective validates this before dispatch
             raise ValueError(f"unsupported weight policy {policy}")
         if not np.all(np.isfinite(all_weights)) or np.any(all_weights <= 0.0):

@@ -585,7 +585,32 @@ def test_pricing_model_calibrator_supports_vega_scaled_implied_volatility_object
     np.testing.assert_allclose(result.parameters, true_params, atol=2.0e-6)
     assert result.diagnostics["objective"]["residual_units"] == "implied_volatility"
     assert result.diagnostics["objective"]["weight_policy"] == "vega"
-    assert result.diagnostics["weights"]["source"] == "vega"
+    weight_diagnostics = result.diagnostics["weights"]
+    assert isinstance(weight_diagnostics, Mapping)
+    assert weight_diagnostics["source"] == "vega"
+    assert weight_diagnostics["min"] == pytest.approx(float(frame["vega"].min()))
+    assert weight_diagnostics["max"] == pytest.approx(float(frame["vega"].max()))
+
+
+def test_pricing_dataset_accepts_plural_weights_column_for_explicit_objective() -> None:
+    frame = _pricing_frame()
+    frame["weights"] = np.linspace(1.0, 2.0, len(frame))
+    dataset = PricingCalibrationDataset.from_frame(frame)
+    assert dataset.weights is not None
+    np.testing.assert_allclose(dataset.weights, frame["weights"].to_numpy())
+    calibrator = PricingModelCalibrator(
+        dataset=dataset,
+        pricing_function=_linear_smile_engine,
+        parameter_names=("level", "skew", "term"),
+    )
+
+    result = calibrator.calibrate(
+        initial_guess=np.array([0.18, -0.03, 0.01]),
+        objective=CalibrationObjective(weight_policy="explicit"),
+    )
+
+    assert result.success is True
+    assert result.diagnostics["weights"]["source"] == "explicit"
 
 
 def _heston_smoke_prices(params: np.ndarray, dataset: PricingCalibrationDataset) -> np.ndarray:
