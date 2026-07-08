@@ -281,24 +281,28 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
     ),
     CapabilityRecord(
         capability_id="FEM-CALIBRATION-RESEARCH",
-        title="Calibration research adapters",
+        title="Bounded pricing calibration adapters",
         status=CapabilityStatus.EXPERIMENTAL,
         workstream="Calibration",
         summary=(
-            "SciPy, Statsmodels and PyMC research helpers are isolated behind "
-            "the calibration extra, with constrained Heston posterior and MCMC "
-            "diagnostic gates for externally validated pricing engines."
+            "SciPy pricing calibration, Statsmodels compatibility and PyMC "
+            "research helpers are isolated behind the calibration extra, with "
+            "bounded weighted residual objectives, holdout diagnostics, Heston "
+            "parameter constraints and validated-engine provenance."
         ),
         evidence_ids=("tests/test_calibrator.py",),
         evidence_scope=(
-            "Adapter smoke, optional-profile import boundaries, Heston posterior "
+            "Adapter smoke, optional-profile import boundaries, bounded pricing "
+            "least-squares, bid-ask and vega weighting, robust loss metadata, "
+            "holdout RMSE, deterministic multi-start diagnostics, Heston posterior "
             "constraint checks, Feller policy, MCMC diagnostics, and provenance "
-            "retention for supplied PyMC artifacts."
+            "retention for supplied PyMC/pricing artifacts."
         ),
         limitations=(
-            "Heston diagnostics do not create a pricing engine; fitted values must "
-            "come from a separately validated Heston oracle, and production "
-            "calibration remains governed by issue #45."
+            "The package still does not ship a production Heston PDE/Fourier "
+            "pricing engine; Heston calibration requires an injected, separately "
+            "validated engine artifact and fails closed for toy/synthetic/polynomial "
+            "engines."
         ),
         optional_extra="calibration",
         absence_behavior="The base wheel does not import PyMC, ArviZ or Statsmodels.",

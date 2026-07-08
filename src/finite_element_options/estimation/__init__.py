@@ -1,11 +1,19 @@
 """Estimation and calibration utilities."""
 
-from .calibrator import CalibrationResult, Calibrator
+from .calibrator import (
+    CalibrationObjective,
+    CalibrationPricingError,
+    CalibrationResult,
+    Calibrator,
+    PricingCalibrationDataset,
+    PricingModelCalibrator,
+)
 from .heston import (
     HestonCalibrator,
     HestonConstraintReport,
     HestonMCMCDiagnosticReport,
     HestonMCMCDiagnosticThresholds,
+    HestonPricingCalibrator,
     PyMCCalibrator,
     StatsmodelsCalibrator,
     SyntheticSurfaceCalibrator,
@@ -18,12 +26,17 @@ from .heston import (
 )
 
 __all__ = [
+    "CalibrationObjective",
+    "CalibrationPricingError",
     "CalibrationResult",
     "Calibrator",
     "HestonCalibrator",
     "HestonConstraintReport",
     "HestonMCMCDiagnosticReport",
     "HestonMCMCDiagnosticThresholds",
+    "HestonPricingCalibrator",
+    "PricingCalibrationDataset",
+    "PricingModelCalibrator",
     "PyMCCalibrator",
     "StatsmodelsCalibrator",
     "SyntheticSurfaceCalibrator",
