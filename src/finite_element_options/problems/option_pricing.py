@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.interfaces import BoundaryCondition, DynamicsModel, Payoff
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.boundary import DirichletBC
@@ -35,6 +36,9 @@ class OptionPricingProblem(Problem):
         the extremes of the one dimensional domain.
     """
 
+    dynamics: DynamicsModel = field(init=False)
+    payoff: Payoff = field(init=False)
+    boundary_condition: BoundaryCondition = field(init=False)
     k: float = 1.0
     r: float = 0.03
     q: float = 0.0

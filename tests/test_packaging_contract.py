@@ -46,6 +46,27 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert "finite_element_options/time/stepper.py" not in names
 
 
+def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(tmp_path: Path) -> None:
+    outdir = tmp_path / "dist"
+    _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
+    wheel = next(outdir.glob("finite_element_options-*.whl"))
+
+    with zipfile.ZipFile(wheel) as archive:
+        entry_point_files = [
+            name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
+        ]
+        assert len(entry_point_files) == 1
+        entry_points = archive.read(entry_point_files[0]).decode("utf-8")
+
+    assert "[haircut.solver_backends]" in entry_points
+    assert entry_points.count("finite_element_options =") == 1
+    assert (
+        "finite_element_options = finite_element_options.integrations.haircut_backend:create_backend"
+        in entry_points
+    )
+    assert "haircut_engine.solver_backends" not in entry_points
+
+
 def _requires_dist() -> list[str]:
     return metadata.metadata("finite-element-options").get_all("Requires-Dist") or []
 

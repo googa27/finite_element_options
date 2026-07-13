@@ -100,7 +100,7 @@ class FenicsSolver(SpaceDiscretization):
         test = ufl.TestFunction(self.Vh)
         x = ufl.SpatialCoordinate(self.mesh)
 
-        sigma = self.dynamics.sig
+        sigma = getattr(self.dynamics, "sig")
         rate = self.dynamics.r
         carry = getattr(self.dynamics, "q", 0.0)
 
@@ -144,7 +144,7 @@ class FenicsSolver(SpaceDiscretization):
     def _boundary_values(self, th: float) -> tuple[float, float]:
         """Return left and right Black--Scholes Dirichlet endpoint values."""
         rate = self.dynamics.r
-        strike = self.payoff.k
+        strike = getattr(self.payoff, "k")
         upper = self.domain[1]
         discount = np.exp(-rate * th)
         if self.is_call:

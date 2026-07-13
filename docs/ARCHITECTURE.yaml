@@ -23,6 +23,7 @@
       "typed public APIs",
       "deterministic CLI/contracts",
       "capability registry",
+      "haircut.solver_backends public protocol adapter",
       "adapters behind explicit protocols"
     ]
   },
@@ -65,6 +66,21 @@
         "custom_code_reason": "domain semantics, composition, adapters, or genuinely missing algorithms only"
       },
       {
+        "capability": "finite-element assembly and solution",
+        "selected": [
+          "scikit-fem >=12.0.2,<13"
+        ],
+        "alternatives": [
+          "FEniCSx",
+          "Firedrake",
+          "NGSolve",
+          "custom assembly"
+        ],
+        "evidence": "scikit-fem 12.0.2 release/API verification plus tests/test_validation_gates.py and public-synthetic convergence evidence",
+        "adapter_boundary": "finite_element_options native FEM APIs and integrations/haircut_backend.py",
+        "custom_code_reason": "custom code owns financial formulation semantics, validation, and evidence; scikit-fem owns maintained FEM primitives"
+      },
+      {
         "capability": "portfolio architecture bootstrap",
         "selected": [
           "Python standard library JSON parser",
@@ -85,10 +101,12 @@
       "primary_agent": "Hermes Agent",
       "context_file": "AGENTS.md",
       "interaction": "AGENTS + solver CLI/capability matrix + maintained Hermes skill; MCP only for demonstrated cross-client dispatch.",
-      "capability_discovery": "AGENTS.md plus the architecture checker is the current discovery surface; add a deterministic CLI/capability manifest before new maintained runtime behavior.",
+      "capability_discovery": "The canonical haircut.solver_backends entry point plus native FEM capability contracts and the architecture checker provide deterministic discovery.",
       "skills": "Use/update a repo or class-level Hermes skill for recurring non-trivial workflows",
-      "plugin_mcp_policy": "deferred unless stable interfaces and measured multi-client/tool interoperability justify it",
-      "declared_entrypoints": [],
+      "plugin_mcp_policy": "The Haircut plugin is justified by a measured cross-repository consumer and uses only Haircut's public protocol seam; MCP remains deferred.",
+      "declared_entrypoints": [
+        "haircut.solver_backends:finite_element_options"
+      ],
       "decision_ladder": [
         "AGENTS.md and linked contracts",
         "typed importable API and deterministic CLI/capability manifest",
@@ -129,7 +147,8 @@
       "setup": "python -m pip install -e '.[dev]'",
       "test": "python -m pytest -q",
       "lint": "ruff check . && ruff format --check .",
-      "architecture": "python scripts/check_portfolio_architecture.py"
+      "type": "mypy src",
+      "architecture": "python scripts/check_portfolio_architecture.py && pytest tests/architecture -q"
     },
     "ci_workflow": ".github/workflows/portfolio-architecture.yml",
     "mirror_source": "where pertinent"
@@ -175,10 +194,10 @@
     {
       "rule": "source_fanout",
       "path": "src/finite_element_options",
-      "reason": "Legacy package fan-out predates the portfolio ratchet; immediate restructuring would create broad compatibility risk.",
-      "owner": "googa27 Portfolio Project #24",
+      "reason": "Legacy package fan-out plus the issue #115 canonical Haircut protocol integration package requires 17 immediate runtime entries; further growth must deepen the stable hierarchy.",
+      "owner": "googa27 Portfolio Project #24 and finite_element_options #115",
       "risk": "Navigation and coupling remain higher until cohesive subpackages are extracted.",
-      "accepted_ceiling": 16,
+      "accepted_ceiling": 17,
       "refactoring_trigger": "The next feature that would add an immediate runtime entry must first reduce this level to 10 or document a narrower approved replacement exception."
     },
     {

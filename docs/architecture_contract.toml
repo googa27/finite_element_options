@@ -29,6 +29,7 @@ required_top_level_packages = [
   "core",
   "estimation",
   "examples",
+  "integrations",
   "problems",
   "space",
   "time_integration",
@@ -39,12 +40,13 @@ allowed_top_level_packages = [
   "core",
   "estimation",
   "examples",
+  "integrations",
   "problems",
   "space",
   "time_integration",
   "validation",
 ]
-max_top_level_package_count = 8
+max_top_level_package_count = 9
 ignore_top_level_dirs = []
 
 [repository_root]
@@ -127,6 +129,13 @@ layer = "validation"
 owner = "finite_element_options"
 treatment = "analytical, manufactured, and public-synthetic evidence and parity artifacts"
 public_surface = "public validation helpers"
+
+[[module_ownership]]
+path = "integrations"
+layer = "validation"
+owner = "finite_element_options"
+treatment = "optional Haircut solver-backend plugin boundary; validates public QuantProblemSpec records before mesh or assembly work"
+public_surface = "entry point only"
 
 [[module_ownership]]
 path = "fdsolver.py"

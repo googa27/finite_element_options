@@ -8,6 +8,7 @@ only the source-layout container.
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 import sys
 import tomllib
@@ -22,6 +23,7 @@ SRC_LAYOUT_ROOT = ROOT / "src"
 PACKAGE_ROOT = SRC_LAYOUT_ROOT / "finite_element_options"
 PACKAGE = "finite_element_options"
 ARCHITECTURE_DOC = ROOT / "docs" / "ARCHITECTURE.md"
+ARCHITECTURE_YAML = ROOT / "docs" / "ARCHITECTURE.yaml"
 MODULE_OWNERSHIP_DOC = ROOT / "docs" / "MODULE_OWNERSHIP.md"
 ARCHITECTURE_CONTRACT = ROOT / "docs" / "architecture_contract.toml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
@@ -35,6 +37,7 @@ PACKAGE_ROOT_ENTRIES = {
     "estimation",
     "examples",
     "fdsolver.py",
+    "integrations",
     "jax_greeks.py",
     "plots.py",
     "problems",
@@ -62,6 +65,7 @@ OUTER_LAYER_PACKAGES_AND_MODULES = {
     "estimation",
     "examples",
     "fdsolver.py",
+    "integrations",
     "jax_greeks.py",
     "plots.py",
     "sidebar.py",
@@ -87,6 +91,7 @@ FORBIDDEN_INTERNAL_LAYER_IMPORTS = {
     "data_utils",
     "estimation",
     "examples",
+    "integrations",
     "jax_greeks",
     "plots",
     "sidebar",
@@ -244,6 +249,37 @@ def test_architecture_document_exists_and_covers_required_transition_rules() -> 
         "docs/ARCHITECTURE.md is missing required package-transition language: "
         + ", ".join(missing)
     )
+
+
+def test_architecture_yaml_limits_and_exceptions_are_enforced() -> None:
+    architecture = json.loads(ARCHITECTURE_YAML.read_text(encoding="utf-8"))
+    assert architecture["repository"]["name"] == "finite_element_options"
+    assert architecture["limits"] == {
+        "max_immediate_runtime_entries": 10,
+        "max_python_module_lines": 500,
+        "measurement": (
+            "physical UTF-8 lines; immediate runtime .py files excluding "
+            "__init__.py plus runtime package directories"
+        ),
+    }
+    assert "haircut.solver_backends:finite_element_options" in (
+        architecture["interfaces"]["ai"]["declared_entrypoints"]
+    )
+    exceptions = {
+        (entry["rule"], entry["path"]): entry
+        for entry in architecture["exceptions"]
+    }
+    backend_exception = exceptions[
+        (
+            "python_module_max_lines",
+            "src/finite_element_options/contracts/backend_capabilities.py",
+        )
+    ]
+    assert backend_exception["accepted_ceiling"] == 668
+    for entry in exceptions.values():
+        assert isinstance(entry["accepted_ceiling"], int) and entry["accepted_ceiling"] > 0
+        for field in ("owner", "reason", "risk", "refactoring_trigger"):
+            assert isinstance(entry[field], str) and entry[field]
 
 
 def test_source_layout_exports_only_finite_element_options_package() -> None:
@@ -454,7 +490,9 @@ def test_solver_protocols_do_not_depend_on_signature_introspection() -> None:
         "time_integration/stepper.py",
     ):
         text = (PACKAGE_ROOT / relative).read_text(encoding="utf-8")
-        hits = [label for fragment, label in forbidden_fragments.items() if fragment in text]
+        hits = [
+            label for fragment, label in forbidden_fragments.items() if fragment in text
+        ]
         if hits:
             violations[f"src/{PACKAGE}/{relative}"] = hits
 

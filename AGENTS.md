@@ -126,8 +126,11 @@ Every Greek or sensitivity states the differentiated state or parameter, units, 
 
 The Haircut adapter must:
 
-- expose lightweight identity, solver-contract range, maturity and capabilities;
+- expose Haircut's public `BackendIdentity` and `BackendCapabilityManifest` shapes, solver-contract range, maturity and capabilities;
+- register exactly one canonical `haircut.solver_backends` entry point named `finite_element_options`;
+- import only Haircut's public solver protocol seam at factory time, without adding a local-path or VCS runtime dependency, and fail closed when that seam is absent or contract majors drift;
 - validate the request before mesh or assembly work;
+- reject unsupported, private, unsupported-benchmark or mutated public-fixture requests before numerical validation runners or assembly are imported;
 - map generic records into canonical native FEM contracts without reinterpretation;
 - use only validated native policies;
 - return solution, sensitivities and complete diagnostics;

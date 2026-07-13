@@ -513,7 +513,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'validation'", specifier = ">=5,<8" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8,<1" },
     { name = "ruff", marker = "extra == 'validation'", specifier = ">=0.8,<1" },
-    { name = "scikit-fem", specifier = ">=10,<12" },
+    { name = "scikit-fem", specifier = ">=12.0.2,<13" },
     { name = "scipy", specifier = ">=1.10,<2" },
     { name = "statsmodels", marker = "extra == 'calibration'", specifier = ">=0.14,<1" },
     { name = "statsmodels", marker = "extra == 'dev'", specifier = ">=0.14,<1" },
@@ -1849,7 +1849,7 @@ wheels = [
 
 [[package]]
 name = "scikit-fem"
-version = "11.0.0"
+version = "12.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -1857,9 +1857,9 @@ dependencies = [
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/48/272ff8ee0f929ce069686c95de0752328f7c1fe0748d59360733b255a843/scikit_fem-11.0.0.tar.gz", hash = "sha256:8973a2efd5237083999c8f94ae1bd8fbcb63479283e4797521e93c4f284d91db", size = 162611, upload-time = "2025-04-24T20:01:10.227Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/5f/77643ece20e33a770fdfb6cafb9b2a5a1dd51b8a1ee1d3dc5bac8c72bdfa/scikit_fem-12.0.2.tar.gz", hash = "sha256:0a38764cdb93411c5a994451c22c1da07808ebabf920f462c6253f78f5703f8a", size = 130353, upload-time = "2026-06-05T20:45:50.903Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/9b/02df8a83287b0764f94b8336924d09da598a848a7d771f7906d3b2111a1b/scikit_fem-11.0.0-py3-none-any.whl", hash = "sha256:cc9f2f2ab0f608f228a72f1eb53e0efb93c900991aad0ca355d9355b5034fe5f", size = 165109, upload-time = "2025-04-24T20:01:08.463Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/13/d46cf943bd1b04b1b010094eb08493d6660c99c49652fa46cf7c3bf36ab5/scikit_fem-12.0.2-py3-none-any.whl", hash = "sha256:34cd891f80072c0c1eb759a2371e82f0eeec91ff7c08acab96d27b6edbbe1b05", size = 178478, upload-time = "2026-06-05T20:45:49.084Z" },
 ]
 
 [[package]]

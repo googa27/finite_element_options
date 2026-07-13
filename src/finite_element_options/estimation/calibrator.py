@@ -154,8 +154,8 @@ class PricingCalibrationDataset:
         if np.any(self.maturity <= 0.0):
             raise ValueError("maturity values must be strictly positive")
         for name in ("bid", "ask", "weights", "vega"):
-            values = self._coerce_optional_array(name, getattr(self, name), shape)
-            object.__setattr__(self, name, values)
+            optional_values = self._coerce_optional_array(name, getattr(self, name), shape)
+            object.__setattr__(self, name, optional_values)
 
     @staticmethod
     def _coerce_required_array(name: str, values: Sequence[float] | np.ndarray) -> np.ndarray:

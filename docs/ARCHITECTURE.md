@@ -354,7 +354,7 @@ The Black-Scholes analytical oracle distinguishes volatility `sigma` from varian
 
 ## 16. Backend plugin architecture
 
-Candidate entry point:
+Implemented canonical entry point:
 
 ```toml
 [project.entry-points."haircut.solver_backends"]
@@ -370,7 +370,7 @@ The adapter:
 5. solves and normalizes values, sensitivities and diagnostics;
 6. records backend/package/contract and benchmark IDs.
 
-The adapter cannot import Haircut domain/application, PDP, UI or calibration code. It advertises only capabilities backed by repository-local tests and shared parity #64/#74.
+The adapter cannot import Haircut domain/application, PDP, UI or calibration code. `integrations/haircut_protocol.py` is the only optional protocol boundary: at factory time it imports Haircut's public `haircut.solvers.backend_protocol` and `haircut.solvers.contracts` modules, constructs Haircut-owned `BackendIdentity` and `BackendCapabilityManifest` values, and fails closed if that released seam is absent or contract majors drift. `integrations/haircut_backend.py` owns only FEM screening and executable public-synthetic evidence. The FEM wheel has no local-path, VCS, or mandatory Haircut dependency, and registers exactly one canonical `haircut.solver_backends` entry point named `finite_element_options`; legacy `haircut_engine.solver_backends` is absent. Both Haircut discovery and native QuantProblemSpec screening use the existing evidenced backend id `finite_element_options.fem_backend.v0`.
 
 Issue #64 adds `finite_element_options.contracts.backend_capabilities` and `finite_element_options.validation.black_scholes_parity` as executable FEM adapter evidence. `FEMRouteRequest.from_quant_problem_spec` consumes the same public-synthetic vanilla-call JSON fixture validated by Haircut Engine and finite_difference_options, preserves schema version, measure, numeraire, units, valuation/vintage timing, time-domain or maturity information, boundary details, mesh/element policy, linear solver policy and requested outputs, and fails closed before mesh/weak-form allocation for unsupported dimensions, variational terms, boundaries, exercise styles, outputs or controls. The default manifest intentionally advertises only the validated one-dimensional uniform-line/Lagrange-P2/theta/SciPy-direct European route; higher-dimensional, adaptive, product-level American, jump and HJB/control capabilities remain unsupported until their own parity evidence lands. The `fem-bs-001` parity fixture solves the public-synthetic Black-Scholes call against the Haircut analytical oracle with named endpoint boundary enforcement, deterministic weak-form metadata, typed boundary metadata, value/Delta/Gamma error evidence, and deterministic mesh/time refinement export.
 
