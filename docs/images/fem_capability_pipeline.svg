@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="260" viewBox="0 0 1060 260" role="img" aria-labelledby="title desc">
+<title id="title">Finite Element Options capability pipeline</title>
+<desc id="desc">Dark-palette diagram showing explicit PDE inputs, route gates, mesh and theta solve, then diagnostics.</desc>
+<rect width="1060" height="260" fill="#0d1117"/>
+<rect x="20" y="25" width="1020" height="185" rx="18" fill="#161b22" stroke="#30363d"/>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#8b949e"/></marker></defs>
+<rect x="40" y="70" width="205" height="82" rx="13" fill="#0d1117" stroke="#2dd4ff" stroke-width="2"/>
+<text x="58" y="104" fill="#2dd4ff" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">explicit PDE</text>
+<text x="58" y="131" fill="#e6edf3" font-family="Inter,Arial,sans-serif" font-size="14">domain, weak form, BCs</text>
+<path d="M245 111 L266 111" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="285" y="70" width="205" height="82" rx="13" fill="#0d1117" stroke="#3fb950" stroke-width="2"/>
+<text x="303" y="104" fill="#3fb950" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">FEM route gate</text>
+<text x="303" y="131" fill="#e6edf3" font-family="Inter,Arial,sans-serif" font-size="14">capability manifest</text>
+<path d="M490 111 L511 111" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="530" y="70" width="205" height="82" rx="13" fill="#0d1117" stroke="#a371f7" stroke-width="2"/>
+<text x="548" y="104" fill="#a371f7" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">mesh + theta</text>
+<text x="548" y="131" fill="#e6edf3" font-family="Inter,Arial,sans-serif" font-size="14">P2 line, SciPy direct</text>
+<path d="M735 111 L756 111" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="775" y="70" width="205" height="82" rx="13" fill="#0d1117" stroke="#ff4db8" stroke-width="2"/>
+<text x="793" y="104" fill="#ff4db8" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">diagnostics</text>
+<text x="793" y="131" fill="#e6edf3" font-family="Inter,Arial,sans-serif" font-size="14">errors, residuals, fail-closed</text>
+<text x="40" y="228" fill="#8b949e" font-family="Inter,Arial,sans-serif" font-size="13">Evidence sources: docs/CAPABILITY_MATRIX.md, tests/fixtures/fem_bs_001, tests/fixtures/fem_pinares_fixed_price_proxy_v1. Optional FEniCSx/PETSc remain outside base validation.</text>
+</svg>

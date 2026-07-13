@@ -1,0 +1,169 @@
+{
+  "assets": {
+    "black_scholes": {
+      "dark_pixel_ratio": 0.9750502998073701,
+      "dpi": [
+        299.9994,
+        299.9994
+      ],
+      "path": "docs/images/fem_black_scholes_validation_convergence.png",
+      "size_px": [
+        4022,
+        1648
+      ],
+      "visual_qa": "pass"
+    },
+    "capability_pipeline": {
+      "path": "docs/images/fem_capability_pipeline.svg",
+      "visual_qa": "pass"
+    },
+    "pinares_proxy": {
+      "dark_pixel_ratio": 0.9732374549202686,
+      "dpi": [
+        299.9994,
+        299.9994
+      ],
+      "path": "docs/images/fem_pinares_proxy_validation_convergence.png",
+      "size_px": [
+        4022,
+        1648
+      ],
+      "visual_qa": "pass"
+    }
+  },
+  "evidence": {
+    "black_scholes": {
+      "benchmark_id": "fem-bs-001",
+      "delta_abs_error": 0.0008363263838591095,
+      "final_abs_error": 7.928195267581373e-05,
+      "final_price": 10.45066285413824,
+      "gamma_abs_error": 8.801591288892102e-06,
+      "oracle_price": 10.450583572185565,
+      "problem_id": "public-synthetic-vanilla-call-v0",
+      "rows": [
+        {
+          "absolute_error": 0.021192249751294412,
+          "degrees_of_freedom": 33,
+          "delta_absolute_error": 0.011625993436376159,
+          "expected_delta": 0.6368306511756192,
+          "expected_gamma": 0.01876201734584689,
+          "expected_price": 10.450583572185565,
+          "gamma_absolute_error": 0.0005828767078567589,
+          "observed_delta": 0.625204657739243,
+          "observed_gamma": 0.018179140637990133,
+          "observed_price": 10.471775821936859,
+          "refinement_level": 4,
+          "relative_error": 0.0020278532394782246,
+          "time_steps": 80
+        },
+        {
+          "absolute_error": 0.0007133389651254873,
+          "degrees_of_freedom": 65,
+          "delta_absolute_error": 0.0032868347380409224,
+          "expected_delta": 0.6368306511756192,
+          "expected_gamma": 0.01876201734584689,
+          "expected_price": 10.450583572185565,
+          "gamma_absolute_error": 5.7508074524887515e-05,
+          "observed_delta": 0.6335438164375783,
+          "observed_gamma": 0.018704509271322004,
+          "observed_price": 10.45129691115069,
+          "refinement_level": 5,
+          "relative_error": 6.825829009434967e-05,
+          "time_steps": 80
+        },
+        {
+          "absolute_error": 7.928195267581373e-05,
+          "degrees_of_freedom": 129,
+          "delta_absolute_error": 0.0008363263838591095,
+          "expected_delta": 0.6368306511756192,
+          "expected_gamma": 0.01876201734584689,
+          "expected_price": 10.450583572185565,
+          "gamma_absolute_error": 8.801591288892102e-06,
+          "observed_delta": 0.6359943247917601,
+          "observed_gamma": 0.018753215754558,
+          "observed_price": 10.45066285413824,
+          "refinement_level": 6,
+          "relative_error": 7.586366074984005e-06,
+          "time_steps": 80
+        }
+      ],
+      "tolerance_absolute": 0.002
+    },
+    "capability_pipeline": {
+      "palette_background": "#0d1117",
+      "palette_panel": "#161b22",
+      "path": "docs/images/fem_capability_pipeline.svg",
+      "visual_qa": "pass"
+    },
+    "pinares_proxy": {
+      "benchmark_id": "PINARES-FEM-FIXED-PRICE-PROXY-V0",
+      "converged": true,
+      "delta_abs_error": 3.1728917533002665e-05,
+      "final_abs_error_uf": 0.013734133132004445,
+      "final_price_uf": 231.7857596928031,
+      "gamma_abs_error": 8.143262136353375e-07,
+      "omission_note": null,
+      "oracle_price_uf": 231.79949382593512,
+      "price_abs_tolerance_uf": 1.0,
+      "problem_id": "pinares.fixed_price_option_proxy.v1",
+      "rows": [
+        {
+          "absolute_error_uf": 0.751581598921149,
+          "degrees_of_freedom": 65,
+          "delta_absolute_error": 0.0005255385784985189,
+          "expected_delta": 0.4508943884912468,
+          "expected_gamma": 0.0005353751436824051,
+          "expected_price_uf": 231.79949382593512,
+          "gamma_absolute_error": 1.1843915337755233e-05,
+          "observed_delta": 0.4503688499127483,
+          "observed_gamma": 0.0005235312283446499,
+          "observed_price_uf": 231.04791222701397,
+          "refinement_level": 5,
+          "relative_error": 0.0032423780851114936,
+          "time_steps": 160
+        },
+        {
+          "absolute_error_uf": 0.03853132935810777,
+          "degrees_of_freedom": 129,
+          "delta_absolute_error": 0.00011955777801192502,
+          "expected_delta": 0.4508943884912468,
+          "expected_gamma": 0.0005353751436824051,
+          "expected_price_uf": 231.79949382593512,
+          "gamma_absolute_error": 3.2738865993527794e-06,
+          "observed_delta": 0.4507748307132349,
+          "observed_gamma": 0.0005321012570830523,
+          "observed_price_uf": 231.760962496577,
+          "refinement_level": 6,
+          "relative_error": 0.00016622697798918427,
+          "time_steps": 160
+        },
+        {
+          "absolute_error_uf": 0.013734133132004445,
+          "degrees_of_freedom": 257,
+          "delta_absolute_error": 3.1728917533002665e-05,
+          "expected_delta": 0.4508943884912468,
+          "expected_gamma": 0.0005353751436824051,
+          "expected_price_uf": 231.79949382593512,
+          "gamma_absolute_error": 8.143262136353375e-07,
+          "observed_delta": 0.4508626595737138,
+          "observed_gamma": 0.0005345608174687698,
+          "observed_price_uf": 231.7857596928031,
+          "refinement_level": 7,
+          "relative_error": 5.9250056612797434e-05,
+          "time_steps": 160
+        }
+      ]
+    }
+  },
+  "generator": "scripts/generate_readme_validation_visuals.py",
+  "palette": {
+    "analytical_reference": "#2dd4ff",
+    "background": "#0d1117",
+    "boundary_stability_caveat": "#f0883e",
+    "numerical_error": "#ff4db8",
+    "panel": "#161b22",
+    "secondary_route": "#a371f7",
+    "validated_pass": "#3fb950"
+  },
+  "repository": "finite_element_options"
+}
