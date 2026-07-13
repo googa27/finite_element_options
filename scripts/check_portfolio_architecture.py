@@ -76,6 +76,10 @@ class ContractLoadError(ValueError):
             f"subset for the dependency-free bootstrap checker: {error}"
         )
 
+    @classmethod
+    def unreadable(cls, relative_path: Path, error: OSError) -> ContractLoadError:
+        return cls(f"could not read {relative_path}: {error}")
+
 
 class ContractShapeError(TypeError):
     """Architecture contract has an invalid root shape."""
@@ -97,6 +101,8 @@ def load_contract() -> dict[str, Any]:
         payload = json.loads(CONTRACT.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise ContractLoadError.missing(CONTRACT.relative_to(ROOT)) from exc
+    except OSError as exc:
+        raise ContractLoadError.unreadable(CONTRACT.relative_to(ROOT), exc) from exc
     except json.JSONDecodeError as exc:
         raise ContractLoadError.invalid_json_subset(exc) from exc
     if not isinstance(payload, dict):
@@ -108,7 +114,11 @@ def exception_map(
     contract: dict[str, Any], errors: list[str]
 ) -> dict[tuple[str, str], dict[str, Any]]:
     result: dict[tuple[str, str], dict[str, Any]] = {}
-    for index, item in enumerate(contract.get("exceptions", [])):
+    exceptions = contract.get("exceptions", [])
+    if not isinstance(exceptions, list):
+        errors.append("exceptions must be a list")
+        return result
+    for index, item in enumerate(exceptions):
         if not isinstance(item, dict):
             errors.append(f"exceptions[{index}] must be an object")
             continue
@@ -143,15 +153,77 @@ def require_exception(
         )
 
 
-def runtime_dir(path: Path) -> bool:
-    try:
-        return any(
-            candidate.suffix == ".py"
-            for candidate in path.rglob("*.py")
-            if not ignored_path(candidate)
+def object_section(
+    contract: dict[str, Any], key: str, errors: list[str]
+) -> dict[str, Any] | None:
+    section = contract.get(key)
+    if not isinstance(section, dict):
+        errors.append(f"{key} must be an object")
+        return None
+    return section
+
+
+def add_error_once(errors: list[str], message: str) -> None:
+    if message not in errors:
+        errors.append(message)
+
+
+def integer_limit(
+    limits: dict[str, Any], key: str, expected_default: int, errors: list[str]
+) -> int | None:
+    value = limits.get(key)
+    if value is None:
+        add_error_once(errors, f"limits.{key} is required")
+        return None
+    if not isinstance(value, int):
+        add_error_once(errors, f"limits.{key} must be an integer")
+        return None
+    if value != expected_default:
+        add_error_once(
+            errors,
+            f"default {key} must be {expected_default}; "
+            "repo override belongs in a documented exception",
         )
-    except OSError:
-        return False
+    return value
+
+
+def validate_limit_defaults(contract: dict[str, Any], errors: list[str]) -> None:
+    limits = object_section(contract, "limits", errors)
+    if limits is None:
+        return
+    integer_limit(limits, "max_immediate_runtime_entries", DEFAULT_MAX_ENTRIES, errors)
+    integer_limit(limits, "max_python_module_lines", DEFAULT_MAX_LINES, errors)
+
+
+def collect_source_tree(
+    source_root: Path,
+) -> tuple[dict[Path, tuple[list[str], list[str]]], list[Path]]:
+    tree: dict[Path, tuple[list[str], list[str]]] = {}
+    modules: list[Path] = []
+    for current, dirs, files in os.walk(source_root):
+        dirs[:] = sorted(
+            name for name in dirs if not ignored_name(name) and not name.startswith(".")
+        )
+        current_path = Path(current)
+        tree[current_path] = (list(dirs), sorted(files))
+        modules.extend(
+            current_path / filename for filename in files if filename.endswith(".py")
+        )
+    return tree, sorted(modules)
+
+
+def runtime_package_dirs(source_root: Path, modules: list[Path]) -> set[Path]:
+    runtime_dirs: set[Path] = set()
+    for module in modules:
+        if module.name == "__init__.py" or ignored_path(module):
+            continue
+        current = module.parent
+        while current == source_root or source_root in current.parents:
+            runtime_dirs.add(current)
+            if current == source_root:
+                break
+            current = current.parent
+    return runtime_dirs
 
 
 def validate_source(
@@ -159,11 +231,20 @@ def validate_source(
     exceptions: dict[tuple[str, str], dict[str, Any]],
     errors: list[str],
 ) -> None:
-    layout = contract["source_layout"]
+    layout = object_section(contract, "source_layout", errors)
+    limits = object_section(contract, "limits", errors)
+    if layout is None or limits is None:
+        return
     if not layout.get("python_rules_applicable", True):
         return
-    max_entries = int(contract["limits"]["max_immediate_runtime_entries"])
-    max_lines = int(contract["limits"]["max_python_module_lines"])
+    max_entries = integer_limit(
+        limits, "max_immediate_runtime_entries", DEFAULT_MAX_ENTRIES, errors
+    )
+    max_lines = integer_limit(
+        limits, "max_python_module_lines", DEFAULT_MAX_LINES, errors
+    )
+    if max_entries is None or max_lines is None:
+        return
     allowed_non_python = set(layout.get("allowed_non_python_files", []))
     metadata = DEFAULT_METADATA | set(layout.get("metadata_names", []))
     roots = [ROOT / path for path in layout.get("python_source_roots", [])]
@@ -172,19 +253,17 @@ def validate_source(
         if not source_root.is_dir():
             errors.append(f"declared Python source root is missing: {rel_root}")
             continue
-        for current, dirs, files in os.walk(source_root):
-            dirs[:] = sorted(
-                name
-                for name in dirs
-                if not ignored_name(name) and not name.startswith(".")
-            )
-            current_path = Path(current)
+        source_tree, modules = collect_source_tree(source_root)
+        runtime_dirs = runtime_package_dirs(source_root, modules)
+        for current_path, (dirs, files) in source_tree.items():
             rel_dir = current_path.relative_to(ROOT).as_posix()
-            runtime_dirs = [name for name in dirs if runtime_dir(current_path / name)]
+            runtime_child_dirs = [
+                name for name in dirs if current_path / name in runtime_dirs
+            ]
             runtime_files = [
                 name for name in files if name.endswith(".py") and name != "__init__.py"
             ]
-            count = len(runtime_dirs) + len(runtime_files)
+            count = len(runtime_child_dirs) + len(runtime_files)
             if count > max_entries:
                 require_exception(exceptions, "source_fanout", rel_dir, count, errors)
             for filename in files:
@@ -196,7 +275,7 @@ def validate_source(
                 )
                 if not allowed:
                     require_exception(exceptions, "source_entry_type", rel, 1, errors)
-        for module in sorted(source_root.rglob("*.py")):
+        for module in modules:
             if ignored_path(module):
                 continue
             try:
@@ -204,6 +283,11 @@ def validate_source(
             except UnicodeDecodeError:
                 errors.append(
                     f"Python module is not UTF-8 text: {module.relative_to(ROOT)}"
+                )
+                continue
+            except OSError as exc:
+                errors.append(
+                    f"could not read Python module {module.relative_to(ROOT)}: {exc}"
                 )
                 continue
             if lines > max_lines:
@@ -217,42 +301,47 @@ def validate_source(
 
 
 def validate_repository(contract: dict[str, Any], errors: list[str]) -> None:
-    repository = contract["repository"]
+    repository = object_section(contract, "repository", errors)
+    if repository is None:
+        return
     for key in ("owner", "name", "profile", "status"):
         if not repository.get(key):
             errors.append(f"repository.{key} is required")
 
 
-def validate_limits(contract: dict[str, Any], errors: list[str]) -> None:
-    limits = contract["limits"]
-    if limits.get("max_immediate_runtime_entries") != DEFAULT_MAX_ENTRIES:
-        errors.append(
-            "default max_immediate_runtime_entries must be 10; "
-            "repo override belongs in a documented exception"
-        )
-    if limits.get("max_python_module_lines") != DEFAULT_MAX_LINES:
-        errors.append(
-            "default max_python_module_lines must be 500; "
-            "repo override belongs in a documented exception"
-        )
-
-
 def validate_documents_and_tests(contract: dict[str, Any], errors: list[str]) -> None:
-    for rel in contract["governance"].get("required_documents", []):
-        path = ROOT / rel
-        exists_with_content = path.is_file() and bool(
-            path.read_text(encoding="utf-8", errors="ignore").strip()
-        )
-        if not exists_with_content:
-            errors.append(f"required document missing or empty: {rel}")
-    for suite in contract["tests"].get("required_suites", []):
-        if not (ROOT / "tests" / suite).is_dir():
-            errors.append(f"required test suite directory missing: tests/{suite}")
+    governance = object_section(contract, "governance", errors)
+    tests = object_section(contract, "tests", errors)
+    if governance is not None:
+        for rel in governance.get("required_documents", []):
+            path = ROOT / rel
+            try:
+                exists_with_content = path.is_file() and bool(
+                    path.read_text(encoding="utf-8", errors="ignore").strip()
+                )
+            except OSError as exc:
+                errors.append(f"required document could not be read: {rel}: {exc}")
+                continue
+            if not exists_with_content:
+                errors.append(f"required document missing or empty: {rel}")
+    if tests is not None:
+        for suite in tests.get("required_suites", []):
+            if not (ROOT / "tests" / suite).is_dir():
+                errors.append(f"required test suite directory missing: tests/{suite}")
 
 
 def validate_interfaces(contract: dict[str, Any], errors: list[str]) -> None:
-    ai = contract["interfaces"].get("ai", {})
-    human = contract["interfaces"].get("human", {})
+    interfaces = object_section(contract, "interfaces", errors)
+    if interfaces is None:
+        return
+    ai = interfaces.get("ai", {})
+    human = interfaces.get("human", {})
+    if not isinstance(ai, dict):
+        errors.append("interfaces.ai must be an object")
+        ai = {}
+    if not isinstance(human, dict):
+        errors.append("interfaces.human must be an object")
+        human = {}
     if ai.get("context_file") != "AGENTS.md":
         errors.append("interfaces.ai.context_file must be AGENTS.md")
     if not ai.get("interaction") or not ai.get("capability_discovery"):
@@ -262,25 +351,31 @@ def validate_interfaces(contract: dict[str, Any], errors: list[str]) -> None:
 
 
 def validate_libraries_and_data(contract: dict[str, Any], errors: list[str]) -> None:
-    libraries = contract["libraries"]
-    if not libraries.get("selection_policy"):
-        errors.append("maintained-library selection policy is required")
-    if not isinstance(libraries.get("decisions"), list):
-        errors.append("libraries.decisions must be a list")
-    core = contract["data"].get("core_repositories", {})
-    for name in ("PDP", "financial_problem_formulations", "ui_and_artifacts"):
-        if name not in core:
-            errors.append(f"data.core_repositories must decide {name} posture")
+    libraries = object_section(contract, "libraries", errors)
+    data = object_section(contract, "data", errors)
+    if libraries is not None:
+        if not libraries.get("selection_policy"):
+            errors.append("maintained-library selection policy is required")
+        if not isinstance(libraries.get("decisions"), list):
+            errors.append("libraries.decisions must be a list")
+    if data is not None:
+        core = data.get("core_repositories", {})
+        if not isinstance(core, dict):
+            errors.append("data.core_repositories must be an object")
+            core = {}
+        for name in ("PDP", "financial_problem_formulations", "ui_and_artifacts"):
+            if name not in core:
+                errors.append(f"data.core_repositories must decide {name} posture")
 
 
 def validate_contract(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     missing = REQUIRED_TOP_LEVEL - set(contract)
     if missing:
-        return [f"contract missing top-level keys: {sorted(missing)}"]
+        errors.append(f"contract missing top-level keys: {sorted(missing)}")
     exceptions = exception_map(contract, errors)
     validate_repository(contract, errors)
-    validate_limits(contract, errors)
+    validate_limit_defaults(contract, errors)
     validate_documents_and_tests(contract, errors)
     validate_interfaces(contract, errors)
     validate_libraries_and_data(contract, errors)
