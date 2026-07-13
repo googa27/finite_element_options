@@ -39,7 +39,7 @@ The snippet solves the one-dimensional Black-Scholes example and prints a value 
 The bundled module form is also executable from an installed wheel:
 
 ```bash
-python3.12 -m finite_element_options.examples.basic_usage
+python -m finite_element_options.examples.basic_usage
 ```
 
 ## Capability matrix
