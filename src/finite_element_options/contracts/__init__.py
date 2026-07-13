@@ -26,6 +26,10 @@ from .formula_bundle import (
     formula_bundle_json,
     validate_formula_bundle,
 )
+from .fpf_evidence import (
+    fpf_solver_result_evidence_contract,
+    validate_fpf_solver_result_evidence_payload,
+)
 
 __all__ = [
     "CapabilityStatus",
@@ -46,6 +50,8 @@ __all__ = [
     "ensure_route_supported",
     "finite_element_formula_bundle",
     "formula_bundle_json",
+    "fpf_solver_result_evidence_contract",
     "public_capability_records",
     "validate_formula_bundle",
+    "validate_fpf_solver_result_evidence_payload",
 ]

@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0.0",
+  "repository": {
+    "owner": "googa27",
+    "name": "finite_element_options",
+    "profile": "strict",
+    "status": "Solver Library",
+    "project": "https://github.com/users/googa27/projects/24",
+    "issue": "https://github.com/googa27/finite_element_options/issues/114"
+  },
+  "architecture": {
+    "style": "evolutionary, contract-first, repository-specific",
+    "layers": [],
+    "import_boundaries": {
+      "authority": "repository-specific existing gates plus this contract",
+      "forbidden": [],
+      "cycle_policy": "acyclic runtime layers unless an exact exception is recorded"
+    },
+    "public_api_paths": [
+      "src/finite_element_options"
+    ],
+    "extension_points": [
+      "typed public APIs",
+      "deterministic CLI/contracts",
+      "capability registry",
+      "adapters behind explicit protocols"
+    ]
+  },
+  "source_layout": {
+    "python_rules_applicable": true,
+    "python_source_roots": [
+      "src"
+    ],
+    "metadata_names": [
+      "ARCHITECTURE.md",
+      "ARCHITECTURE.yaml",
+      "README.md",
+      "__init__.py",
+      "py.typed"
+    ],
+    "allowed_non_python_files": [],
+    "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved."
+  },
+  "limits": {
+    "max_immediate_runtime_entries": 10,
+    "max_python_module_lines": 500,
+    "measurement": "physical UTF-8 lines; immediate runtime .py files excluding __init__.py plus runtime package directories"
+  },
+  "libraries": {
+    "selection_policy": "Prefer well-maintained libraries; record maintenance/API/license evidence and adapter boundary before custom implementation.",
+    "decisions": [
+      {
+        "capability": "existing runtime stack",
+        "selected": [
+          "numpy",
+          "pydantic",
+          "scikit-fem",
+          "scipy"
+        ],
+        "alternatives": [
+          "custom reimplementation"
+        ],
+        "evidence": "pyproject.toml/package.json/requirements and docs/ARCHITECTURE.md",
+        "adapter_boundary": "repository public ports",
+        "custom_code_reason": "domain semantics, composition, adapters, or genuinely missing algorithms only"
+      },
+      {
+        "capability": "portfolio architecture bootstrap",
+        "selected": [
+          "Python standard library JSON parser",
+          "JSON-compatible YAML 1.2 contract"
+        ],
+        "alternatives": [
+          "hand-written YAML parser",
+          "mandatory remote governance service"
+        ],
+        "evidence": "docs/ARCHITECTURE.md",
+        "adapter_boundary": "scripts/check_portfolio_architecture.py",
+        "custom_code_reason": "narrow repository-specific fitness function not supplied by a maintained generic package"
+      }
+    ]
+  },
+  "interfaces": {
+    "ai": {
+      "primary_agent": "Hermes Agent",
+      "context_file": "AGENTS.md",
+      "interaction": "AGENTS + solver CLI/capability matrix + maintained Hermes skill; MCP only for demonstrated cross-client dispatch.",
+      "capability_discovery": "AGENTS.md plus the architecture checker is the current discovery surface; add a deterministic CLI/capability manifest before new maintained runtime behavior.",
+      "skills": "Use/update a repo or class-level Hermes skill for recurring non-trivial workflows",
+      "plugin_mcp_policy": "deferred unless stable interfaces and measured multi-client/tool interoperability justify it",
+      "declared_entrypoints": [],
+      "decision_ladder": [
+        "AGENTS.md and linked contracts",
+        "typed importable API and deterministic CLI/capability manifest",
+        "Hermes skill for recurring procedures",
+        "plugin only for measured shared lifecycle/tool needs",
+        "MCP only for measured interoperable multi-client remote discovery"
+      ],
+      "mutation_safety": "Mutation is explicit, typed, least-privileged, human-reviewable, and independently verified; no autonomous public side effects by default."
+    },
+    "human": {
+      "interaction": "Typed solver/weak-form API and notebooks; NumPy protocols for genuine arrays, lawful immutable value-object dunders only.",
+      "public_api_paths": [
+        "src/finite_element_options"
+      ],
+      "notebook_policy": "deterministic public-synthetic notebook/example for active libraries; explicit inapplicable/revival decision otherwise",
+      "dunder_policy": "Only documented lawful Python/NumPy/IPython protocols with algebraic/parity tests; named methods for policy, effects, diagnostics, I/O, or ambiguity",
+      "dunder_plan": [
+        "Immutable mesh/problem/result specs: deterministic __repr__ and explicit value semantics.",
+        "Mesh/function collections may use __iter__/__len__; pure forms/operators may use __call__.",
+        "Assembly, solve, adaptivity, calibration, I/O, and diagnostics remain named methods; NumPy protocols require shape/dtype tests."
+      ],
+      "forbidden_dunders": [
+        "Ambiguous arithmetic/order",
+        "Stateful or effectful operators",
+        "Lossy implicit conversion",
+        "Dunders that hide policy, I/O, diagnostics, or failure modes"
+      ]
+    }
+  },
+  "tests": {
+    "required_suites": [
+      "unit",
+      "integration",
+      "e2e",
+      "architecture"
+    ],
+    "commands": {
+      "setup": "python -m pip install -e '.[dev]'",
+      "test": "python -m pytest -q",
+      "lint": "ruff check . && ruff format --check .",
+      "architecture": "python scripts/check_portfolio_architecture.py"
+    },
+    "ci_workflow": ".github/workflows/portfolio-architecture.yml",
+    "mirror_source": "where pertinent"
+  },
+  "data": {
+    "consumes_data": true,
+    "architecture": "No data ownership; public-synthetic/convergence fixtures only.",
+    "required_controls": [
+      "source registry",
+      "typed contracts",
+      "classification",
+      "lineage",
+      "quality",
+      "freshness/vintage/effective time",
+      "content identity",
+      "replay",
+      "validation"
+    ],
+    "core_repositories": {
+      "PDP": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles.",
+      "financial_problem_formulations": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles.",
+      "ui_and_artifacts": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles."
+    },
+    "source_registry_plan": [
+      "typed solver requests and public-synthetic mesh/oracle/convergence fixtures"
+    ],
+    "flow": "source registry -> typed acquisition -> immutable Bronze -> canonical Silver -> curated Gold/features -> formulation/model -> governed output -> read-only UI/API/notebook",
+    "storage_and_replay": "Immutable raw/content-addressed inputs; canonical typed products; idempotent replay by source identity and effective/vintage time where applicable.",
+    "quality_and_lineage": "Validate schema, grain, units, classification, lineage, freshness, licence, and content identity before consumption; fail closed on missing evidence."
+  },
+  "governance": {
+    "architecture_source": "docs/ARCHITECTURE.yaml",
+    "update_rule": "Update contract, prose, AGENTS, tests, CI, AI/human interfaces, and public API in the same change.",
+    "checker": "scripts/check_portfolio_architecture.py",
+    "required_documents": [
+      "AGENTS.md",
+      "docs/ARCHITECTURE.yaml",
+      "docs/ARCHITECTURE.md"
+    ],
+    "exception_policy": "exact scope, reason, owner, risk, accepted ceiling, and refactoring trigger; no-growth ratchet"
+  },
+  "exceptions": [
+    {
+      "rule": "source_fanout",
+      "path": "src/finite_element_options",
+      "reason": "Legacy package fan-out predates the portfolio ratchet; immediate restructuring would create broad compatibility risk.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Navigation and coupling remain higher until cohesive subpackages are extracted.",
+      "accepted_ceiling": 16,
+      "refactoring_trigger": "The next feature that would add an immediate runtime entry must first reduce this level to 10 or document a narrower approved replacement exception."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/contracts/backend_capabilities.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 668,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/data_utils.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 594,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/estimation/calibrator.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 686,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/estimation/heston.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 770,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/jax_greeks.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 579,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/ui_config.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 753,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/validation/black_scholes_parity.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget; FPF result-evidence conformance added explicit public schema fields pending staged extraction.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 836,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract result-evidence helpers or another cohesive responsibility behind compatibility tests."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/validation/pinares_fixed_price_proxy.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget; FPF result-evidence conformance added explicit public schema fields pending staged extraction.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 1057,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract result-evidence helpers or another cohesive responsibility behind compatibility tests."
+    },
+    {
+      "rule": "python_module_max_lines",
+      "path": "src/finite_element_options/validation/verification_gates.py",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
+      "owner": "googa27 Portfolio Project #24",
+      "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
+      "accepted_ceiling": 882,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+    }
+  ]
+}

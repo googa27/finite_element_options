@@ -17,7 +17,12 @@ from finite_element_options.core.dynamics_black_scholes import (
 )
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
-from finite_element_options.fdsolver import FDSolver, solve_system, vega
+from finite_element_options.fdsolver import (
+    FDSolver,
+    fdsolver_compatibility_status,
+    solve_system,
+    vega,
+)
 
 
 def _model(rate: float = 0.03, carry: float = 0.01, sigma: float = 0.2):
@@ -37,6 +42,20 @@ def test_fd_reference_entry_points_emit_targeted_compatibility_warnings() -> Non
         solve_system(s_grid, np.linspace(0.0, 1.0, 4), dynamics, option, is_call=True)
     with pytest.warns(DeprecationWarning, match=message):
         vega(np.ones((3, 3)), 0.1)
+
+
+def test_fd_reference_shim_is_fenced_as_compatibility_only() -> None:
+    status = fdsolver_compatibility_status()
+
+    assert status == {
+        "module": "finite_element_options.fdsolver",
+        "status": "compatibility_only",
+        "replacement": "finite_difference_options",
+        "allowed_use": "finite_element_options public-synthetic FEM parity oracle",
+        "removal_version": "0.3.0",
+        "removal_date": "2026-10-31",
+        "tracking_issue": "googa27/finite_element_options#114",
+    }
 
 
 @pytest.mark.parametrize(
