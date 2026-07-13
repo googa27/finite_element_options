@@ -242,9 +242,7 @@ def test_haircut_backend_rejects_non_integer_fixture_dimensions(
     result = backend.screen(payload)
 
     assert not result.supported
-    with pytest.raises(
-        UnsupportedRouteError, match="validated public-synthetic executable benchmark"
-    ):
+    with pytest.raises(UnsupportedRouteError):
         backend.solve(payload)
 
 

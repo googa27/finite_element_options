@@ -221,6 +221,12 @@ class PinaresFEMProxyReport:
             and all(bool(value) for key, value in self.no_arbitrage.items() if key.endswith("_ok"))
         )
 
+    @property
+    def status(self) -> str:
+        """Return the FPF-facing solve status for the public result export."""
+
+        return "converged" if self.converged else "failed_tolerance"
+
     def to_public_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable public-synthetic evidence payload."""
 
@@ -231,9 +237,14 @@ class PinaresFEMProxyReport:
                 "fixture_id": self.case.fixture_id,
                 "problem_id": self.case.problem_id,
                 "problem_hash": self.case.problem_hash,
+                "status": self.status,
+                "measure": "Q*",
+                "numeraire": "UF_money_market_account_proxy",
+                "units": self.case.normalized_units(),
                 "privacy_class": "public_synthetic",
                 "route_id": self.case.route_id,
                 "backend_id": self.case.backend_id,
+                "backend_capability_status": _backend_capability_status(self.case),
                 "config_hash": self.config_hash,
                 "converged": self.converged,
                 "problem_spec": public_pinares_fixed_price_problem_spec(case=self.case),
@@ -265,6 +276,7 @@ class PinaresFEMProxyReport:
                     "gamma_abs": self.case.gamma_abs_tolerance,
                 },
                 "no_arbitrage": self.no_arbitrage,
+                "diagnostics": _result_evidence_diagnostics(self),
                 "convergence_rows": [row.to_public_dict() for row in self.rows],
                 "unsupported_scope": {
                     "rofr": "unsupported; right of first refusal is not a vanilla call",
@@ -283,13 +295,19 @@ class PinaresFEMProxyReport:
                 "benchmark_id": PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID,
                 "problem_id": self.case.problem_id,
                 "problem_hash": self.case.problem_hash,
+                "status": self.status,
+                "measure": "Q*",
+                "numeraire": "UF_money_market_account_proxy",
+                "units": self.case.normalized_units(),
                 "privacy_class": "public_synthetic",
                 "config_hash": self.config_hash,
+                "backend_capability_status": _backend_capability_status(self.case),
                 "route_id": self.case.route_id,
                 "weak_form": _weak_form_metadata(),
                 "mesh_metadata": _mesh_metadata(self.case),
                 "time_metadata": _time_metadata(self.case),
                 "boundary_conditions": _boundary_metadata(self.case),
+                "diagnostics": _result_evidence_diagnostics(self),
                 "rows": [row.to_public_dict() for row in self.rows],
                 "summary": {
                     "observed_price_uf": self.observed_price_uf,
@@ -886,6 +904,9 @@ def _config_hash(report: PinaresFEMProxyReport) -> str:
         "fixture_id": report.case.fixture_id,
         "problem_id": report.case.problem_id,
         "problem_hash": report.case.problem_hash,
+        "measure": "Q*",
+        "numeraire": "UF_money_market_account_proxy",
+        "units": report.case.normalized_units(),
         "route_id": report.case.route_id,
         "backend_id": report.case.backend_id,
         "spot_uf": report.case.spot_uf,
@@ -963,6 +984,47 @@ def _boundary_metadata(
             "enforced_nodes": 1,
         },
     ]
+
+
+def _backend_capability_status(case: PinaresFixedPriceProxyCase) -> dict[str, str | bool | None]:
+    scipy_direct = next(
+        backend
+        for backend in DEFAULT_FEM_CAPABILITY_MANIFEST.solver_backends
+        if backend.name == "scipy_direct"
+    )
+    return {
+        "backend_id": case.backend_id,
+        "manifest_status": DEFAULT_FEM_CAPABILITY_MANIFEST.status.value,
+        "linear_solver": scipy_direct.name,
+        "linear_solver_status": scipy_direct.status.value,
+        "factorization_reuse": scipy_direct.factorization_reuse,
+        "cache_scope": scipy_direct.cache_scope,
+    }
+
+
+def _result_evidence_diagnostics(report: PinaresFEMProxyReport) -> dict[str, Any]:
+    final_row = report.rows[-1]
+    return {
+        "route_id": report.case.route_id,
+        "mesh_family": "line_uniform",
+        "element_family": "lagrange_p2",
+        "time_integrator": "theta_crank_nicolson",
+        "linear_solver": "scikit_fem_scipy_direct",
+        "weak_form_sign_convention": _weak_form_metadata()["sign_convention"],
+        "coordinate_transform": _weak_form_metadata()["coordinate_transform"],
+        "spot_uf": report.case.spot_uf,
+        "strike_uf": report.case.strike_uf,
+        "risk_free_rate": report.case.risk_free_rate,
+        "volatility": report.case.volatility,
+        "maturity_years": report.case.maturity_years,
+        "survival_probability": report.case.survival_probability,
+        "refinement_level": final_row.refinement_level,
+        "degrees_of_freedom": final_row.degrees_of_freedom,
+        "time_steps": final_row.time_steps,
+        "deterministic_seed": report.case.seed if report.case.seed is not None else "not_applicable",
+        "source_issue": "googa27/finite_element_options#104",
+        "scope": "fixed-price proxy only; full family contract remains fail-closed",
+    }
 
 
 __all__ = [

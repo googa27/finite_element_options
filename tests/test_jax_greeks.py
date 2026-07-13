@@ -177,8 +177,13 @@ def test_benchmark_greeks_separates_jax_compile_transfer_and_warm_execution() ->
     assert stats["numpy"].memory_bytes is not None
     assert stats["numpy"].memory_bytes >= 0
     assert len(stats["numpy"]) == 2
+    assert stats["numpy"].as_legacy_tuple() == (
+        stats["numpy"].runtime_seconds,
+        int(stats["numpy"].memory_bytes or 0),
+    )
     assert stats["numpy"][0] == stats["numpy"].runtime_seconds
     assert tuple(stats["numpy"])[1] == int(stats["numpy"].memory_bytes or 0)
+    assert not hasattr(stats["numpy"], "__float__")
     assert stats["numpy"].device == "cpu"
     if "jax" in stats:
         jax_stats = stats["jax"]

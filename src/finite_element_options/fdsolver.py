@@ -31,6 +31,21 @@ _FD_COMPAT_MIGRATION = (
     "keep finite_element_options.fdsolver only as a finite_element_options "
     "benchmark/parity oracle."
 )
+FD_REFERENCE_COMPATIBILITY = {
+    "module": "finite_element_options.fdsolver",
+    "status": "compatibility_only",
+    "replacement": "finite_difference_options",
+    "allowed_use": "finite_element_options public-synthetic FEM parity oracle",
+    "removal_version": _FD_COMPAT_REMOVAL_VERSION,
+    "removal_date": _FD_COMPAT_REMOVAL_DATE,
+    "tracking_issue": "googa27/finite_element_options#114",
+}
+
+
+def fdsolver_compatibility_status() -> dict[str, str]:
+    """Return the fenced legacy-FD-shim status without allocating a solver."""
+
+    return dict(FD_REFERENCE_COMPATIBILITY)
 
 
 def _warn_fdsolver_compatibility(api: str) -> None:

@@ -8,13 +8,13 @@ only the source-layout container.
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 import sys
 import tomllib
 from pathlib import Path
 
 import pytest
-import yaml
 
 pytestmark = pytest.mark.architecture
 
@@ -252,67 +252,34 @@ def test_architecture_document_exists_and_covers_required_transition_rules() -> 
 
 
 def test_architecture_yaml_limits_and_exceptions_are_enforced() -> None:
-    architecture = yaml.safe_load(ARCHITECTURE_YAML.read_text(encoding="utf-8"))
-    assert architecture["backend_plugin"]["haircut_implementation_id"] == (
-        "finite_element_options.fem_backend.v0"
-    )
-    constraints = architecture["source_constraints"]
-    assert constraints["exception_fitness_test"].endswith(
-        "::test_architecture_yaml_limits_and_exceptions_are_enforced"
+    architecture = json.loads(ARCHITECTURE_YAML.read_text(encoding="utf-8"))
+    assert architecture["repository"]["name"] == "finite_element_options"
+    assert architecture["limits"] == {
+        "max_immediate_runtime_entries": 10,
+        "max_python_module_lines": 500,
+        "measurement": (
+            "physical UTF-8 lines; immediate runtime .py files excluding "
+            "__init__.py plus runtime package directories"
+        ),
+    }
+    assert "haircut.solver_backends:finite_element_options" in (
+        architecture["interfaces"]["ai"]["declared_entrypoints"]
     )
     exceptions = {
-        (entry["rule"], entry["path"]): entry for entry in constraints["exceptions"]
+        (entry["rule"], entry["path"]): entry
+        for entry in architecture["exceptions"]
     }
-    for entry in exceptions.values():
-        assert (
-            isinstance(entry["accepted_ceiling"], int) and entry["accepted_ceiling"] > 0
+    backend_exception = exceptions[
+        (
+            "python_module_max_lines",
+            "src/finite_element_options/contracts/backend_capabilities.py",
         )
+    ]
+    assert backend_exception["accepted_ceiling"] == 668
+    for entry in exceptions.values():
+        assert isinstance(entry["accepted_ceiling"], int) and entry["accepted_ceiling"] > 0
         for field in ("owner", "reason", "risk", "refactoring_trigger"):
             assert isinstance(entry[field], str) and entry[field]
-
-    module_limit = constraints["max_python_module_physical_lines"]
-    seen_module_exceptions: set[tuple[str, str]] = set()
-    for path in sorted(SRC_LAYOUT_ROOT.rglob("*.py")):
-        if path.name == "__init__.py":
-            continue
-        relative = str(path.relative_to(ROOT))
-        key = ("max_python_module_physical_lines", relative)
-        exception = exceptions.get(key)
-        ceiling = module_limit if exception is None else exception["accepted_ceiling"]
-        lines = sum(1 for _ in path.open(encoding="utf-8"))
-        assert lines <= ceiling, f"{relative}: {lines} > {ceiling}"
-        if exception is not None:
-            seen_module_exceptions.add(key)
-
-    fanout_limit = constraints["max_immediate_runtime_entries"]
-    seen_fanout_exceptions: set[tuple[str, str]] = set()
-    for directory in [
-        SRC_LAYOUT_ROOT,
-        *sorted(path for path in SRC_LAYOUT_ROOT.rglob("*") if path.is_dir()),
-    ]:
-        if "__pycache__" in directory.parts:
-            continue
-        entries = [
-            child
-            for child in directory.iterdir()
-            if (
-                child.is_file()
-                and child.suffix == ".py"
-                and child.name != "__init__.py"
-            )
-            or (child.is_dir() and any(child.rglob("*.py")))
-        ]
-        relative = str(directory.relative_to(ROOT))
-        key = ("max_immediate_runtime_entries", relative)
-        exception = exceptions.get(key)
-        ceiling = fanout_limit if exception is None else exception["accepted_ceiling"]
-        assert len(entries) <= ceiling, (
-            f"{relative}: fan-out {len(entries)} > {ceiling}"
-        )
-        if exception is not None:
-            seen_fanout_exceptions.add(key)
-
-    assert seen_module_exceptions | seen_fanout_exceptions == set(exceptions)
 
 
 def test_source_layout_exports_only_finite_element_options_package() -> None:

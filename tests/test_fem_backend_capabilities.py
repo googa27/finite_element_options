@@ -19,6 +19,8 @@ from finite_element_options.contracts import (  # noqa: E402
     UnsupportedRouteError,
     diagnose_unsupported_route,
     ensure_route_supported,
+    fpf_solver_result_evidence_contract,
+    validate_fpf_solver_result_evidence_payload,
 )
 from finite_element_options.validation import black_scholes_parity as parity_module  # noqa: E402
 from finite_element_options.validation.black_scholes_parity import (  # noqa: E402
@@ -78,12 +80,26 @@ def test_default_manifest_declares_fem_support_without_claiming_unvalidated_rout
 
 def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_routes() -> None:
     contract = DEFAULT_RELEASED_FEM_SOLVER_CONTRACT
-    manifest_payload = contract.to_public_dict()["capability_manifest"]
+    public_contract = contract.to_public_dict()
+    manifest_payload = public_contract["capability_manifest"]
     solver_statuses = {
         backend.name: backend.status for backend in contract.manifest.solver_backends
     }
 
     assert contract.backend_id == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert public_contract["schema_version"] == "finite-element-options.public-fem-solver-contract/v0"
+    assert public_contract["status"] == "validated"
+    assert public_contract["fpf_result_evidence_contract"] == fpf_solver_result_evidence_contract()
+    assert public_contract["fpf_result_evidence_contract"]["required_fields"] == [
+        "problem_id",
+        "problem_hash",
+        "status",
+        "measure",
+        "numeraire",
+        "units",
+        "backend_capability_status",
+        "diagnostics",
+    ]
     assert contract.privacy_class == "public_synthetic"
     assert "PINARES-FEM-FIXED-PRICE-PROXY-V0" in contract.public_fixture_ids
     assert "PINARES-FEM-FAIL-CLOSED-V0" in contract.public_fixture_ids
@@ -193,6 +209,23 @@ def test_empty_boundary_conditions_fail_closed_instead_of_defaulting_to_dirichle
         diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY
         and diagnostic.field == "boundary_conditions"
         and diagnostic.value == "<missing>"
+        for diagnostic in diagnostics
+    )
+
+
+def test_malformed_dimension_fails_closed_instead_of_raising_during_mapping() -> None:
+    payload = _supported_payload()
+    math_problem = payload["mathematical_problem"]
+    assert isinstance(math_problem, dict)
+    payload["mathematical_problem"] = {**math_problem, "dimension": "auto"}
+
+    request = FEMRouteRequest.from_quant_problem_spec(payload)
+    diagnostics = diagnose_unsupported_route(request)
+
+    assert request.dimension == -1
+    assert any(
+        diagnostic.reason == UnsupportedReason.UNSUPPORTED_DIMENSION
+        and diagnostic.field == "dimension"
         for diagnostic in diagnostics
     )
 
@@ -354,6 +387,7 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
     assert spec_payload["contract_version"] == "fem-parity-contract/v1"
     assert spec_payload["fixture_id"] == PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID
     assert spec_payload["problem_id"] == report.problem_id
+    assert spec_payload["problem_hash"] == report.problem_hash
     assert spec_payload["privacy_class"] == "public_synthetic"
     assert spec_payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
     assert spec_payload["weak_form"]["equation_id"] == report.weak_form.equation_id
@@ -378,8 +412,17 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     spec_payload = json.loads(FEM_BS_001_PROBLEM_SPEC_PATH.read_text())
 
     assert payload["format_version"] == "fem-bs-oracle-result-v1"
+    assert validate_fpf_solver_result_evidence_payload(payload) == ()
     assert payload["benchmark_id"] == report.benchmark_id
     assert payload["problem_id"] == report.problem_id
+    assert payload["problem_hash"] == report.problem_hash
+    assert payload["status"] == "converged"
+    assert payload["measure"] == report.measure
+    assert payload["numeraire"] == report.numeraire
+    assert payload["units"] == report.units
+    assert payload["backend_capability_status"]["backend_id"] == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert payload["backend_capability_status"]["manifest_status"] == "validated"
+    assert payload["diagnostics"]["mesh_family"] == "line_uniform"
     assert payload["config_hash"] == report.config_hash
     assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
     assert payload["comparison_policy"]["mode"] == "equal_error"

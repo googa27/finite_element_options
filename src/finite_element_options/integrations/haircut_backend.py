@@ -102,6 +102,8 @@ class FiniteElementHaircutBackend:
         *,
         expected_contract_version: str = HAIRCUT_PUBLIC_CONTRACT_VERSION,
     ) -> None:
+        """Initialize native capabilities and validate Haircut's public contract major."""
+
         contracts = build_haircut_contracts(
             manifest,
             expected_contract_version=expected_contract_version,

@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from .fpf_evidence import fpf_solver_result_evidence_contract
+from .route_mapping import coerce_dimension, state_dimension
+
 
 class CapabilityStatus(str, Enum):
     """Maturity of one advertised backend capability."""
@@ -150,11 +153,14 @@ class FEMSolverContract:
         """Return a JSON-safe released solver contract."""
 
         return {
+            "schema_version": "finite-element-options.public-fem-solver-contract/v0",
             "contract_id": self.contract_id,
             "contract_version": self.contract_version,
             "backend_id": self.backend_id,
+            "status": self.manifest.status.value,
             "privacy_class": self.privacy_class,
             "capability_manifest": self.manifest.to_public_dict(),
+            "fpf_result_evidence_contract": fpf_solver_result_evidence_contract(),
             "public_fixture_ids": list(self.public_fixture_ids),
             "public_fixture_paths": list(self.public_fixture_paths),
             "compatibility_notes": list(self.compatibility_notes),
@@ -203,11 +209,11 @@ class FEMRouteRequest:
         domain = _mapping(math.get("domain"))
         boundary_details = _mapping(math.get("boundary_conditions"))
 
-        dimension = int(
+        dimension = coerce_dimension(
             _first_present(
                 math,
                 ("dimension", "dimensions", "state_dimension"),
-                default=_state_dimension(math.get("state_variables")),
+                default=state_dimension(math.get("state_variables")),
             )
         )
 
@@ -605,15 +611,6 @@ def _tuple_of_strings(value: Any) -> tuple[str, ...]:
     if isinstance(value, Iterable) and not isinstance(value, Mapping):
         return tuple(str(item) for item in value)
     return (str(value),)
-
-
-def _state_dimension(value: Any) -> int:
-    if isinstance(value, str):
-        return 1
-    if isinstance(value, Iterable) and not isinstance(value, Mapping):
-        values = tuple(value)
-        return len(values) or 1
-    return 1
 
 
 def _boundary_condition_classes(value: Any) -> tuple[str, ...]:
