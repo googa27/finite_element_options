@@ -35,6 +35,7 @@ class UnsupportedReason(str, Enum):
     UNSUPPORTED_STABILITY_CONTROL = "unsupported_stability_control"
     UNSUPPORTED_LINEAR_SOLVER = "unsupported_linear_solver"
     UNSUPPORTED_BACKEND = "unsupported_backend"
+    UNSUPPORTED_BENCHMARK = "unsupported_benchmark"
     MISSING_CONVENTION = "missing_convention"
 
 
@@ -416,7 +417,6 @@ def diagnose_unsupported_route(
     """Return fail-closed diagnostics for unsupported request fields."""
 
     diagnostics: list[UnsupportedRouteDiagnostic] = []
-
     if request.backend_id and request.backend_id != manifest.backend_id:
         diagnostics.append(
             _diagnostic(

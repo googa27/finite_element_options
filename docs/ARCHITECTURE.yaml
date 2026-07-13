@@ -1,0 +1,134 @@
+schema_version: architecture-sidecar/v0
+repository: finite_element_options
+package: finite_element_options
+architectural_style: layered scientific library with optional protocol adapters
+layers:
+  - core
+  - contracts
+  - problems
+  - space_and_time_discretization
+  - validation
+  - optional_integrations
+public_api:
+  package: finite_element_options
+  agent_contracts:
+    - docs/ARCHITECTURE.yaml
+    - docs/architecture_contract.toml
+    - haircut.solver_backends entry-point metadata
+backend_plugin:
+  entry_point_group: haircut.solver_backends
+  entry_point_name: finite_element_options
+  entry_point_value: finite_element_options.integrations.haircut_backend:create_backend
+  haircut_implementation_id: finite_element_options.fem_backend.v0
+  native_route_backend_id: finite_element_options.fem_backend.v0
+  contract_version: 0.1.0
+  dependency_policy:
+    haircut_runtime: host-supplied public protocol only
+    forbidden_runtime_dependencies:
+      - local-path
+      - vcs
+      - haircut domain/application modules
+      - PDP/UI/calibration modules
+  advertised_executable_capabilities:
+    - benchmark: PINARES-FEM-FIXED-PRICE-PROXY-V0
+      route: line_uniform/lagrange_p2/theta/scipy_direct
+      outputs: [value, delta, gamma]
+  fail_closed_before_assembly:
+    - unsupported dimensions
+    - unsupported meshes/elements/boundaries/outputs/solver controls
+    - private payloads
+    - unsupported benchmark ids
+    - mutated public fixture shapes
+source_constraints:
+  max_immediate_runtime_entries: 10
+  max_python_module_physical_lines: 500
+  exception_fitness_test: tests/architecture/test_architecture_contracts.py::test_architecture_yaml_limits_and_exceptions_are_enforced
+  exceptions:
+    - path: src/finite_element_options
+      rule: max_immediate_runtime_entries
+      accepted_ceiling: 18
+      owner: finite_element_options maintainers
+      reason: legacy package root predates responsibility-oriented subpackages
+      risk: root-level discovery and import ownership remain harder to reason about
+      refactoring_trigger: the next new root runtime entry must first move a stable responsibility into a subpackage
+    - path: src/finite_element_options/ui_config.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 753
+      owner: finite_element_options maintainers
+      reason: legacy UI configuration models remain colocated
+      risk: UI policy changes can couple unrelated controls
+      refactoring_trigger: the next UI configuration feature must split models by responsibility
+    - path: src/finite_element_options/data_utils.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 594
+      owner: finite_element_options maintainers
+      reason: legacy data adapters and transformations remain colocated
+      risk: IO and transformation policies can drift together
+      refactoring_trigger: the next data-source feature must extract an adapter subpackage
+    - path: src/finite_element_options/jax_greeks.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 579
+      owner: finite_element_options maintainers
+      reason: optional JAX Greek implementations remain in one compatibility module
+      risk: model-specific derivatives can become tightly coupled
+      refactoring_trigger: the next JAX model or Greek must split model-specific kernels
+    - path: src/finite_element_options/estimation/calibrator.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 686
+      owner: finite_element_options maintainers
+      reason: legacy calibration data, objectives, and orchestration remain colocated
+      risk: estimator changes can couple data validation and optimization
+      refactoring_trigger: the next calibration feature must split data contracts from optimization orchestration
+    - path: src/finite_element_options/estimation/heston.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 770
+      owner: finite_element_options maintainers
+      reason: legacy Heston estimators and diagnostics remain colocated
+      risk: analytical and numerical estimation paths can diverge silently
+      refactoring_trigger: the next Heston estimator feature must extract cohesive estimator modules
+    - path: src/finite_element_options/validation/verification_gates.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 882
+      owner: finite_element_options maintainers
+      reason: historical scientific fitness gates remain centralized
+      risk: unrelated verification policies can share accidental state
+      refactoring_trigger: the next verification family must move into a dedicated validation module
+    - path: src/finite_element_options/validation/black_scholes_parity.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 742
+      owner: finite_element_options maintainers
+      reason: Black-Scholes fixtures, reports, and convergence evidence remain colocated
+      risk: fixture and oracle semantics can become difficult to isolate
+      refactoring_trigger: the next Black-Scholes benchmark must split fixtures from report generation
+    - path: src/finite_element_options/validation/pinares_fixed_price_proxy.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 995
+      owner: finite_element_options maintainers
+      reason: public-synthetic Pinares fixture, validation, and evidence remain colocated
+      risk: route identity and numerical evidence can drift in a large module
+      refactoring_trigger: the next Pinares proxy feature must split fixture identity from numerical verification
+    - path: src/finite_element_options/contracts/backend_capabilities.py
+      rule: max_python_module_physical_lines
+      accepted_ceiling: 668
+      owner: finite_element_options maintainers
+      reason: legacy capability, routing, diagnostic, and serialization contracts remain colocated
+      risk: coupled changes can obscure ownership and make capability drift harder to review
+      refactoring_trigger: the next feature that grows this module must first split route parsing and diagnostics into cohesive contract modules
+test_suites:
+  unit: tests/
+  integration: tests/test_haircut_backend_adapter.py
+  e2e: tests/test_packaging_contract.py
+  architecture: tests/architecture/
+fitness_commands:
+  - uv lock --check
+  - uv run ruff check .
+  - uv run mypy src
+  - uv run pytest -q
+  - uv run pytest tests/architecture -q
+human_interfaces:
+  - typed importable Python API
+  - examples and public-synthetic fixtures
+ai_interfaces:
+  - AGENTS.md
+  - deterministic entry-point metadata
+  - native and Haircut capability manifests

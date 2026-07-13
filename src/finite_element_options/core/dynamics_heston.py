@@ -19,7 +19,7 @@ from .config import Config
 from .interfaces import DynamicsModel, Payoff
 
 
-class _ModelDynamicsMeta(type(pyd.BaseModel), type(DynamicsModel)):
+class _ModelDynamicsMeta(type(pyd.BaseModel), type(DynamicsModel)):  # type: ignore[misc]
     """Metaclass combining ``BaseModel`` and ``DynamicsModel`` protocols."""
 
 

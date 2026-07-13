@@ -91,13 +91,14 @@ class FDSolver:
             value = getattr(self.dynamics, name, None)
             if value is None or not np.isfinite(float(value)):
                 raise ValueError(f"Black-Scholes dynamics must define finite {name}")
-        if float(self.dynamics.sig) <= 0.0:
+        if float(getattr(self.dynamics, "sig")) <= 0.0:
             raise ValueError("Black-Scholes volatility sig must be positive")
 
     def _validate_payoff_contract(self) -> None:
         if not hasattr(self.payoff, "k"):
             raise ValueError("Black-Scholes FD reference payoff must expose strike k")
-        if not np.isfinite(float(self.payoff.k)) or float(self.payoff.k) <= 0.0:
+        strike = float(getattr(self.payoff, "k"))
+        if not np.isfinite(strike) or strike <= 0.0:
             raise ValueError(
                 "Black-Scholes FD reference strike k must be finite and positive"
             )
@@ -115,9 +116,9 @@ class FDSolver:
         on interior grid nodes.  Boundary rows are left as zero rows because
         endpoint values are supplied through explicit Dirichlet elimination.
         """
-        sigma = float(self.dynamics.sig)
-        rate = float(self.dynamics.r)
-        carry = float(self.dynamics.q)
+        sigma = float(getattr(self.dynamics, "sig"))
+        rate = float(getattr(self.dynamics, "r"))
+        carry = float(getattr(self.dynamics, "q"))
         ds = self.ds
         lower = np.zeros(self.N, dtype=float)
         diag = np.zeros(self.N, dtype=float)
@@ -193,9 +194,9 @@ class FDSolver:
             raise ValueError(
                 "Dirichlet time-to-maturity th must be finite and non-negative"
             )
-        strike = float(self.payoff.k)
-        rate = float(self.dynamics.r)
-        carry = float(self.dynamics.q)
+        strike = float(getattr(self.payoff, "k"))
+        rate = float(getattr(self.dynamics, "r"))
+        carry = float(getattr(self.dynamics, "q"))
         values = np.zeros(self.N, dtype=float)
         if self.is_call:
             values[0] = 0.0
