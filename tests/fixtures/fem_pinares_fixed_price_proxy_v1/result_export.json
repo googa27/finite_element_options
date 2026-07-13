@@ -1,4 +1,12 @@
 {
+  "backend_capability_status": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "cache_scope": "per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+    "factorization_reuse": true,
+    "linear_solver": "scipy_direct",
+    "linear_solver_status": "validated",
+    "manifest_status": "validated"
+  },
   "benchmark_id": "PINARES-FEM-FIXED-PRICE-PROXY-V0",
   "boundary_conditions": [
     {
@@ -15,8 +23,30 @@
       "s_max_uf": 12000.0
     }
   ],
-  "config_hash": "c37aa963488c714e9a7f53576646850bfe5028b6996c9c030b334b9379997062",
+  "config_hash": "7b43e297a018fc4bdf17002ee092aa0f25077bf3370819fbb955dbc59c41dfbb",
+  "diagnostics": {
+    "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+    "degrees_of_freedom": 257,
+    "deterministic_seed": "not_applicable",
+    "element_family": "lagrange_p2",
+    "linear_solver": "scikit_fem_scipy_direct",
+    "maturity_years": 1.0,
+    "mesh_family": "line_uniform",
+    "refinement_level": 7,
+    "risk_free_rate": 0.015,
+    "route_id": "fem.pinares_fixed_price_proxy.weak_form_p2_theta",
+    "scope": "fixed-price proxy only; full family contract remains fail-closed",
+    "source_issue": "googa27/finite_element_options#104",
+    "spot_uf": 6000.0,
+    "strike_uf": 6200.0,
+    "survival_probability": 0.97,
+    "time_integrator": "theta_crank_nicolson",
+    "time_steps": 160,
+    "volatility": 0.12,
+    "weak_form_sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms"
+  },
   "format_version": "fem-pinares-fixed-price-proxy-result-v1",
+  "measure": "Q*",
   "mesh_metadata": {
     "domain_max": 1.9354839,
     "domain_min": 0.0,
@@ -40,6 +70,7 @@
     "value_bound_ok": true,
     "value_minus_intrinsic_uf": 231.78576
   },
+  "numeraire": "UF_money_market_account_proxy",
   "privacy_class": "public_synthetic",
   "problem_hash": "publicsyntheticpinares001",
   "problem_id": "pinares.fixed_price_option_proxy.v1",
@@ -91,6 +122,7 @@
       "time_steps": 160
     }
   ],
+  "status": "converged",
   "summary": {
     "delta_absolute_error": 3.1728918e-05,
     "delta_tolerance_absolute": 0.001,
@@ -113,6 +145,13 @@
     "theta": 0.5,
     "time_domain": "[0, 1]",
     "time_steps": 160
+  },
+  "units": {
+    "S": "UF",
+    "rate": "1/year",
+    "time": "year",
+    "underlying": "UF",
+    "value": "UF"
   },
   "weak_form": {
     "coordinate_transform": "normalized_spot_x_equals_S_over_K",

@@ -18,6 +18,7 @@ from typing import Any
 import numpy as np
 import scipy.stats as spst  # type: ignore[import-untyped]
 
+from ..contracts import DEFAULT_FEM_CAPABILITY_MANIFEST
 from ..core.dynamics_black_scholes import DynamicsParametersBlackScholes
 from ..core.market import Market
 from ..core.vanilla_bs import EuropeanOptionBs
@@ -29,6 +30,8 @@ from ..time_integration.stepper import ThetaScheme
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
 PUBLIC_SYNTHETIC_PROBLEM_ID = "public-synthetic-vanilla-call-v0"
+PUBLIC_SYNTHETIC_MEASURE = "risk_neutral"
+PUBLIC_SYNTHETIC_NUMERAIRE = "money_market_account"
 EXPECTED_BLACK_SCHOLES_CALL_PRICE = 10.450583572185565
 DEFAULT_TOLERANCE_ABSOLUTE = 2e-3
 DEFAULT_TOLERANCE_RELATIVE = 5e-4
@@ -225,6 +228,10 @@ class FEMParityReport:
 
     benchmark_id: str
     problem_id: str
+    problem_hash: str
+    measure: str
+    numeraire: str
+    units: dict[str, str]
     privacy_class: str
     expected_price: float
     observed_price: float
@@ -250,12 +257,29 @@ class FEMParityReport:
     comparison_policy: ComparisonPolicy
     config_hash: str
 
+    @property
+    def status(self) -> str:
+        """Return the FPF-facing solve status for the public result export."""
+
+        converged = (
+            self.price_absolute_error <= self.tolerance_absolute
+            and self.price_relative_error <= self.tolerance_relative
+            and self.delta_absolute_error <= self.delta_tolerance_absolute
+            and self.gamma_absolute_error <= self.gamma_tolerance_absolute
+        )
+        return "converged" if converged else "failed_tolerance"
+
     def to_public_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable evidence payload with no private data."""
 
         return {
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
+            "problem_hash": self.problem_hash,
+            "status": self.status,
+            "measure": self.measure,
+            "numeraire": self.numeraire,
+            "units": dict(self.units),
             "privacy_class": self.privacy_class,
             "expected_price": self.expected_price,
             "observed_price": self.observed_price,
@@ -272,6 +296,7 @@ class FEMParityReport:
             "tolerance_absolute": self.tolerance_absolute,
             "tolerance_relative": self.tolerance_relative,
             "config_hash": self.config_hash,
+            "backend_capability_status": _backend_capability_status(),
             "weak_form": self.weak_form.to_public_dict(),
             "mesh_metadata": self.mesh_metadata.to_public_dict(),
             "time_metadata": self.time_metadata.to_public_dict(),
@@ -298,13 +323,20 @@ class FEMParityReport:
             "format_version": "fem-bs-oracle-result-v1",
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
+            "problem_hash": self.problem_hash,
+            "status": self.status,
+            "measure": self.measure,
+            "numeraire": self.numeraire,
+            "units": dict(self.units),
             "privacy_class": self.privacy_class,
             "config_hash": self.config_hash,
+            "backend_capability_status": _backend_capability_status(),
             "comparison_policy": comparison_policy,
             "weak_form": self.weak_form.to_public_dict(),
             "mesh_metadata": self.mesh_metadata.to_public_dict(),
             "time_metadata": self.time_metadata.to_public_dict(),
             "sensitivity_reference_policy": self.sensitivity_reference_policy.to_public_dict(),
+            "diagnostics": dict(self.diagnostics),
             "rows": [row.to_public_dict() for row in self.convergence_rows],
             "summary": {
                 "expected_price": self.expected_price,
@@ -341,6 +373,7 @@ def build_public_fem_bs_oracle_problem_spec(
         "contract_version": "fem-parity-contract/v1",
         "fixture_id": PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID,
         "problem_id": PUBLIC_SYNTHETIC_PROBLEM_ID,
+        "problem_hash": _public_black_scholes_problem_hash(),
         "title": "FEM oracle fixture for public-synthetic European call",
         "privacy_class": "public_synthetic",
         "problem": {
@@ -412,8 +445,61 @@ def build_public_fem_bs_oracle_problem_spec(
 def build_fixture_config_hash(payload: dict[str, Any]) -> str:
     """Compute a deterministic hash for fixture contracts and export control."""
 
+    return _canonical_public_hash(payload)
+
+
+def _canonical_public_hash(payload: dict[str, Any]) -> str:
     payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return sha256(payload_bytes).hexdigest()
+
+
+def _public_black_scholes_problem_hash() -> str:
+    return _canonical_public_hash(
+        {
+            "problem_id": PUBLIC_SYNTHETIC_PROBLEM_ID,
+            "measure": PUBLIC_SYNTHETIC_MEASURE,
+            "numeraire": PUBLIC_SYNTHETIC_NUMERAIRE,
+            "problem": {
+                "name": "European call Black-Scholes",
+                "spot": 100.0,
+                "strike": 100.0,
+                "rate": 0.05,
+                "volatility": 0.2,
+                "maturity": 1.0,
+                "units": _public_black_scholes_units(),
+            },
+        }
+    )
+
+
+def _public_black_scholes_units() -> dict[str, str]:
+    return {
+        "spot": "CLP",
+        "strike": "CLP",
+        "underlying": "CLP",
+        "value": "CLP",
+        "rate": "1/year",
+        "time": "year",
+        "volatility": "annualized_decimal",
+        "delta": "value_per_underlying",
+        "gamma": "value_per_underlying_squared",
+    }
+
+
+def _backend_capability_status() -> dict[str, str | bool | None]:
+    scipy_direct = next(
+        backend
+        for backend in DEFAULT_FEM_CAPABILITY_MANIFEST.solver_backends
+        if backend.name == "scipy_direct"
+    )
+    return {
+        "backend_id": DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id,
+        "manifest_status": DEFAULT_FEM_CAPABILITY_MANIFEST.status.value,
+        "linear_solver": scipy_direct.name,
+        "linear_solver_status": scipy_direct.status.value,
+        "factorization_reuse": scipy_direct.factorization_reuse,
+        "cache_scope": scipy_direct.cache_scope,
+    }
 
 
 def write_public_fem_bs_oracle_spec(
@@ -546,6 +632,10 @@ def run_public_black_scholes_parity_fixture(
     report = FEMParityReport(
         benchmark_id=PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID,
         problem_id=PUBLIC_SYNTHETIC_PROBLEM_ID,
+        problem_hash=_public_black_scholes_problem_hash(),
+        measure=PUBLIC_SYNTHETIC_MEASURE,
+        numeraire=PUBLIC_SYNTHETIC_NUMERAIRE,
+        units=_public_black_scholes_units(),
         privacy_class="public_synthetic",
         expected_price=EXPECTED_BLACK_SCHOLES_CALL_PRICE,
         observed_price=final.observed_price,
@@ -592,6 +682,10 @@ def _config_hash(report: FEMParityReport) -> str:
     payload = {
         "benchmark_id": report.benchmark_id,
         "problem_id": report.problem_id,
+        "problem_hash": report.problem_hash,
+        "measure": report.measure,
+        "numeraire": report.numeraire,
+        "units": report.units,
         "privacy_class": report.privacy_class,
         "weak_form": report.weak_form.to_public_dict(),
         "mesh_metadata": report.mesh_metadata.to_public_dict(),

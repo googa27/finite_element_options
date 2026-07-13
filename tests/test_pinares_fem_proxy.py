@@ -13,6 +13,7 @@ from finite_element_options.contracts import (
     UnsupportedReason,
     diagnose_unsupported_route,
     ensure_route_supported,
+    validate_fpf_solver_result_evidence_payload,
 )
 from finite_element_options.validation.pinares_fixed_price_proxy import (
     PINARES_FEM_FAIL_CLOSED_BENCHMARK_ID,
@@ -132,6 +133,15 @@ def test_static_pinares_exports_are_current_public_and_hash_stable(
     )
     assert result_export["benchmark_id"] == PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID
     assert result_export["format_version"] == "fem-pinares-fixed-price-proxy-result-v1"
+    assert validate_fpf_solver_result_evidence_payload(result_export) == ()
+    assert result_export["problem_id"] == PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_ID
+    assert result_export["problem_hash"] == PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_HASH
+    assert result_export["status"] == "converged"
+    assert result_export["measure"] == "Q*"
+    assert result_export["numeraire"] == "UF_money_market_account_proxy"
+    assert result_export["units"] == pinares_report.case.normalized_units()
+    assert result_export["backend_capability_status"]["backend_id"] == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert result_export["diagnostics"]["route_id"] == pinares_report.case.route_id
     assert result_export["privacy_class"] == "public_synthetic"
     assert (
         result_export["summary"]["price_absolute_error_uf"]
