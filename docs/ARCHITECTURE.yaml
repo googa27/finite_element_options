@@ -92,7 +92,7 @@
           "hand-derived residual strings",
           "non-deterministic benchmark artifacts"
         ],
-        "evidence": "src/finite_element_options/validation/fem_evidence.py, fem_manufactured.py, and tests/validation",
+        "evidence": "src/finite_element_options/validation/fem_evidence.py, validation/evidence/, and tests/validation",
         "adapter_boundary": "finite_element_options.validation public exports and fem-options validation run-benchmark CLI",
         "custom_code_reason": "domain-specific manufactured problem, evidence schema, perturbation gates, and hash validation are repository contracts"
       },

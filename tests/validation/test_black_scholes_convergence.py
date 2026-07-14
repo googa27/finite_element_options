@@ -25,6 +25,20 @@ def accepted_evidence() -> dict[str, Any]:
     return evidence
 
 
+def _rebind_hashes(evidence: dict[str, Any]) -> None:
+    for hash_key, section_key in (
+        ("backend_hash", "backend"),
+        ("mesh_time_hash", "mesh_time"),
+        ("request_hash", "request"),
+        ("convention_hash", "convention"),
+        ("result_hash", "result"),
+    ):
+        evidence["hashes"][hash_key] = canonical_hash(evidence[section_key])
+    evidence["evidence_hash"] = canonical_hash(
+        {key: value for key, value in evidence.items() if key != "evidence_hash"}
+    )
+
+
 def test_black_scholes_convergence_greeks_and_no_arbitrage(
     accepted_evidence: dict[str, Any],
 ) -> None:
@@ -79,6 +93,43 @@ def test_validate_evidence_rejects_tampered_sections_hashes_and_bundle(
     tampered_bundle["evidence_hash"] = "0" * 64
     with pytest.raises(ValueError, match="evidence_hash"):
         validate_evidence(tampered_bundle)
+
+
+def test_validate_evidence_rejects_rehashed_numerically_false_rows(
+    accepted_evidence: dict[str, Any],
+) -> None:
+    manufactured = deepcopy(accepted_evidence)
+    manufactured["result"]["manufactured_h_refinement"][0]["l2_error"] = 99.0
+    _rebind_hashes(manufactured)
+    with pytest.raises(ValueError, match="manufactured refinement"):
+        validate_evidence(manufactured)
+
+    black_scholes = deepcopy(accepted_evidence)
+    black_scholes["result"]["black_scholes_rows"][-1]["observed_price"] = 99.0
+    _rebind_hashes(black_scholes)
+    with pytest.raises(ValueError, match="Black-Scholes row inconsistency"):
+        validate_evidence(black_scholes)
+
+    no_arbitrage = deepcopy(accepted_evidence)
+    no_arbitrage["result"]["no_arbitrage"]["rows"][0]["price"] = 79.0
+    _rebind_hashes(no_arbitrage)
+    with pytest.raises(ValueError, match="no-arbitrage FEM surface mismatch"):
+        validate_evidence(no_arbitrage)
+
+    perturbation = deepcopy(accepted_evidence)
+    row = perturbation["result"]["perturbation_failures"]["source"]
+    for key in (
+        "l2_error",
+        "h1_error",
+        "payoff_relevant_error",
+        "algebraic_residual_inf",
+        "boundary_residual_inf",
+    ):
+        row[key] = 0.0
+    row["accepted"] = False
+    _rebind_hashes(perturbation)
+    with pytest.raises(ValueError, match="perturbation did not fail numerical gates"):
+        validate_evidence(perturbation)
 
 
 def test_validation_cli_writes_only_after_validation(

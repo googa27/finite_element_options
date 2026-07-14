@@ -15,17 +15,13 @@ from pathlib import Path
 import json
 from typing import Any
 
-import numpy as np
 import scipy.stats as spst  # type: ignore[import-untyped]
 
 from ..contracts import DEFAULT_FEM_CAPABILITY_MANIFEST
 from ..core.dynamics_black_scholes import DynamicsParametersBlackScholes
 from ..core.market import Market
 from ..core.vanilla_bs import EuropeanOptionBs
-from ..space.boundary import DirichletBC
-from ..space.mesh import create_mesh
-from ..space.solver import SpaceSolver
-from ..time_integration.stepper import ThetaScheme
+from .evidence.black_scholes_surface import solve_black_scholes_surface
 
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
@@ -733,27 +729,16 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
 
     strike = 100.0
     dynamics = DynamicsParametersBlackScholes(r=0.05, q=0.0, sig=0.2)
-    market = Market(r=dynamics.r)
-    option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=market)
-    times = np.linspace(0.0, 1.0, time_steps + 1)
-    mesh, config = create_mesh([4.0], refinement_level)
-    mesh = mesh.with_boundaries(
-        {
-            "left": lambda x: np.isclose(x[0], 0.0),
-            "right": lambda x: np.isclose(x[0], 4.0),
-        }
-    )
-    space = SpaceSolver(mesh, dynamics, option, is_call=True, config=config)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        solution = ThetaScheme(theta=0.5).solve(
-            times, space, boundary_condition=DirichletBC(["left", "right"])
-        )
-    spot_node = int(np.argmin(np.abs(space.Vh.doflocs[0] - 1.0)))
-    normalized_price = float(solution[-1, spot_node])
-    observed_delta, observed_gamma = _central_difference_greeks(
-        space.Vh.doflocs[0], solution[-1], strike
-    )
-    observed_price = strike * normalized_price
+    option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=Market(r=dynamics.r))
+    point = solve_black_scholes_surface(
+        (strike,),
+        refinement_level=refinement_level,
+        time_steps=time_steps,
+        strike=strike,
+    )[0]
+    observed_price = point.price
+    observed_delta = point.delta
+    observed_gamma = point.gamma
     expected_price = EXPECTED_BLACK_SCHOLES_CALL_PRICE
     expected_delta = float(option.call_delta(1.0, 1.0, dynamics.sig**2))
     expected_gamma = float(
@@ -769,7 +754,7 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
     return FEMParityConvergenceRow(
         refinement_level=refinement_level,
         time_steps=time_steps,
-        degrees_of_freedom=int(space.Vh.N),
+        degrees_of_freedom=point.degrees_of_freedom,
         observed_price=observed_price,
         expected_price=expected_price,
         absolute_error=absolute_error,
@@ -781,33 +766,6 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
         expected_gamma=expected_gamma,
         gamma_absolute_error=gamma_absolute_error,
     )
-
-
-def _central_difference_greeks(
-    dof_locations: np.ndarray, values: np.ndarray, strike: float
-) -> tuple[float, float]:
-    """Return central finite-element Delta and Gamma at normalized spot one."""
-
-    order = np.argsort(dof_locations)
-    coordinates = dof_locations[order]
-    ordered_values = values[order]
-    center = int(np.argmin(np.abs(coordinates - 1.0)))
-    if center == 0 or center == len(coordinates) - 1:
-        raise ValueError("spot=1.0 must have neighboring FEM nodes for Greek extraction")
-    delta = (ordered_values[center + 1] - ordered_values[center - 1]) / (
-        coordinates[center + 1] - coordinates[center - 1]
-    )
-    gamma_normalized = (
-        2.0
-        * (
-            (ordered_values[center + 1] - ordered_values[center])
-            / (coordinates[center + 1] - coordinates[center])
-            - (ordered_values[center] - ordered_values[center - 1])
-            / (coordinates[center] - coordinates[center - 1])
-        )
-        / (coordinates[center + 1] - coordinates[center - 1])
-    )
-    return float(delta), float(gamma_normalized / strike)
 
 
 __all__ = [
