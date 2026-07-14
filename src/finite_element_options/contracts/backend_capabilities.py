@@ -375,6 +375,7 @@ DEFAULT_FEM_CAPABILITY_MANIFEST = FEMCapabilityManifest(
     solver_backends=DEFAULT_LINEAR_SOLVER_CAPABILITIES,
     notes=(
         "The executable parity fixture validates the 1D public-synthetic Black-Scholes call value.",
+        "The VQPW compiled weak-form fixture consumes serialized FPF pde_ir.v0 compiler output and fails closed before assembly if hashes, units, signs, domain/time or boundary semantics drift.",
         "The Pinares fixed-price proxy validates the same 1D weak-form envelope with public-synthetic UF units, survival-scaled terminal payoff, Lagrange P2 line mesh, theta stepping and SciPy direct solves.",
         "Adaptive meshes, higher-order elements, American exercise, obstacles/free boundaries, HJB/control and jump terms fail closed until evidenced.",
         "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixtures; broader kink-aware production evidence remains separate.",
@@ -390,6 +391,7 @@ DEFAULT_RELEASED_FEM_SOLVER_CONTRACT = FEMSolverContract(
     manifest=DEFAULT_FEM_CAPABILITY_MANIFEST,
     public_fixture_ids=(
         "fem-bs-001",
+        "VQPW-FEM-COMPILED-BS-CALL-V0",
         "PINARES-FEM-FIXED-PRICE-PROXY-V0",
         "PINARES-QPS-FIXED-PRICE-PROXY-V0",
         "PINARES-FEM-FAIL-CLOSED-V0",
@@ -397,6 +399,7 @@ DEFAULT_RELEASED_FEM_SOLVER_CONTRACT = FEMSolverContract(
     public_fixture_paths=(
         "tests/fixtures/fem_bs_001/problem_spec.json",
         "tests/fixtures/fem_bs_001/result_export.json",
+        "tests/fixtures/compiled_weak_form/black_scholes_call_v0.json",
         "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
         "tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
         "tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json",

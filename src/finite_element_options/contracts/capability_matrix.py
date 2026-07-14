@@ -142,7 +142,9 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
             "then reuse sparse LU across repeated right-hand sides."
         ),
         evidence_ids=("tests/test_solver_cache_benchmark.py",),
-        evidence_scope=("Repeated 1D line-uniform SciPy-direct solves with residual checks."),
+        evidence_scope=(
+            "Repeated 1D line-uniform SciPy-direct solves with residual checks."
+        ),
         limitations=(
             "Banded, AMG, PETSc and equal-error work-precision routes remain "
             "fail-closed until separately evidenced."
@@ -172,6 +174,33 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         ),
         benchmark_ids=("fem-bs-001",),
         reference_ids=("finite-element-options-fem-solver-contract-v0.1",),
+    ),
+    CapabilityRecord(
+        capability_id="VQPW-FEM-COMPILED-BS-CALL-V0",
+        title="Compiled pde_ir.v0 Black-Scholes weak-form adapter",
+        status=CapabilityStatus.VALIDATED,
+        workstream="Solver Contracts",
+        summary=(
+            "Serialized FPF pde_ir.v0/compiled-symbolic-operator fixture screened "
+            "before routing to the existing line-uniform Lagrange-P2 theta SciPy-direct solve."
+        ),
+        evidence_ids=(
+            "tests/test_compiled_weak_form_adapter.py",
+            "tests/fixtures/compiled_weak_form/black_scholes_call_v0.json",
+        ),
+        evidence_scope=(
+            "Exact public-synthetic Black-Scholes compiled hash, sign/unit/domain/time/boundary "
+            "preservation, analytical price/Delta/Gamma evidence, and negative fail-closed cases."
+        ),
+        limitations=(
+            "No private fixtures, FEniCSx/PETSc, adaptive meshes, multidimensional problems, "
+            "American exercise, or non-value/Delta/Gamma outputs are advertised in v0."
+        ),
+        benchmark_ids=("VQPW-FEM-COMPILED-BS-CALL-V0",),
+        reference_ids=(
+            "googa27/finite_element_options#116",
+            "googa27/financial_problem_formulations#138",
+        ),
     ),
     CapabilityRecord(
         capability_id="PINARES-FEM-FIXED-PRICE-PROXY-V0",

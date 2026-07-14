@@ -1,0 +1,863 @@
+{
+  "compiled_operator": {
+    "compiled_hash": "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e",
+    "compiler_evidence": {
+      "compiler_version": "pde_ir_symbolic_compiler.v0",
+      "grammar_version": "restricted_math_ast.v0",
+      "library_decision": "lark/sympy/pint remain optional compiler-extra dependencies; accepted callable path is dependency-free and solver-free",
+      "parser": "python.ast.parse(mode='eval') with explicit bounded nodes plus stdlib math interpreter; no eval/exec/sympify",
+      "registry_id": "public-synthetic.black_scholes_call_pde_v0.symbols.v0"
+    },
+    "expressions": [
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 4,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:6cc949c9cdd8f75e37f7826622fb6b2771220d90338ed87bfc86a30a05b96c91",
+        "free_symbols": [
+          "V"
+        ],
+        "node_count": 7,
+        "normalized": "equals(V, 0)",
+        "path": "boundary_conditions[0].expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "V": 10.0
+          },
+          "path": "boundary_conditions[0].expression",
+          "result": 10.0
+        },
+        "source_byte_count": 12,
+        "symbol_units": {
+          "V": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 4,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:3a2c9fae8bb0f919cc9e4eebe2431fb03a584ab6b62b97320d091f8b70d799d4",
+        "free_symbols": [
+          "S"
+        ],
+        "node_count": 7,
+        "normalized": "equals(S, 0)",
+        "path": "boundary_conditions[0].location",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0
+          },
+          "path": "boundary_conditions[0].location",
+          "result": 100.0
+        },
+        "source_byte_count": 12,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 9,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:0d959036a057eade5213ac6677966d38bd44a1b82ee93ba9fa2a46bb14bf2f24",
+        "free_symbols": [
+          "K",
+          "S",
+          "T",
+          "V",
+          "r",
+          "t"
+        ],
+        "node_count": 29,
+        "normalized": "asymptotic(V, (S - (K * exp((-r * (T - t))))))",
+        "path": "boundary_conditions[1].expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "K": 100.0,
+            "S": 100.0,
+            "T": 1.0,
+            "V": 10.0,
+            "r": 0.05,
+            "t": 0.5
+          },
+          "path": "boundary_conditions[1].expression",
+          "result": 7.530991202833263
+        },
+        "source_byte_count": 40,
+        "symbol_units": {
+          "K": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "T": {
+            "dimension": "time",
+            "per": "year",
+            "scale": "absolute"
+          },
+          "V": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "r": {
+            "dimension": "rate",
+            "per": "year",
+            "scale": "absolute"
+          },
+          "t": {
+            "dimension": "time",
+            "per": "year",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 4,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:86df34beab865b11e303d86530f1b0055101708baf7a90c8597d101525561bf6",
+        "free_symbols": [
+          "S",
+          "infinity"
+        ],
+        "node_count": 8,
+        "normalized": "tends_to(S, infinity)",
+        "path": "boundary_conditions[1].location",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "infinity": 400.0
+          },
+          "path": "boundary_conditions[1].location",
+          "result": -300.0
+        },
+        "source_byte_count": 21,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "infinity": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 5,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:6d3fb9a8a736c6795c5837660c3aea50d57b54cc7bc89151610ef427b5936012",
+        "free_symbols": [
+          "S",
+          "sigma"
+        ],
+        "node_count": 13,
+        "normalized": "((sigma ^ 2) * (S ^ 2))",
+        "path": "operator.terms[0].coefficient.expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "sigma": 0.2
+          },
+          "path": "operator.terms[0].coefficient.expression",
+          "result": 400.00000000000006
+        },
+        "source_byte_count": 15,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "sigma": {
+            "dimension": "volatility",
+            "per": "sqrt_year",
+            "scale": "decimal"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 7,
+        "derivative_symbols": [
+          "d2V_dS2"
+        ],
+        "expression_hash": "sha256:56bd8e40c95083d23d75208ecccd6d80bfa004c9541cb45395fbb37f06862899",
+        "free_symbols": [
+          "S",
+          "d2V_dS2",
+          "sigma"
+        ],
+        "node_count": 20,
+        "normalized": "(((0.5 * (sigma ^ 2)) * (S ^ 2)) * d2V_dS2)",
+        "path": "operator.terms[0].expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "d2V_dS2": 0.01,
+            "sigma": 0.2
+          },
+          "path": "operator.terms[0].expression",
+          "result": 2.0000000000000004
+        },
+        "source_byte_count": 31,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "d2V_dS2": {
+            "currency": "USD",
+            "dimension": "inverse_money",
+            "scale": "absolute"
+          },
+          "sigma": {
+            "dimension": "volatility",
+            "per": "sqrt_year",
+            "scale": "decimal"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "dimension": "rate",
+          "per": "year",
+          "scale": "absolute"
+        },
+        "depth": 2,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:7a8dc0de1d2a58615aaa0d75b920e037edc61fcc13e07d061f325afa2eb39b37",
+        "free_symbols": [],
+        "node_count": 2,
+        "normalized": "0.05",
+        "path": "operator.terms[1].coefficient.expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {},
+          "path": "operator.terms[1].coefficient.expression",
+          "result": 0.05
+        },
+        "source_byte_count": 4,
+        "symbol_units": {}
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 5,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:d6cdba59a64d30fb6f2406034673bc5a010055487779af4e50075dba613e17fa",
+        "free_symbols": [
+          "V",
+          "r"
+        ],
+        "node_count": 9,
+        "normalized": "(-r * V)",
+        "path": "operator.terms[1].expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "V": 10.0,
+            "r": 0.05
+          },
+          "path": "operator.terms[1].expression",
+          "result": -0.5
+        },
+        "source_byte_count": 6,
+        "symbol_units": {
+          "V": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "r": {
+            "dimension": "rate",
+            "per": "year",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 4,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:3bed4dd806b553dd3f22e77f4ff3c3dba15e520f2cd300b86ce64c994c75e8eb",
+        "free_symbols": [
+          "S",
+          "r"
+        ],
+        "node_count": 7,
+        "normalized": "(r * S)",
+        "path": "operator.terms[2].coefficient.expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "r": 0.05
+          },
+          "path": "operator.terms[2].coefficient.expression",
+          "result": 5.0
+        },
+        "source_byte_count": 5,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "r": {
+            "dimension": "rate",
+            "per": "year",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 5,
+        "derivative_symbols": [
+          "dV_dS"
+        ],
+        "expression_hash": "sha256:81a80650926eb9b8a79530850c1441b0f2012d2c5f2984783c9537135c67fc49",
+        "free_symbols": [
+          "S",
+          "dV_dS",
+          "r"
+        ],
+        "node_count": 11,
+        "normalized": "((r * S) * dV_dS)",
+        "path": "operator.terms[2].expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "dV_dS": 0.5,
+            "r": 0.05
+          },
+          "path": "operator.terms[2].expression",
+          "result": 2.5
+        },
+        "source_byte_count": 13,
+        "symbol_units": {
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "dV_dS": {
+            "dimension": "dimensionless",
+            "scale": "absolute"
+          },
+          "r": {
+            "dimension": "rate",
+            "per": "year",
+            "scale": "absolute"
+          }
+        }
+      },
+      {
+        "callable_backend": "stdlib_math_interpreter.v0",
+        "declared_result_unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        },
+        "depth": 5,
+        "derivative_symbols": [],
+        "expression_hash": "sha256:144de21f7222c7b9ce037caa3a66ca6af066012dd764b9a132810eb0c3d820f0",
+        "free_symbols": [
+          "K",
+          "S"
+        ],
+        "node_count": 11,
+        "normalized": "max((S - K), 0)",
+        "path": "terminal_condition.expression",
+        "smoke_evidence": {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "K": 100.0,
+            "S": 100.0
+          },
+          "path": "terminal_condition.expression",
+          "result": 0.0
+        },
+        "source_byte_count": 13,
+        "symbol_units": {
+          "K": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "S": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          }
+        }
+      }
+    ],
+    "registry_id": "public-synthetic.black_scholes_call_pde_v0.symbols.v0",
+    "schema_id": "financial_problem_formulations.pde_ir.compiled_symbolic_operator.v0",
+    "schema_version": "compiled_symbolic_operator.v0",
+    "semantic_evidence": {
+      "boundary_kinds": [
+        "asymptotic",
+        "dirichlet"
+      ],
+      "boundary_units_match_terminal": true,
+      "derivatives": [
+        {
+          "derivative": "d2/dS2",
+          "order": 2,
+          "path": "operator.terms[0].derivative"
+        },
+        {
+          "derivative": "d/dS",
+          "order": 1,
+          "path": "operator.terms[2].derivative"
+        }
+      ],
+      "domain_evidence": [
+        {
+          "declared_domain": "positive_real",
+          "inside_registered_bounds": true,
+          "registered_bounds": [
+            0.0,
+            400.0
+          ],
+          "smoke_value": 100.0,
+          "state_variable": "S"
+        }
+      ],
+      "finite_domain_smoke": [
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "d2V_dS2": 0.01,
+            "sigma": 0.2
+          },
+          "path": "operator.terms[0].expression",
+          "result": 2.0000000000000004
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "sigma": 0.2
+          },
+          "path": "operator.terms[0].coefficient.expression",
+          "result": 400.00000000000006
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "V": 10.0,
+            "r": 0.05
+          },
+          "path": "operator.terms[1].expression",
+          "result": -0.5
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {},
+          "path": "operator.terms[1].coefficient.expression",
+          "result": 0.05
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "dV_dS": 0.5,
+            "r": 0.05
+          },
+          "path": "operator.terms[2].expression",
+          "result": 2.5
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "r": 0.05
+          },
+          "path": "operator.terms[2].coefficient.expression",
+          "result": 5.0
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "K": 100.0,
+            "S": 100.0
+          },
+          "path": "terminal_condition.expression",
+          "result": 0.0
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0
+          },
+          "path": "boundary_conditions[0].location",
+          "result": 100.0
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "V": 10.0
+          },
+          "path": "boundary_conditions[0].expression",
+          "result": 10.0
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "S": 100.0,
+            "infinity": 400.0
+          },
+          "path": "boundary_conditions[1].location",
+          "result": -300.0
+        },
+        {
+          "callable_backend": "stdlib_math_interpreter.v0",
+          "finite": true,
+          "input_symbols": {
+            "K": 100.0,
+            "S": 100.0,
+            "T": 1.0,
+            "V": 10.0,
+            "r": 0.05,
+            "t": 0.5
+          },
+          "path": "boundary_conditions[1].expression",
+          "result": 7.530991202833263
+        }
+      ],
+      "operator_term_units_match_terminal": true,
+      "registered_symbols": [
+        "K",
+        "S",
+        "T",
+        "V",
+        "d2V_dS2",
+        "dV_dS",
+        "infinity",
+        "r",
+        "sigma",
+        "t"
+      ],
+      "resource_budgets": {
+        "max_compile_milliseconds": 500,
+        "max_depth": 12,
+        "max_derivative_order": 2,
+        "max_nodes": 80,
+        "max_operator_tokens": 80,
+        "max_piecewise_branches": 0,
+        "max_source_bytes": 4096
+      }
+    },
+    "source_formulation_id": "black_scholes_call_pde_v0",
+    "source_ir_canonical_hash": "sha256:5ab53779a5e322284a6cb18b22302c119f22bc740659aedf1c07823529d68a47",
+    "source_problem_id": "black_scholes_call_public_synthetic"
+  },
+  "compiler_issue": "googa27/financial_problem_formulations#138",
+  "fem_issue": "googa27/finite_element_options#116",
+  "fem_route": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "boundary_map": {
+      "lower": {
+        "enforced_as": "dirichlet",
+        "facet": "left",
+        "source_kind": "dirichlet",
+        "value": "0"
+      },
+      "upper": {
+        "enforced_as": "dirichlet",
+        "facet": "right",
+        "source_kind": "asymptotic",
+        "value": "S - K * exp(-r * tau)"
+      }
+    },
+    "boundary_partition": {
+      "essential": [
+        "lower",
+        "upper"
+      ],
+      "natural": []
+    },
+    "domain": {
+      "lower": 0.0,
+      "state": "S",
+      "truncated_coordinate": "spot",
+      "upper": 400.0
+    },
+    "element_family": "lagrange_p2",
+    "linear_solver": "scipy_direct",
+    "mesh_family": "line_uniform",
+    "parameters": {
+      "maturity": 1.0,
+      "rate": 0.05,
+      "spot": 100.0,
+      "strike": 100.0,
+      "volatility": 0.2
+    },
+    "requested_outputs": [
+      "value",
+      "delta",
+      "gamma"
+    ],
+    "time": {
+      "orientation": "backward",
+      "steps": 80,
+      "tau_end": 1.0,
+      "tau_start": 0.0,
+      "theta": 0.5
+    },
+    "time_integrator": "theta_crank_nicolson"
+  },
+  "fixture_id": "VQPW-FEM-COMPILED-BS-CALL-V0",
+  "pde_ir": {
+    "assumptions": {
+      "dividends": "none",
+      "rate": "constant public-synthetic continuously compounded rate r=0.05",
+      "volatility": "constant public-synthetic volatility sigma=0.20"
+    },
+    "boundary_conditions": [
+      {
+        "applies_to": "value_function",
+        "boundary_id": "lower",
+        "expression": "V = 0",
+        "kind": "dirichlet",
+        "location": "S = 0",
+        "unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        }
+      },
+      {
+        "applies_to": "value_function",
+        "boundary_id": "upper",
+        "expression": "V ~ S - K * exp(-r * (T - t))",
+        "kind": "asymptotic",
+        "location": "S -> infinity",
+        "unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        }
+      }
+    ],
+    "canonical_hash": "sha256:5ab53779a5e322284a6cb18b22302c119f22bc740659aedf1c07823529d68a47",
+    "formulation_id": "black_scholes_call_pde_v0",
+    "formulation_kind": "pde",
+    "measure": "Q",
+    "numeraire": {
+      "currency": "USD",
+      "kind": "money_market_account"
+    },
+    "operator": {
+      "equation": "dV_dt + L[V] = 0",
+      "operator_id": "black_scholes_backward_operator",
+      "sign_convention": "backward_generator_minus_discount",
+      "terms": [
+        {
+          "coefficient": {
+            "expression": "sigma^2 * S^2",
+            "name": "variance",
+            "unit": {
+              "currency": "USD",
+              "dimension": "money",
+              "scale": "absolute"
+            },
+            "variables": [
+              "S",
+              "t"
+            ]
+          },
+          "derivative": "d2/dS2",
+          "expression": "0.5 * sigma^2 * S^2 * d2V_dS2",
+          "kind": "diffusion",
+          "term_id": "diffusion",
+          "unit": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "variable": "S"
+        },
+        {
+          "coefficient": {
+            "expression": "0.05",
+            "name": "r",
+            "unit": {
+              "dimension": "rate",
+              "per": "year",
+              "scale": "absolute"
+            },
+            "variables": [
+              "t"
+            ]
+          },
+          "expression": "-r * V",
+          "kind": "discount",
+          "term_id": "discount",
+          "unit": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          }
+        },
+        {
+          "coefficient": {
+            "expression": "r * S",
+            "name": "risk_neutral_drift",
+            "unit": {
+              "currency": "USD",
+              "dimension": "money",
+              "scale": "absolute"
+            },
+            "variables": [
+              "S",
+              "t"
+            ]
+          },
+          "derivative": "d/dS",
+          "expression": "r * S * dV_dS",
+          "kind": "drift",
+          "term_id": "drift",
+          "unit": {
+            "currency": "USD",
+            "dimension": "money",
+            "scale": "absolute"
+          },
+          "variable": "S"
+        }
+      ]
+    },
+    "privacy_class": "public-synthetic",
+    "problem_id": "black_scholes_call_public_synthetic",
+    "provenance": {
+      "contains_private_data": "false",
+      "fixture_class": "public-synthetic",
+      "lineage": "generated contract fixture for financial_problem_formulations issue 137"
+    },
+    "schema_id": "financial_problem_formulations.pde_ir.v0",
+    "schema_version": "pde_ir.v0",
+    "state_variables": [
+      {
+        "description": "public-synthetic spot price",
+        "domain": "positive_real",
+        "name": "S",
+        "symbol": "S",
+        "unit": {
+          "currency": "USD",
+          "dimension": "money",
+          "scale": "absolute"
+        }
+      }
+    ],
+    "terminal_condition": {
+      "expression": "max(S - K, 0)",
+      "time_label": "T",
+      "unit": {
+        "currency": "USD",
+        "dimension": "money",
+        "scale": "absolute"
+      }
+    },
+    "time_orientation": "backward"
+  },
+  "privacy_class": "public_synthetic",
+  "schema_version": "finite-element-options.compiled-weak-form-fixture/v0",
+  "source_fixture_path": "tests/fixtures/pde_ir/black_scholes_call_v0.json",
+  "source_repo": "googa27/financial_problem_formulations"
+}

@@ -26,6 +26,9 @@ dependencies = [
     "scipy>=1.10,<2",
 ]
 
+[project.scripts]
+fem-options = "finite_element_options.cli:main"
+
 [project.entry-points."haircut.solver_backends"]
 finite_element_options = "finite_element_options.integrations.haircut_backend:create_backend"
 

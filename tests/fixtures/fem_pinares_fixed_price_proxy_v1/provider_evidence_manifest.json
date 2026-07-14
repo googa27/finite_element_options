@@ -35,6 +35,7 @@
     ],
     "notes": [
       "The executable parity fixture validates the 1D public-synthetic Black-Scholes call value.",
+      "The VQPW compiled weak-form fixture consumes serialized FPF pde_ir.v0 compiler output and fails closed before assembly if hashes, units, signs, domain/time or boundary semantics drift.",
       "The Pinares fixed-price proxy validates the same 1D weak-form envelope with public-synthetic UF units, survival-scaled terminal payoff, Lagrange P2 line mesh, theta stepping and SciPy direct solves.",
       "Adaptive meshes, higher-order elements, American exercise, obstacles/free boundaries, HJB/control and jump terms fail closed until evidenced.",
       "Greek output names are backed by deterministic central-stencil Delta/Gamma errors in the public parity fixtures; broader kink-aware production evidence remains separate."
