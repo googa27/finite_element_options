@@ -56,7 +56,8 @@
           "numpy",
           "pydantic",
           "scikit-fem",
-          "scipy"
+          "scipy",
+          "sympy"
         ],
         "alternatives": [
           "custom reimplementation"
@@ -79,6 +80,21 @@
         "evidence": "scikit-fem 12.0.2 release/API verification plus tests/test_validation_gates.py and public-synthetic convergence evidence",
         "adapter_boundary": "finite_element_options native FEM APIs and integrations/haircut_backend.py",
         "custom_code_reason": "custom code owns financial formulation semantics, validation, and evidence; scikit-fem owns maintained FEM primitives"
+      },
+      {
+        "capability": "FEM verification evidence",
+        "selected": [
+          "SymPy >=1.12,<2",
+          "SciPy sparse direct solvers",
+          "canonical JSON SHA-256"
+        ],
+        "alternatives": [
+          "hand-derived residual strings",
+          "non-deterministic benchmark artifacts"
+        ],
+        "evidence": "src/finite_element_options/validation/fem_evidence.py, validation/evidence/, and tests/validation",
+        "adapter_boundary": "finite_element_options.validation public exports and fem-options validation run-benchmark CLI",
+        "custom_code_reason": "domain-specific manufactured problem, evidence schema, perturbation gates, and hash validation are repository contracts"
       },
       {
         "capability": "portfolio architecture bootstrap",

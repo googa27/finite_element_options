@@ -4,6 +4,7 @@ scikit-fem[all]
 matplotlib
 pydantic
 scipy
+sympy
 findiff
 jax
 statsmodels

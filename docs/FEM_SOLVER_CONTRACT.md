@@ -49,6 +49,25 @@ fem-options qps screen tests/fixtures/compiled_weak_form/black_scholes_call_v0.j
 fem-options qps solve tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --out /tmp/vqpw-fem-result.json --evidence /tmp/vqpw-fem-evidence.json
 ```
 
+## FEM #117 verification evidence
+
+Issue #117 adds a deterministic, public-synthetic verification bundle for
+`fem-bs-001`. The benchmark records the strong/weak form, SymPy-generated
+manufactured source, boundary conditions, Crank-Nicolson time convention,
+mesh/time separation policy, backend versions, tolerance taxonomy, negative
+perturbation checks, Black-Scholes price/Delta/Gamma rows, no-arbitrage report,
+and immutable SHA-256 hashes for every evidence section plus the full bundle.
+The generator validates the evidence before writing it and rejects tampered
+sections, hashes, or final bundle identity.
+
+CLI evidence command:
+
+```bash
+fem-options validation run-benchmark fem-bs-001 --out /tmp/fem-bs-001-evidence.json
+```
+
+Omit `--out` to emit the validated evidence JSON on stdout.
+
 ## Pinares fixed-price proxy parity
 
 Pinares parity is limited to the public-synthetic fixed-price purchase-option proxy fixtures:

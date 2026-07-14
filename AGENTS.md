@@ -207,7 +207,9 @@ pydocstyle src/finite_element_options
 
 CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel package checks on Python 3.11/3.12, run separate optional-profile imports for advertised extras, upload package/test/benchmark/SBOM artifacts, and keep least-privilege permissions plus explicit job timeouts.
 
-Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
+- Run focused #117 evidence: `pytest -q tests/validation/test_manufactured_solutions.py tests/validation/test_black_scholes_convergence.py`.
+- Emit the deterministic FEM evidence bundle: `fem-options validation run-benchmark fem-bs-001 --out /tmp/fem-bs-001-evidence.json`; omit `--out` for JSON stdout.
+- Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 
 ## 15. Evidence by change type
 
