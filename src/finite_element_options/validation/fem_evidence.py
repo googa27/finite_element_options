@@ -11,6 +11,7 @@ from .evidence.black_scholes_surface import solve_black_scholes_surface
 from .evidence.gates import (
     FEM_VERIFICATION_SCHEMA_VERSION,
     canonical_hash,
+    convention_contract,
     tolerance_taxonomy,
     validate_evidence,
 )
@@ -30,7 +31,6 @@ FEM_VERIFICATION_BENCHMARK_ID = "fem-bs-001"
 def run_verification_benchmark() -> dict[str, Any]:
     """Run the deterministic FEM verification benchmark and return evidence JSON."""
 
-    manufactured = sympy_manufactured_problem()
     h_rows = tuple(
         run_manufactured_case(ManufacturedRunConfig(elements=n, time_steps=2048))
         for n in (16, 32, 64)
@@ -51,7 +51,7 @@ def run_verification_benchmark() -> dict[str, Any]:
     bs_rows = [row.to_public_dict() for row in bs_report.convergence_rows]
     arbitrage = _black_scholes_arbitrage_report()
     request = _request_payload()
-    convention = _convention_payload(manufactured)
+    convention = convention_contract()
     backend = _backend_payload()
     mesh_time = _mesh_time_payload(h_rows, time_rows)
     result = {
@@ -173,18 +173,6 @@ def _backend_payload() -> dict[str, str]:
         "backend": "scipy_sparse_direct",
         "fem_library": "scikit-fem maintained route plus scipy manufactured check",
         "oracle_library": "sympy",
-    }
-
-
-def _convention_payload(manufactured: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "manufactured": manufactured,
-        "black_scholes": {
-            "time": "tau=T-t",
-            "measure": "risk_neutral",
-            "numeraire": "money_market_account",
-            "operator_sign": "forward tau Black-Scholes",
-        },
     }
 
 

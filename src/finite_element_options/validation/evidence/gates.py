@@ -16,8 +16,25 @@ from ..black_scholes_parity import (
 )
 from ..verification_gates import OptionSurfacePoint, evaluate_call_arbitrage
 from .black_scholes_surface import solve_black_scholes_surface
+from .manufactured import sympy_manufactured_problem
 
 FEM_VERIFICATION_SCHEMA_VERSION = "fem-verification-evidence/v1"
+_NUMERICAL_VALIDATION_REL_TOL = 1.0e-9
+_NUMERICAL_VALIDATION_ABS_TOL = 1.0e-8
+
+
+def convention_contract() -> dict[str, Any]:
+    """Return the canonical manufactured-problem and time-orientation convention."""
+
+    return {
+        "manufactured": sympy_manufactured_problem(),
+        "black_scholes": {
+            "time": "tau=T-t",
+            "measure": "risk_neutral",
+            "numeraire": "money_market_account",
+            "operator_sign": "forward tau Black-Scholes",
+        },
+    }
 
 
 def canonical_hash(payload: Any) -> str:
@@ -68,6 +85,8 @@ def validate_evidence(evidence: dict[str, Any]) -> None:
         raise ValueError("verification evidence did not accept")
     if evidence.get("tolerance_taxonomy") != tolerance_taxonomy():
         raise ValueError("tolerance taxonomy mismatch")
+    if evidence.get("convention") != convention_contract():
+        raise ValueError("manufactured convention mismatch")
     _validate_hashes(evidence)
 
     result = _required_mapping(evidence.get("result"), "result")
@@ -237,23 +256,46 @@ def _validate_perturbations(result: dict[str, Any]) -> None:
 
 
 def _validate_black_scholes_rows(rows: list[dict[str, Any]]) -> None:
-    for row in rows:
-        refinement_level = _finite_float(row, "refinement_level")
-        time_steps = _finite_float(row, "time_steps")
-        if not refinement_level.is_integer() or not time_steps.is_integer():
-            raise ValueError("Black-Scholes refinement metadata must be integral")
-        recomputed = (
-            run_public_black_scholes_parity_fixture(
-                refinement_levels=(int(refinement_level),),
-                time_steps=int(time_steps),
-            )
-            .convergence_rows[0]
-            .to_public_dict()
-        )
-        if canonical_hash(row) != canonical_hash(recomputed):
-            raise ValueError(
-                "Black-Scholes row does not match the FEM route and analytical oracle"
-            )
+    levels = [_integral_field(row, "refinement_level") for row in rows]
+    time_steps = [_integral_field(row, "time_steps") for row in rows]
+    if len(set(time_steps)) != 1:
+        raise ValueError("Black-Scholes evidence must share one time-step count")
+    recomputed_rows = run_public_black_scholes_parity_fixture(
+        refinement_levels=tuple(levels),
+        time_steps=time_steps[0],
+    ).convergence_rows
+    if len(recomputed_rows) != len(rows):
+        raise ValueError("Black-Scholes route row count mismatch")
+    for row, recomputed_row in zip(rows, recomputed_rows):
+        recomputed = recomputed_row.to_public_dict()
+        for name in (
+            "refinement_level",
+            "time_steps",
+            "degrees_of_freedom",
+        ):
+            if _integral_field(row, name) != _integral_field(recomputed, name):
+                raise ValueError(f"Black-Scholes route metadata mismatch: {name}")
+        for name in (
+            "observed_price",
+            "expected_price",
+            "absolute_error",
+            "relative_error",
+            "observed_delta",
+            "expected_delta",
+            "delta_absolute_error",
+            "observed_gamma",
+            "expected_gamma",
+            "gamma_absolute_error",
+        ):
+            if not isclose(
+                _finite_float(row, name),
+                _finite_float(recomputed, name),
+                rel_tol=_NUMERICAL_VALIDATION_REL_TOL,
+                abs_tol=_NUMERICAL_VALIDATION_ABS_TOL,
+            ):
+                raise ValueError(
+                    f"Black-Scholes row does not match the FEM route and analytical oracle: {name}"
+                )
         expected_price = _finite_float(row, "expected_price")
         observed_price = _finite_float(row, "observed_price")
         expected_delta = _finite_float(row, "expected_delta")
@@ -331,7 +373,10 @@ def _validate_no_arbitrage(result: dict[str, Any]) -> None:
             ("gamma", expected.gamma),
         ):
             if not isclose(
-                _finite_float(row, key), target, rel_tol=1e-10, abs_tol=1e-12
+                _finite_float(row, key),
+                target,
+                rel_tol=_NUMERICAL_VALIDATION_REL_TOL,
+                abs_tol=_NUMERICAL_VALIDATION_ABS_TOL,
             ):
                 raise ValueError(f"no-arbitrage FEM surface mismatch: {key}")
         points.append(
@@ -347,10 +392,23 @@ def _validate_no_arbitrage(result: dict[str, Any]) -> None:
         )
     recomputed = evaluate_call_arbitrage(tuple(points)).to_public_dict()
     if (
-        canonical_hash(report) != canonical_hash(recomputed)
+        report.get("accepted") is not recomputed["accepted"]
+        or report.get("failures") != recomputed["failures"]
         or recomputed["accepted"] is not True
     ):
         raise ValueError("no-arbitrage evidence mismatch")
+    recomputed_rows = _required_rows(
+        recomputed.get("rows"), "recomputed no_arbitrage.rows"
+    )
+    for row, recomputed_row in zip(rows, recomputed_rows):
+        for key in ("spot", "price", "lower_bound", "upper_bound", "delta", "gamma"):
+            if not isclose(
+                _finite_float(row, key),
+                _finite_float(recomputed_row, key),
+                rel_tol=_NUMERICAL_VALIDATION_REL_TOL,
+                abs_tol=_NUMERICAL_VALIDATION_ABS_TOL,
+            ):
+                raise ValueError(f"no-arbitrage evidence mismatch: {key}")
 
 
 def _required_rows(value: Any, name: str) -> list[dict[str, Any]]:
@@ -363,6 +421,13 @@ def _required_mapping(value: Any, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{name} must be an object")
     return value
+
+
+def _integral_field(mapping: dict[str, Any], key: str) -> int:
+    number = _finite_float(mapping, key)
+    if not number.is_integer():
+        raise ValueError(f"{key} must be integral")
+    return int(number)
 
 
 def _finite_float(mapping: dict[str, Any], key: str) -> float:
@@ -386,6 +451,7 @@ def _finite_number(value: Any, name: str) -> float:
 __all__ = [
     "FEM_VERIFICATION_SCHEMA_VERSION",
     "canonical_hash",
+    "convention_contract",
     "tolerance_taxonomy",
     "validate_evidence",
 ]

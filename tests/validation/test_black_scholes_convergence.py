@@ -98,6 +98,12 @@ def test_validate_evidence_rejects_tampered_sections_hashes_and_bundle(
 def test_validate_evidence_rejects_rehashed_numerically_false_rows(
     accepted_evidence: dict[str, Any],
 ) -> None:
+    convention = deepcopy(accepted_evidence)
+    convention["convention"]["manufactured"]["source"] = "0"
+    _rebind_hashes(convention)
+    with pytest.raises(ValueError, match="manufactured convention mismatch"):
+        validate_evidence(convention)
+
     manufactured = deepcopy(accepted_evidence)
     manufactured["result"]["manufactured_h_refinement"][0]["l2_error"] = 99.0
     _rebind_hashes(manufactured)
