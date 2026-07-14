@@ -107,8 +107,25 @@ def test_validate_evidence_rejects_rehashed_numerically_false_rows(
     black_scholes = deepcopy(accepted_evidence)
     black_scholes["result"]["black_scholes_rows"][-1]["observed_price"] = 99.0
     _rebind_hashes(black_scholes)
-    with pytest.raises(ValueError, match="Black-Scholes row inconsistency"):
+    with pytest.raises(ValueError, match="Black-Scholes row"):
         validate_evidence(black_scholes)
+
+    shifted_oracle = deepcopy(accepted_evidence)
+    rows = shifted_oracle["result"]["black_scholes_rows"]
+    for row in rows:
+        row["expected_price"] += 1.0
+        row["observed_price"] += 1.0
+        row["relative_error"] = row["absolute_error"] / max(
+            abs(row["expected_price"]), 1.0
+        )
+    final = rows[-1]
+    summary = shifted_oracle["result"]["black_scholes_summary"]
+    summary["expected_price"] = final["expected_price"]
+    summary["observed_price"] = final["observed_price"]
+    summary["price_relative_error"] = final["relative_error"]
+    _rebind_hashes(shifted_oracle)
+    with pytest.raises(ValueError, match="FEM route and analytical oracle"):
+        validate_evidence(shifted_oracle)
 
     no_arbitrage = deepcopy(accepted_evidence)
     no_arbitrage["result"]["no_arbitrage"]["rows"][0]["price"] = 79.0

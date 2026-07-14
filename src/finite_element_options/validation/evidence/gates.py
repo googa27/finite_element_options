@@ -12,6 +12,7 @@ from ..black_scholes_parity import (
     DEFAULT_GAMMA_TOLERANCE_ABSOLUTE,
     DEFAULT_TOLERANCE_ABSOLUTE,
     DEFAULT_TOLERANCE_RELATIVE,
+    run_public_black_scholes_parity_fixture,
 )
 from ..verification_gates import OptionSurfacePoint, evaluate_call_arbitrage
 from .black_scholes_surface import solve_black_scholes_surface
@@ -237,6 +238,22 @@ def _validate_perturbations(result: dict[str, Any]) -> None:
 
 def _validate_black_scholes_rows(rows: list[dict[str, Any]]) -> None:
     for row in rows:
+        refinement_level = _finite_float(row, "refinement_level")
+        time_steps = _finite_float(row, "time_steps")
+        if not refinement_level.is_integer() or not time_steps.is_integer():
+            raise ValueError("Black-Scholes refinement metadata must be integral")
+        recomputed = (
+            run_public_black_scholes_parity_fixture(
+                refinement_levels=(int(refinement_level),),
+                time_steps=int(time_steps),
+            )
+            .convergence_rows[0]
+            .to_public_dict()
+        )
+        if canonical_hash(row) != canonical_hash(recomputed):
+            raise ValueError(
+                "Black-Scholes row does not match the FEM route and analytical oracle"
+            )
         expected_price = _finite_float(row, "expected_price")
         observed_price = _finite_float(row, "observed_price")
         expected_delta = _finite_float(row, "expected_delta")
