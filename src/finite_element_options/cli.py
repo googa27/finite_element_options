@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 from typing import Sequence
 
 import numpy as np
@@ -24,11 +25,38 @@ from .validation.compiled_weak_form_adapter import (
 )
 
 
+_LEGACY_HESTON_FLAGS = frozenset(
+    {
+        "--k",
+        "--T",
+        "--r",
+        "--q",
+        "--kappa",
+        "--theta",
+        "--sig",
+        "--rho",
+        "--s-max",
+        "--v-max",
+        "--nt",
+        "--refine",
+        "--lam",
+        "--call",
+        "--american",
+    }
+)
+
+
 def main(args: Sequence[str] | None = None) -> int:
     """Parse command-line arguments and run the requested public route."""
 
     parser = _build_parser()
-    ns = parser.parse_args(args=args)
+    raw_args = tuple(sys.argv[1:] if args is None else args)
+    if _qps_uses_legacy_heston_flags(raw_args):
+        parser.error(
+            "legacy Heston flags cannot be used with qps; pass a compiled "
+            "weak-form JSON payload to 'qps screen' or 'qps solve' instead"
+        )
+    ns = parser.parse_args(args=raw_args)
     if ns.command == "qps":
         return _run_qps(ns)
     return _run_legacy_heston(ns)
@@ -70,8 +98,27 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _qps_uses_legacy_heston_flags(args: Sequence[str]) -> bool:
+    """Return whether a qps invocation includes legacy Heston-only flags."""
+
+    if "qps" not in args:
+        return False
+    for item in args:
+        flag = item.split("=", 1)[0]
+        if flag in _LEGACY_HESTON_FLAGS:
+            return True
+    return False
+
+
 def _run_qps(ns: argparse.Namespace) -> int:
-    payload = load_compiled_weak_form_json(ns.payload)
+    try:
+        payload = load_compiled_weak_form_json(ns.payload)
+    except CompiledWeakFormUnsupportedError as exc:
+        if ns.qps_command == "screen" and not ns.json:
+            print("rejected")
+        else:
+            print(json.dumps(exc.screen.to_public_dict(), sort_keys=True))
+        return 2
     if ns.qps_command == "screen":
         screen = screen_compiled_weak_form(payload)
         if ns.json:

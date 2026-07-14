@@ -24,8 +24,6 @@ from .compiled_weak_form_contract import (
     PUBLIC_BS_FORMULATION_ID,
     PUBLIC_BS_SOURCE_HASH,
     PUBLIC_BS_SOURCE_PROBLEM_ID,
-    SUPPORTED_OUTPUTS,
-    SUPPORTED_ROUTE,
     CompiledWeakFormDiagnostic,
     CompiledWeakFormScreen,
     CompiledWeakFormUnsupportedError,
@@ -41,6 +39,18 @@ from .compiled_weak_form_contract import (
     reject_private_markers,
     stringify,
 )
+from .compiled_weak_form_golden import packaged_golden_fixture
+from .compiled_weak_form_screening import (
+    check_boundary_split,
+    check_compiled_expressions,
+    check_exact_json_subobject,
+    check_route,
+    check_terminal_and_boundary,
+    compiled_units,
+    expect_mapping_field,
+    reject_nested_unknown_fields,
+    request_payload,
+)
 
 
 def load_compiled_weak_form_json(path: str | Path) -> dict[str, Any]:
@@ -48,6 +58,15 @@ def load_compiled_weak_form_json(path: str | Path) -> dict[str, Any]:
 
     try:
         loaded = json.loads(Path(path).read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise CompiledWeakFormUnsupportedError(
+            rejected(
+                "compiled_weak_form.json",
+                "path",
+                stringify(path),
+                f"Unable to read compiled weak-form JSON: {exc}",
+            )
+        ) from exc
     except json.JSONDecodeError as exc:
         raise CompiledWeakFormUnsupportedError(
             rejected(
@@ -66,10 +85,30 @@ def load_compiled_weak_form_json(path: str | Path) -> dict[str, Any]:
     return loaded
 
 
-def screen_compiled_weak_form(payload: Mapping[str, Any]) -> CompiledWeakFormScreen:
+def screen_compiled_weak_form(payload: Any) -> CompiledWeakFormScreen:
     """Validate the exact public-synthetic compiled route before assembly."""
 
     diagnostics: list[CompiledWeakFormDiagnostic] = []
+    if not isinstance(payload, Mapping):
+        append_diagnostic(
+            diagnostics,
+            "compiled_weak_form.type",
+            "payload",
+            type(payload).__name__,
+            "Public screen input must be a JSON object mapping.",
+        )
+        return CompiledWeakFormScreen(
+            accepted=False,
+            fixture_id=None,
+            problem_id=None,
+            source_ir_hash=None,
+            compiled_operator_hash=None,
+            route_hash=None,
+            diagnostics=tuple(diagnostics),
+            request={},
+        )
+
+    golden = packaged_golden_fixture()
     reject_private_markers(payload, diagnostics)
     unknown = sorted(set(payload) - ALLOWED_TOP_LEVEL_FIELDS)
     for key in unknown:
@@ -85,6 +124,20 @@ def screen_compiled_weak_form(payload: Mapping[str, Any]) -> CompiledWeakFormScr
     compiled = as_mapping(payload.get("compiled_operator"))
     route = as_mapping(payload.get("fem_route"))
     operator = as_mapping(pde_ir.get("operator"))
+    golden_pde_ir = as_mapping(golden.get("pde_ir"))
+    golden_compiled = as_mapping(golden.get("compiled_operator"))
+    golden_route = as_mapping(golden.get("fem_route"))
+
+    expect_mapping_field(payload.get("pde_ir"), "pde_ir", diagnostics)
+    expect_mapping_field(
+        payload.get("compiled_operator"), "compiled_operator", diagnostics
+    )
+    expect_mapping_field(payload.get("fem_route"), "fem_route", diagnostics)
+    reject_nested_unknown_fields(pde_ir, golden_pde_ir, "pde_ir", diagnostics)
+    reject_nested_unknown_fields(
+        compiled, golden_compiled, "compiled_operator", diagnostics
+    )
+    reject_nested_unknown_fields(route, golden_route, "fem_route", diagnostics)
 
     expect_field(
         payload.get("schema_version"),
@@ -199,6 +252,13 @@ def screen_compiled_weak_form(payload: Mapping[str, Any]) -> CompiledWeakFormScr
         "compiled_weak_form.measure",
         diagnostics,
     )
+    expect_field(
+        pde_ir.get("numeraire"),
+        {"currency": "USD", "kind": "money_market_account"},
+        "pde_ir.numeraire",
+        "compiled_weak_form.numeraire",
+        diagnostics,
+    )
 
     state_variables = as_sequence(pde_ir.get("state_variables"))
     if len(state_variables) != 1:
@@ -225,6 +285,23 @@ def screen_compiled_weak_form(payload: Mapping[str, Any]) -> CompiledWeakFormScr
             "compiled_weak_form.domain",
             diagnostics,
         )
+        golden_state_variables = as_sequence(golden_pde_ir.get("state_variables"))
+        golden_state = as_mapping(golden_state_variables[0]) if golden_state_variables else {}
+        expect_field(
+            state.get("unit"),
+            as_mapping(golden_state.get("unit")),
+            "pde_ir.state_variables[0].unit",
+            "compiled_weak_form.units",
+            diagnostics,
+        )
+
+    expect_field(
+        as_mapping(pde_ir.get("terminal_condition")).get("unit"),
+        as_mapping(as_mapping(golden_pde_ir.get("terminal_condition")).get("unit")),
+        "pde_ir.terminal_condition.unit",
+        "compiled_weak_form.units",
+        diagnostics,
+    )
 
     terms = as_sequence(operator.get("terms"))
     term_kinds = tuple(stringify(as_mapping(term).get("kind")) for term in terms)
@@ -236,11 +313,36 @@ def screen_compiled_weak_form(payload: Mapping[str, Any]) -> CompiledWeakFormScr
             repr(term_kinds),
             "Only diffusion/discount/drift Black-Scholes terms in compiler order are supported.",
         )
-    _check_boundary_split(pde_ir, route, diagnostics)
-    _check_route(route, diagnostics)
-    _check_compiled_expressions(compiled, diagnostics)
+    check_terminal_and_boundary(pde_ir, route, golden_pde_ir, golden_route, diagnostics)
+    check_exact_json_subobject(
+        pde_ir,
+        golden_pde_ir,
+        "pde_ir",
+        "compiled_weak_form.pde_ir_exact",
+        diagnostics,
+        "pde_ir subobject must exactly match the packaged public Black-Scholes fixture.",
+    )
+    check_exact_json_subobject(
+        compiled,
+        golden_compiled,
+        "compiled_operator",
+        "compiled_weak_form.compiled_operator_exact",
+        diagnostics,
+        "compiled_operator subobject must exactly match the packaged public Black-Scholes fixture.",
+    )
+    check_exact_json_subobject(
+        route,
+        golden_route,
+        "fem_route",
+        "compiled_weak_form.route_exact",
+        diagnostics,
+        "fem_route must exactly match the released line-uniform/Lagrange-P2/theta/SciPy-direct route.",
+    )
+    check_boundary_split(pde_ir, route, diagnostics)
+    check_route(route, diagnostics)
+    check_compiled_expressions(compiled, golden_compiled, diagnostics)
 
-    request = _request_payload(payload, pde_ir, compiled, route)
+    request = request_payload(payload, pde_ir, compiled, route)
     route_hash = hash_json(request) if not diagnostics else None
     return CompiledWeakFormScreen(
         accepted=not diagnostics,
@@ -261,9 +363,13 @@ def solve_compiled_weak_form(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not screen.accepted:
         raise CompiledWeakFormUnsupportedError(screen)
     route = as_mapping(payload.get("fem_route"))
+    pde_ir = as_mapping(payload.get("pde_ir"))
     time = as_mapping(route.get("time"))
+    steps = time.get("steps", 80)
+    if type(steps) is not int:  # defensive: accepted screens guarantee this branch is dead.
+        raise CompiledWeakFormUnsupportedError(screen_compiled_weak_form(payload))
     report = run_public_black_scholes_parity_fixture(
-        refinement_levels=(4, 5, 6), time_steps=int(time.get("steps", 80))
+        refinement_levels=(4, 5, 6), time_steps=steps
     )
     result = report.export_payload()
     result["format_version"] = "compiled-weak-form-fem-result-v0"
@@ -273,8 +379,8 @@ def solve_compiled_weak_form(payload: Mapping[str, Any]) -> dict[str, Any]:
     result["route_hash"] = screen.route_hash
     result["problem_id"] = screen.problem_id
     result["measure"] = "Q"
-    result["numeraire"] = as_mapping(payload["pde_ir"].get("numeraire"))
-    result["units"] = _compiled_units(as_mapping(payload["pde_ir"]))
+    result["numeraire"] = as_mapping(pde_ir.get("numeraire"))
+    result["units"] = compiled_units(pde_ir)
     result["screen"] = screen.to_public_dict()
     result["weak_form"]["source_sign_convention"] = "backward_generator_minus_discount"
     result["weak_form"]["source_equation"] = "dV_dt + L[V] = 0"
@@ -314,134 +420,6 @@ def evidence_for_result(result: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _check_boundary_split(
-    pde_ir: Mapping[str, Any],
-    route: Mapping[str, Any],
-    diagnostics: list[CompiledWeakFormDiagnostic],
-) -> None:
-    boundaries = tuple(
-        as_mapping(item) for item in as_sequence(pde_ir.get("boundary_conditions"))
-    )
-    kinds = tuple(stringify(item.get("kind")) for item in boundaries)
-    if kinds != ("dirichlet", "asymptotic"):
-        append_diagnostic(
-            diagnostics,
-            "compiled_weak_form.boundary",
-            "pde_ir.boundary_conditions",
-            repr(kinds),
-            "Only lower Dirichlet plus upper asymptotic Black-Scholes boundaries are supported.",
-        )
-    partition = as_mapping(route.get("boundary_partition"))
-    if (
-        tuple(partition.get("essential", ())) != ("lower", "upper")
-        or tuple(partition.get("natural", ())) != ()
-    ):
-        append_diagnostic(
-            diagnostics,
-            "compiled_weak_form.boundary_partition",
-            "fem_route.boundary_partition",
-            stringify(partition),
-            "The v0 route must preserve essential lower/upper enforcement and an empty natural split.",
-        )
-
-
-def _check_route(
-    route: Mapping[str, Any], diagnostics: list[CompiledWeakFormDiagnostic]
-) -> None:
-    for field, expected in SUPPORTED_ROUTE.items():
-        expect_field(
-            route.get(field),
-            expected,
-            f"fem_route.{field}",
-            "compiled_weak_form.route",
-            diagnostics,
-        )
-    requested_outputs = tuple(route.get("requested_outputs", ()))
-    if requested_outputs != SUPPORTED_OUTPUTS:
-        append_diagnostic(
-            diagnostics,
-            "compiled_weak_form.outputs",
-            "fem_route.requested_outputs",
-            repr(requested_outputs),
-            "The exact v0 route exposes value, delta and gamma only.",
-        )
-    domain = as_mapping(route.get("domain"))
-    if (
-        domain.get("state"),
-        float(domain.get("lower", -1.0)),
-        float(domain.get("upper", -1.0)),
-    ) != ("S", 0.0, 400.0):
-        append_diagnostic(
-            diagnostics,
-            "compiled_weak_form.domain",
-            "fem_route.domain",
-            stringify(domain),
-            "The exact v0 route uses the finite public spot domain [0, 400].",
-        )
-
-
-def _check_compiled_expressions(
-    compiled: Mapping[str, Any], diagnostics: list[CompiledWeakFormDiagnostic]
-) -> None:
-    expressions = as_sequence(compiled.get("expressions"))
-    paths = {
-        stringify(as_mapping(item).get("path")): as_mapping(item) for item in expressions
-    }
-    required = {
-        "operator.terms[0].expression": "(((0.5 * (sigma ^ 2)) * (S ^ 2)) * d2V_dS2)",
-        "operator.terms[1].expression": "(-r * V)",
-        "operator.terms[2].expression": "((r * S) * dV_dS)",
-        "terminal_condition.expression": "max((S - K), 0)",
-    }
-    for path, normalized in required.items():
-        if path not in paths:
-            append_diagnostic(
-                diagnostics,
-                "compiled_weak_form.expression_missing",
-                path,
-                "<missing>",
-                "Compiled expression path is absent.",
-            )
-        elif paths[path].get("normalized") != normalized:
-            append_diagnostic(
-                diagnostics,
-                "compiled_weak_form.expression",
-                path,
-                stringify(paths[path].get("normalized")),
-                "Compiled expression normalization changed; refusing route.",
-            )
-
-
-def _request_payload(
-    payload: Mapping[str, Any],
-    pde_ir: Mapping[str, Any],
-    compiled: Mapping[str, Any],
-    route: Mapping[str, Any],
-) -> dict[str, Any]:
-    return {
-        "fixture_id": payload.get("fixture_id"),
-        "source_problem_id": pde_ir.get("problem_id"),
-        "source_formulation_id": pde_ir.get("formulation_id"),
-        "source_ir_hash": pde_ir.get("canonical_hash"),
-        "compiled_operator_hash": compiled.get("compiled_hash"),
-        "measure": pde_ir.get("measure"),
-        "numeraire": pde_ir.get("numeraire"),
-        "units": _compiled_units(pde_ir),
-        "time_orientation": pde_ir.get("time_orientation"),
-        "operator_sign_convention": as_mapping(pde_ir.get("operator")).get(
-            "sign_convention"
-        ),
-        "route": route,
-    }
-
-
-def _compiled_units(pde_ir: Mapping[str, Any]) -> dict[str, Any]:
-    state_variables = as_sequence(pde_ir.get("state_variables"))
-    state_unit = (
-        as_mapping(as_mapping(state_variables[0]).get("unit")) if state_variables else {}
-    )
-    terminal_unit = as_mapping(as_mapping(pde_ir.get("terminal_condition")).get("unit"))
-    return {"state": state_unit, "value": terminal_unit}
 
 
 

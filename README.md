@@ -43,7 +43,7 @@ The bundled module form is also executable from an installed wheel:
 python -m finite_element_options.examples.basic_usage
 ```
 
-The VQPW compiled weak-form CLI screens serialized public FPF compiler fixtures before any FEM assembly:
+The VQPW compiled weak-form CLI screens serialized public FPF compiler fixtures before any FEM assembly. Screening is exact and fail-closed: the packaged public `pde_ir`, `compiled_operator`, route, boundary and theta-time blocks must match the golden Black-Scholes fixture, nested unknown fields are rejected, and conversion/type problems are returned as `CompiledWeakFormDiagnostic` entries instead of raw exceptions:
 
 ```text
 fem-options qps screen tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --json

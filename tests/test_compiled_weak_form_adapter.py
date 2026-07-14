@@ -6,10 +6,12 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from finite_element_options.validation import compiled_weak_form_adapter as adapter
+from finite_element_options.validation import compiled_weak_form_screening as screening
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = (
@@ -17,7 +19,7 @@ FIXTURE = (
 )
 
 
-def _payload() -> dict[str, object]:
+def _payload() -> dict[str, Any]:
     return json.loads(FIXTURE.read_text(encoding="utf-8"))
 
 
@@ -163,6 +165,237 @@ def test_private_mutated_or_unsupported_compiled_fixtures_fail_before_assembly(
     assert excinfo.value.screen.accepted is False
 
 
+@pytest.mark.parametrize(
+    ("label", "mutator", "expected_code"),
+    [
+        (
+            "numeraire_currency",
+            lambda p: p["pde_ir"]["numeraire"].__setitem__("currency", "EUR"),
+            "compiled_weak_form.numeraire",
+        ),
+        (
+            "state_unit_currency",
+            lambda p: p["pde_ir"]["state_variables"][0]["unit"].__setitem__(
+                "currency", "EUR"
+            ),
+            "compiled_weak_form.units",
+        ),
+        (
+            "terminal_payoff",
+            lambda p: p["pde_ir"]["terminal_condition"].__setitem__(
+                "expression", "max(K - S, 0)"
+            ),
+            "compiled_weak_form.terminal",
+        ),
+        (
+            "boundary_expression",
+            lambda p: p["pde_ir"]["boundary_conditions"][1].__setitem__(
+                "expression", "V = S"
+            ),
+            "compiled_weak_form.boundary",
+        ),
+        (
+            "boundary_map",
+            lambda p: p["fem_route"]["boundary_map"]["upper"].__setitem__(
+                "enforced_as", "natural"
+            ),
+            "compiled_weak_form.boundary",
+        ),
+        (
+            "route_parameters",
+            lambda p: p["fem_route"]["parameters"].__setitem__("rate", 0.06),
+            "compiled_weak_form.route_exact",
+        ),
+        (
+            "expression_hash",
+            lambda p: p["compiled_operator"]["expressions"][5].__setitem__(
+                "expression_hash", "sha256:mutated"
+            ),
+            "compiled_weak_form.expression_hash",
+        ),
+        (
+            "expression_semantics",
+            lambda p: p["compiled_operator"]["expressions"][5].__setitem__(
+                "normalized", "0"
+            ),
+            "compiled_weak_form.expression",
+        ),
+        (
+            "semantic_unit_evidence",
+            lambda p: p["compiled_operator"]["semantic_evidence"].__setitem__(
+                "operator_term_units_match_terminal", False
+            ),
+            "compiled_weak_form.units",
+        ),
+        (
+            "nested_unknown",
+            lambda p: p["pde_ir"]["operator"].__setitem__("extra", "x"),
+            "compiled_weak_form.unknown_field",
+        ),
+    ],
+)
+def test_exact_screening_rejects_review_probe_mutations(
+    label: str, mutator, expected_code: str
+) -> None:
+    payload = _payload()
+    mutator(payload)
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert label
+    assert screen.accepted is False
+    assert expected_code in _codes(screen)
+    with pytest.raises(adapter.CompiledWeakFormUnsupportedError) as excinfo:
+        adapter.solve_compiled_weak_form(payload)
+    assert expected_code in _codes(excinfo.value.screen)
+
+
+@pytest.mark.parametrize(
+    ("label", "mutator", "expected_code"),
+    [
+        (
+            "time_orientation",
+            lambda p: p["fem_route"]["time"].__setitem__("orientation", "forward"),
+            "compiled_weak_form.time",
+        ),
+        (
+            "time_steps_not_80",
+            lambda p: p["fem_route"]["time"].__setitem__("steps", 79),
+            "compiled_weak_form.time",
+        ),
+        (
+            "time_steps_non_positive",
+            lambda p: p["fem_route"]["time"].__setitem__("steps", -1),
+            "compiled_weak_form.time",
+        ),
+        (
+            "time_steps_string_conversion",
+            lambda p: p["fem_route"]["time"].__setitem__("steps", "80"),
+            "compiled_weak_form.conversion",
+        ),
+        (
+            "tau_start",
+            lambda p: p["fem_route"]["time"].__setitem__("tau_start", 0.1),
+            "compiled_weak_form.time",
+        ),
+        (
+            "tau_end",
+            lambda p: p["fem_route"]["time"].__setitem__("tau_end", 0.9),
+            "compiled_weak_form.time",
+        ),
+        (
+            "theta",
+            lambda p: p["fem_route"]["time"].__setitem__("theta", 1.0),
+            "compiled_weak_form.time",
+        ),
+        (
+            "theta_string_conversion",
+            lambda p: p["fem_route"]["time"].__setitem__("theta", "0.5"),
+            "compiled_weak_form.conversion",
+        ),
+    ],
+)
+def test_time_block_is_exact_and_conversion_diagnostics_are_fail_closed(
+    label: str, mutator, expected_code: str
+) -> None:
+    payload = _payload()
+    mutator(payload)
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert label
+    assert screen.accepted is False
+    assert expected_code in _codes(screen)
+    with pytest.raises(adapter.CompiledWeakFormUnsupportedError) as excinfo:
+        adapter.solve_compiled_weak_form(payload)
+    assert excinfo.value.screen.accepted is False
+
+
+def test_non_json_conversion_payload_returns_diagnostic_not_raw_value_error() -> None:
+    payload = _payload()
+    payload["fem_route"]["time"]["theta"] = object()
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert screen.accepted is False
+    assert "compiled_weak_form.conversion" in _codes(screen)
+
+
+def test_public_screen_input_requires_mapping_diagnostic() -> None:
+    screen = adapter.screen_compiled_weak_form(["not", "a", "mapping"])
+
+    assert screen.accepted is False
+    assert screen.request == {}
+    assert "compiled_weak_form.type" in _codes(screen)
+
+
+def test_domain_number_conversions_are_typed_and_fail_closed() -> None:
+    payload = _payload()
+    payload["fem_route"]["domain"]["upper"] = "400.0"
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert screen.accepted is False
+    assert "compiled_weak_form.conversion" in _codes(screen)
+
+
+def test_non_finite_route_numbers_are_rejected_with_conversion_diagnostic() -> None:
+    payload = _payload()
+    payload["fem_route"]["domain"]["lower"] = float("nan")
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert screen.accepted is False
+    assert "compiled_weak_form.conversion" in _codes(screen)
+
+
+def test_boundary_split_is_keyed_by_boundary_id_not_list_order() -> None:
+    payload = _payload()
+    diagnostics: list[adapter.CompiledWeakFormDiagnostic] = []
+    pde_ir = {
+        "boundary_conditions": list(reversed(payload["pde_ir"]["boundary_conditions"]))
+    }
+
+    screening.check_boundary_split(pde_ir, payload["fem_route"], diagnostics)
+
+    assert diagnostics == []
+
+
+def test_duplicate_boundary_ids_are_rejected() -> None:
+    payload = _payload()
+    payload["pde_ir"]["boundary_conditions"][0]["boundary_id"] = "upper"
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert screen.accepted is False
+    assert "compiled_weak_form.boundary" in _codes(screen)
+
+
+def test_duplicate_compiled_expression_paths_are_rejected() -> None:
+    payload = _payload()
+    payload["compiled_operator"]["expressions"].append(
+        dict(payload["compiled_operator"]["expressions"][-1])
+    )
+
+    screen = adapter.screen_compiled_weak_form(payload)
+
+    assert screen.accepted is False
+    assert "compiled_weak_form.expression_duplicate" in _codes(screen)
+
+
+def test_adapter_uses_safe_payload_access_after_screening() -> None:
+    source = (
+        ROOT
+        / "src"
+        / "finite_element_options"
+        / "validation"
+        / "compiled_weak_form_adapter.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'payload["pde_ir"]' not in source
+    assert "int(time.get" not in source
+
+
 def test_unknown_private_field_fails_closed_without_source_tree_imports() -> None:
     payload = _payload()
     payload["private_statement_id"] = "secret-123"
@@ -236,3 +469,25 @@ def test_cli_screen_and_solve_emit_deterministic_json(tmp_path: Path) -> None:
     assert evidence == adapter.evidence_for_result(result)
     assert evidence["compiled_operator_hash"] == adapter.PUBLIC_BS_COMPILED_HASH
     assert json.loads(result_path.read_text(encoding="utf-8")) == result
+
+
+def test_cli_qps_rejects_legacy_heston_flags_instead_of_ignoring_them() -> None:
+    run = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "finite_element_options.cli",
+            "--k",
+            "2.0",
+            "qps",
+            "screen",
+            str(FIXTURE),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert run.returncode == 2
+    assert "legacy Heston flags cannot be used with qps" in run.stderr
