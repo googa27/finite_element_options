@@ -411,6 +411,7 @@ dependencies = [
     { name = "scikit-fem" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "sympy" },
 ]
 
 [package.optional-dependencies]
@@ -520,6 +521,7 @@ requires-dist = [
     { name = "streamlit", marker = "extra == 'dev'", specifier = ">=1.30,<2" },
     { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.30,<2" },
     { name = "streamlit", marker = "extra == 'viz'", specifier = ">=1.30,<2" },
+    { name = "sympy", specifier = ">=1.12,<2" },
     { name = "twine", marker = "extra == 'build'", specifier = ">=5,<7" },
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5,<7" },
     { name = "xarray", marker = "extra == 'dev'", specifier = ">=2024.1,<2027" },

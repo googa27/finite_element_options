@@ -133,6 +133,32 @@ DEFAULT_CAPABILITY_RECORDS: tuple[CapabilityRecord, ...] = (
         reference_ids=("issue-42",),
     ),
     CapabilityRecord(
+        capability_id="VQPW-FEM-VERIFICATION-EVIDENCE-V0",
+        title="Deterministic FEM verification evidence bundle",
+        status=CapabilityStatus.VALIDATED,
+        workstream="Validation",
+        summary=(
+            "Versioned public-synthetic evidence for fem-bs-001 combining SymPy "
+            "manufactured residuals, separated h/time convergence, negative "
+            "perturbations, Black-Scholes price/Delta/Gamma, no-arbitrage gates, "
+            "and immutable section/evidence hashes."
+        ),
+        evidence_ids=(
+            "tests/validation/test_manufactured_solutions.py",
+            "tests/validation/test_black_scholes_convergence.py",
+        ),
+        evidence_scope=(
+            "Public synthetic deterministic validation evidence for issue #117; "
+            "CLI emits validated JSON via fem-options validation run-benchmark fem-bs-001."
+        ),
+        limitations=(
+            "This evidence qualifies the accepted Black-Scholes/manufactured route only; "
+            "it does not advertise American, Heston, adaptive or external FEniCSx production coverage."
+        ),
+        benchmark_ids=("fem-bs-001",),
+        reference_ids=("googa27/finite_element_options#117",),
+    ),
+    CapabilityRecord(
         capability_id="FEM-SOLVER-CACHE-001",
         title="SciPy direct sparse factorization reuse",
         status=CapabilityStatus.VALIDATED,

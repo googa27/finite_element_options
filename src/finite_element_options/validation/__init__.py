@@ -34,6 +34,17 @@ from .compiled_weak_form_adapter import (
     solve_compiled_weak_form,
     solve_compiled_weak_form_file,
 )
+from .fem_evidence import (
+    FEM_VERIFICATION_BENCHMARK_ID,
+    FEM_VERIFICATION_SCHEMA_VERSION,
+    ManufacturedRunConfig,
+    ManufacturedRunResult,
+    canonical_hash,
+    run_manufactured_case,
+    run_verification_benchmark,
+    sympy_manufactured_problem,
+    validate_evidence,
+)
 from .pinares_fixed_price_proxy import (
     PINARES_FEM_FAIL_CLOSED_BENCHMARK_ID,
     PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID,
@@ -120,6 +131,15 @@ __all__ = [
     "screen_compiled_weak_form",
     "solve_compiled_weak_form",
     "solve_compiled_weak_form_file",
+    "FEM_VERIFICATION_BENCHMARK_ID",
+    "FEM_VERIFICATION_SCHEMA_VERSION",
+    "ManufacturedRunConfig",
+    "ManufacturedRunResult",
+    "canonical_hash",
+    "run_manufactured_case",
+    "run_verification_benchmark",
+    "sympy_manufactured_problem",
+    "validate_evidence",
     "PINARES_FEM_FAIL_CLOSED_BENCHMARK_ID",
     "PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID",
     "PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS",

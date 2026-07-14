@@ -59,6 +59,8 @@ def main(args: Sequence[str] | None = None) -> int:
     ns = parser.parse_args(args=raw_args)
     if ns.command == "qps":
         return _run_qps(ns)
+    if ns.command == "validation":
+        return _run_validation(ns)
     return _run_legacy_heston(ns)
 
 
@@ -79,6 +81,16 @@ def _build_parser() -> argparse.ArgumentParser:
     solve.add_argument("payload", help="Path to compiled weak-form JSON")
     solve.add_argument("--out", required=True, help="Result JSON path")
     solve.add_argument("--evidence", required=True, help="Evidence JSON path")
+
+    validation = subparsers.add_parser(
+        "validation", help="Run deterministic validation evidence benchmarks"
+    )
+    validation_sub = validation.add_subparsers(dest="validation_command", required=True)
+    run_benchmark = validation_sub.add_parser(
+        "run-benchmark", help="Run a public validation benchmark"
+    )
+    run_benchmark.add_argument("benchmark_id", choices=["fem-bs-001"])
+    run_benchmark.add_argument("--out", help="Write evidence JSON to this path")
 
     parser.add_argument("--k", type=float, default=0.4, help="Strike price")
     parser.add_argument("--T", type=float, default=1.0, help="Maturity")
@@ -108,6 +120,39 @@ def _qps_uses_legacy_heston_flags(args: Sequence[str]) -> bool:
         if flag in _LEGACY_HESTON_FLAGS:
             return True
     return False
+
+
+def _run_validation(ns: argparse.Namespace) -> int:
+    """Run deterministic validation benchmarks and emit validated evidence."""
+
+    from .validation.fem_evidence import (
+        FEM_VERIFICATION_BENCHMARK_ID,
+        run_verification_benchmark,
+        validate_evidence,
+    )
+
+    if ns.validation_command != "run-benchmark":
+        raise ValueError(f"unknown validation command: {ns.validation_command}")
+    if ns.benchmark_id != FEM_VERIFICATION_BENCHMARK_ID:
+        raise ValueError(f"unknown validation benchmark: {ns.benchmark_id}")
+    evidence = run_verification_benchmark()
+    validate_evidence(evidence)
+    if ns.out:
+        _write_json(ns.out, evidence)
+        print(
+            json.dumps(
+                {
+                    "status": evidence["status"],
+                    "benchmark_id": evidence["benchmark_id"],
+                    "evidence_hash": evidence["evidence_hash"],
+                    "out": ns.out,
+                },
+                sort_keys=True,
+            )
+        )
+    else:
+        print(json.dumps(evidence, sort_keys=True))
+    return 0
 
 
 def _run_qps(ns: argparse.Namespace) -> int:
