@@ -198,6 +198,8 @@ Issue #78 adds the Pinares-specific public-synthetic fixed-price proxy weak-form
 
 Project #17 publishes a released public FEM solver contract for Pinares fixed-price proxy parity and closes the residual solver-cache evidence for #47/#71. The validated solver route remains `scipy_direct`; repeated one-dimensional line-uniform theta solves reuse one sparse LU factorization per invariant system and record factorization reuse counts plus max residual. Banded, AMG and PETSc routes are explicit unsupported capabilities until their own dependency/profile, convergence and equal-error benchmark evidence exists.
 
+Issue #116 consumes FPF `pde_ir.v0` compiled weak-form artifacts through serialized public fixtures. The supported VQPW v0 route is exactly `tests/fixtures/compiled_weak_form/black_scholes_call_v0.json`: public-synthetic Black-Scholes, one-dimensional finite spot domain `[0, 400]`, lower/upper essential endpoint enforcement (natural split empty), Lagrange-P2 line mesh, theta/Crank-Nicolson time stepping, SciPy-direct sparse solves, and value/Delta/Gamma analytical evidence. The adapter rejects private, mutated, unsupported mesh/BC/dimension/exercise/output/schema/hash/sign/unit/measure/numeraire fixtures before assembly and exposes deterministic `fem-options qps screen|solve` JSON.
+
 ### FR-FEM-012 — Module ownership and duplicate retirement
 
 The stable package owns FEM numerical mechanics. The embedded FD implementation, full application/product workflows, duplicate examples and heavy UI/calibration responsibilities must be classified as core, optional, example, compatibility, migrate or delete.

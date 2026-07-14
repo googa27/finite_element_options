@@ -34,6 +34,21 @@ Unsupported solver routes fail closed in the manifest:
 - `amg`: unsupported until optional dependency, convergence, tolerance, and equal-error evidence exists.
 - `petsc`: unsupported until PETSc profile/platform and parity evidence exists.
 
+## VQPW compiled weak-form fixture
+
+Issue #116 adds the public-synthetic compiled weak-form route:
+
+- `tests/fixtures/compiled_weak_form/black_scholes_call_v0.json`
+
+The fixture packages serialized FPF `pde_ir.v0` and `compiled_symbolic_operator.v0` evidence. The FEM adapter reads that JSON as data, verifies the exact public hashes and conventions, then routes to the existing scikit-fem/SciPy direct Black-Scholes solver. It preserves `Q` measure, USD money-market numeraire, source/compiled hashes, backward-generator-minus-discount sign metadata, the finite `[0, 400]` spot domain, theta time horizon, and the essential lower/upper boundary split with no natural boundary contribution in v0. Mutated/private/unsupported schema, mesh, boundary, dimension, exercise, output, unit, sign, measure, numeraire, or hash fields fail closed before assembly.
+
+CLI evidence commands:
+
+```bash
+fem-options qps screen tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --json
+fem-options qps solve tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --out /tmp/vqpw-fem-result.json --evidence /tmp/vqpw-fem-evidence.json
+```
+
 ## Pinares fixed-price proxy parity
 
 Pinares parity is limited to the public-synthetic fixed-price purchase-option proxy fixtures:

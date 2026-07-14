@@ -105,7 +105,8 @@
       "skills": "Use/update a repo or class-level Hermes skill for recurring non-trivial workflows",
       "plugin_mcp_policy": "The Haircut plugin is justified by a measured cross-repository consumer and uses only Haircut's public protocol seam; MCP remains deferred.",
       "declared_entrypoints": [
-        "haircut.solver_backends:finite_element_options"
+        "haircut.solver_backends:finite_element_options",
+        "console_scripts:fem-options"
       ],
       "decision_ladder": [
         "AGENTS.md and linked contracts",
@@ -275,11 +276,11 @@
     {
       "rule": "python_module_max_lines",
       "path": "src/finite_element_options/validation/verification_gates.py",
-      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget and requires staged extraction rather than a blind split.",
-      "owner": "googa27 Portfolio Project #24",
+      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget; issue #116 adds one benchmark-registry row for compiled pde_ir.v0 evidence pending staged extraction.",
+      "owner": "googa27 Portfolio Project #24 and finite_element_options #116",
       "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
-      "accepted_ceiling": 882,
-      "refactoring_trigger": "The file may not grow; the next behavioral change must extract a cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
+      "accepted_ceiling": 895,
+      "refactoring_trigger": "The file may not grow; the next validation-registry change must extract benchmark registry data or another cohesive responsibility behind compatibility tests."
     }
   ]
 }

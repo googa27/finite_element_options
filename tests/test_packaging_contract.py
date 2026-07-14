@@ -41,24 +41,32 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
 
     assert any(name.startswith("finite_element_options/") for name in names)
     assert "finite_element_options/py.typed" in names
-    assert not any(name == "src/__init__.py" or name.startswith("src/") for name in names)
+    assert not any(
+        name == "src/__init__.py" or name.startswith("src/") for name in names
+    )
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
 
 
-def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(tmp_path: Path) -> None:
+def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(
+    tmp_path: Path,
+) -> None:
     outdir = tmp_path / "dist"
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
     with zipfile.ZipFile(wheel) as archive:
         entry_point_files = [
-            name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
+            name
+            for name in archive.namelist()
+            if name.endswith(".dist-info/entry_points.txt")
         ]
         assert len(entry_point_files) == 1
         entry_points = archive.read(entry_point_files[0]).decode("utf-8")
 
     assert "[haircut.solver_backends]" in entry_points
+    assert "[console_scripts]" in entry_points
+    assert "fem-options = finite_element_options.cli:main" in entry_points
     assert entry_points.count("finite_element_options =") == 1
     assert (
         "finite_element_options = finite_element_options.integrations.haircut_backend:create_backend"
@@ -71,7 +79,9 @@ def _requires_dist() -> list[str]:
     return metadata.metadata("finite-element-options").get_all("Requires-Dist") or []
 
 
-def _has_extra_dependency(requires_dist: list[str], extra: str, dependency: str) -> bool:
+def _has_extra_dependency(
+    requires_dist: list[str], extra: str, dependency: str
+) -> bool:
     return any(
         item.lower().startswith(dependency.lower())
         and f'extra == "{extra.lower()}"' in item.lower()
@@ -126,13 +136,18 @@ def test_advertised_extras_cover_eager_import_dependencies() -> None:
     )
 
 
-def test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path: Path) -> None:
+def test_installed_wheel_import_contract_has_no_checkout_path_hack(
+    tmp_path: Path,
+) -> None:
     outdir = tmp_path / "dist"
     venv = tmp_path / "venv"
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
-    _run([sys.executable, "-m", "venv", "--system-site-packages", str(venv)], cwd=tmp_path)
+    _run(
+        [sys.executable, "-m", "venv", "--system-site-packages", str(venv)],
+        cwd=tmp_path,
+    )
     python = venv / "bin" / "python"
     _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=tmp_path)
 

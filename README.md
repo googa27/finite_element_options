@@ -19,6 +19,7 @@ Evidence used:
 | Fixture | Route | Result |
 |---|---|---|
 | `fem-bs-001` | line-uniform Lagrange-P2 theta FEM route | final price error `7.93e-5` versus `2.0e-3` tolerance; Delta/Gamma checked against analytical references |
+| `VQPW-FEM-COMPILED-BS-CALL-V0` | serialized FPF `pde_ir.v0` compiled weak-form route | exact compiled hash `sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e`; analytical price/Delta/Gamma evidence; mutated/private/unsupported fixtures fail before assembly |
 | `PINARES-FEM-FIXED-PRICE-PROXY-V0` | public-synthetic fixed-price weak-form proxy | final proxy error `0.014 UF` versus `1.0 UF` budget; full-family-contract, ROFR, legal/tax, obstacle, jump and HJB routes fail closed |
 
 The Pinares figure is not private project data and is not a real-estate legal/tax valuation. It is a deterministic one-dimensional fixed-price purchase-option proxy under the public `Q*` convention.
@@ -42,6 +43,13 @@ The bundled module form is also executable from an installed wheel:
 python -m finite_element_options.examples.basic_usage
 ```
 
+The VQPW compiled weak-form CLI screens serialized public FPF compiler fixtures before any FEM assembly:
+
+```text
+fem-options qps screen tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --json
+fem-options qps solve tests/fixtures/compiled_weak_form/black_scholes_call_v0.json --out /tmp/vqpw-fem-result.json --evidence /tmp/vqpw-fem-evidence.json
+```
+
 ## Capability matrix
 
 Public capability claims are generated from `finite_element_options.contracts.capability_matrix` and checked in CI. The full matrix is in [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md). A module or demo is not automatically a validated capability.
@@ -55,6 +63,7 @@ Public capability claims are generated from `finite_element_options.contracts.ca
 | `FEM-VALIDATION-GATES-V0` — Convergence, arbitrage, manufactured-solution and backend gates | validated | tests/test_validation_gates.py<br>benchmark:FEM-VALIDATION-GATES-V0<br>reference:issue-42 | The default suite is deterministic and lightweight; large external QuantLib/FEniCSx work-precision studies remain separate evidence. |
 | `FEM-SOLVER-CACHE-001` — SciPy direct sparse factorization reuse | validated | tests/test_solver_cache_benchmark.py<br>benchmark:FEM-SOLVER-CACHE-001 | Banded, AMG, PETSc and equal-error work-precision routes remain fail-closed until separately evidenced. |
 | `FEM-HC-SOLVER-CONTRACT-V0.1` — Released public FEM solver contract | production-qualified | tests/test_fem_backend_capabilities.py<br>tests/fixtures/fem_bs_001/<br>benchmark:fem-bs-001<br>reference:finite-element-options-fem-solver-contract-v0.1 | Contract maturity does not imply every model/backend combination is production-qualified. |
+| `VQPW-FEM-COMPILED-BS-CALL-V0` — Compiled pde_ir.v0 Black-Scholes weak-form adapter | validated | tests/test_compiled_weak_form_adapter.py<br>tests/fixtures/compiled_weak_form/black_scholes_call_v0.json<br>benchmark:VQPW-FEM-COMPILED-BS-CALL-V0<br>reference:googa27/finite_element_options#116<br>reference:googa27/financial_problem_formulations#138 | No private fixtures, FEniCSx/PETSc, adaptive meshes, multidimensional problems, American exercise, or non-value/Delta/Gamma outputs are advertised in v0. |
 | `PINARES-FEM-FIXED-PRICE-PROXY-V0` — Pinares fixed-price weak-form proxy fixture | validated | tests/test_pinares_fem_proxy.py<br>tests/fixtures/fem_pinares_fixed_price_proxy_v1/<br>benchmark:PINARES-FEM-FIXED-PRICE-PROXY-V0 | ROFR, legal coordination, taxes, HJB controls, obstacles and liquidity/default jumps intentionally fail closed. |
 | `FEM-Heston-CIR-MOMENTS` — Heston/CIR moment diagnostics | implemented | tests/test_heston_moments.py<br>reference:FR-FEM-004 | Moment/domain diagnostics are not a full Heston PDE validation or calibration proof. |
 | `FEM-ADAPTIVE-REFINE-TRANSFER` — Adaptive mesh refinement with transfer diagnostics | implemented | tests/test_solver.py<br>reference:FR-FEM-008 | Goal-oriented estimators, reversible coarsening and convergence effectivity are not yet production claims. |
