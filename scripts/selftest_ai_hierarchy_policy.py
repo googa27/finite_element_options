@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-tests for the additive AI, hierarchy, and workflow governance gate."""
+"""Self-check the additive AI, hierarchy, and workflow governance gate."""
 
 from __future__ import annotations
 
@@ -10,17 +10,22 @@ from pathlib import Path
 from types import ModuleType
 
 SCRIPT = Path(__file__).with_name("check_ai_hierarchy_policy.py")
+WORKFLOW_SCRIPT = Path(__file__).with_name("workflow_policy_checks.py")
+
+
+def load_module(name: str, path: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def load_checker() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("check_ai_hierarchy_policy", SCRIPT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("unable to load governance checker")
-    sys.path.insert(0, str(SCRIPT.parent))
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    load_module("workflow_policy_checks", WORKFLOW_SCRIPT)
+    return load_module("ai_hierarchy_policy", SCRIPT)
 
 
 def write_workflow(

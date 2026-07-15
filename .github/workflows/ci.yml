@@ -34,14 +34,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Build sdist and wheel
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83'
           python -m pip install build twine -c constraints.txt
           python -m build --sdist --wheel
           python -m twine check dist/*
       - name: Verify installed wheel import contract
         run: |
           python -m venv /tmp/feo-wheel-check
-          /tmp/feo-wheel-check/bin/python -m pip install --upgrade pip
+          /tmp/feo-wheel-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
           /tmp/feo-wheel-check/bin/python -m pip install dist/*.whl
           cd /tmp
           /tmp/feo-wheel-check/bin/python - <<'PY'
@@ -86,7 +86,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install development profile
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83'
           python -m pip install -e '.[dev]' -c constraints.txt
       - name: Static, docstring, and type gates
         run: |
@@ -134,7 +134,7 @@ jobs:
           python-version: '3.11'
       - name: Install development profile
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83'
           python -m pip install -e '.[dev]' -c constraints.txt
       - name: Run FEniCSx backend contract tests
         run: pytest -q tests/test_fenics_solver.py tests/test_benchmark_fenics.py --no-cov
@@ -168,7 +168,7 @@ jobs:
           python-version: '3.11'
       - name: Build wheel
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83'
           python -m pip install build -c constraints.txt
           python -m build --wheel
       - name: Install optional profile and import advertised modules
@@ -177,7 +177,7 @@ jobs:
           IMPORTS: ${{ matrix.imports }}
         run: |
           python -m venv /tmp/feo-${PROFILE}-check
-          /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip
+          /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
           WHEEL=$(ls dist/finite_element_options-*.whl)
           /tmp/feo-${PROFILE}-check/bin/python -m pip install "${WHEEL}[${PROFILE}]"
           cd /tmp
@@ -205,7 +205,7 @@ jobs:
           python-version: '3.11'
       - name: Install audited environment
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83'
           python -m pip install -e '.[dev]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit

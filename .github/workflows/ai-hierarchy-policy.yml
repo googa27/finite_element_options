@@ -20,4 +20,4 @@ jobs:
       - name: Validate AI and semantic hierarchy policy
         run: python3 scripts/check_ai_hierarchy_policy.py
       - name: Adversarially self-test governance gate
-        run: python3 scripts/test_ai_hierarchy_policy.py
+        run: python3 scripts/selftest_ai_hierarchy_policy.py
