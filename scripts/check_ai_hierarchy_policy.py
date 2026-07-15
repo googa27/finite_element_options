@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import ast
+import importlib
 import json
 import math
+import re
 import sys
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -60,9 +63,22 @@ REQUIRED_HIERARCHY_POLICY = {
     "concentration": "review_trigger_not_rebalance_mandate",
     "minimum_branches": 3,
     "minimum_descendant_modules": 20,
+    "single_branch_runtime_directory": "review_required_above_minimum_descendant_modules",
+    "two_branch_dominance_threshold": 0.95,
     "include_direct_modules_as_branch": True,
     "new_or_worsened_unclassified_imbalance": "forbidden",
 }
+REQUIRED_WORKFLOW_POLICY = {
+    "action_pinning": "full_length_commit_sha",
+    "token_permissions": "least_privilege_explicit",
+    "checkout_credentials": "non_persistent",
+    "security_audit": "zizmor_medium_or_higher_zero_findings",
+    "pinning_tool": "pinact",
+}
+USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*['\"]?([^\s'\"]+)")
+FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+TOP_LEVEL_PERMISSIONS_PATTERN = re.compile(r"(?m)^permissions\s*:")
+CHECKOUT_PATTERN = re.compile(r"actions/checkout@[0-9a-f]{40}")
 REQUIRED_STRUCTURAL_ROLES = {
     "namespace_package",
     "compatibility_facade",
@@ -74,7 +90,9 @@ REQUIRED_STRUCTURAL_ROLES = {
     "monorepo_boundary",
 }
 MIN_EVIDENCE_SOURCES = 4
+MIN_WORKFLOW_EVIDENCE_SOURCES = 2
 THREE_BRANCHES = 3
+TWO_BRANCHES = 2
 FIVE_BRANCHES = 5
 SEVEN_BRANCHES = 7
 THREE_BRANCH_MAX_SHARE = 0.85
@@ -95,8 +113,20 @@ class ContractShapeError(TypeError):
         super().__init__("architecture contract root must be an object")
 
 
+@dataclass(frozen=True)
+class HierarchyLimits:
+    minimum_branches: int
+    minimum_modules: int
+    two_branch_threshold: float
+
+
 def load_contract() -> dict[str, Any]:
-    payload = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    text = CONTRACT.read_text(encoding="utf-8")
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        yaml = importlib.import_module("yaml")
+        payload = yaml.safe_load(text)
     if not isinstance(payload, dict):
         raise ContractShapeError
     return payload
@@ -153,47 +183,66 @@ def validate_evidence(prefix: str, evidence: Any, errors: list[str]) -> None:
             errors.append(f"{prefix}.evidence[{index}] needs a finding")
 
 
+def validate_workflow_policy(contract: dict[str, Any], errors: list[str]) -> None:
+    governance = contract.get("governance")
+    policy = governance.get("github_actions") if isinstance(governance, dict) else None
+    prefix = "governance.github_actions"
+    if not isinstance(policy, dict):
+        policy = contract.get("github_actions")
+        prefix = "github_actions"
+    if not isinstance(policy, dict):
+        errors.append(f"{prefix} must be an object")
+        return
+    for key, expected in REQUIRED_WORKFLOW_POLICY.items():
+        if policy.get(key) != expected:
+            errors.append(f"{prefix}.{key} must be {expected!r}")
+    evidence = policy.get("evidence")
+    if not isinstance(evidence, list) or len(evidence) < MIN_WORKFLOW_EVIDENCE_SOURCES:
+        errors.append(f"{prefix}.evidence must contain at least two sources")
+
+
 def validate_policy_shape(
     contract: dict[str, Any], errors: list[str]
 ) -> dict[str, Any] | None:
+    validate_workflow_policy(contract, errors)
     governance = contract.get("governance")
     ai = (
         governance.get("ai_assisted_development")
         if isinstance(governance, dict)
         else None
     )
+    ai_prefix = "governance.ai_assisted_development"
     if not isinstance(ai, dict):
-        errors.append("governance.ai_assisted_development must be an object")
+        ai = contract.get("ai_assisted_development")
+        ai_prefix = "ai_assisted_development"
+    if not isinstance(ai, dict):
+        errors.append(f"{ai_prefix} must be an object")
     else:
         for key, expected in REQUIRED_AI_POLICY.items():
             if ai.get(key) != expected:
-                errors.append(
-                    f"governance.ai_assisted_development.{key} must be {expected!r}"
-                )
+                errors.append(f"{ai_prefix}.{key} must be {expected!r}")
         metrics = ai.get("metrics")
         if not isinstance(metrics, list) or set(metrics) != REQUIRED_AI_METRICS:
-            errors.append(
-                "governance.ai_assisted_development.metrics has the wrong set"
-            )
-        validate_evidence(
-            "governance.ai_assisted_development", ai.get("evidence"), errors
-        )
+            errors.append(f"{ai_prefix}.metrics has the wrong set")
+        validate_evidence(ai_prefix, ai.get("evidence"), errors)
     layout = contract.get("source_layout")
     hierarchy = layout.get("hierarchy_policy") if isinstance(layout, dict) else None
+    hierarchy_prefix = "source_layout.hierarchy_policy"
     if not isinstance(hierarchy, dict):
-        errors.append("source_layout.hierarchy_policy must be an object")
+        hierarchy = contract.get("hierarchy_policy")
+        hierarchy_prefix = "hierarchy_policy"
+    if not isinstance(hierarchy, dict):
+        errors.append(f"{hierarchy_prefix} must be an object")
         return None
     for key, expected in REQUIRED_HIERARCHY_POLICY.items():
         if hierarchy.get(key) != expected:
-            errors.append(f"source_layout.hierarchy_policy.{key} must be {expected!r}")
+            errors.append(f"{hierarchy_prefix}.{key} must be {expected!r}")
     roles = hierarchy.get("structural_role_exclusions")
     if not isinstance(roles, list) or set(roles) != REQUIRED_STRUCTURAL_ROLES:
         errors.append(
-            "source_layout.hierarchy_policy.structural_role_exclusions has the wrong set"
+            f"{hierarchy_prefix}.structural_role_exclusions has the wrong set"
         )
-    validate_evidence(
-        "source_layout.hierarchy_policy", hierarchy.get("evidence"), errors
-    )
+    validate_evidence(hierarchy_prefix, hierarchy.get("evidence"), errors)
     return hierarchy
 
 
@@ -222,17 +271,6 @@ def marker_only_package(path: Path) -> bool:
             continue
         if candidate.name not in METADATA_NAMES:
             return False
-    tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
-    for node in tree.body:
-        if (
-            isinstance(node, ast.Expr)
-            and isinstance(node.value, ast.Constant)
-            and isinstance(node.value.value, str)
-        ):
-            continue
-        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.Pass)):
-            continue
-        return False
     return True
 
 
@@ -287,11 +325,27 @@ def concentration(branch_counts: list[int]) -> tuple[bool, float, float]:
     return triggered, largest, effective
 
 
+def branch_review_metrics(
+    branch_counts: list[int], minimum_branches: int, two_branch_threshold: float
+) -> tuple[bool, float, float]:
+    total = sum(branch_counts)
+    shares = [value / total for value in branch_counts]
+    largest = max(shares)
+    effective = math.exp(-sum(share * math.log(share) for share in shares))
+    if len(branch_counts) == 1:
+        return True, largest, effective
+    if len(branch_counts) == TWO_BRANCHES:
+        return largest >= two_branch_threshold, largest, effective
+    if len(branch_counts) < minimum_branches:
+        return False, largest, effective
+    return concentration(branch_counts)
+
+
 def validate_directory(
     current: Path,
     exceptions: dict[tuple[str, str], dict[str, Any]],
-    minimum_branches: int,
-    minimum_modules: int,
+    limits: HierarchyLimits,
+    review_concentration: bool,
     errors: list[str],
 ) -> None:
     rel = current.relative_to(ROOT).as_posix()
@@ -310,9 +364,11 @@ def validate_directory(
             )
     branches = runtime_branches(current)
     counts = [value for _, value in branches]
-    if len(counts) < minimum_branches or sum(counts) < minimum_modules:
+    if not review_concentration or not counts or sum(counts) < limits.minimum_modules:
         return
-    triggered, largest, effective = concentration(counts)
+    triggered, largest, effective = branch_review_metrics(
+        counts, limits.minimum_branches, limits.two_branch_threshold
+    )
     if triggered and ("hierarchy_imbalance", rel) not in exceptions:
         errors.append(
             f"hierarchy_imbalance review required at {rel}: branches={branches}, "
@@ -320,20 +376,71 @@ def validate_directory(
         )
 
 
+def validate_workflows(errors: list[str]) -> None:
+    workflows = ROOT / ".github" / "workflows"
+    for path in sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml"))):
+        text = path.read_text(encoding="utf-8")
+        rel = path.relative_to(ROOT).as_posix()
+        if not TOP_LEVEL_PERMISSIONS_PATTERN.search(text):
+            errors.append(f"workflow missing explicit top-level permissions: {rel}")
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            match = USES_PATTERN.match(line)
+            if not match:
+                continue
+            action = match.group(1).rstrip("'\"")
+            if action.startswith("./"):
+                continue
+            ref = action.rsplit("@", 1)[-1]
+            if not FULL_SHA_PATTERN.fullmatch(ref):
+                errors.append(
+                    f"workflow action is not SHA-pinned: {rel}:{index + 1}: {action}"
+                )
+            if CHECKOUT_PATTERN.search(action) and not checkout_is_nonpersistent(
+                lines, index
+            ):
+                errors.append(
+                    f"checkout credentials persist without an exact policy exception: "
+                    f"{rel}:{index + 1}"
+                )
+
+
+def checkout_is_nonpersistent(lines: list[str], uses_index: int) -> bool:
+    uses_indent = len(lines[uses_index]) - len(lines[uses_index].lstrip())
+    for line in lines[uses_index + 1 :]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip())
+        if indent < uses_indent:
+            break
+        if re.fullmatch(r"persist-credentials:\s*false", stripped):
+            return True
+    return False
+
+
 def validate(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    validate_workflows(errors)
     hierarchy = validate_policy_shape(contract, errors)
     exceptions = exception_map(contract, errors)
-    layout = contract.get("source_layout")
-    if (
-        hierarchy is None
-        or not isinstance(layout, dict)
-        or not layout.get("python_rules_applicable", True)
-    ):
+    if hierarchy is None:
         return errors
-    minimum_branches = int(hierarchy["minimum_branches"])
-    minimum_modules = int(hierarchy["minimum_descendant_modules"])
-    for rel_root in layout.get("python_source_roots", []):
+    layout = contract.get("source_layout")
+    if isinstance(layout, dict):
+        applicable = layout.get("python_rules_applicable", True)
+        source_roots = layout.get("python_source_roots", [])
+    else:
+        applicable = True
+        source_roots = hierarchy.get("python_source_roots", ["src"])
+    if not applicable:
+        return errors
+    limits = HierarchyLimits(
+        minimum_branches=int(hierarchy["minimum_branches"]),
+        minimum_modules=int(hierarchy["minimum_descendant_modules"]),
+        two_branch_threshold=float(hierarchy["two_branch_dominance_threshold"]),
+    )
+    for rel_root in source_roots:
         source_root = ROOT / rel_root
         if not source_root.is_dir():
             continue
@@ -344,7 +451,11 @@ def validate(contract: dict[str, Any]) -> list[str]:
         for current in directories:
             if not ignored(current.relative_to(ROOT)):
                 validate_directory(
-                    current, exceptions, minimum_branches, minimum_modules, errors
+                    current,
+                    exceptions,
+                    limits,
+                    current != source_root,
+                    errors,
                 )
     return errors
 

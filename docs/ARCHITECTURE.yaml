@@ -82,7 +82,9 @@
           "finding": "Dependency-graph properties predict defects, supporting import/coupling hotspot review over cosmetic balancing."
         }
       ],
-      "checker": "python3 scripts/check_ai_hierarchy_policy.py"
+      "checker": "python3 scripts/check_ai_hierarchy_policy.py",
+      "single_branch_runtime_directory": "review_required_above_minimum_descendant_modules",
+      "two_branch_dominance_threshold": 0.95
     }
   },
   "limits": {
@@ -290,6 +292,32 @@
         }
       ],
       "checker": "python3 scripts/check_ai_hierarchy_policy.py"
+    },
+    "github_actions": {
+      "action_pinning": "full_length_commit_sha",
+      "token_permissions": "least_privilege_explicit",
+      "checkout_credentials": "non_persistent",
+      "security_audit": "zizmor_medium_or_higher_zero_findings",
+      "pinning_tool": "pinact",
+      "security_audit_command": "uvx zizmor --offline --min-severity medium .github/workflows",
+      "validated_versions": {
+        "pinact": "4.1.0",
+        "zizmor": "1.27.0"
+      },
+      "evidence": [
+        {
+          "source": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions",
+          "finding": "GitHub states that a full-length commit SHA is the only immutable action reference and recommends least-privilege token permissions."
+        },
+        {
+          "source": "https://docs.zizmor.sh/audits/",
+          "finding": "Zizmor detects mutable action references, credential persistence, dangerous GitHub App permissions, and workflow injection risks."
+        },
+        {
+          "source": "https://github.com/suzuki-shunsuke/pinact",
+          "finding": "Pinact resolves action tags to immutable full-length commit SHAs and verifies pinned references."
+        }
+      ]
     }
   },
   "exceptions": [

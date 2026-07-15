@@ -293,6 +293,14 @@ After the dependency route is sound, apply SOLID, DRY knowledge ownership, suita
 - `__init__.py` is a compatibility/public facade only: imports, re-exports, `__all__`, metadata, and bounded lazy hooks. Domain classes and business functions belong in cohesive modules.
 - Severe branch concentration is a review trigger, not a command to redistribute files. Fix it only when dependency, churn, ownership, or comprehension evidence shows a bad boundary.
 
+
+### GitHub Actions supply-chain controls
+
+- Pin every third-party action to a full-length commit SHA; keep the human-readable release in a comment.
+- Declare least-privilege workflow `permissions`; read-only `contents` is the default.
+- Set `persist-credentials: false` on checkout and provide narrowly scoped credentials only to the step that needs mutation.
+- Validate workflow changes with `pinact run --check` and `uvx zizmor --offline --min-severity medium .github/workflows`.
+
 ### Data and core-repository boundaries
 
 For data-consuming work, design `source registry -> typed acquisition -> immutable Bronze -> canonical Silver -> curated Gold/features -> formulation/model -> governed output -> read-only UI/API/notebook` before implementation. Record grain, units, classification, lineage, quality, freshness/vintage/effective time, identity, replay, and validation.
