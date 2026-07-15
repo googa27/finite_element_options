@@ -299,7 +299,7 @@ After the dependency route is sound, apply SOLID, DRY knowledge ownership, suita
 - Pin every third-party action to a full-length commit SHA; keep the human-readable release in a comment.
 - Declare least-privilege workflow `permissions`; read-only `contents` is the default.
 - Set `persist-credentials: false` on checkout and provide narrowly scoped credentials only to the step that needs mutation.
-- Validate workflow changes with `pinact run --check` and `uvx zizmor --offline --min-severity medium .github/workflows`.
+- Validate workflow changes with `python scripts/test_ai_hierarchy_policy.py`, `pinact run --fix=false --no-api`, and `uvx zizmor --offline --min-severity medium .github/workflows`.
 
 ### Data and core-repository boundaries
 

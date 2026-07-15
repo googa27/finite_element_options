@@ -7,12 +7,13 @@ import ast
 import importlib
 import json
 import math
-import re
 import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
+
+from workflow_policy_checks import validate_workflow_policy, validate_workflows
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs" / "ARCHITECTURE.yaml"
@@ -68,17 +69,6 @@ REQUIRED_HIERARCHY_POLICY = {
     "include_direct_modules_as_branch": True,
     "new_or_worsened_unclassified_imbalance": "forbidden",
 }
-REQUIRED_WORKFLOW_POLICY = {
-    "action_pinning": "full_length_commit_sha",
-    "token_permissions": "least_privilege_explicit",
-    "checkout_credentials": "non_persistent",
-    "security_audit": "zizmor_medium_or_higher_zero_findings",
-    "pinning_tool": "pinact",
-}
-USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*['\"]?([^\s'\"]+)")
-FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-TOP_LEVEL_PERMISSIONS_PATTERN = re.compile(r"(?m)^permissions\s*:")
-CHECKOUT_PATTERN = re.compile(r"actions/checkout@[0-9a-f]{40}")
 REQUIRED_STRUCTURAL_ROLES = {
     "namespace_package",
     "compatibility_facade",
@@ -90,7 +80,6 @@ REQUIRED_STRUCTURAL_ROLES = {
     "monorepo_boundary",
 }
 MIN_EVIDENCE_SOURCES = 4
-MIN_WORKFLOW_EVIDENCE_SOURCES = 2
 THREE_BRANCHES = 3
 TWO_BRANCHES = 2
 FIVE_BRANCHES = 5
@@ -183,28 +172,9 @@ def validate_evidence(prefix: str, evidence: Any, errors: list[str]) -> None:
             errors.append(f"{prefix}.evidence[{index}] needs a finding")
 
 
-def validate_workflow_policy(contract: dict[str, Any], errors: list[str]) -> None:
-    governance = contract.get("governance")
-    policy = governance.get("github_actions") if isinstance(governance, dict) else None
-    prefix = "governance.github_actions"
-    if not isinstance(policy, dict):
-        policy = contract.get("github_actions")
-        prefix = "github_actions"
-    if not isinstance(policy, dict):
-        errors.append(f"{prefix} must be an object")
-        return
-    for key, expected in REQUIRED_WORKFLOW_POLICY.items():
-        if policy.get(key) != expected:
-            errors.append(f"{prefix}.{key} must be {expected!r}")
-    evidence = policy.get("evidence")
-    if not isinstance(evidence, list) or len(evidence) < MIN_WORKFLOW_EVIDENCE_SOURCES:
-        errors.append(f"{prefix}.evidence must contain at least two sources")
-
-
 def validate_policy_shape(
     contract: dict[str, Any], errors: list[str]
 ) -> dict[str, Any] | None:
-    validate_workflow_policy(contract, errors)
     governance = contract.get("governance")
     ai = (
         governance.get("ai_assisted_development")
@@ -376,52 +346,10 @@ def validate_directory(
         )
 
 
-def validate_workflows(errors: list[str]) -> None:
-    workflows = ROOT / ".github" / "workflows"
-    for path in sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml"))):
-        text = path.read_text(encoding="utf-8")
-        rel = path.relative_to(ROOT).as_posix()
-        if not TOP_LEVEL_PERMISSIONS_PATTERN.search(text):
-            errors.append(f"workflow missing explicit top-level permissions: {rel}")
-        lines = text.splitlines()
-        for index, line in enumerate(lines):
-            match = USES_PATTERN.match(line)
-            if not match:
-                continue
-            action = match.group(1).rstrip("'\"")
-            if action.startswith("./"):
-                continue
-            ref = action.rsplit("@", 1)[-1]
-            if not FULL_SHA_PATTERN.fullmatch(ref):
-                errors.append(
-                    f"workflow action is not SHA-pinned: {rel}:{index + 1}: {action}"
-                )
-            if CHECKOUT_PATTERN.search(action) and not checkout_is_nonpersistent(
-                lines, index
-            ):
-                errors.append(
-                    f"checkout credentials persist without an exact policy exception: "
-                    f"{rel}:{index + 1}"
-                )
-
-
-def checkout_is_nonpersistent(lines: list[str], uses_index: int) -> bool:
-    uses_indent = len(lines[uses_index]) - len(lines[uses_index].lstrip())
-    for line in lines[uses_index + 1 :]:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent < uses_indent:
-            break
-        if re.fullmatch(r"persist-credentials:\s*false", stripped):
-            return True
-    return False
-
-
 def validate(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    validate_workflows(errors)
+    write_exceptions = validate_workflow_policy(contract, errors)
+    validate_workflows(ROOT, errors, write_exceptions)
     hierarchy = validate_policy_shape(contract, errors)
     exceptions = exception_map(contract, errors)
     if hierarchy is None:

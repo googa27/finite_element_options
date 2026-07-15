@@ -317,7 +317,8 @@
           "source": "https://github.com/suzuki-shunsuke/pinact",
           "finding": "Pinact resolves action tags to immutable full-length commit SHAs and verifies pinned references."
         }
-      ]
+      ],
+      "write_permission_exceptions": []
     }
   },
   "exceptions": [
