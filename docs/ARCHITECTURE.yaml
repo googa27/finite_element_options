@@ -40,7 +40,50 @@
       "py.typed"
     ],
     "allowed_non_python_files": [],
-    "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved."
+    "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved.",
+    "hierarchy_policy": {
+      "principle": "semantic_cohesion_and_low_coupling_not_equal_branch_size",
+      "empty_runtime_directories": "forbidden_without_exact_exception",
+      "init_modules": "facade_only_no_domain_implementation",
+      "concentration": "review_trigger_not_rebalance_mandate",
+      "minimum_branches": 3,
+      "minimum_descendant_modules": 20,
+      "include_direct_modules_as_branch": true,
+      "new_or_worsened_unclassified_imbalance": "forbidden",
+      "structural_role_exclusions": [
+        "namespace_package",
+        "compatibility_facade",
+        "generated_mount",
+        "plugin_namespace",
+        "adapter_namespace",
+        "test_mirror",
+        "package_data",
+        "monorepo_boundary"
+      ],
+      "evidence": [
+        {
+          "source": "https://doi.org/10.1145/361598.361623",
+          "finding": "Module boundaries should hide design decisions and support change; directory symmetry is not a decomposition criterion."
+        },
+        {
+          "source": "https://doi.org/10.1145/1094811.1094824",
+          "finding": "Dependency models and design rules expose architecture violations more directly than physical tree shape."
+        },
+        {
+          "source": "https://doi.org/10.1109/TSE.2006.31",
+          "finding": "Software modularization quality rewards high intra-cluster cohesion and low inter-cluster coupling, not equal package sizes."
+        },
+        {
+          "source": "https://doi.org/10.1145/1391984.1391986",
+          "finding": "Software size and dependency distributions are naturally heavy-tailed; uneven branch sizes alone are not defects."
+        },
+        {
+          "source": "https://doi.org/10.1145/1368088.1368161",
+          "finding": "Dependency-graph properties predict defects, supporting import/coupling hotspot review over cosmetic balancing."
+        }
+      ],
+      "checker": "python3 scripts/check_ai_hierarchy_policy.py"
+    }
   },
   "limits": {
     "max_immediate_runtime_entries": 10,
@@ -205,7 +248,49 @@
       "docs/ARCHITECTURE.yaml",
       "docs/ARCHITECTURE.md"
     ],
-    "exception_policy": "exact scope, reason, owner, risk, accepted ceiling, and refactoring trigger; no-growth ratchet"
+    "exception_policy": "exact scope, reason, owner, risk, accepted ceiling, and refactoring trigger; no-growth ratchet",
+    "ai_assisted_development": {
+      "output_trust": "untrusted_until_human_review_and_executable_verification",
+      "human_accountability": true,
+      "change_scope": "small_reviewable_single_purpose_slices",
+      "agent_generated_tests": "not_sufficient_as_sole_oracle",
+      "dependency_changes": "human_approval_and_existence_maintenance_license_security_verification",
+      "high_risk_review": "human_required",
+      "least_privilege": "workspace_scoped_network_and_secret_access_requires_approval",
+      "provenance": "record_agent_assistance_and_verification_evidence",
+      "measurement": "objective_metrics_not_self_report",
+      "metrics": [
+        "lead_time",
+        "review_time",
+        "ci_failure_rate",
+        "revert_rate",
+        "defect_escape_rate",
+        "code_churn"
+      ],
+      "evidence": [
+        {
+          "source": "https://arxiv.org/abs/2302.06590",
+          "finding": "Controlled experiment found a 55.8% speedup on one narrow greenfield task; benefits must not be generalized without local measurement."
+        },
+        {
+          "source": "https://arxiv.org/abs/2507.09089",
+          "finding": "Experienced maintainers were 19% slower on real mature-repository tasks despite believing AI accelerated them; objective metrics outrank self-report."
+        },
+        {
+          "source": "https://doi.org/10.1145/3576915.3623157",
+          "finding": "AI-assisted participants produced less-secure code and were more confident in it; security-sensitive output requires skeptical human review."
+        },
+        {
+          "source": "https://arxiv.org/abs/2310.06770",
+          "finding": "Real repository issues require multi-file context, tool use, and executable verification; model explanations are not completion evidence."
+        },
+        {
+          "source": "https://doi.org/10.1109/ICSE48619.2023.00085",
+          "finding": "LLM-assisted test generation can improve coverage when combined with search; generated assertions still require an independent validated oracle."
+        }
+      ],
+      "checker": "python3 scripts/check_ai_hierarchy_policy.py"
+    }
   },
   "exceptions": [
     {

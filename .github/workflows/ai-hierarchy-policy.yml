@@ -1,0 +1,17 @@
+name: AI and source hierarchy policy
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Validate AI and semantic hierarchy policy
+        run: python3 scripts/check_ai_hierarchy_policy.py
