@@ -10,16 +10,19 @@ permissions:
 jobs:
   policy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Install policy parser
-        run: python3 -m pip install --disable-pip-version-check pyyaml==6.0.3
+      - name: Install pinned governance tools
+        run: python3 -m pip install --disable-pip-version-check -r requirements-architecture.txt
       - name: Validate portfolio architecture
         run: python3 scripts/check_portfolio_architecture.py
       - name: Validate AI and semantic hierarchy policy
         run: python3 scripts/check_ai_hierarchy_policy.py
       - name: Adversarially self-test governance gate
         run: python3 scripts/selftest_ai_hierarchy_policy.py
+      - name: Run Zizmor workflow audit
+        run: zizmor --offline --min-severity medium .

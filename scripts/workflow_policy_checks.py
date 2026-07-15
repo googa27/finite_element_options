@@ -11,7 +11,7 @@ import yaml
 
 REQUIRED_WORKFLOW_POLICY = {
     "action_pinning": "full_length_commit_sha",
-    "token_permissions": "least_privilege_explicit",
+    "token_permissions": "read_only_top_level_with_exact_job_write_exceptions",
     "checkout_credentials": "non_persistent",
     "security_audit": "zizmor_medium_or_higher_zero_findings",
     "pinning_tool": "pinact",
@@ -45,36 +45,52 @@ def validate_workflow_policy(
     evidence = policy.get("evidence")
     if not isinstance(evidence, list) or len(evidence) < MIN_WORKFLOW_EVIDENCE_SOURCES:
         errors.append("github_actions.evidence must contain at least two sources")
+    else:
+        for index, item in enumerate(evidence):
+            source = item.get("source") if isinstance(item, dict) else None
+            finding = item.get("finding") if isinstance(item, dict) else None
+            if not isinstance(source, str) or not source.startswith("https://"):
+                errors.append(f"github_actions.evidence[{index}] needs an HTTPS source")
+            if not isinstance(finding, str) or not finding.strip():
+                errors.append(f"github_actions.evidence[{index}] needs a finding")
 
     raw_exceptions = policy.get("write_permission_exceptions")
     if not isinstance(raw_exceptions, list):
         errors.append("github_actions.write_permission_exceptions must be a list")
         return {}
     parsed: dict[str, set[str]] = {}
-    for item in raw_exceptions:
+    for index, item in enumerate(raw_exceptions):
+        label = f"write_permission_exceptions[{index}]"
         if not isinstance(item, dict) or not REQUIRED_EXCEPTION_FIELDS.issubset(item):
-            errors.append(
-                "write permission exception missing path/scopes/reason/owner/review_by"
-            )
+            errors.append(f"{label} missing path/scopes/reason/owner/review_by")
             continue
         path = str(item["path"])
         scopes = item["scopes"]
         review_by = _iso_date(item["review_by"])
+        if not re.fullmatch(r"\.github/workflows/[^/]+\.ya?ml", path):
+            errors.append(f"{label}.path must name an exact workflow YAML file: {path}")
+            continue
         if path in parsed:
             errors.append(f"duplicate write permission exception: {path}")
+            continue
         if (
             not isinstance(scopes, list)
             or not scopes
-            or not all(isinstance(scope, str) and scope for scope in scopes)
+            or not all(
+                isinstance(scope, str) and bool(scope) and scope == scope.lower()
+                for scope in scopes
+            )
         ):
             errors.append(
-                f"write permission exception {path}: scopes must be non-empty"
+                f"{label} ({path}): scopes must be non-empty lowercase strings"
             )
             continue
+        if not str(item["reason"]).strip() or not str(item["owner"]).strip():
+            errors.append(f"{label} ({path}): reason and owner are required")
         if review_by is None:
-            errors.append(f"write permission exception {path}: invalid review_by date")
+            errors.append(f"{label} ({path}): invalid review_by date")
         elif review_by < date.today():
-            errors.append(f"write permission exception {path}: review_by is expired")
+            errors.append(f"{label} ({path}): review_by is expired")
         parsed[path] = set(scopes)
     return parsed
 
@@ -105,11 +121,20 @@ def _permission_write_scopes(value: Any, label: str, errors: list[str]) -> set[s
         return set()
     scopes: set[str] = set()
     for scope, raw_access in value.items():
-        access = str(raw_access).lower()
+        scope_name = str(scope)
+        if scope_name != scope_name.lower():
+            errors.append(
+                f"{label}: permission scope must be lowercase: {scope_name!r}"
+            )
+            continue
+        if not isinstance(raw_access, str):
+            errors.append(f"{label}: invalid {scope_name} permission {raw_access!r}")
+            continue
+        access = raw_access.lower()
         if access not in {"read", "write", "none"}:
-            errors.append(f"{label}: invalid {scope} permission {raw_access!r}")
+            errors.append(f"{label}: invalid {scope_name} permission {raw_access!r}")
         if access == "write":
-            scopes.add(str(scope))
+            scopes.add(scope_name)
     return scopes
 
 
@@ -178,8 +203,12 @@ def validate_workflows(
     write_exceptions: dict[str, set[str]],
 ) -> None:
     workflows = root / ".github" / "workflows"
+    workflow_paths = sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml")))
+    if not workflow_paths:
+        errors.append(".github/workflows must contain at least one workflow YAML file")
+        return
     seen_write_paths: set[str] = set()
-    for path in sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml"))):
+    for path in workflow_paths:
         rel = path.relative_to(root).as_posix()
         document = _workflow_document(path, errors)
         if document is None:

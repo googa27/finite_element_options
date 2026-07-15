@@ -3,21 +3,42 @@
 
 from __future__ import annotations
 
-import ast
-import importlib
-import json
+import importlib.util
 import math
 import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
-from workflow_policy_checks import validate_workflow_policy, validate_workflows
+import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def _load_sibling(name: str, filename: str) -> ModuleType:
+    existing = sys.modules.get(name)
+    if existing is not None:
+        return existing
+    path = SCRIPT_DIR / filename
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load governance module {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_init_checks = _load_sibling("init_facade_checks", "init_facade_checks.py")
+_workflow_checks = _load_sibling("workflow_policy_checks", "workflow_policy_checks.py")
+init_implementation = _init_checks.init_implementation
+validate_workflow_policy = _workflow_checks.validate_workflow_policy
+validate_workflows = _workflow_checks.validate_workflows
+
+ROOT = SCRIPT_DIR.parent
 CONTRACT = ROOT / "docs" / "ARCHITECTURE.yaml"
-ALLOWED_INIT_FUNCTIONS = {"__getattr__", "__dir__"}
 IGNORED_DIRS = {
     ".git",
     ".venv",
@@ -107,15 +128,11 @@ class HierarchyLimits:
     minimum_branches: int
     minimum_modules: int
     two_branch_threshold: float
+    single_branch_policy: str
 
 
 def load_contract() -> dict[str, Any]:
-    text = CONTRACT.read_text(encoding="utf-8")
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError:
-        yaml = importlib.import_module("yaml")
-        payload = yaml.safe_load(text)
+    payload = yaml.safe_load(CONTRACT.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ContractShapeError
     return payload
@@ -204,105 +221,19 @@ def validate_policy_shape(
     if not isinstance(hierarchy, dict):
         errors.append(f"{hierarchy_prefix} must be an object")
         return None
+    shape_valid = True
     for key, expected in REQUIRED_HIERARCHY_POLICY.items():
         if hierarchy.get(key) != expected:
             errors.append(f"{hierarchy_prefix}.{key} must be {expected!r}")
+            shape_valid = False
     roles = hierarchy.get("structural_role_exclusions")
     if not isinstance(roles, list) or set(roles) != REQUIRED_STRUCTURAL_ROLES:
         errors.append(
             f"{hierarchy_prefix}.structural_role_exclusions has the wrong set"
         )
+        shape_valid = False
     validate_evidence(hierarchy_prefix, hierarchy.get("evidence"), errors)
-    return hierarchy
-
-
-def _type_checking_guard(node: ast.If) -> bool:
-    test = node.test
-    return isinstance(test, ast.Name) and test.id == "TYPE_CHECKING"
-
-
-def _assignment_targets(
-    node: ast.Assign | ast.AnnAssign | ast.AugAssign,
-) -> list[ast.expr]:
-    if isinstance(node, ast.Assign):
-        return list(node.targets)
-    return [node.target]
-
-
-def _metadata_assignment(node: ast.Assign | ast.AnnAssign | ast.AugAssign) -> bool:
-    allowed_names = {"__all__", "__version__"}
-    targets = _assignment_targets(node)
-    return bool(targets) and all(
-        (isinstance(target, ast.Name) and target.id in allowed_names)
-        or (isinstance(target, ast.Attribute) and target.attr == "__module__")
-        for target in targets
-    )
-
-
-def _optional_import_try(node: ast.Try) -> bool:
-    body_is_imports = all(
-        isinstance(item, (ast.Import, ast.ImportFrom)) for item in node.body
-    )
-    handlers_are_fallbacks = all(
-        all(
-            isinstance(item, (ast.Assign, ast.AnnAssign))
-            and (
-                _metadata_assignment(item)
-                or (isinstance(item.value, ast.Constant) and item.value.value is None)
-            )
-            for item in handler.body
-        )
-        for handler in node.handlers
-    )
-    metadata_body = all(
-        isinstance(item, (ast.Assign, ast.AnnAssign)) and _metadata_assignment(item)
-        for item in node.body
-    )
-    return (
-        not node.orelse
-        and not node.finalbody
-        and handlers_are_fallbacks
-        and (body_is_imports or metadata_body)
-    )
-
-
-def init_implementation(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    findings: list[str] = []
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef):
-            findings.append(node.name)
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.name not in ALLOWED_INIT_FUNCTIONS:
-                findings.append(node.name)
-        elif isinstance(node, ast.If):
-            if not _type_checking_guard(node):
-                findings.append("top-level-if")
-        elif isinstance(node, ast.Try):
-            if not _optional_import_try(node):
-                findings.append("Try")
-        elif isinstance(node, (ast.For, ast.While, ast.With, ast.Match)):
-            findings.append(type(node).__name__)
-        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
-            value = getattr(node, "value", None)
-            if (
-                not _metadata_assignment(node)
-                and value is not None
-                and any(isinstance(child, ast.Call) for child in ast.walk(value))
-            ):
-                findings.append("assignment-call")
-        elif isinstance(node, ast.Expr):
-            if not (
-                isinstance(node.value, ast.Constant)
-                and isinstance(node.value.value, str)
-            ):
-                findings.append("expression")
-        elif not isinstance(
-            node,
-            (ast.Import, ast.ImportFrom, ast.Delete, ast.Pass),
-        ):
-            findings.append(type(node).__name__)
-    return findings
+    return hierarchy if shape_valid else None
 
 
 def marker_only_package(path: Path) -> bool:
@@ -373,18 +304,28 @@ def concentration(branch_counts: list[int]) -> tuple[bool, float, float]:
 
 
 def branch_review_metrics(
-    branch_counts: list[int], minimum_branches: int, two_branch_threshold: float
+    branch_counts: list[int],
+    minimum_branches: int,
+    two_branch_threshold: float,
+    single_branch_policy: str = "review_required_above_minimum_descendant_modules",
 ) -> tuple[bool, float, float]:
     total = sum(branch_counts)
     shares = [value / total for value in branch_counts]
     largest = max(shares)
     effective = math.exp(-sum(share * math.log(share) for share in shares))
     if len(branch_counts) == 1:
-        return True, largest, effective
+        return (
+            (
+                single_branch_policy
+                == "review_required_above_minimum_descendant_modules"
+            ),
+            largest,
+            effective,
+        )
     if len(branch_counts) == TWO_BRANCHES:
         return largest >= two_branch_threshold, largest, effective
     if len(branch_counts) < minimum_branches:
-        return False, largest, effective
+        return True, largest, effective
     return concentration(branch_counts)
 
 
@@ -414,11 +355,14 @@ def validate_directory(
     if not review_concentration or not counts or sum(counts) < limits.minimum_modules:
         return
     triggered, largest, effective = branch_review_metrics(
-        counts, limits.minimum_branches, limits.two_branch_threshold
+        counts,
+        limits.minimum_branches,
+        limits.two_branch_threshold,
+        limits.single_branch_policy,
     )
     if triggered and ("hierarchy_imbalance", rel) not in exceptions:
         errors.append(
-            f"hierarchy_imbalance review required at {rel}: branches={branches}, "
+            f"hierarchy_imbalance violation at {rel}: branches={branches}, "
             f"largest_share={largest:.3f}, effective_branches={effective:.2f}"
         )
 
@@ -444,6 +388,7 @@ def validate(contract: dict[str, Any]) -> list[str]:
         minimum_branches=int(hierarchy["minimum_branches"]),
         minimum_modules=int(hierarchy["minimum_descendant_modules"]),
         two_branch_threshold=float(hierarchy["two_branch_dominance_threshold"]),
+        single_branch_policy=str(hierarchy["single_branch_runtime_directory"]),
     )
     for rel_root in source_roots:
         source_root = ROOT / rel_root

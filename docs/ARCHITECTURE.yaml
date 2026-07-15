@@ -154,6 +154,47 @@
         "evidence": "docs/ARCHITECTURE.md",
         "adapter_boundary": "scripts/check_portfolio_architecture.py",
         "custom_code_reason": "narrow repository-specific fitness function not supplied by a maintained generic package"
+      },
+      {
+        "capability": "governance YAML parsing",
+        "selected": [
+          "PyYAML 6.0.3 (governance-only)"
+        ],
+        "alternatives": [
+          "Regex parsing",
+          "Custom YAML parser"
+        ],
+        "evidence": "requirements-architecture.txt, YAML 1.2 workflow fixtures, and https://pyyaml.org/",
+        "adapter_boundary": "Restricted to repository governance scripts; not added to application runtime dependencies.",
+        "custom_code_reason": "Use the maintained safe loader rather than a hand-written workflow parser.",
+        "maintenance_evidence": "https://github.com/yaml/pyyaml/releases/tag/6.0.3",
+        "api_stability_evidence": "https://pyyaml.org/wiki/PyYAMLDocumentation",
+        "license_evidence": "https://github.com/yaml/pyyaml/blob/6.0.3/LICENSE",
+        "api_license_evidence": "https://github.com/yaml/pyyaml/blob/6.0.3/LICENSE",
+        "oracle_or_reference_tests": [
+          "scripts/selftest_ai_hierarchy_policy.py",
+          "tests/architecture/test_ai_hierarchy_policy.py"
+        ]
+      },
+      {
+        "capability": "GitHub Actions static security audit",
+        "selected": [
+          "Zizmor 1.27.0"
+        ],
+        "alternatives": [
+          "Ad hoc workflow regex checks only"
+        ],
+        "evidence": "requirements-architecture.txt and https://github.com/woodruffw/zizmor",
+        "adapter_boundary": "Offline CI audit of .github workflow definitions; no application runtime coupling.",
+        "custom_code_reason": "The local checker owns portfolio-specific policy while Zizmor supplies maintained security rules.",
+        "maintenance_evidence": "https://github.com/woodruffw/zizmor/releases/tag/v1.27.0",
+        "api_stability_evidence": "https://docs.zizmor.sh/",
+        "license_evidence": "https://github.com/woodruffw/zizmor/blob/v1.27.0/MIT-LICENSE.txt",
+        "api_license_evidence": "https://github.com/woodruffw/zizmor/blob/v1.27.0/MIT-LICENSE.txt",
+        "oracle_or_reference_tests": [
+          ".github/workflows/ai-hierarchy-policy.yml",
+          "scripts/selftest_ai_hierarchy_policy.py"
+        ]
       }
     ]
   },
@@ -295,14 +336,15 @@
     },
     "github_actions": {
       "action_pinning": "full_length_commit_sha",
-      "token_permissions": "least_privilege_explicit",
+      "token_permissions": "read_only_top_level_with_exact_job_write_exceptions",
       "checkout_credentials": "non_persistent",
       "security_audit": "zizmor_medium_or_higher_zero_findings",
       "pinning_tool": "pinact",
-      "security_audit_command": "uvx zizmor --offline --min-severity medium .github/workflows",
+      "security_audit_command": "zizmor --offline --min-severity medium .",
       "validated_versions": {
         "pinact": "4.1.0",
-        "zizmor": "1.27.0"
+        "zizmor": "1.27.0",
+        "pyyaml": "6.0.3"
       },
       "evidence": [
         {

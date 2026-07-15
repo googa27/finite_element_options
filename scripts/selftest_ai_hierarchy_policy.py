@@ -11,6 +11,7 @@ from types import ModuleType
 
 SCRIPT = Path(__file__).with_name("check_ai_hierarchy_policy.py")
 WORKFLOW_SCRIPT = Path(__file__).with_name("workflow_policy_checks.py")
+INIT_SCRIPT = Path(__file__).with_name("init_facade_checks.py")
 
 
 def load_module(name: str, path: Path) -> ModuleType:
@@ -25,6 +26,7 @@ def load_module(name: str, path: Path) -> ModuleType:
 
 def load_checker() -> ModuleType:
     load_module("workflow_policy_checks", WORKFLOW_SCRIPT)
+    load_module("init_facade_checks", INIT_SCRIPT)
     return load_module("ai_hierarchy_policy", SCRIPT)
 
 
@@ -159,11 +161,79 @@ def main() -> int:
 
         side_effect_init = root / "side_effect_init.py"
         side_effect_init.write_text(
-            "from package import run\nRESULT = run()\nfor item in range(3):\n    RESULT += item\n",
+            "from package import run\n__all__ = build_public_api()\n"
+            "RESULT = run()\nfor item in range(3):\n    RESULT += item\n",
             encoding="utf-8",
         )
         findings = checker.init_implementation(side_effect_init)
-        assert "assignment-call" in findings and "For" in findings, findings
+        assert findings.count("assignment-call") == 2 and "For" in findings, findings
+
+        guarded_init = root / "guarded_init.py"
+        guarded_init.write_text(
+            "import typing\nif typing.TYPE_CHECKING:\n    from package import Contract\n",
+            encoding="utf-8",
+        )
+        assert not checker.init_implementation(guarded_init)
+
+        optional_init = root / "optional_init.py"
+        optional_init.write_text(
+            "try:\n    from package import Optional\n    __all__ = ['Optional']\n"
+            "except ImportError:\n    Optional = None\n",
+            encoding="utf-8",
+        )
+        assert not checker.init_implementation(optional_init)
+
+        workflow.write_text(
+            "name: CI\non: [push]\npermissions:\n  contents: null\n"
+            "jobs: {test: {runs-on: ubuntu-latest, steps: []}}\n",
+            encoding="utf-8",
+        )
+        errors = []
+        checker.validate_workflows(checker.ROOT, errors, {})
+        assert any("invalid contents permission None" in error for error in errors), (
+            errors
+        )
+
+        workflow.unlink()
+        errors = []
+        checker.validate_workflows(checker.ROOT, errors, {})
+        assert any("must contain at least one workflow" in error for error in errors), (
+            errors
+        )
+
+        malformed_errors: list[str] = []
+        malformed = {
+            "hierarchy_policy": {
+                "principle": checker.REQUIRED_HIERARCHY_POLICY["principle"],
+                "structural_role_exclusions": sorted(checker.REQUIRED_STRUCTURAL_ROLES),
+                "evidence": [],
+            }
+        }
+        assert checker.validate_policy_shape(malformed, malformed_errors) is None
+        assert any("minimum_branches" in error for error in malformed_errors)
+
+        workflow_module = sys.modules["workflow_policy_checks"]
+        base_workflow_policy = {
+            **workflow_module.REQUIRED_WORKFLOW_POLICY,
+            "evidence": [
+                {"source": "https://example.com/one", "finding": "one"},
+                {"source": "https://example.com/two", "finding": "two"},
+            ],
+            "write_permission_exceptions": [
+                {
+                    "path": "not-a-workflow.yml",
+                    "scopes": ["contents"],
+                    "reason": "fixture",
+                    "owner": "test",
+                    "review_by": "2099-01-01",
+                }
+            ],
+        }
+        errors = []
+        checker.validate_workflow_policy(
+            {"github_actions": base_workflow_policy}, errors
+        )
+        assert any("must name an exact workflow" in error for error in errors), errors
 
     print("AI/hierarchy policy self-tests passed")
     return 0
