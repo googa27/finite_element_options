@@ -115,7 +115,7 @@ def main() -> int:
         write_workflow(root)
         workflow.write_text(
             workflow.read_text(encoding="utf-8").replace(
-                "contents: read", "contents: write"
+                "    steps:\n", "    permissions:\n      contents: write\n    steps:\n"
             ),
             encoding="utf-8",
         )
@@ -124,6 +124,18 @@ def main() -> int:
             checker.ROOT, errors, {".github/workflows/ci.yml": {"contents"}}
         )
         assert not errors, errors
+
+        workflow.write_text(
+            workflow.read_text(encoding="utf-8").replace(
+                "permissions:\n  contents: read", "permissions:\n  contents: write"
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        checker.validate_workflows(
+            checker.ROOT, errors, {".github/workflows/ci.yml": {"contents"}}
+        )
+        assert any("top-level write scopes are forbidden" in error for error in errors)
 
         workflow.write_text(
             "name: CI\non: [push]\npermissions: &danger\n  contents: write\n"
@@ -159,6 +171,23 @@ def main() -> int:
         checker.validate_workflows(checker.ROOT, errors, {})
         assert any("credentials persist" in error for error in errors), errors
 
+        action_dir = root / ".github" / "actions" / "build"
+        action_dir.mkdir(parents=True)
+        (action_dir / "action.yml").write_text(
+            "name: build\nruns:\n  using: composite\n  steps:\n"
+            "    - uses: actions/setup-python@v5\n",
+            encoding="utf-8",
+        )
+        workflow.write_text(
+            "name: CI\non: [push]\npermissions: {contents: read}\njobs:\n"
+            "  test:\n    runs-on: ubuntu-latest\n    steps:\n"
+            "      - uses: ./.github/actions/build\n",
+            encoding="utf-8",
+        )
+        errors = []
+        checker.validate_workflows(checker.ROOT, errors, {})
+        assert any("not SHA-pinned" in error for error in errors), errors
+
         side_effect_init = root / "side_effect_init.py"
         side_effect_init.write_text(
             "from package import run\n__all__ = build_public_api()\n"
@@ -182,6 +211,39 @@ def main() -> int:
             encoding="utf-8",
         )
         assert not checker.init_implementation(optional_init)
+
+        workflow_module = sys.modules["workflow_policy_checks"]
+        evidence = [
+            {"source": f"https://example.com/{index}", "finding": "fixture"}
+            for index in range(4)
+        ]
+        missing_roots_contract = {
+            "governance": {
+                "ai_assisted_development": {
+                    **checker.REQUIRED_AI_POLICY,
+                    "metrics": sorted(checker.REQUIRED_AI_METRICS),
+                    "evidence": evidence,
+                },
+                "github_actions": {
+                    **workflow_module.REQUIRED_WORKFLOW_POLICY,
+                    "evidence": evidence[:2],
+                    "write_permission_exceptions": [],
+                },
+            },
+            "source_layout": {
+                "python_rules_applicable": True,
+                "python_source_roots": [],
+                "hierarchy_policy": {
+                    **checker.REQUIRED_HIERARCHY_POLICY,
+                    "structural_role_exclusions": sorted(
+                        checker.REQUIRED_STRUCTURAL_ROLES
+                    ),
+                    "evidence": evidence,
+                },
+            },
+        }
+        errors = checker.validate(missing_roots_contract)
+        assert any("python_source_roots must be" in error for error in errors), errors
 
         workflow.write_text(
             "name: CI\non: [push]\npermissions:\n  contents: null\n"

@@ -384,6 +384,13 @@ def validate(contract: dict[str, Any]) -> list[str]:
         source_roots = hierarchy.get("python_source_roots", ["src"])
     if not applicable:
         return errors
+    if (
+        not isinstance(source_roots, list)
+        or not source_roots
+        or not all(isinstance(item, str) and item.strip() for item in source_roots)
+    ):
+        errors.append("python_source_roots must be a non-empty list of paths")
+        return errors
     limits = HierarchyLimits(
         minimum_branches=int(hierarchy["minimum_branches"]),
         minimum_modules=int(hierarchy["minimum_descendant_modules"]),
@@ -393,6 +400,7 @@ def validate(contract: dict[str, Any]) -> list[str]:
     for rel_root in source_roots:
         source_root = ROOT / rel_root
         if not source_root.is_dir():
+            errors.append(f"declared Python source root is missing: {rel_root}")
             continue
         directories = [
             source_root,
