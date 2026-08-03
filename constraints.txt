@@ -1,3 +1,6 @@
 # CI/test dependency constraints for known transitive compatibility gaps.
 # PyMC imports ArviZ during calibration tests; ArviZ 1.x currently lacks the concat API PyMC 5.26 uses.
 arviz>=0.23,<1
+# Ruff 0.13+ expands default lint enforcement for the historical source tree;
+# keep CI deterministic until the repository intentionally adopts that rule set.
+ruff>=0.8,<0.13

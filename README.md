@@ -83,6 +83,7 @@ The core wheel keeps optional stacks out of the base install. Use a local wheel-
 ```text
 python -m pip install .
 python -m pip install -e '.[dev]' -c constraints.txt
+python scripts/export_arxiv_lab_black_scholes_fixture.py
 ```
 
 `requirements.txt` is a legacy all-in developer mirror; prefer package metadata and `constraints.txt` for reproducible checks.

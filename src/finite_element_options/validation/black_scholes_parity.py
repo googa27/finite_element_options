@@ -9,7 +9,6 @@ that a downstream consumer (for example arxiv-lab) can read without importing
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
 from math import isfinite
 from pathlib import Path
 import json
@@ -22,6 +21,15 @@ from ..core.dynamics_black_scholes import DynamicsParametersBlackScholes
 from ..core.market import Market
 from ..core.vanilla_bs import EuropeanOptionBs
 from .evidence.black_scholes_surface import solve_black_scholes_surface
+from .evidence.public_fixture import (
+    PUBLIC_NUMERIC_CANONICALIZATION,
+    black_scholes_summary_from_row,
+    build_fixture_config_hash,
+    canonicalize_black_scholes_row,
+    finalize_public_result_payload,
+    public_fixture_provenance_metadata,
+    public_pde_convention_metadata,
+)
 
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
@@ -201,21 +209,23 @@ class FEMParityConvergenceRow:
     def to_public_dict(self) -> dict[str, float | int]:
         """Return a deterministic public-synthetic evidence record."""
 
-        return {
-            "refinement_level": self.refinement_level,
-            "time_steps": self.time_steps,
-            "degrees_of_freedom": self.degrees_of_freedom,
-            "observed_price": self.observed_price,
-            "expected_price": self.expected_price,
-            "absolute_error": self.absolute_error,
-            "relative_error": self.relative_error,
-            "observed_delta": self.observed_delta,
-            "expected_delta": self.expected_delta,
-            "delta_absolute_error": self.delta_absolute_error,
-            "observed_gamma": self.observed_gamma,
-            "expected_gamma": self.expected_gamma,
-            "gamma_absolute_error": self.gamma_absolute_error,
-        }
+        return canonicalize_black_scholes_row(
+            {
+                "refinement_level": self.refinement_level,
+                "time_steps": self.time_steps,
+                "degrees_of_freedom": self.degrees_of_freedom,
+                "observed_price": self.observed_price,
+                "expected_price": self.expected_price,
+                "absolute_error": self.absolute_error,
+                "relative_error": self.relative_error,
+                "observed_delta": self.observed_delta,
+                "expected_delta": self.expected_delta,
+                "delta_absolute_error": self.delta_absolute_error,
+                "observed_gamma": self.observed_gamma,
+                "expected_gamma": self.expected_gamma,
+                "gamma_absolute_error": self.gamma_absolute_error,
+            }
+        )
 
 
 @dataclass(frozen=True)
@@ -268,6 +278,14 @@ class FEMParityReport:
     def to_public_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable evidence payload with no private data."""
 
+        rows = [row.to_public_dict() for row in self.convergence_rows]
+        summary = black_scholes_summary_from_row(
+            rows[-1],
+            price_tolerance_absolute=self.tolerance_absolute,
+            price_tolerance_relative=self.tolerance_relative,
+            delta_tolerance_absolute=self.delta_tolerance_absolute,
+            gamma_tolerance_absolute=self.gamma_tolerance_absolute,
+        )
         return {
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
@@ -277,17 +295,17 @@ class FEMParityReport:
             "numeraire": self.numeraire,
             "units": dict(self.units),
             "privacy_class": self.privacy_class,
-            "expected_price": self.expected_price,
-            "observed_price": self.observed_price,
-            "price_absolute_error": self.price_absolute_error,
-            "price_relative_error": self.price_relative_error,
-            "expected_delta": self.expected_delta,
-            "observed_delta": self.observed_delta,
-            "delta_absolute_error": self.delta_absolute_error,
+            "expected_price": summary["expected_price"],
+            "observed_price": summary["observed_price"],
+            "price_absolute_error": summary["price_absolute_error"],
+            "price_relative_error": summary["price_relative_error"],
+            "expected_delta": summary["expected_delta"],
+            "observed_delta": summary["observed_delta"],
+            "delta_absolute_error": summary["delta_absolute_error"],
             "delta_tolerance_absolute": self.delta_tolerance_absolute,
-            "expected_gamma": self.expected_gamma,
-            "observed_gamma": self.observed_gamma,
-            "gamma_absolute_error": self.gamma_absolute_error,
+            "expected_gamma": summary["expected_gamma"],
+            "observed_gamma": summary["observed_gamma"],
+            "gamma_absolute_error": summary["gamma_absolute_error"],
             "gamma_tolerance_absolute": self.gamma_tolerance_absolute,
             "tolerance_absolute": self.tolerance_absolute,
             "tolerance_relative": self.tolerance_relative,
@@ -299,7 +317,8 @@ class FEMParityReport:
             "boundaries": [item.to_public_dict() for item in self.boundaries],
             "sensitivity_reference_policy": self.sensitivity_reference_policy.to_public_dict(),
             "comparison_policy": self.comparison_policy.to_public_dict(),
-            "convergence_rows": [row.to_public_dict() for row in self.convergence_rows],
+            "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
+            "convergence_rows": rows,
             "diagnostics": dict(self.diagnostics),
         }
 
@@ -315,7 +334,8 @@ class FEMParityReport:
                 "gamma_absolute": self.gamma_tolerance_absolute,
             },
         }
-        return {
+        rows = [row.to_public_dict() for row in self.convergence_rows]
+        payload = {
             "format_version": "fem-bs-oracle-result-v1",
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
@@ -326,37 +346,35 @@ class FEMParityReport:
             "units": dict(self.units),
             "privacy_class": self.privacy_class,
             "config_hash": self.config_hash,
+            "config_id": self.config_hash,
             "backend_capability_status": _backend_capability_status(),
             "comparison_policy": comparison_policy,
             "weak_form": self.weak_form.to_public_dict(),
+            "pde_convention": public_pde_convention_metadata(),
             "mesh_metadata": self.mesh_metadata.to_public_dict(),
             "time_metadata": self.time_metadata.to_public_dict(),
+            "boundaries": [item.to_public_dict() for item in self.boundaries],
             "sensitivity_reference_policy": self.sensitivity_reference_policy.to_public_dict(),
+            "provenance": public_fixture_provenance_metadata(),
+            "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
             "diagnostics": dict(self.diagnostics),
-            "rows": [row.to_public_dict() for row in self.convergence_rows],
-            "summary": {
-                "expected_price": self.expected_price,
-                "observed_price": self.observed_price,
-                "price_absolute_error": self.price_absolute_error,
-                "price_relative_error": self.price_relative_error,
-                "price_tolerance_absolute": self.tolerance_absolute,
-                "price_tolerance_relative": self.tolerance_relative,
-                "expected_delta": self.expected_delta,
-                "observed_delta": self.observed_delta,
-                "delta_absolute_error": self.delta_absolute_error,
-                "delta_tolerance_absolute": self.delta_tolerance_absolute,
-                "expected_gamma": self.expected_gamma,
-                "observed_gamma": self.observed_gamma,
-                "gamma_absolute_error": self.gamma_absolute_error,
-                "gamma_tolerance_absolute": self.gamma_tolerance_absolute,
-            },
+            "rows": rows,
+            "summary": black_scholes_summary_from_row(
+                rows[-1],
+                price_tolerance_absolute=self.tolerance_absolute,
+                price_tolerance_relative=self.tolerance_relative,
+                delta_tolerance_absolute=self.delta_tolerance_absolute,
+                gamma_tolerance_absolute=self.gamma_tolerance_absolute,
+            ),
         }
+        return finalize_public_result_payload(payload)
 
 
 def build_public_fem_bs_oracle_problem_spec(
     *,
     refinement_levels: tuple[int, ...] = (4, 5, 6),
     time_steps: int = 80,
+    result_export_uri: str = "tests/fixtures/fem_bs_001/result_export.json",
 ) -> dict[str, Any]:
     """Return the deterministic fixture/problem-spec contract used by arxiv-lab."""
 
@@ -387,6 +405,7 @@ def build_public_fem_bs_oracle_problem_spec(
             },
         },
         "weak_form": _public_weak_form_metadata().to_public_dict(),
+        "pde_convention": public_pde_convention_metadata(),
         "boundaries": [
             {
                 "location": "S=0",
@@ -434,23 +453,14 @@ def build_public_fem_bs_oracle_problem_spec(
             },
             "note": "Compare by matching error budget, not by raw grid size alone.",
         },
-        "result_export_uri": "tests/fixtures/fem_bs_001/result_export.json",
+        "provenance": public_fixture_provenance_metadata(),
+        "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
+        "result_export_uri": result_export_uri,
     }
 
 
-def build_fixture_config_hash(payload: dict[str, Any]) -> str:
-    """Compute a deterministic hash for fixture contracts and export control."""
-
-    return _canonical_public_hash(payload)
-
-
-def _canonical_public_hash(payload: dict[str, Any]) -> str:
-    payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return sha256(payload_bytes).hexdigest()
-
-
 def _public_black_scholes_problem_hash() -> str:
-    return _canonical_public_hash(
+    return build_fixture_config_hash(
         {
             "problem_id": PUBLIC_SYNTHETIC_PROBLEM_ID,
             "measure": PUBLIC_SYNTHETIC_MEASURE,
@@ -502,20 +512,26 @@ def write_public_fem_bs_oracle_spec(
     path: Path | str = FEM_BS_001_PROBLEM_SPEC_PATH,
     *,
     report: FEMParityReport | None = None,
+    result_export_uri: str = "tests/fixtures/fem_bs_001/result_export.json",
 ) -> Path:
     """Write the deterministic problem spec to a public JSON fixture file."""
 
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if report is None:
-        payload = build_public_fem_bs_oracle_problem_spec()
+        payload = build_public_fem_bs_oracle_problem_spec(
+            result_export_uri=result_export_uri
+        )
     else:
         payload = build_public_fem_bs_oracle_problem_spec(
             refinement_levels=report.mesh_metadata.refinement_levels,
             time_steps=report.time_metadata.time_steps,
+            result_export_uri=result_export_uri,
         )
     payload["contract_id"] = build_fixture_config_hash(payload)
-    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return target
 
 
@@ -534,7 +550,10 @@ def write_public_fem_bs_result_export(
             report = run_public_black_scholes_parity_fixture()
         payload = report.export_payload()
         payload["config_id"] = report.config_hash
-        target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        payload = finalize_public_result_payload(payload)
+        target.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
     return target
 
 
@@ -559,7 +578,8 @@ def run_public_black_scholes_parity_fixture(
         raise ValueError("time_steps must be positive")
 
     rows = tuple(
-        _run_row(refinement_level=level, time_steps=time_steps) for level in refinement_levels
+        _run_row(refinement_level=level, time_steps=time_steps)
+        for level in refinement_levels
     )
     final = rows[-1]
 
@@ -666,7 +686,9 @@ def run_public_black_scholes_parity_fixture(
     )
 
     if refresh_exports:
-        write_public_fem_bs_oracle_spec(path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report)
+        write_public_fem_bs_oracle_spec(
+            path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report
+        )
         write_public_fem_bs_result_export(
             path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
         )
@@ -684,12 +706,15 @@ def _config_hash(report: FEMParityReport) -> str:
         "units": report.units,
         "privacy_class": report.privacy_class,
         "weak_form": report.weak_form.to_public_dict(),
+        "pde_convention": public_pde_convention_metadata(),
         "mesh_metadata": report.mesh_metadata.to_public_dict(),
         "refinement_levels": list(report.mesh_metadata.refinement_levels),
         "time_metadata": report.time_metadata.to_public_dict(),
         "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
         "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
         "comparison_policy": report.comparison_policy.to_public_dict(),
+        "provenance": public_fixture_provenance_metadata(),
+        "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
         "tolerances": {
             "absolute": report.tolerance_absolute,
             "relative": report.tolerance_relative,
@@ -748,7 +773,13 @@ def _run_row(*, refinement_level: int, time_steps: int) -> FEMParityConvergenceR
     relative_error = absolute_error / max(abs(expected_price), 1.0)
     delta_absolute_error = abs(observed_delta - expected_delta)
     gamma_absolute_error = abs(observed_gamma - expected_gamma)
-    values = (observed_price, absolute_error, relative_error, observed_delta, observed_gamma)
+    values = (
+        observed_price,
+        absolute_error,
+        relative_error,
+        observed_delta,
+        observed_gamma,
+    )
     if any(not isfinite(value) for value in values):
         raise FloatingPointError("non-finite FEM parity fixture result")
     return FEMParityConvergenceRow(
