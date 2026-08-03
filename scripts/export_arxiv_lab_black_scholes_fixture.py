@@ -78,7 +78,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     else:
         fixture_root = args.output_dir / "fem_bs_001"
         spec_path = write_public_fem_bs_oracle_spec(
-            path=fixture_root / "problem_spec.json", report=report
+            path=fixture_root / "problem_spec.json",
+            report=report,
+            result_export_uri="result_export.json",
         )
         result_path = write_public_fem_bs_result_export(
             path=fixture_root / "result_export.json", refresh=True, report=report

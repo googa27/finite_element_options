@@ -12,6 +12,9 @@ import pytest
 
 from finite_element_options.validation import compiled_weak_form_adapter as adapter
 from finite_element_options.validation import compiled_weak_form_screening as screening
+from finite_element_options.validation.black_scholes_parity import (
+    build_fixture_config_hash,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = (
@@ -97,6 +100,15 @@ def test_compiled_black_scholes_solve_reuses_existing_fem_route_and_matches_anal
         first["summary"]["gamma_absolute_error"]
         <= first["comparison_policy"]["metric_tolerances"]["gamma_absolute"]
     )
+
+
+def test_compiled_weak_form_result_hash_covers_final_adapted_payload() -> None:
+    result = adapter.solve_compiled_weak_form(_payload())
+    advertised_hash = result.pop("result_hash")
+
+    assert result["format_version"] == "compiled-weak-form-fem-result-v0"
+    assert result["measure"] == "Q"
+    assert advertised_hash == build_fixture_config_hash(result)
 
 
 @pytest.mark.parametrize(

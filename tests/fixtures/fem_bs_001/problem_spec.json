@@ -26,7 +26,7 @@
     "primary_metric": "abs(price,delta,gamma errors)@policy_tolerance",
     "tolerance": 0.002
   },
-  "contract_id": "f2aa1bdc84a65bd72819e4cbc126d9dc7dcca238b71975c971a0aaaf71eec2b2",
+  "contract_id": "174fee53f5efba3b0aa0727a3181c19d59154d5d1ccafd4f076c6715754d61a8",
   "contract_version": "fem-parity-contract/v1",
   "fixture_id": "fem-bs-001",
   "mesh_metadata": {
@@ -40,6 +40,12 @@
     ],
     "solver_backing": "scikit-fem+sparse-direct",
     "spatial_domain": "[0, 4.0] normalized spot"
+  },
+  "numerical_canonicalization": {
+    "policy_id": "public-synthetic-fem-bs-significant-digits-v1",
+    "rationale": "SciPy/SuperLU-supported environments can differ by a few ULPs while satisfying the same FEM oracle tolerances; canonical rows keep hashes stable without changing comparison tolerances.",
+    "scope": "published Black-Scholes fixture numerical rows and summaries before JSON hashing/serialization",
+    "significant_digits": 13
   },
   "pde_convention": {
     "initial_condition_tau_zero": "u(S,0)=max(S-K,0)",

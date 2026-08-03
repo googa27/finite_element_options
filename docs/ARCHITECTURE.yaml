@@ -430,11 +430,11 @@
     {
       "rule": "python_module_max_lines",
       "path": "src/finite_element_options/validation/black_scholes_parity.py",
-      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget; FPF result-evidence conformance added explicit public schema fields pending staged extraction.",
+      "reason": "Legacy cohesive/compatibility surface remains above the maintainability budget after extracting public fixture result-evidence, provenance, canonicalization, and hash-boundary helpers to validation/evidence/public_fixture.py.",
       "owner": "googa27 Portfolio Project #24",
       "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
-      "accepted_ceiling": 836,
-      "refactoring_trigger": "The file may not grow; the next behavioral change must extract result-evidence helpers or another cohesive responsibility behind compatibility tests."
+      "accepted_ceiling": 825,
+      "refactoring_trigger": "The file may not grow; the next behavioral change must extract another cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
     },
     {
       "rule": "python_module_max_lines",

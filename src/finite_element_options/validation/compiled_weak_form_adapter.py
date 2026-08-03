@@ -51,6 +51,7 @@ from .compiled_weak_form_screening import (
     reject_nested_unknown_fields,
     request_payload,
 )
+from .evidence.public_fixture import finalize_public_result_payload
 
 
 def load_compiled_weak_form_json(path: str | Path) -> dict[str, Any]:
@@ -286,7 +287,9 @@ def screen_compiled_weak_form(payload: Any) -> CompiledWeakFormScreen:
             diagnostics,
         )
         golden_state_variables = as_sequence(golden_pde_ir.get("state_variables"))
-        golden_state = as_mapping(golden_state_variables[0]) if golden_state_variables else {}
+        golden_state = (
+            as_mapping(golden_state_variables[0]) if golden_state_variables else {}
+        )
         expect_field(
             state.get("unit"),
             as_mapping(golden_state.get("unit")),
@@ -366,7 +369,9 @@ def solve_compiled_weak_form(payload: Mapping[str, Any]) -> dict[str, Any]:
     pde_ir = as_mapping(payload.get("pde_ir"))
     time = as_mapping(route.get("time"))
     steps = time.get("steps", 80)
-    if type(steps) is not int:  # defensive: accepted screens guarantee this branch is dead.
+    if (
+        type(steps) is not int
+    ):  # defensive: accepted screens guarantee this branch is dead.
         raise CompiledWeakFormUnsupportedError(screen_compiled_weak_form(payload))
     report = run_public_black_scholes_parity_fixture(
         refinement_levels=(4, 5, 6), time_steps=steps
@@ -394,7 +399,7 @@ def solve_compiled_weak_form(payload: Mapping[str, Any]) -> dict[str, Any]:
         "compiler_issue": stringify(payload.get("compiler_issue")),
         "fem_issue": stringify(payload.get("fem_issue")),
     }
-    return json_roundtrip(result)
+    return json_roundtrip(finalize_public_result_payload(result))
 
 
 def solve_compiled_weak_form_file(path: str | Path) -> dict[str, Any]:
@@ -418,9 +423,6 @@ def evidence_for_result(result: Mapping[str, Any]) -> dict[str, Any]:
         "error_summary": result.get("summary", {}),
         "screen_accepted": as_mapping(result.get("screen")).get("accepted"),
     }
-
-
-
 
 
 __all__ = [
