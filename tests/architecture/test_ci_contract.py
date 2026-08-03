@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,3 +54,16 @@ def test_supply_chain_and_artifact_gates_are_present() -> None:
         "python scripts/check_readme_examples.py README.md",
     ):
         assert snippet in text
+
+
+def test_static_analysis_toolchain_is_bounded_for_reproducible_ci() -> None:
+    """Avoid silent linter-major drift breaking the only full test job."""
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    optional_deps = pyproject["project"]["optional-dependencies"]
+    for extra in ("validation", "dev"):
+        ruff_specs = [dep for dep in optional_deps[extra] if dep.startswith("ruff")]
+        assert ruff_specs == ["ruff>=0.8,<0.13"]
+
+    constraints = (ROOT / "constraints.txt").read_text(encoding="utf-8")
+    assert "ruff>=0.8,<0.13" in constraints
