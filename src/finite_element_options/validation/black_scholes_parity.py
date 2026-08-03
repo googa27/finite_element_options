@@ -315,7 +315,7 @@ class FEMParityReport:
                 "gamma_absolute": self.gamma_tolerance_absolute,
             },
         }
-        return {
+        payload = {
             "format_version": "fem-bs-oracle-result-v1",
             "benchmark_id": self.benchmark_id,
             "problem_id": self.problem_id,
@@ -326,12 +326,16 @@ class FEMParityReport:
             "units": dict(self.units),
             "privacy_class": self.privacy_class,
             "config_hash": self.config_hash,
+            "config_id": self.config_hash,
             "backend_capability_status": _backend_capability_status(),
             "comparison_policy": comparison_policy,
             "weak_form": self.weak_form.to_public_dict(),
+            "pde_convention": _public_pde_convention_metadata(),
             "mesh_metadata": self.mesh_metadata.to_public_dict(),
             "time_metadata": self.time_metadata.to_public_dict(),
+            "boundaries": [item.to_public_dict() for item in self.boundaries],
             "sensitivity_reference_policy": self.sensitivity_reference_policy.to_public_dict(),
+            "provenance": _public_fixture_provenance_metadata(),
             "diagnostics": dict(self.diagnostics),
             "rows": [row.to_public_dict() for row in self.convergence_rows],
             "summary": {
@@ -351,6 +355,8 @@ class FEMParityReport:
                 "gamma_tolerance_absolute": self.gamma_tolerance_absolute,
             },
         }
+        payload["result_hash"] = build_fixture_config_hash(payload)
+        return payload
 
 
 def build_public_fem_bs_oracle_problem_spec(
@@ -387,6 +393,7 @@ def build_public_fem_bs_oracle_problem_spec(
             },
         },
         "weak_form": _public_weak_form_metadata().to_public_dict(),
+        "pde_convention": _public_pde_convention_metadata(),
         "boundaries": [
             {
                 "location": "S=0",
@@ -434,6 +441,7 @@ def build_public_fem_bs_oracle_problem_spec(
             },
             "note": "Compare by matching error budget, not by raw grid size alone.",
         },
+        "provenance": _public_fixture_provenance_metadata(),
         "result_export_uri": "tests/fixtures/fem_bs_001/result_export.json",
     }
 
@@ -684,12 +692,14 @@ def _config_hash(report: FEMParityReport) -> str:
         "units": report.units,
         "privacy_class": report.privacy_class,
         "weak_form": report.weak_form.to_public_dict(),
+        "pde_convention": _public_pde_convention_metadata(),
         "mesh_metadata": report.mesh_metadata.to_public_dict(),
         "refinement_levels": list(report.mesh_metadata.refinement_levels),
         "time_metadata": report.time_metadata.to_public_dict(),
         "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
         "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
         "comparison_policy": report.comparison_policy.to_public_dict(),
+        "provenance": _public_fixture_provenance_metadata(),
         "tolerances": {
             "absolute": report.tolerance_absolute,
             "relative": report.tolerance_relative,
@@ -707,6 +717,35 @@ def _public_weak_form_metadata() -> WeakFormMetadata:
         time_transformation="tau = T - t",
         coordinate_transform="identity",
     )
+
+
+def _public_pde_convention_metadata() -> dict[str, str]:
+    return {
+        "strong_form": "d_tau u = 0.5*sigma^2*S^2*d_SS u + r*S*d_S u - r*u",
+        "operator_sign": "forward_tau_generator_minus_discount",
+        "time_orientation": "backward_pricing_time_transformed_to_forward_tau",
+        "state_variable": "S; solver uses normalized spot S/K and public values are scaled by strike",
+        "initial_condition_tau_zero": "u(S,0)=max(S-K,0)",
+        "terminal_condition_original_time": "V(S,T)=max(S-K,0)",
+        "lower_dirichlet_boundary": "u(0,tau)=0",
+        "upper_dirichlet_boundary": "u(S_max,tau)=Black-Scholes analytical value at finite S_max; documented as linear-growth far-field proxy",
+        "source_term": "0",
+        "volatility_convention": "volatility sigma is annualized_decimal; diffusion coefficient uses sigma**2",
+    }
+
+
+def _public_fixture_provenance_metadata() -> dict[str, str]:
+    return {
+        "fixture_owner": "googa27/finite_element_options",
+        "consumer": "arxiv-implementation-lab",
+        "source_issue": "googa27/finite_element_options#74",
+        "parity_issue": "googa27/finite_element_options#64",
+        "verification_issue": "googa27/finite_element_options#117",
+        "privacy_class": "public_synthetic",
+        "generator": "finite_element_options.validation.black_scholes_parity.run_public_black_scholes_parity_fixture",
+        "export_script": "scripts/export_arxiv_lab_black_scholes_fixture.py",
+        "oracle": "analytical Black-Scholes price/Delta/Gamma",
+    }
 
 
 def _public_boundary_metadata() -> tuple[BoundaryMetadata, ...]:

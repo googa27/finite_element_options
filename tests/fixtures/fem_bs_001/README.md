@@ -15,4 +15,4 @@ The contract and export are intentionally consumable as plain files and include:
 - Mesh family/element family + mesh/time-step controls
 - Deterministic delta/gamma reference policy
 - Equal-error comparison policy (`mode: equal_error`)
-- Deterministic config hash for fixture provenance
+- Deterministic config/result hashes and public-synthetic provenance

@@ -425,6 +425,11 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["diagnostics"]["mesh_family"] == "line_uniform"
     assert payload["config_hash"] == report.config_hash
     assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
+    assert payload["pde_convention"]["operator_sign"] == "forward_tau_generator_minus_discount"
+    assert payload["boundaries"] == [item.to_public_dict() for item in report.boundaries]
+    assert payload["provenance"]["source_issue"] == "googa27/finite_element_options#74"
+    payload_without_hash = {key: value for key, value in payload.items() if key != "result_hash"}
+    assert payload["result_hash"] == build_fixture_config_hash(payload_without_hash)
     assert payload["comparison_policy"]["mode"] == "equal_error"
     assert payload["comparison_policy"]["metric_tolerances"] == {
         "price_absolute": report.tolerance_absolute,
