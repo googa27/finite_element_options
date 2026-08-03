@@ -184,7 +184,7 @@
         "alternatives": [
           "Ad hoc workflow regex checks only"
         ],
-        "evidence": "requirements-architecture.txt and https://github.com/woodruffw/zizmor",
+        "evidence": "requirements-architecture.txt and https://github.com/zizmorcore/zizmor",
         "adapter_boundary": "Offline CI audit of .github workflow definitions; no application runtime coupling.",
         "custom_code_reason": "The local checker owns portfolio-specific policy while Zizmor supplies maintained security rules.",
         "maintenance_evidence": "https://github.com/zizmorcore/zizmor/releases/tag/v1.28.0",
