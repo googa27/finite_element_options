@@ -179,18 +179,18 @@
       {
         "capability": "GitHub Actions static security audit",
         "selected": [
-          "Zizmor 1.27.0"
+          "Zizmor 1.28.0"
         ],
         "alternatives": [
           "Ad hoc workflow regex checks only"
         ],
-        "evidence": "requirements-architecture.txt and https://github.com/woodruffw/zizmor",
+        "evidence": "requirements-architecture.txt and https://github.com/zizmorcore/zizmor",
         "adapter_boundary": "Offline CI audit of .github workflow definitions; no application runtime coupling.",
         "custom_code_reason": "The local checker owns portfolio-specific policy while Zizmor supplies maintained security rules.",
-        "maintenance_evidence": "https://github.com/woodruffw/zizmor/releases/tag/v1.27.0",
+        "maintenance_evidence": "https://github.com/zizmorcore/zizmor/releases/tag/v1.28.0",
         "api_stability_evidence": "https://docs.zizmor.sh/",
-        "license_evidence": "https://github.com/woodruffw/zizmor/blob/v1.27.0/MIT-LICENSE.txt",
-        "api_license_evidence": "https://github.com/woodruffw/zizmor/blob/v1.27.0/MIT-LICENSE.txt",
+        "license_evidence": "https://github.com/zizmorcore/zizmor/blob/v1.28.0/LICENSE",
+        "api_license_evidence": "https://github.com/zizmorcore/zizmor/blob/v1.28.0/LICENSE",
         "oracle_or_reference_tests": [
           ".github/workflows/ai-hierarchy-policy.yml",
           "scripts/selftest_ai_hierarchy_policy.py"
@@ -343,7 +343,7 @@
       "security_audit_command": "zizmor --offline --min-severity medium .",
       "validated_versions": {
         "pinact": "4.1.0",
-        "zizmor": "1.27.0",
+        "zizmor": "1.28.0",
         "pyyaml": "6.0.3"
       },
       "evidence": [
