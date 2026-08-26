@@ -448,11 +448,11 @@
     {
       "rule": "python_module_max_lines",
       "path": "src/finite_element_options/validation/verification_gates.py",
-      "reason": "Legacy cohesive/compatibility surface exceeds the new maintainability budget; issue #116 adds one benchmark-registry row for compiled pde_ir.v0 evidence pending staged extraction.",
+      "reason": "Legacy verification gates remain above the default budget after the benchmark registry and its validation error contract were extracted into validation/evidence/benchmark_registry.py.",
       "owner": "googa27 Portfolio Project #24 and finite_element_options #116",
       "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
-      "accepted_ceiling": 895,
-      "refactoring_trigger": "The file may not grow; the next validation-registry change must extract benchmark registry data or another cohesive responsibility behind compatibility tests."
+      "accepted_ceiling": 682,
+      "refactoring_trigger": "The file may not grow; the next validation-gate change must extract another cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
     }
   ]
 }
