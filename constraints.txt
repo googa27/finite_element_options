@@ -4,3 +4,5 @@ arviz>=0.23,<1
 # Ruff 0.13+ expands default lint enforcement for the historical source tree;
 # keep CI deterministic until the repository intentionally adopts that rule set.
 ruff>=0.8,<0.13
+# Issue #133 profile-likelihood adapter is exercised through the optional extra.
+iminuit>=2.32,<3

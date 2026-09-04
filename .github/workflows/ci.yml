@@ -194,11 +194,11 @@ jobs:
           - profile: identifiability
             python-version: '3.11'
             dependency: iminuit
-            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.identifiability,finite_element_options.examples.regime_switching_quanto.adoption.identifiability.contracts
           - profile: identifiability
             python-version: '3.12'
             dependency: iminuit
-            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.identifiability,finite_element_options.examples.regime_switching_quanto.adoption.identifiability.contracts
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -268,6 +268,13 @@ jobs:
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py" \
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_quantlib_oracle.py" \
               -k 'quantlib or canonical_artifact_scope' --no-cov
+          fi
+          if [ "${PROFILE}" = "identifiability" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py" \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_iminuit_identifiability.py" \
+              -k 'identifiability or iminuit' --no-cov
           fi
 
   supply_chain:
