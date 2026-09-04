@@ -176,7 +176,7 @@ def _fit_gaussian_baseline(
                 ) from exc
             raise
 
-        fitted = AutoReg(y, lags=autoregressive_order, trend="c", old_names=False).fit()
+        fitted = AutoReg(y, lags=autoregressive_order, trend="c").fit()
         residuals = np.asarray(fitted.resid, dtype=float)
         ar_coefficients = [[float(value) for value in fitted.params[-autoregressive_order:]]]
         llf = float(fitted.llf)
