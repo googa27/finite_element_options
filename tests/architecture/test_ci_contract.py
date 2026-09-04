@@ -80,6 +80,24 @@ def test_new_optional_profiles_import_actual_dependency_and_cover_supported_pyth
     assert "importlib.import_module(dependency)" in text or "require_optional(dependency)" in text
     assert "quantlib_evaluation_date" in text
     assert "forced QuantLib failure" in text
+    assert "test_regime_switching_quanto_quantlib_oracle.py" in text
+    assert "-k 'quantlib or canonical_artifact_scope'" in text
+
+
+def test_quantlib_optional_pytest_uses_workspace_paths_after_tmp_cd() -> None:
+    """Installed-wheel QuantLib tests must remain executable after CI cd's to /tmp."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    after_tmp_cd = text.split("cd /tmp", 1)[1]
+    expected_paths = [
+        '"${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py"',
+        '"${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_quantlib_oracle.py"',
+    ]
+    pytest_block = after_tmp_cd.split("-k 'quantlib or canonical_artifact_scope'", 1)[0]
+    for path in expected_paths:
+        assert path in pytest_block
+    assert '-c "${GITHUB_WORKSPACE}/constraints.txt"' in after_tmp_cd
+    assert "\n              tests/examples/" not in pytest_block
 
 
 def test_supply_chain_and_artifact_gates_are_present() -> None:

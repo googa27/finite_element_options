@@ -121,6 +121,7 @@ markers = [
     "volatility: optional arch volatility challenger checks",
     "changepoints: optional ruptures changepoint checks",
     "validation: validation/reproducibility checks",
+    "quantlib: optional QuantLib oracle checks",
 ]
 testpaths = ["tests"]
 
