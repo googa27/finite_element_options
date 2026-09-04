@@ -275,6 +275,13 @@ jobs:
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py" \
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_iminuit_identifiability.py" \
               -k 'identifiability or iminuit' --no-cov
+            (
+              cd /tmp
+              /tmp/feo-${PROFILE}-check/bin/python \
+                "${GITHUB_WORKSPACE}/scripts/run_iminuit_identifiability.py" \
+                --output "${GITHUB_WORKSPACE}/docs/evidence/regime_switching_quanto_iminuit_identifiability_2026-09-04.json" \
+                --verify
+            )
           fi
 
   supply_chain:

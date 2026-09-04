@@ -181,6 +181,7 @@ def test_profile_failures_suppress_raw_optimizer_paths_and_nonfinite_text() -> N
     """Exceptional profile traces must remain deterministic and privacy-safe."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.identifiability.adapter import (
+        _optimizer_failure,
         _profile_diagnostics,
     )
 
@@ -198,12 +199,76 @@ def test_profile_failures_suppress_raw_optimizer_paths_and_nonfinite_text() -> N
     assert "FMin(" not in encoded
     assert "/home/" not in encoded
     assert "nan" not in encoded.lower()
+    expected = {
+        "type": "RuntimeError",
+        "message": "optimizer exception captured; raw implementation details suppressed",
+    }
     for parameter in ("equity_vol", "correlation"):
-        failure = profiles["parameters"][parameter]["failure"]
-        assert failure == {
-            "type": "RuntimeError",
-            "message": "optimizer exception captured; raw implementation details suppressed",
-        }
+        assert profiles["parameters"][parameter]["failure"] == expected
+    for raw_message in (
+        "/var/private/customer.csv",
+        "/Users/person/secret.txt",
+        r"C:\\private\\customer.csv",
+        "<iminuit.util.FMin object> inf",
+    ):
+        assert _optimizer_failure("RuntimeError", raw_message) == expected
+
+
+def test_profile_crossing_requires_center_support_and_sidewise_brackets() -> None:
+    """Each profile side must cross one from an explicitly supported center."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.identifiability.adapter import (
+        _profile_evidence,
+    )
+
+    def trace(rows: list[tuple[float, float]]) -> list[dict[str, object]]:
+        return [{"value": value, "delta_chi2": delta, "valid": True} for value, delta in rows]
+
+    bracketed = _profile_evidence(
+        trace([(-2.0, 2.0), (-1.0, 0.2), (0.0, 0.0), (1.0, 0.2), (2.0, 2.0)]),
+        0.0,
+    )
+    assert bracketed["lower_crosses_delta_chi2_1"] is True
+    assert bracketed["upper_crosses_delta_chi2_1"] is True
+
+    miscentered = _profile_evidence(trace([(-1.0, 4.0), (1.0, 4.0), (2.0, 0.0)]), 0.0)
+    assert miscentered["lower_crosses_delta_chi2_1"] is False
+    assert miscentered["upper_crosses_delta_chi2_1"] is False
+
+    one_sided = _profile_evidence(
+        trace([(-2.0, 0.5), (-1.0, 0.2), (0.0, 0.0), (1.0, 0.2), (2.0, 2.0)]),
+        0.0,
+    )
+    assert one_sided["lower_crosses_delta_chi2_1"] is False
+    assert one_sided["upper_crosses_delta_chi2_1"] is True
+
+
+def test_pricing_exceptions_serialize_only_typed_public_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pricing failures must not serialize raw paths, values, or implementation reprs."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.identifiability import (
+        contracts as contract_module,
+    )
+
+    def fail_price(*args: object, **kwargs: object) -> float:
+        raise ValueError("/var/private/customer.csv <iminuit.object> nan inf")
+
+    monkeypatch.setattr(contract_module, "quanto_call_price", fail_price)
+    result = WeightedQuantoCalibrationObjective(_case("identified_quanto_surface")).evaluate(
+        0.23, -0.40
+    )
+    encoded = canonical_json(result.to_dict())
+
+    assert result.finite is False
+    assert result.diagnostics == {
+        "status": "failed",
+        "reason": "pricing_exception",
+        "exception_type": "ValueError",
+    }
+    for unsafe in ("/var/", "customer.csv", "<iminuit", "nan", " inf"):
+        assert unsafe not in encoded.lower()
 
 
 def test_base_facade_and_contracts_import_with_iminuit_blocked() -> None:

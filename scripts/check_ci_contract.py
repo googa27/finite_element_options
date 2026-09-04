@@ -62,6 +62,7 @@ REQUIRED_SNIPPETS = {
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
     "QuantLib failure restoration proof": "forced QuantLib failure",
     "iminuit focused installed-wheel tests": "test_regime_switching_quanto_iminuit_identifiability.py",
+    "iminuit canonical artifact verification": "run_iminuit_identifiability.py",
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {

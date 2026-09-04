@@ -26,6 +26,8 @@ from .gate import identification_decision
 
 DELTA_CHI2_ONE = 1.0
 MIN_CURVATURE = 1.0e-8
+PROFILE_CENTER_DELTA_TOLERANCE = 1.0e-6
+PROFILE_CENTER_SPACING_FRACTION = 0.51
 
 
 def run_iminuit_identifiability(case: CalibrationCase) -> IdentifiabilityResult:
@@ -126,11 +128,11 @@ def _failed_result(
 
 
 def _optimizer_failure(kind: str, message: str) -> dict[str, Any]:
-    text = str(message)
-    unsafe_tokens = ("FMin(", "Minuit(", "<iminuit", "┌", "│", "/home/", "/tmp/", "\\\\")
-    if any(token in text for token in unsafe_tokens) or "nan" in text.lower():
-        text = "optimizer exception captured; raw implementation details suppressed"
-    return {"type": str(kind), "message": text}
+    del message
+    return {
+        "type": str(kind),
+        "message": "optimizer exception captured; raw implementation details suppressed",
+    }
 
 
 def _serialize_minimum(minuit: Any) -> dict[str, Any]:
@@ -356,11 +358,19 @@ def _profile_evidence(trace: list[dict[str, Any]], best_value: float) -> dict[st
         and float(row["delta_chi2"]) >= -1.0e-8
         for row in trace
     )
-    lower_side = [row for row in trace if float(row["value"]) < best_value]
-    upper_side = [row for row in trace if float(row["value"]) > best_value]
+    ordered = sorted(trace, key=lambda row: float(row["value"]))
+    center_supported = finite_stable and _profile_center_is_supported(ordered, best_value)
+    lower_side = sorted(
+        (row for row in ordered if float(row["value"]) < best_value),
+        key=lambda row: abs(float(row["value"]) - best_value),
+    )
+    upper_side = sorted(
+        (row for row in ordered if float(row["value"]) > best_value),
+        key=lambda row: abs(float(row["value"]) - best_value),
+    )
     min_delta = min((float(row["delta_chi2"]) for row in trace), default=math.inf)
-    lower_cross = _side_brackets_delta_one(lower_side, min_delta)
-    upper_cross = _side_brackets_delta_one(upper_side, min_delta)
+    lower_cross = center_supported and _side_brackets_delta_one(lower_side)
+    upper_cross = center_supported and _side_brackets_delta_one(upper_side)
     return {
         "finite_stable": finite_stable,
         "lower_crosses_delta_chi2_1": lower_cross,
@@ -371,11 +381,39 @@ def _profile_evidence(trace: list[dict[str, Any]], best_value: float) -> dict[st
     }
 
 
-def _side_brackets_delta_one(rows: list[dict[str, Any]], min_delta: float) -> bool:
-    if not rows or min_delta > DELTA_CHI2_ONE:
+def _profile_center_is_supported(rows: list[dict[str, Any]], best_value: float) -> bool:
+    if not rows:
         return False
-    deltas = [float(row["delta_chi2"]) for row in rows if math.isfinite(float(row["delta_chi2"]))]
-    return bool(deltas) and max(deltas) >= DELTA_CHI2_ONE
+    values = [float(row["value"]) for row in rows]
+    positive_spacings = [
+        right - left for left, right in zip(values, values[1:], strict=False) if right > left
+    ]
+    if not positive_spacings:
+        value_tolerance = 1.0e-12
+    else:
+        value_tolerance = max(
+            1.0e-12,
+            PROFILE_CENTER_SPACING_FRACTION * min(positive_spacings),
+        )
+    nearest = min(rows, key=lambda row: abs(float(row["value"]) - best_value))
+    return (
+        abs(float(nearest["value"]) - best_value) <= value_tolerance
+        and abs(float(nearest["delta_chi2"])) <= PROFILE_CENTER_DELTA_TOLERANCE
+    )
+
+
+def _side_brackets_delta_one(rows: list[dict[str, Any]]) -> bool:
+    previous_delta = 0.0
+    for row in rows:
+        current_delta = float(row["delta_chi2"])
+        if (
+            min(previous_delta, current_delta)
+            <= DELTA_CHI2_ONE
+            <= max(previous_delta, current_delta)
+        ):
+            return True
+        previous_delta = current_delta
+    return False
 
 
 def _minimum_has_finite_values(values: dict[str, Any]) -> bool:

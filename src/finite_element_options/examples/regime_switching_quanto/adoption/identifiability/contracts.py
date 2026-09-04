@@ -291,7 +291,9 @@ class WeightedQuantoCalibrationObjective:
                     }
                 )
         except (OverflowError, ValueError) as exc:
-            return self._failed_evaluation({"reason": "pricing_exception", "message": str(exc)})
+            return self._failed_evaluation(
+                {"reason": "pricing_exception", "exception_type": type(exc).__name__}
+            )
         if not math.isfinite(chi2):
             return self._failed_evaluation({"reason": "nonfinite_chi2"})
         self.last_diagnostic = {"status": "finite", "contributions": contributions}
