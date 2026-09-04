@@ -204,10 +204,12 @@ def calibrate_scales() -> UQCalibration:
     )
 
 
-def build_components(calibration: UQCalibration) -> tuple[UncertaintyComponent, ...]:
+def build_components(
+    calibration: UQCalibration, config: UQPilotConfig | None = None
+) -> tuple[UncertaintyComponent, ...]:
     """Build the five named OpenTURNS-independent uncertainty contracts."""
 
-    input_hash = canonical_uq_input_hash()
+    input_hash = canonical_uq_input_hash(config)
     return (
         UncertaintyComponent(
             name="data",

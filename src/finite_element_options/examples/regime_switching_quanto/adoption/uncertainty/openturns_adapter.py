@@ -39,13 +39,15 @@ def openturns_seeded(seed: int) -> Any:
             openturns.RandomGenerator.SetState(state)
 
 
-def _distribution(openturns: ModuleType) -> Any:
+def _distribution(openturns: ModuleType) -> tuple[Any, str]:
     marginals = [openturns.Uniform(-1.0, 1.0) for _ in range(4)]
     marginals.append(openturns.Normal(0.0, 1.0))
-    constructor = getattr(openturns, "ComposedDistribution", openturns.JointDistribution)
+    constructor = getattr(openturns, "ComposedDistribution", None)
+    if constructor is None:
+        constructor = openturns.JointDistribution
     distribution = constructor(marginals)
     distribution.setDescription(list(COMPONENT_NAMES))
-    return distribution
+    return distribution, str(constructor.__name__)
 
 
 def _as_numpy(sample: Any) -> np.ndarray:
@@ -56,7 +58,8 @@ def sample_normalized(seed: int, size: int) -> np.ndarray:
     """Draw a seeded OpenTURNS sample from the five independent marginals."""
 
     with openturns_seeded(seed) as openturns:
-        return _as_numpy(_distribution(openturns).getSample(int(size)))
+        distribution, _constructor_name = _distribution(openturns)
+        return _as_numpy(distribution.getSample(int(size)))
 
 
 def saltelli_indices(
@@ -66,13 +69,13 @@ def saltelli_indices(
     dict[ComponentName, float],
     dict[str, dict[ComponentName, dict[str, float]]],
     str,
+    str,
 ]:
     """Compute raw first and total Saltelli finite-sample estimators and CIs."""
 
     with openturns_seeded(seed) as openturns:
-        experiment = openturns.SobolIndicesExperiment(
-            _distribution(openturns), int(base_size), False
-        )
+        distribution, constructor_name = _distribution(openturns)
+        experiment = openturns.SobolIndicesExperiment(distribution, int(base_size), False)
         design = experiment.generate()
         x = _as_numpy(design)
         y = np.asarray([[float(response(row))] for row in x], dtype=float)
@@ -89,7 +92,7 @@ def saltelli_indices(
         version = str(openturns.__version__)
     first = _raw_indices(first_raw)
     total = _raw_indices(total_raw)
-    return first, total, intervals, version
+    return first, total, intervals, version, constructor_name
 
 
 def _raw_indices(values: list[float]) -> dict[ComponentName, float]:
@@ -145,7 +148,7 @@ def additive_sobol_recovery(config: UQPilotConfig) -> AdditiveSobolRecovery:
     def additive(row: np.ndarray) -> float:
         return float(np.dot(coefficients, row))
 
-    estimated_first, estimated_total, _intervals, _version = saltelli_indices(
+    estimated_first, estimated_total, _intervals, _version, _constructor = saltelli_indices(
         additive, seed=config.additive_sobol_seed, base_size=config.additive_sobol_base_size
     )
     first_errors = [abs(estimated_first[name] - expected[name]) for name in COMPONENT_NAMES]

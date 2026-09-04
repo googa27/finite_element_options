@@ -168,6 +168,7 @@ class UQPropagationResult:
     sobol_seed: int
     sobol_base_size: int
     openturns_version: str
+    distribution_constructor: str
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe propagation data."""

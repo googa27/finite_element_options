@@ -249,7 +249,7 @@
           "direct NumPy sampling only",
           "custom Sobol estimator"
         ],
-        "evidence": "Issue #134 adds public-synthetic one-regime fixed-FX quanto FEM uncertainty decomposition in docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json (sha256 f8c733faf469f15d99dbcea160e26ffc87b8f33d25be119be5f184bbdeea2460) and docs/REGIME_OPENTURNS_UQ.md; direct NumPy parity, additive Sobol recovery, raw Sobol finite-sample sanity validation, interval serialization, RNG isolation, and static artifact tests gate the decision.",
+        "evidence": "Issue #134 adds public-synthetic one-regime fixed-FX quanto FEM uncertainty decomposition in docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json (sha256 23c96fb4f2f78178ba5c140e8491df427dd6f4ef1dfabeb81fdb35c1934cb072) and docs/REGIME_OPENTURNS_UQ.md; direct NumPy parity, additive Sobol recovery, raw Sobol finite-sample sanity validation, interval serialization, RNG isolation, and static artifact tests gate the decision.",
         "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.optional require_optional('openturns'); OpenTURNS is imported only inside uncertainty.openturns_adapter execution paths, while contracts/results remain JSON-safe and OpenTURNS-independent.",
         "custom_code_reason": "Custom code owns five-component FEM diagnostic semantics, source/grid/model hashes, NumPy direct-reference parity, and evidence gating; OpenTURNS owns maintained composed/joint distribution sampling, Sobol design generation, and Saltelli estimators.",
         "maintenance_evidence": "PyPI project openturns 1.27.post1; production/stable classifier; cp39-abi3 wheels for Linux x86_64/aarch64, macOS ARM, and Windows.",

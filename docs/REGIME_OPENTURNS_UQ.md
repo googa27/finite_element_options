@@ -19,14 +19,14 @@ The lightweight NumPy route remains the direct-reference baseline because it sam
 
 Package extra: `uncertainty = ["openturns>=1.27,<2"]`.
 
-Observed execution used OpenTURNS `1.27.post1`. The adapter imports OpenTURNS lazily via `require_optional("openturns")`; missing dependency errors name `finite-element-options[uncertainty]` exactly. Public contracts/results are immutable dataclasses containing only JSON-safe values; no OpenTURNS objects or reprs cross the boundary.
+Observed execution used OpenTURNS `1.27.post1`. That release exposes `JointDistribution`, which the canonical artifact records as the constructor actually used; the adapter will select and report `ComposedDistribution` only when a future compatible OpenTURNS release exposes it. The adapter imports OpenTURNS lazily via `require_optional("openturns")`; missing dependency errors name `finite-element-options[uncertainty]` exactly. Public contracts/results are immutable dataclasses containing only JSON-safe values; no OpenTURNS objects cross the boundary.
 
 OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps all OpenTURNS seeded calls in a re-entrant lock, saves `RandomGenerator.GetState()`, calls `RandomGenerator.SetSeed(...)`, and restores `RandomGenerator.SetState(...)` in `finally`.
 
 ## Canonical artifact
 
 - Artifact: `docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json`
-- Artifact SHA-256: `f8c733faf469f15d99dbcea160e26ffc87b8f33d25be119be5f184bbdeea2460`
+- Artifact SHA-256: `23c96fb4f2f78178ba5c140e8491df427dd6f4ef1dfabeb81fdb35c1934cb072`
 - Canonical input hash: `89b931ad4c307c03367a98a03fdf6e0c5b0da0828be9b458a0405d0cd7836457`
 - CLI: `python scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify`
 

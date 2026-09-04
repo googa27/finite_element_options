@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "f8c733faf469f15d99dbcea160e26ffc87b8f33d25be119be5f184bbdeea2460"
+EXPECTED_ARTIFACT_SHA256 = "23c96fb4f2f78178ba5c140e8491df427dd6f4ef1dfabeb81fdb35c1934cb072"
 _VALID_SHA = "0" * 64
 
 
@@ -91,6 +91,37 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
         for value in component["scale_or_range"].values():
             if isinstance(value, (int, float)):
                 assert np.isfinite(value)
+
+
+def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
+    """Non-default controls must propagate into study-input-sourced component hashes."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        UQPilotConfig,
+        build_components,
+        canonical_uq_input_hash,
+    )
+
+    custom = UQPilotConfig(sample_seed=999_134)
+    expected = canonical_uq_input_hash(custom)
+    components = build_components(pilot_result.calibration, custom)
+
+    assert expected != pilot_result.study_input_hash
+    assert all(component.source_hash == expected for component in components[:3])
+    assert all(component.source_hash != expected for component in components[3:])
+
+
+def test_runtime_provenance_names_actual_distribution_constructor(pilot_result: Any) -> None:
+    """Artifact API provenance must report the constructor selected by the installed OpenTURNS."""
+
+    propagation = pilot_result.propagation.to_dict()
+    api_used = pilot_result.provenance["openturns_dependency_evidence"]["api_used"]
+
+    assert propagation["distribution_constructor"] in {
+        "ComposedDistribution",
+        "JointDistribution",
+    }
+    assert api_used[0] == propagation["distribution_constructor"]
 
 
 def test_real_fem_response_calls_existing_solver_and_records_separate_calibration(

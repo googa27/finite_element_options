@@ -81,12 +81,12 @@ def run_openturns_uq_pilot(
     controls = UQPilotConfig() if config is None else config
     predecessor_checks = verify_predecessor_hashes(root)
     calibration = calibrate_scales()
-    components = build_components(calibration)
+    components = build_components(calibration, controls)
 
     sample = sample_normalized(controls.sample_seed, controls.sample_size)
     ot_values = np.asarray([evaluate_response(row, calibration) for row in sample], dtype=float)
     price_summary = summarize_prices(ot_values)
-    first, total, sobol_intervals, version = saltelli_indices(
+    first, total, sobol_intervals, version, distribution_constructor = saltelli_indices(
         lambda row: evaluate_response(row, calibration),
         seed=controls.sobol_seed,
         base_size=controls.sobol_base_size,
@@ -108,6 +108,7 @@ def run_openturns_uq_pilot(
         sobol_seed=controls.sobol_seed,
         sobol_base_size=controls.sobol_base_size,
         openturns_version=version,
+        distribution_constructor=distribution_constructor,
     )
 
     direct = _direct_reference(controls, calibration, propagation, ot_values)
@@ -151,7 +152,7 @@ def run_openturns_uq_pilot(
             "observed_version": version,
             "license": "LGPLv3+ per PyPI project metadata/docs evidence",
             "api_used": [
-                "ComposedDistribution",
+                distribution_constructor,
                 "RandomGenerator.SetSeed/GetState/SetState",
                 "SobolIndicesExperiment(distribution, size, False)",
                 "SaltelliSensitivityAlgorithm(inputDesign, outputDesign, size)",
