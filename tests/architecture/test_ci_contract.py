@@ -34,7 +34,17 @@ def test_ci_profiles_are_required_and_named() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for job in ("package:", "test:", "optional_imports:", "supply_chain:"):
         assert f"  {job}" in text
-    for profile in ("fd", "jax", "calibration", "viz", "ui"):
+    for profile in (
+        "fd",
+        "jax",
+        "calibration",
+        "viz",
+        "ui",
+        "volatility",
+        "changepoints",
+        "quantlib",
+        "identifiability",
+    ):
         assert f"profile: {profile}" in text
 
 

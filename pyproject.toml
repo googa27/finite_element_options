@@ -46,6 +46,10 @@ calibration = [
     "pymc>=5,<6",
     "statsmodels>=0.14,<1",
 ]
+volatility = ["arch>=8,<9"]
+changepoints = ["ruptures>=1.1.10,<2"]
+quantlib = ["QuantLib>=1.43,<2"]
+identifiability = ["iminuit>=2.32,<3"]
 io = [
     "pandas>=2,<3",
     "pyarrow>=23,<24",

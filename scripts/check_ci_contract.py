@@ -53,6 +53,10 @@ REQUIRED_SNIPPETS = {
     "optional calibration profile": "profile: calibration",
     "optional viz profile": "profile: viz",
     "optional ui profile": "profile: ui",
+    "optional volatility profile": "profile: volatility",
+    "optional changepoints profile": "profile: changepoints",
+    "optional quantlib profile": "profile: quantlib",
+    "optional identifiability profile": "profile: identifiability",
 }
 
 

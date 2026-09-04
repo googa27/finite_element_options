@@ -41,9 +41,7 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
 
     assert any(name.startswith("finite_element_options/") for name in names)
     assert "finite_element_options/py.typed" in names
-    assert not any(
-        name == "src/__init__.py" or name.startswith("src/") for name in names
-    )
+    assert not any(name == "src/__init__.py" or name.startswith("src/") for name in names)
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
 
@@ -57,9 +55,7 @@ def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(
 
     with zipfile.ZipFile(wheel) as archive:
         entry_point_files = [
-            name
-            for name in archive.namelist()
-            if name.endswith(".dist-info/entry_points.txt")
+            name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
         ]
         assert len(entry_point_files) == 1
         entry_points = archive.read(entry_point_files[0]).decode("utf-8")
@@ -79,9 +75,7 @@ def _requires_dist() -> list[str]:
     return metadata.metadata("finite-element-options").get_all("Requires-Dist") or []
 
 
-def _has_extra_dependency(
-    requires_dist: list[str], extra: str, dependency: str
-) -> bool:
+def _has_extra_dependency(requires_dist: list[str], extra: str, dependency: str) -> bool:
     return any(
         item.lower().startswith(dependency.lower())
         and f'extra == "{extra.lower()}"' in item.lower()
@@ -93,13 +87,17 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
     requires_dist = _requires_dist()
     forbidden_core = [
         "aleatory",
+        "arch",
         "findiff",
+        "iminuit",
         "jax",
         "fenics",
         "dolfin",
         "matplotlib",
         "pandas",
         "pymc",
+        "quantlib",
+        "ruptures",
         "statsmodels",
         "streamlit",
         "xarray",
@@ -112,8 +110,7 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
         if item.lower().startswith(name)
     ]
     assert not offenders, (
-        f"Optional stacks leaked into core dependencies: {offenders}\n"
-        + "\n".join(requires_dist)
+        f"Optional stacks leaked into core dependencies: {offenders}\n" + "\n".join(requires_dist)
     )
 
 
@@ -134,6 +131,23 @@ def test_advertised_extras_cover_eager_import_dependencies() -> None:
     assert not _has_extra_dependency(requires_dist, "ui", "aleatory"), (
         "The UI domain policy should not depend on the auxiliary aleatory package."
     )
+
+
+def test_purpose_specific_adoption_extras_are_advertised() -> None:
+    """Issue #130 optional adoption libraries stay purpose-specific extras."""
+
+    requires_dist = _requires_dist()
+    expected = {
+        "volatility": "arch",
+        "changepoints": "ruptures",
+        "quantlib": "QuantLib",
+        "identifiability": "iminuit",
+    }
+    for extra, dependency in expected.items():
+        assert _has_extra_dependency(requires_dist, extra, dependency), (
+            f"The {extra!r} extra must install {dependency!r}; requires-dist was:\n"
+            + "\n".join(requires_dist)
+        )
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(

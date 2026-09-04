@@ -157,6 +157,14 @@ jobs:
             imports: finite_element_options.plots
           - profile: ui
             imports: finite_element_options.sidebar
+          - profile: volatility
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: changepoints
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: quantlib
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state
+          - profile: identifiability
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
