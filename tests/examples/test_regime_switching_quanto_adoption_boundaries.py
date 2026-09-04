@@ -77,18 +77,22 @@ def test_missing_extra_errors_are_actionable(module_name: str, expected: tuple[s
     extra, _dependency = expected
     probe = _run_import_probe(
         f"""
-        import builtins
+        import importlib.abc
+        import sys
         from {OPTIONAL} import require_optional
 
         target = {module_name!r}
-        original_import = builtins.__import__
 
-        def guarded_import(name, *args, **kwargs):
-            if name.split('.')[0] == target:
-                raise ModuleNotFoundError(f'blocked optional dependency: {{name}}', name=name)
-            return original_import(name, *args, **kwargs)
+        class BlockedOptional(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path, target_spec=None):
+                if fullname == target or fullname.startswith(target + '.'):
+                    raise ModuleNotFoundError(
+                        f'blocked optional dependency: {{fullname}}', name=target
+                    )
+                return None
 
-        builtins.__import__ = guarded_import
+        sys.modules.pop(target, None)
+        sys.meta_path.insert(0, BlockedOptional())
         try:
             require_optional(target)
         except ImportError as exc:

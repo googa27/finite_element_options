@@ -11,6 +11,9 @@ _EXPORT_MODULES = {
     "optional_dependency_registry": "optional",
     "require_optional": "optional",
     "quantlib_evaluation_date": "quantlib_state",
+    "VolatilityBenchmarkConfig": "volatility_benchmark",
+    "VolatilityBenchmarkResult": "volatility_benchmark",
+    "run_volatility_benchmark": "volatility_benchmark",
 }
 
 __all__ = [
@@ -19,6 +22,9 @@ __all__ = [
     "optional_dependency_registry",
     "quantlib_evaluation_date",
     "require_optional",
+    "VolatilityBenchmarkConfig",
+    "VolatilityBenchmarkResult",
+    "run_volatility_benchmark",
 ]
 
 
