@@ -90,6 +90,8 @@ study_input_hash=a5067f8b5201e2cfee4496dbd480e849822a9d9576cb137d524572ef378c842
 all_expected_decisions_passed=True
 ```
 
+The clean installed-wheel CI profiles rerun the scientific decisions and tolerance assertions on Python 3.11 and 3.12. The committed evidence bytes are guarded separately by their canonical SHA-256 and input hash; full optimizer traces are not required to be bitwise identical across NumPy/SciPy platform builds.
+
 ## Results
 
 | Case | Decision | Estimate | HESSE errors | Key evidence |
