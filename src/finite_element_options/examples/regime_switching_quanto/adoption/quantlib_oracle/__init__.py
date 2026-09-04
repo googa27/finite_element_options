@@ -13,6 +13,7 @@ from .contracts import (
 )
 
 _EXPORT_MODULES = {
+    "quantlib_evaluation_date": "state",
     "ANALYTICAL_TOLERANCE": "adapter",
     "MATRIX_SCHEMA_VERSION": "matrix",
     "SCOPE_STATEMENT": "matrix",
@@ -26,6 +27,7 @@ _EXPORT_MODULES = {
 }
 
 __all__ = [
+    "quantlib_evaluation_date",
     "ANALYTICAL_TOLERANCE",
     "MATRIX_SCHEMA_VERSION",
     "SCOPE_STATEMENT",

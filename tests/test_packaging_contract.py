@@ -213,7 +213,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         import pathlib
         import sys
 
-        blocked = {{'arch', 'ruptures', 'QuantLib', 'iminuit'}}
+        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns"}
         checkout = pathlib.Path({str(ROOT)!r}).resolve()
 
         preloaded = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
@@ -234,7 +234,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             'finite_element_options.examples.regime_switching_quanto',
             'finite_element_options.examples.regime_switching_quanto.adoption',
             'finite_element_options.examples.regime_switching_quanto.adoption.optional',
-            'finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state',
+            'finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state',
         ):
             module = importlib.import_module(module_name)
             module_file = pathlib.Path(module.__file__).resolve()

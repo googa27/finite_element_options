@@ -15,12 +15,13 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 OPTIONAL = f"{ADOPTION}.optional"
-QUANTLIB_STATE = f"{ADOPTION}.quantlib_state"
+QUANTLIB_STATE = f"{ADOPTION}.quantlib_oracle.state"
 OPTIONAL_DEPENDENCIES = {
     "arch": ("volatility", "arch>=8,<9"),
     "ruptures": ("changepoints", "ruptures>=1.1.10,<2"),
     "QuantLib": ("quantlib", "QuantLib>=1.43,<2"),
     "iminuit": ("identifiability", "iminuit>=2.32,<3"),
+    "openturns": ("uncertainty", "openturns>=1.27,<2"),
 }
 
 
@@ -254,7 +255,7 @@ def test_quantlib_evaluation_date_restores_on_success_and_failure() -> None:
 
     QuantLib = pytest.importorskip("QuantLib")
 
-    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state import (
         quantlib_evaluation_date,
     )
 

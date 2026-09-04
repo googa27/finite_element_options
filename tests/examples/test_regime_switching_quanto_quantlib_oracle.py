@@ -347,7 +347,7 @@ def test_quantlib_evaluation_date_accepts_stdlib_date_and_restores_after_excepti
     """The global QuantLib evaluation date is restored for stdlib dates on failures."""
 
     QuantLib = pytest.importorskip("QuantLib")
-    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state import (
         quantlib_evaluation_date,
     )
 
@@ -365,7 +365,7 @@ def test_quantlib_evaluation_date_serializes_two_threads_without_overlap() -> No
     """Two reference calls cannot overlap process-global QuantLib dates."""
 
     QuantLib = pytest.importorskip("QuantLib")
-    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state import (
         quantlib_evaluation_date,
     )
 

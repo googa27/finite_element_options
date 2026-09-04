@@ -198,8 +198,8 @@
           "DX Analytics",
           "custom external-pricer fixtures"
         ],
-        "evidence": "Issue #130 optional dependency registry and quantlib_state adapter plus issue #132 isolated vanilla/fixed-FX quanto oracle package, state serialization tests, parity tests, deterministic one-regime QuantLib/FEM/MC artifact docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json (sha256 ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056).",
-        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state context manager and quantlib_oracle adapter; lazily imported QuantLib objects are used only inside the adapter, while public specs/results and typed convention/reduction errors stay stdlib/domain/JSON-safe",
+        "evidence": "Issue #130 optional dependency registry and quantlib_oracle.state adapter plus issue #132 isolated vanilla/fixed-FX quanto oracle package, state serialization tests, parity tests, deterministic one-regime QuantLib/FEM/MC artifact docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json (sha256 ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056).",
+        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state context manager and quantlib_oracle adapter; lazily imported QuantLib objects are used only inside the adapter, while public specs/results and typed convention/reduction errors stay stdlib/domain/JSON-safe",
         "custom_code_reason": "Custom code owns process-global state isolation, immutable convention validation, fixed-FX scaling, deterministic matrix orchestration, and hash-bound evidence; QuantLib owns vanilla and quanto pricing engines.",
         "maintenance_evidence": "https://github.com/lballabio/QuantLib-SWIG/releases and https://pypi.org/project/QuantLib/",
         "api_stability_evidence": "QuantLib Settings/evaluationDate and the EuropeanOption/AnalyticEuropeanEngine/QuantoVanillaOption/QuantoEuropeanEngine APIs are documented maintained QuantLib-SWIG surfaces; this repository confines them to an internal optional adapter.",
@@ -237,6 +237,30 @@
           "tests/examples/test_regime_switching_quanto_iminuit_identifiability.py",
           "scripts/run_iminuit_identifiability.py --verify",
           ".github/workflows/ci.yml optional_imports identifiability profile"
+        ],
+        "maturity": "experimental"
+      },
+      {
+        "capability": "adoption-only uncertainty propagation boundary",
+        "selected": [
+          "openturns >=1.27,<2"
+        ],
+        "alternatives": [
+          "direct NumPy sampling only",
+          "custom Sobol estimator"
+        ],
+        "evidence": "Issue #134 adds public-synthetic one-regime fixed-FX quanto FEM uncertainty decomposition in docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json (sha256 f8c733faf469f15d99dbcea160e26ffc87b8f33d25be119be5f184bbdeea2460) and docs/REGIME_OPENTURNS_UQ.md; direct NumPy parity, additive Sobol recovery, raw Sobol finite-sample sanity validation, interval serialization, RNG isolation, and static artifact tests gate the decision.",
+        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.optional require_optional('openturns'); OpenTURNS is imported only inside uncertainty.openturns_adapter execution paths, while contracts/results remain JSON-safe and OpenTURNS-independent.",
+        "custom_code_reason": "Custom code owns five-component FEM diagnostic semantics, source/grid/model hashes, NumPy direct-reference parity, and evidence gating; OpenTURNS owns maintained composed/joint distribution sampling, Sobol design generation, and Saltelli estimators.",
+        "maintenance_evidence": "PyPI project openturns 1.27.post1; production/stable classifier; cp39-abi3 wheels for Linux x86_64/aarch64, macOS ARM, and Windows.",
+        "api_stability_evidence": "OpenTURNS public APIs used: ComposedDistribution/JointDistribution for independent marginals, RandomGenerator SetSeed/GetState/SetState, SobolIndicesExperiment(distribution, size, False), SaltelliSensitivityAlgorithm(inputDesign, outputDesign, size), setUseAsymptoticDistribution(True), and first/total indices interval accessors.",
+        "license_evidence": "LGPLv3+ per PyPI/project documentation.",
+        "api_license_evidence": "LGPLv3+ per PyPI/project documentation.",
+        "rollback_or_defer_policy": "Remove the uncertainty extra and adapter if wheel installation, RNG isolation, direct parity, or Sobol recovery fails; keep direct NumPy sampling as the lightweight reference baseline.",
+        "oracle_or_reference_tests": [
+          "tests/examples/test_regime_switching_quanto_openturns_uq.py",
+          "scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify",
+          ".github/workflows/ci.yml optional_imports uncertainty profile"
         ],
         "maturity": "experimental"
       },

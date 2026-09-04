@@ -8,7 +8,7 @@ from typing import Any
 
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
-from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state import (
     quantlib_evaluation_date,
 )
 
