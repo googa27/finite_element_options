@@ -145,6 +145,8 @@ Issue #50 is governed by `docs/MODULE_OWNERSHIP.md` and the `[[module_ownership]
 
 The `examples.regime_switching_quanto` research package is an outer validation client. It consumes caller-provided/PDP-exported dataframes but imports no PDP internals, lazily imports statsmodels only during calibration, assembles its coupled scikit-fem operator locally, and exposes its non-production assumptions and failed discontinuous-payoff gates in `REGIME_SWITCHING_QUANTO_RESEARCH.md`. Its cached sparse factorizations report reuse counts; this example does not redefine the canonical core solver policy.
 
+Issue #130 adds an adoption-only boundary package at `finite_element_options.examples.regime_switching_quanto.adoption`. The facade is lazy; `optional.py` records JSON-safe registry entries for `arch`, `ruptures`, `QuantLib`, and `iminuit` and raises actionable `finite-element-options[extra]` install errors, while `quantlib_state.py` is a narrow internal adapter that serializes QuantLib `Settings.instance().evaluationDate` changes and restores the prior process-global date in `finally`. These extras (`volatility`, `changepoints`, `quantlib`, `identifiability`) are independent import profiles, not base dependencies and not numerical capability promotions.
+
 ## 6. Dependency direction
 
 ```text
@@ -408,7 +410,7 @@ Moves should first preserve behavior, then change numerics in separate commits/P
 
 Use PEP 621 metadata with an explicit build backend, `requires-python`, bounded runtime dependencies, package discovery under `src`, optional dependencies and entry points. Use development dependency groups for tests, lint, typing, documentation, build and audit.
 
-The minimal wheel includes only core numerical dependencies. `scikit-fem[all]` is not acceptable for core because it makes optional features mandatory. FEniCSx/PETSc platform constraints are documented and tested in dedicated environments.
+The minimal wheel includes only core numerical dependencies. `scikit-fem[all]` is not acceptable for core because it makes optional features mandatory. FEniCSx/PETSc platform constraints are documented and tested in dedicated environments. The issue #130 adoption libraries are split by purpose as `volatility` (`arch>=8,<9`), `changepoints` (`ruptures>=1.1.10,<2`), `quantlib` (`QuantLib>=1.43,<2`), and `identifiability` (`iminuit>=2.32,<3`). Import success for these profiles proves only the adapter boundary; it does not promote volatility modeling, changepoint detection, QuantLib oracle parity, or identifiability calibration to validated numerical capabilities.
 
 A checked lock reproduces development CI; published metadata uses compatible ranges. Build with sources disabled where relevant and test the wheel outside the repository.
 
@@ -470,7 +472,7 @@ Ownership cleanup #50 remains the successor for retiring FD/application duplicat
 |---|---|---|
 | `package` | Build sdist/wheel on Python 3.11 and 3.12, run `twine check`, install the wheel outside the checkout, and upload dist artifacts | Blocking |
 | `test` | Dev-profile tests, Ruff, mypy over contract-critical modules, docstrings, architecture/CI/packaging contracts, coverage XML, JUnit, and validated benchmark smoke artifact | Blocking |
-| `optional_imports` | Clean-wheel imports for `fd`, `jax`, `calibration`, `viz`, and `ui` extras | Blocking for advertised extras |
+| `optional_imports` | Clean-wheel imports for `fd`, `jax`, `calibration`, `viz`, `ui`, `volatility`, `changepoints`, `quantlib`, and `identifiability` extras | Blocking for advertised extras |
 | `supply_chain` | `pip-audit --skip-editable`, CycloneDX SBOM, and uploaded evidence | Blocking |
 | FEniCSx/PETSc/MPI | Platform-specific solver adapters | Scheduled/opt-in until support is stable |
 | Haircut parity | Clean-wheel plugin and shared fixtures | Blocking for compatibility changes |
@@ -548,6 +550,7 @@ This policy maps #57 to its successor issues: #44 creates the replacement namesp
 | FEM-ADR-010 | Profile-specific CI replaces one all-dependency job | Honest support and maintainable dependencies |
 | FEM-ADR-011 | GitHub Actions are pinned to full commit SHAs | Immutable CI supply-chain inputs |
 | FEM-ADR-012 | CI produces coverage, benchmark, package and SBOM artifacts | Reviewable release evidence |
+| FEM-ADR-013 | ARCH, ruptures, QuantLib, and iminuit are adoption-only optional boundaries | Preserve base-wheel imports and require executable adapter evidence before numerical promotion |
 
 ## 25. Issue map
 

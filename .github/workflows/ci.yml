@@ -140,7 +140,7 @@ jobs:
         run: pytest -q tests/test_fenics_solver.py tests/test_benchmark_fenics.py --no-cov
 
   optional_imports:
-    name: optional imports (${{ matrix.profile }})
+    name: optional imports (${{ matrix.profile }}, py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -148,15 +148,57 @@ jobs:
       matrix:
         include:
           - profile: fd
+            python-version: '3.11'
+            dependency: findiff
             imports: finite_element_options.fdsolver
           - profile: jax
+            python-version: '3.11'
+            dependency: jax
             imports: finite_element_options.jax_greeks
           - profile: calibration
+            python-version: '3.11'
+            dependency: pymc
             imports: finite_element_options.estimation.calibrator,finite_element_options.estimation.heston
           - profile: viz
+            python-version: '3.11'
+            dependency: matplotlib
             imports: finite_element_options.plots
           - profile: ui
+            python-version: '3.11'
+            dependency: streamlit
             imports: finite_element_options.sidebar
+          - profile: volatility
+            python-version: '3.11'
+            dependency: arch
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: volatility
+            python-version: '3.12'
+            dependency: arch
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: changepoints
+            python-version: '3.11'
+            dependency: ruptures
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: changepoints
+            python-version: '3.12'
+            dependency: ruptures
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: quantlib
+            python-version: '3.11'
+            dependency: QuantLib
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state
+          - profile: quantlib
+            python-version: '3.12'
+            dependency: QuantLib
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state
+          - profile: identifiability
+            python-version: '3.11'
+            dependency: iminuit
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
+          - profile: identifiability
+            python-version: '3.12'
+            dependency: iminuit
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.optional
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -165,7 +207,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
@@ -175,6 +217,7 @@ jobs:
         env:
           PROFILE: ${{ matrix.profile }}
           IMPORTS: ${{ matrix.imports }}
+          DEPENDENCY: ${{ matrix.dependency }}
         run: |
           python -m venv /tmp/feo-${PROFILE}-check
           /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
@@ -185,9 +228,39 @@ jobs:
           import importlib
           import os
 
+          dependency = os.environ['DEPENDENCY']
+          dependency_module = importlib.import_module(dependency)
+          print('optional dependency OK:', dependency_module.__name__)
+
           for name in os.environ['IMPORTS'].split(','):
               module = importlib.import_module(name)
               print('optional import OK:', module.__name__)
+
+          if os.environ['PROFILE'] == 'quantlib':
+              from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+                  quantlib_evaluation_date,
+              )
+
+              settings = dependency_module.Settings.instance()
+              original = settings.evaluationDate
+              first = dependency_module.Date(3, dependency_module.January, 2026)
+              second = dependency_module.Date(4, dependency_module.January, 2026)
+
+              with quantlib_evaluation_date(first) as quantlib:
+                  assert quantlib.__name__ == 'QuantLib'
+                  assert settings.evaluationDate == first
+              assert settings.evaluationDate == original
+
+              try:
+                  with quantlib_evaluation_date(second):
+                      assert settings.evaluationDate == second
+                      raise RuntimeError('forced QuantLib failure')
+              except RuntimeError as exc:
+                  assert str(exc) == 'forced QuantLib failure'
+              else:
+                  raise AssertionError('expected forced QuantLib failure')
+              assert settings.evaluationDate == original
+              print('QuantLib evaluation date restoration OK')
           PY
 
   supply_chain:
@@ -206,7 +279,7 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[dev]' -c constraints.txt
+          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         run: python -m pip_audit --progress-spinner=off --skip-editable

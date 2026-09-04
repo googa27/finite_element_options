@@ -80,9 +80,11 @@ Public capability claims are generated from `finite_element_options.contracts.ca
 
 The installed `finite_element_options.examples.regime_switching_quanto` package demonstrates a PDP-export-consuming, statsmodels-filtered, three-regime equity–FX diffusion coupled through a scikit-fem P1 PDE. Its [mathematical formulation, library decisions, data-quality gates, calibrated parameters, prices, convergence evidence, and explicit failed digital-payoff parity gates](docs/REGIME_SWITCHING_QUANTO_RESEARCH.md) are documented as a research vertical slice. It is not a maturity upgrade or a market-calibrated pricing capability.
 
+Adoption-only optional libraries for this example are isolated behind the lazy `finite_element_options.examples.regime_switching_quanto.adoption` facade. Install only the purpose-specific profile needed for a research experiment: `volatility` for `arch>=8,<9`, `changepoints` for `ruptures>=1.1.10,<2`, `quantlib` for `QuantLib>=1.43,<2`, and `identifiability` for `iminuit>=2.32,<3`. Missing dependencies raise errors such as `install finite-element-options[quantlib]`; importing the facade or registry does not import the libraries eagerly. QuantLib process-global evaluation dates are handled only inside the internal `quantlib_state` adapter and do not cross public result/domain contracts.
+
 ## Installation
 
-The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.
+The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `volatility`, `changepoints`, `quantlib`, `identifiability`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.
 
 ```text
 python -m pip install .
@@ -94,7 +96,7 @@ python scripts/export_arxiv_lab_black_scholes_fixture.py
 
 ## Architecture and ownership
 
-The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional stack import boundaries and the module ownership table used by [docs/MODULE_OWNERSHIP.md](docs/MODULE_OWNERSHIP.md). Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, and UI/plotting code uses `ui` or `viz`.
+The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional stack import boundaries and the module ownership table used by [docs/MODULE_OWNERSHIP.md](docs/MODULE_OWNERSHIP.md). Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, the regime-switching quanto adoption libraries use `volatility`, `changepoints`, `quantlib`, or `identifiability`, and UI/plotting code uses `ui` or `viz`.
 
 Launch the optional Streamlit application with the `ui` extra installed via the entry module path `finite_element_options.examples.streamlit_app`. Run the adaptive mesh demo via `python -m finite_element_options.examples.adaptive_mesh_refinement` when plotting dependencies are available. These demos are not maturity upgrades.
 
