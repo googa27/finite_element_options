@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "23c96fb4f2f78178ba5c140e8491df427dd6f4ef1dfabeb81fdb35c1934cb072"
+EXPECTED_ARTIFACT_SHA256 = "ae1ec2d104a096bac1628ce822171ab2eb61e4f895a648beb7c993e784fa864c"
 _VALID_SHA = "0" * 64
 
 
@@ -122,6 +122,36 @@ def test_runtime_provenance_names_actual_distribution_constructor(pilot_result: 
         "JointDistribution",
     }
     assert api_used[0] == propagation["distribution_constructor"]
+
+
+def test_runner_works_outside_checkout_and_fails_closed_on_unverified_predecessors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Installed-wheel execution must not require repository-only docs/evidence files."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        UQPilotConfig,
+        run_openturns_uq_pilot,
+    )
+
+    pytest.importorskip("openturns")
+    monkeypatch.chdir(tmp_path)
+    result = run_openturns_uq_pilot(
+        UQPilotConfig(
+            sample_size=8,
+            sobol_base_size=8,
+            direct_size=8,
+            component_size=8,
+            additive_sobol_base_size=64,
+        )
+    )
+
+    checks = result.provenance["predecessor_hash_verification"]
+    assert result.decision["passed"] is False
+    assert result.decision["status"] == "reject_adapter_until_gates_pass"
+    assert result.decision["predecessor_hashes_verified"] is False
+    assert all(check["verification_mode"] == "declared_digest_only" for check in checks.values())
+    assert all(check["observed_sha256"] is None for check in checks.values())
 
 
 def test_real_fem_response_calls_existing_solver_and_records_separate_calibration(

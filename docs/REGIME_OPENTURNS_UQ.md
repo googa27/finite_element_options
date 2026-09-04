@@ -26,11 +26,13 @@ OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps all Op
 ## Canonical artifact
 
 - Artifact: `docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json`
-- Artifact SHA-256: `23c96fb4f2f78178ba5c140e8491df427dd6f4ef1dfabeb81fdb35c1934cb072`
+- Artifact SHA-256: `ae1ec2d104a096bac1628ce822171ab2eb61e4f895a648beb7c993e784fa864c`
 - Canonical input hash: `89b931ad4c307c03367a98a03fdf6e0c5b0da0828be9b458a0405d0cd7836457`
 - CLI: `python scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify`
 
 The CLI verifies predecessor evidence before execution. The baseline model/payoff conventions derive from `docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json` SHA `ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056` (`quanto_positive_correlation`). The iminuit predecessor artifact SHA `6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b` is verified as a sequencing prerequisite but is not used as a parameter source.
+
+The installed-wheel API does not require repository-only `docs/evidence/` resources: `run_openturns_uq_pilot()` with no `root` executes the FEM/UQ study, records predecessor provenance as `declared_digest_only`, and fails the retention decision closed because those files were not independently verified. Canonical evidence generation passes an explicit checkout root, records `file_sha256`, and requires both predecessor digests to match.
 
 ## Scientific design
 

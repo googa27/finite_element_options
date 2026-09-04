@@ -48,18 +48,16 @@ SOBOL_SANITY_ENVELOPE = (-0.25, 1.25)
 
 
 def verify_predecessor_hashes(root: Path | None = None) -> dict[str, dict[str, Any]]:
-    """Verify predecessor evidence hashes required before canonical execution."""
+    """Verify checkout evidence, or return declared digests for wheel-only execution."""
 
-    base = Path.cwd() if root is None else root
     checks = {
         "quantlib_oracle": (QUANTLIB_ORACLE_ARTIFACT, QUANTLIB_ORACLE_SHA256, True),
         "iminuit_identifiability": (IMINUIT_ARTIFACT, IMINUIT_SHA256, False),
     }
     out: dict[str, dict[str, Any]] = {}
     for name, (relative, expected, used) in checks.items():
-        path = base / relative
-        observed = file_sha256(path)
-        if observed != expected:
+        observed = None if root is None else file_sha256(root / relative)
+        if observed is not None and observed != expected:
             raise ValueError(
                 f"hash mismatch for {relative}: expected {expected}, observed {observed}"
             )
@@ -67,7 +65,8 @@ def verify_predecessor_hashes(root: Path | None = None) -> dict[str, dict[str, A
             "artifact": relative,
             "expected_sha256": expected,
             "observed_sha256": observed,
-            "verified": True,
+            "verified": observed == expected,
+            "verification_mode": "declared_digest_only" if root is None else "file_sha256",
             "used_as_parameter_source": used,
         }
     return out
@@ -115,16 +114,21 @@ def run_openturns_uq_pilot(
     additive = additive_sobol_recovery(controls)
     attribution = _attribution_table(components, propagation)
     source_hashes_present = _all_source_hashes_present(components, calibration)
+    predecessor_hashes_verified = all(
+        bool(check["verified"]) for check in predecessor_checks.values()
+    )
     passed = bool(
         direct.passed
         and additive.passed
         and source_hashes_present
+        and predecessor_hashes_verified
         and propagation.sobol_validation["passed"]
         and propagation.finite_count == propagation.sample_size
     )
     decision = {
         "status": "retain_optional_adapter" if passed else "reject_adapter_until_gates_pass",
         "passed": passed,
+        "predecessor_hashes_verified": predecessor_hashes_verified,
         "maturity": "experimental_optional_non_production" if passed else "rejected",
         "policy": DECISION_POLICY,
         "why_numpy_remains_baseline": (
