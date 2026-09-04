@@ -28,7 +28,28 @@ _EXPORT_MODULES = {
     "run_iminuit_identifiability_study": "cases",
 }
 
-__all__ = sorted(_EXPORT_MODULES)
+__all__ = (
+    "CalibrationCase",
+    "FORMULA_STATEMENT",
+    "IdentifiabilityResult",
+    "IdentifiabilityStudyResult",
+    "OBJECTIVE_NAME",
+    "ObjectiveEvaluation",
+    "PARAMETERS",
+    "ParameterBounds",
+    "ProfileGrid",
+    "QuantoOptionTarget",
+    "SCHEMA_VERSION",
+    "SCOPE_STATEMENT",
+    "STUDY_SCHEMA_VERSION",
+    "TARGET_SOURCE",
+    "WeightedQuantoCalibrationObjective",
+    "canonical_identifiability_input_hash",
+    "default_identifiability_cases",
+    "quanto_call_price",
+    "run_iminuit_identifiability",
+    "run_iminuit_identifiability_study",
+)
 
 
 def __getattr__(name: str) -> Any:
