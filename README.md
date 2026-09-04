@@ -76,6 +76,10 @@ Public capability claims are generated from `finite_element_options.contracts.ca
 | `FEM-STREAMLIT-UI-EXPERIMENTAL` — Streamlit exploration UI | experimental | .github/workflows/ci.yml#optional_imports-ui<br>tests/test_ui_config.py | The Streamlit surface remains exploratory; Heston routes and product-level American benchmarks fail closed until their numerical capabilities land. Optional: The base wheel does not import Streamlit or UI-only plotting packages. |
 <!-- capability-matrix:end -->
 
+### Experimental regime-switching equity–FX example
+
+The installed `finite_element_options.examples.regime_switching_quanto` package demonstrates a PDP-export-consuming, statsmodels-filtered, three-regime equity–FX diffusion coupled through a scikit-fem P1 PDE. Its [mathematical formulation, library decisions, data-quality gates, calibrated parameters, prices, convergence evidence, and explicit failed digital-payoff parity gates](docs/REGIME_SWITCHING_QUANTO_RESEARCH.md) are documented as a research vertical slice. It is not a maturity upgrade or a market-calibrated pricing capability.
+
 ## Installation
 
 The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.

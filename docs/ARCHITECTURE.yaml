@@ -127,6 +127,20 @@
         "custom_code_reason": "custom code owns financial formulation semantics, validation, and evidence; scikit-fem owns maintained FEM primitives"
       },
       {
+        "capability": "experimental latent-regime time-series calibration",
+        "selected": [
+          "statsmodels >=0.14,<1"
+        ],
+        "alternatives": [
+          "hmmlearn",
+          "PyMC custom hidden-state likelihood",
+          "hand-written Hamilton filter"
+        ],
+        "evidence": "docs/REGIME_SWITCHING_QUANTO_RESEARCH.md and tests/examples/test_regime_switching_quanto_calibration.py",
+        "adapter_boundary": "lazy imports inside finite_element_options.examples.regime_switching_quanto.fitting; calibration extra only",
+        "custom_code_reason": "statsmodels owns the scalar switching AR likelihood; custom code owns return-quality gates, bivariate smoothed-probability moments, CTMC embedding, and pricing contracts"
+      },
+      {
         "capability": "FEM verification evidence",
         "selected": [
           "SymPy >=1.12,<2",
@@ -258,7 +272,7 @@
   },
   "data": {
     "consumes_data": true,
-    "architecture": "No data ownership; public-synthetic/convergence fixtures only.",
+    "architecture": "No reusable data ownership; public-synthetic/convergence fixtures and typed content-addressed PDP exports only.",
     "required_controls": [
       "source registry",
       "typed contracts",
@@ -271,12 +285,13 @@
       "validation"
     ],
     "core_repositories": {
-      "PDP": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles.",
+      "PDP": "Consume typed, hashed public-data exports through caller-owned dataframe boundaries; never import PDP internals at runtime.",
       "financial_problem_formulations": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles.",
       "ui_and_artifacts": "Consume FPF contracts; avoid PDP/UI runtime dependencies; emit solver evidence bundles."
     },
     "source_registry_plan": [
-      "typed solver requests and public-synthetic mesh/oracle/convergence fixtures"
+      "typed solver requests and public-synthetic mesh/oracle/convergence fixtures",
+      "typed content-addressed PDP level exports for experimental outer-layer calibration"
     ],
     "flow": "source registry -> typed acquisition -> immutable Bronze -> canonical Silver -> curated Gold/features -> formulation/model -> governed output -> read-only UI/API/notebook",
     "storage_and_replay": "Immutable raw/content-addressed inputs; canonical typed products; idempotent replay by source identity and effective/vintage time where applicable.",
