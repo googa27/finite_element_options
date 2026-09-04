@@ -20,6 +20,16 @@ _EXPORT_MODULES = {
     "VolatilityBenchmarkConfig": "volatility_benchmark",
     "VolatilityBenchmarkResult": "volatility_benchmark",
     "run_volatility_benchmark": "volatility_benchmark",
+    "CalibrationCase": "identifiability",
+    "IdentifiabilityResult": "identifiability",
+    "IdentifiabilityStudyResult": "identifiability",
+    "ParameterBounds": "identifiability",
+    "ProfileGrid": "identifiability",
+    "QuantoOptionTarget": "identifiability",
+    "WeightedQuantoCalibrationObjective": "identifiability",
+    "canonical_identifiability_input_hash": "identifiability",
+    "run_iminuit_identifiability": "identifiability",
+    "run_iminuit_identifiability_study": "identifiability",
 }
 
 __all__ = [
@@ -37,6 +47,16 @@ __all__ = [
     "VolatilityBenchmarkConfig",
     "VolatilityBenchmarkResult",
     "run_volatility_benchmark",
+    "CalibrationCase",
+    "IdentifiabilityResult",
+    "IdentifiabilityStudyResult",
+    "ParameterBounds",
+    "ProfileGrid",
+    "QuantoOptionTarget",
+    "WeightedQuantoCalibrationObjective",
+    "canonical_identifiability_input_hash",
+    "run_iminuit_identifiability",
+    "run_iminuit_identifiability_study",
 ]
 
 

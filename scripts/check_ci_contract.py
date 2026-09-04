@@ -61,6 +61,7 @@ REQUIRED_SNIPPETS = {
     "optional dependency import proof": "importlib.import_module(dependency)",
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
     "QuantLib failure restoration proof": "forced QuantLib failure",
+    "iminuit focused installed-wheel tests": "test_regime_switching_quanto_iminuit_identifiability.py",
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {

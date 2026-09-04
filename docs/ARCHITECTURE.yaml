@@ -224,16 +224,18 @@
           "JAXopt",
           "custom profile likelihood scans"
         ],
-        "evidence": "Issue #130 optional dependency registry and package metadata pin iminuit as the identifiability extra without importing it in base runtime.",
-        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.optional require_optional('iminuit'); no iminuit objects in public contracts",
-        "custom_code_reason": "Custom code owns only optional dependency discovery; maintained iminuit should own any future profile-likelihood/minimization mechanics.",
+        "evidence": "Issue #130 optional dependency registry and package metadata pin iminuit as the identifiability extra without importing it in base runtime; issue #133 adds public-synthetic instrument-target profile-likelihood evidence in docs/evidence/regime_switching_quanto_iminuit_identifiability_2026-09-04.json (sha256 6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b) and docs/REGIME_IMINUIT_IDENTIFIABILITY.md.",
+        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.optional require_optional('iminuit'); iminuit is imported only inside the identifiability adapter execution path; no iminuit objects in public contracts/results",
+        "custom_code_reason": "Custom code owns deterministic public-synthetic target contracts, JSON-safe diagnostics, finite-difference checks, evidence hashing, and fail-closed identification gates; maintained iminuit owns migrad/hesse/minos/mnprofile optimizer and profile mechanics.",
         "maintenance_evidence": "https://github.com/scikit-hep/iminuit/releases and https://pypi.org/project/iminuit/",
-        "api_stability_evidence": "https://scikit-hep.org/iminuit/ documents the public Minuit API; this repository currently uses no numerical API.",
+        "api_stability_evidence": "https://scikit-hep.org/iminuit/ documents the public Minuit API; issue #133 uses Minuit(...), limits, errordef=1, migrad, hesse, minos, and mnprofile behind an optional adapter.",
         "license_evidence": "https://github.com/scikit-hep/iminuit/blob/develop/LICENSE (MIT)",
         "api_license_evidence": "https://github.com/scikit-hep/iminuit/blob/develop/LICENSE",
         "rollback_or_defer_policy": "Remove the identifiability extra and registry entry if installation/API maintenance fails; keep SciPy calibration as the bounded baseline.",
         "oracle_or_reference_tests": [
           "tests/examples/test_regime_switching_quanto_adoption_boundaries.py",
+          "tests/examples/test_regime_switching_quanto_iminuit_identifiability.py",
+          "scripts/run_iminuit_identifiability.py --verify",
           ".github/workflows/ci.yml optional_imports identifiability profile"
         ],
         "maturity": "experimental"
