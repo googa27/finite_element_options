@@ -458,6 +458,7 @@ changepoints = [
     { name = "ruptures" },
 ]
 dev = [
+    { name = "arch" },
     { name = "arviz" },
     { name = "build" },
     { name = "findiff" },
@@ -473,6 +474,7 @@ dev = [
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "ruptures" },
     { name = "statsmodels" },
     { name = "streamlit" },
     { name = "twine" },
@@ -520,6 +522,7 @@ volatility = [
 
 [package.metadata]
 requires-dist = [
+    { name = "arch", marker = "extra == 'dev'", specifier = ">=8,<9" },
     { name = "arch", marker = "extra == 'volatility'", specifier = ">=8,<9" },
     { name = "arviz", marker = "extra == 'calibration'", specifier = ">=0.23,<1" },
     { name = "arviz", marker = "extra == 'dev'", specifier = ">=0.23,<1" },
@@ -559,6 +562,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8,<0.13" },
     { name = "ruff", marker = "extra == 'validation'", specifier = ">=0.8,<0.13" },
     { name = "ruptures", marker = "extra == 'changepoints'", specifier = ">=1.1.10,<2" },
+    { name = "ruptures", marker = "extra == 'dev'", specifier = ">=1.1.10,<2" },
     { name = "scikit-fem", specifier = ">=12.0.2,<13" },
     { name = "scipy", specifier = ">=1.10,<2" },
     { name = "statsmodels", marker = "extra == 'calibration'", specifier = ">=0.14,<1" },

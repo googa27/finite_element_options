@@ -77,6 +77,7 @@ build = [
     "twine>=5,<7",
 ]
 dev = [
+    "arch>=8,<9",
     "arviz>=0.23,<1",
     "build>=1,<2",
     "findiff>=0.10,<1",
@@ -86,6 +87,7 @@ dev = [
     "pandas>=2,<3",
     "pydocstyle>=6,<7",
     "ruff>=0.8,<0.13",
+    "ruptures>=1.1.10,<2",
     "mypy>=1.10,<2",
     "pyarrow>=23,<24",
     "pymc>=5,<6",
@@ -115,6 +117,10 @@ addopts = "--cov=finite_element_options --cov-report=term-missing"
 markers = [
     "architecture: architecture and package-boundary fitness checks",
     "packaging: wheel and installed-package import contract checks",
+    "calibration: optional statsmodels calibration/research checks",
+    "volatility: optional arch volatility challenger checks",
+    "changepoints: optional ruptures changepoint checks",
+    "validation: validation/reproducibility checks",
 ]
 testpaths = ["tests"]
 
