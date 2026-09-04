@@ -262,6 +262,13 @@ jobs:
               assert settings.evaluationDate == original
               print('QuantLib evaluation date restoration OK')
           PY
+          if [ "${PROFILE}" = "quantlib" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py" \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_quantlib_oracle.py" \
+              -k 'quantlib or canonical_artifact_scope' --no-cov
+          fi
 
   supply_chain:
     name: supply chain audit and SBOM

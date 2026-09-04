@@ -198,16 +198,18 @@
           "DX Analytics",
           "custom external-pricer fixtures"
         ],
-        "evidence": "Issue #130 optional dependency registry, quantlib_state adapter, and evaluation-date restoration tests pin QuantLib as a boundary-only extra.",
-        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state context manager; lazily imported QuantLib module is yielded only inside the adapter and evaluationDate is restored in finally",
-        "custom_code_reason": "Custom code owns process-global state isolation; QuantLib owns any future external pricing oracle implementation.",
+        "evidence": "Issue #130 optional dependency registry and quantlib_state adapter plus issue #132 isolated vanilla/fixed-FX quanto oracle package, state serialization tests, parity tests, deterministic one-regime QuantLib/FEM/MC artifact docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json (sha256 ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056).",
+        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state context manager and quantlib_oracle adapter; lazily imported QuantLib objects are used only inside the adapter, while public specs/results and typed convention/reduction errors stay stdlib/domain/JSON-safe",
+        "custom_code_reason": "Custom code owns process-global state isolation, immutable convention validation, fixed-FX scaling, deterministic matrix orchestration, and hash-bound evidence; QuantLib owns vanilla and quanto pricing engines.",
         "maintenance_evidence": "https://github.com/lballabio/QuantLib-SWIG/releases and https://pypi.org/project/QuantLib/",
-        "api_stability_evidence": "QuantLib Settings/evaluationDate is a documented global-setting API; this repository confines it to an internal adapter.",
+        "api_stability_evidence": "QuantLib Settings/evaluationDate and the EuropeanOption/AnalyticEuropeanEngine/QuantoVanillaOption/QuantoEuropeanEngine APIs are documented maintained QuantLib-SWIG surfaces; this repository confines them to an internal optional adapter.",
         "license_evidence": "https://github.com/lballabio/QuantLib-SWIG/blob/master/LICENSE.TXT (QuantLib license, BSD-compatible)",
         "api_license_evidence": "https://github.com/lballabio/QuantLib-SWIG/blob/master/LICENSE.TXT",
         "rollback_or_defer_policy": "Remove the quantlib extra and adapter if clean-wheel installation is unavailable; keep existing analytical oracle tests and do not claim QuantLib parity.",
         "oracle_or_reference_tests": [
           "tests/examples/test_regime_switching_quanto_adoption_boundaries.py::test_quantlib_evaluation_date_restores_on_success_and_failure",
+          "tests/examples/test_regime_switching_quanto_quantlib_oracle.py",
+          "scripts/run_quantlib_oracle_matrix.py --verify",
           ".github/workflows/ci.yml optional_imports quantlib profile"
         ],
         "maturity": "boundary_only"
