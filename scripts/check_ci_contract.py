@@ -83,6 +83,13 @@ NEW_OPTIONAL_PROFILES = {
 }
 
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
+SUPPLY_CHAIN_AUDITED_EXTRAS = (
+    "volatility",
+    "changepoints",
+    "quantlib",
+    "identifiability",
+)
+PROJECT_EXTRA_INSTALL = re.compile(r"python -m pip install\b[^\n]*(?:-e\s+)?['\"]?\.\[([^\]\s]+)\]")
 
 
 def _workflow_text() -> str:
@@ -190,6 +197,28 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
     return errors
 
 
+def _project_extras_in_pip_installs(job_block: str) -> set[str]:
+    extras: set[str] = set()
+    for match in PROJECT_EXTRA_INSTALL.finditer(job_block):
+        extras.update(extra.strip() for extra in match.group(1).split(",") if extra.strip())
+    return extras
+
+
+def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
+    block = blocks.get("supply_chain")
+    if block is None:
+        return ["supply_chain job is required for vulnerability audit and SBOM"]
+
+    extras = _project_extras_in_pip_installs(block)
+    if not extras:
+        return ["supply_chain must install this project with audited extras"]
+
+    missing = sorted(set(SUPPLY_CHAIN_AUDITED_EXTRAS) - extras)
+    if missing:
+        return [f"supply_chain audited install missing optional extras: {missing}"]
+    return []
+
+
 def check_ci_contract() -> list[str]:
     """Return CI workflow contract violations, or an empty list when valid."""
 
@@ -222,6 +251,7 @@ def check_ci_contract() -> list[str]:
             errors.append(f"job {name} must declare runs-on")
 
     errors.extend(_check_optional_import_matrix(blocks))
+    errors.extend(_check_supply_chain_audit(blocks))
 
     return errors
 

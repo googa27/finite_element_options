@@ -8,6 +8,7 @@ import sys
 import textwrap
 import tomllib
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -99,6 +100,59 @@ def test_missing_extra_errors_are_actionable(module_name: str, expected: tuple[s
         """
     )
     assert probe.returncode == 0, probe.stdout + probe.stderr
+
+
+@pytest.mark.parametrize(
+    "module_name,extra",
+    [("arch", "volatility"), ("QuantLib", "quantlib")],
+)
+def test_exact_missing_top_level_dependency_is_actionable(
+    monkeypatch: pytest.MonkeyPatch, module_name: str, extra: str
+) -> None:
+    """Only an exact missing optional top-level module gets an install hint."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption import optional
+
+    def missing_top_level_import(name: str) -> ModuleType:
+        raise ModuleNotFoundError(f"simulated missing optional dependency: {name}", name=name)
+
+    monkeypatch.setattr(optional, "import_module", missing_top_level_import)
+
+    with pytest.raises(ImportError) as exc_info:
+        optional.require_optional(module_name)
+
+    message = str(exc_info.value)
+    assert module_name in message
+    assert f"finite-element-options[{extra}]" in message
+    assert isinstance(exc_info.value.__cause__, ModuleNotFoundError)
+    assert exc_info.value.__cause__.name == module_name
+
+
+@pytest.mark.parametrize(
+    "module_name,missing_name",
+    [("arch", "arch._cext"), ("QuantLib", "QuantLib._QuantLib")],
+)
+def test_same_top_level_missing_submodule_preserves_original_error(
+    monkeypatch: pytest.MonkeyPatch, module_name: str, missing_name: str
+) -> None:
+    """Missing extensions under installed packages are not missing-extra errors."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption import optional
+
+    original = ModuleNotFoundError(
+        f"simulated missing imported extension: {missing_name}", name=missing_name
+    )
+
+    def missing_submodule_import(name: str) -> ModuleType:
+        assert name == module_name
+        raise original
+
+    monkeypatch.setattr(optional, "import_module", missing_submodule_import)
+
+    with pytest.raises(ModuleNotFoundError) as exc_info:
+        optional.require_optional(module_name)
+
+    assert exc_info.value is original
 
 
 def test_registry_is_json_safe_immutable_and_contracts_do_not_expose_quantlib_types() -> None:

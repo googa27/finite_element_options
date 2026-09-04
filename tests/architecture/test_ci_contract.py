@@ -7,6 +7,8 @@ import re
 import tomllib
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 CI_CONTRACT = ROOT / "scripts" / "check_ci_contract.py"
@@ -16,6 +18,13 @@ assert spec is not None and spec.loader is not None
 check_ci_contract_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_ci_contract_module)
 check_ci_contract = check_ci_contract_module.check_ci_contract
+
+AUDITED_OPTIONAL_EXTRAS = (
+    "volatility",
+    "changepoints",
+    "quantlib",
+    "identifiability",
+)
 
 
 def test_ci_contract_script_passes() -> None:
@@ -89,6 +98,37 @@ def test_supply_chain_and_artifact_gates_are_present() -> None:
         "python scripts/check_readme_examples.py README.md",
     ):
         assert snippet in text
+
+
+def test_supply_chain_audits_new_optional_dependency_extras() -> None:
+    """Supply-chain evidence must include the issue #130 optional stacks."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    supply_chain = text.split("  supply_chain:", 1)[1]
+    install_commands = re.findall(r"python -m pip install(?:[^\n]*)", supply_chain)
+    audited_project_installs = [command for command in install_commands if ".[" in command]
+    assert audited_project_installs, "supply_chain must install this project for audit"
+    for extra in AUDITED_OPTIONAL_EXTRAS:
+        assert any(extra in command for command in audited_project_installs), (
+            f"supply_chain audit install must include [{extra}]"
+        )
+
+
+@pytest.mark.parametrize("removed_extra", AUDITED_OPTIONAL_EXTRAS)
+def test_ci_contract_rejects_supply_chain_audit_missing_new_optional_extra(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, removed_extra: str
+) -> None:
+    """The executable CI contract must reject dropped audit coverage."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    mutated = text.replace(f",{removed_extra}", "", 1)
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(mutated, encoding="utf-8")
+    monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)
+
+    errors = check_ci_contract()
+
+    assert any("supply_chain" in error and removed_extra in error for error in errors)
 
 
 def test_static_analysis_toolchain_is_bounded_for_reproducible_ci() -> None:

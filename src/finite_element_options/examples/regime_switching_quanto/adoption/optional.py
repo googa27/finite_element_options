@@ -83,8 +83,7 @@ def require_optional(module_name: str) -> ModuleType:
     try:
         return import_module(descriptor.module_name)
     except ModuleNotFoundError as exc:
-        missing = exc.name.split(".")[0] if exc.name else descriptor.module_name
-        if missing != descriptor.module_name:
+        if exc.name != descriptor.module_name:
             raise
         raise ImportError(
             f"Optional dependency {descriptor.module_name!r} is required for this "

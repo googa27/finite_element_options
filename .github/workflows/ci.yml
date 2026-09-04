@@ -279,7 +279,7 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[dev]' -c constraints.txt
+          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         run: python -m pip_audit --progress-spinner=off --skip-editable
