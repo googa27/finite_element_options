@@ -178,7 +178,7 @@
         "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.adoption.optional require_optional('ruptures'); ruptures is imported only inside volatility_changepoints execution; no ruptures objects in public contracts",
         "custom_code_reason": "Custom code owns deterministic rolling feature construction and Markov high-volatility comparison; ruptures owns segmentation algorithms.",
         "maintenance_evidence": "https://github.com/deepcharles/ruptures/releases and https://pypi.org/project/ruptures/",
-        "api_stability_evidence": "https://centre-borelli.github.io/ruptures-docs/ documents estimator classes; this repository currently uses no numerical API.",
+        "api_stability_evidence": "https://centre-borelli.github.io/ruptures-docs/ documents estimator classes; issue #131 uses the public Pelt(model='rbf').fit(...).predict(pen=...) API behind the changepoints adapter.",
         "license_evidence": "https://github.com/deepcharles/ruptures/blob/master/LICENSE (BSD 2-Clause)",
         "api_license_evidence": "https://github.com/deepcharles/ruptures/blob/master/LICENSE",
         "rollback_or_defer_policy": "Remove the changepoints extra and registry entry if installation or API maintenance fails; do not add a custom detector without benchmark evidence.",
