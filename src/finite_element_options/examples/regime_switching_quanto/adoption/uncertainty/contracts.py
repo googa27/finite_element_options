@@ -108,6 +108,10 @@ class UQCalibration:
 
     baseline_price_fine: float
     baseline_price_coarse: float
+    baseline_price_oracle: float
+    fine_oracle_abs_error: float
+    coarse_oracle_abs_error: float
+    oracle_identity: str
     numerical_half_width: float
     numerical_formula: str
     mc_price: float
@@ -122,6 +126,7 @@ class UQCalibration:
     coarse_grid_hash: str
     baseline_model_hash: str
     payoff_hash: str
+    oracle_hash: str
 
     def __post_init__(self) -> None:
         """Require finite, separated numerical and Monte Carlo scale records."""
@@ -129,6 +134,9 @@ class UQCalibration:
         finite_values = (
             self.baseline_price_fine,
             self.baseline_price_coarse,
+            self.baseline_price_oracle,
+            self.fine_oracle_abs_error,
+            self.coarse_oracle_abs_error,
             self.numerical_half_width,
             self.mc_price,
             self.mc_standard_error,
@@ -137,11 +145,22 @@ class UQCalibration:
             raise ValueError("calibration values must be finite")
         if self.numerical_half_width < 0.0 or self.mc_standard_error <= 0.0:
             raise ValueError("calibration scales must be non-negative/positive as documented")
+        if self.fine_oracle_abs_error < 0.0 or self.coarse_oracle_abs_error < 0.0:
+            raise ValueError("analytical-oracle absolute errors must be non-negative")
+        if self.numerical_half_width < max(
+            self.fine_oracle_abs_error, self.coarse_oracle_abs_error
+        ):
+            raise ValueError(
+                "numerical half-width must cover both baseline analytical-oracle errors"
+            )
+        if not self.oracle_identity:
+            raise ValueError("oracle_identity must be non-empty")
         for value in (
             self.fine_grid_hash,
             self.coarse_grid_hash,
             self.baseline_model_hash,
             self.payoff_hash,
+            self.oracle_hash,
         ):
             if not _is_lower_sha256(value):
                 raise ValueError("calibration hashes must be lowercase SHA-256 hex strings")

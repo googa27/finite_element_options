@@ -18,7 +18,6 @@ from .contracts import (
     AdditiveSobolRecovery,
     COMPONENT_NAMES,
     ComponentName,
-    UQCalibration,
     UQPilotConfig,
 )
 
@@ -27,7 +26,7 @@ _OPENTURNS_LOCK = RLock()
 
 @contextmanager
 def openturns_seeded(seed: int) -> Any:
-    """Serialize OpenTURNS process-global RNG state and restore it in ``finally``."""
+    """Serialize and restore process-global RNG state, trading thread parallelism for safety."""
 
     with _OPENTURNS_LOCK:
         openturns = require_optional("openturns")
@@ -113,18 +112,15 @@ def _interval_by_component(interval: Any) -> dict[ComponentName, dict[str, float
 
 
 def component_variance_estimates(
-    response: Callable[[np.ndarray], float], calibration: UQCalibration, config: UQPilotConfig
+    response: Callable[[np.ndarray], float], config: UQPilotConfig
 ) -> dict[ComponentName, dict[str, float | int]]:
-    """Estimate standalone component variances by varying one normalized input at a time."""
+    """Estimate one-at-a-time variances from seeded draws of the actual marginals."""
 
-    del calibration
     estimates: dict[ComponentName, dict[str, float | int]] = {}
-    rng = np.random.default_rng(config.component_seed)
-    uniform_grid = np.linspace(-1.0, 1.0, config.component_size)
-    normal_grid = rng.standard_normal(config.component_size)
+    marginal_sample = sample_normalized(config.component_seed, config.component_size)
     for idx, name in enumerate(COMPONENT_NAMES):
         design = np.zeros((config.component_size, 5), dtype=float)
-        design[:, idx] = normal_grid if name == "monte_carlo" else uniform_grid
+        design[:, idx] = marginal_sample[:, idx]
         values = np.asarray([response(row) for row in design], dtype=float)
         estimates[name] = {
             "variance": float(np.var(values, ddof=1)),

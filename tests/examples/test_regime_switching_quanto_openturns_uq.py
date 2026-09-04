@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "ae1ec2d104a096bac1628ce822171ab2eb61e4f895a648beb7c993e784fa864c"
+EXPECTED_ARTIFACT_SHA256 = "d6064d39f2a276ccae8f11f4cbe3f08685d644fa7c4a91f081018b58eaf81c31"
 _VALID_SHA = "0" * 64
 
 
@@ -32,6 +32,10 @@ def _minimal_calibration():
     return UQCalibration(
         baseline_price_fine=1.0,
         baseline_price_coarse=0.9,
+        baseline_price_oracle=0.8,
+        fine_oracle_abs_error=0.2,
+        coarse_oracle_abs_error=0.1,
+        oracle_identity="test analytical oracle",
         numerical_half_width=0.2,
         numerical_formula="test",
         mc_price=1.1,
@@ -46,6 +50,7 @@ def _minimal_calibration():
         coarse_grid_hash=_VALID_SHA,
         baseline_model_hash=_VALID_SHA,
         payoff_hash=_VALID_SHA,
+        oracle_hash=_VALID_SHA,
     )
 
 
@@ -111,6 +116,26 @@ def test_custom_config_component_sources_match_custom_study_hash(pilot_result: A
     assert all(component.source_hash != expected for component in components[3:])
 
 
+def test_monte_carlo_source_hash_binds_calibrated_outputs(pilot_result: Any) -> None:
+    """Changing MC price/error evidence must change the component provenance digest."""
+
+    from dataclasses import replace
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        build_components,
+    )
+
+    original = build_components(pilot_result.calibration)[4].source_hash
+    changed_calibration = replace(
+        pilot_result.calibration,
+        mc_price=pilot_result.calibration.mc_price + 1.0,
+        mc_standard_error=pilot_result.calibration.mc_standard_error + 0.5,
+    )
+    changed = build_components(changed_calibration)[4].source_hash
+
+    assert changed != original
+
+
 def test_runtime_provenance_names_actual_distribution_constructor(pilot_result: Any) -> None:
     """Artifact API provenance must report the constructor selected by the installed OpenTURNS."""
 
@@ -154,6 +179,17 @@ def test_runner_works_outside_checkout_and_fails_closed_on_unverified_predecesso
     assert all(check["observed_sha256"] is None for check in checks.values())
 
 
+def test_explicit_root_reports_missing_predecessor_as_typed_error(tmp_path: Path) -> None:
+    """Partial checkout errors must name the missing relative artifact without a raw path."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        verify_predecessor_hashes,
+    )
+
+    with pytest.raises(ValueError, match="missing predecessor artifact: docs/evidence/"):
+        verify_predecessor_hashes(tmp_path)
+
+
 def test_real_fem_response_calls_existing_solver_and_records_separate_calibration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -174,11 +210,14 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     value = cases.evaluate_response(np.zeros(5), calibration)
     assert len(calls) >= 3
     assert np.isfinite(value)
-    assert calibration.numerical_half_width > 0.0
+    assert calibration.numerical_half_width >= calibration.fine_oracle_abs_error > 0.0
+    assert calibration.numerical_half_width >= calibration.coarse_oracle_abs_error > 0.0
     assert calibration.mc_standard_error > 0.0
-    assert calibration.numerical_formula.startswith("max(1.5")
+    assert "analytical_oracle_price" in calibration.numerical_formula
+    assert calibration.baseline_price_oracle == pytest.approx(5615.513349, rel=1.0e-7)
     assert calibration.mc_seed == 134_011
     assert calibration.fine_grid_hash != calibration.coarse_grid_hash
+    assert calibration.oracle_hash != calibration.fine_grid_hash
 
 
 def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
@@ -227,11 +266,17 @@ def test_calibration_hashes_require_lowercase_sha256_hex() -> None:
         ("fine_grid_hash", "A" * 64),
         ("coarse_grid_hash", "g" * 64),
         ("baseline_model_hash", "0" * 63),
+        ("oracle_hash", "Z" * 64),
     ):
         payload = dict(baseline)
         payload[field] = bad_hash
         with pytest.raises(ValueError, match="lowercase SHA-256 hex"):
             UQCalibration(**payload)
+
+    undercovered = dict(baseline)
+    undercovered["numerical_half_width"] = 0.19
+    with pytest.raises(ValueError, match="must cover both baseline analytical-oracle errors"):
+        UQCalibration(**undercovered)
 
 
 def test_sobol_raw_estimates_are_not_clipped_and_validation_reports_envelope() -> None:
@@ -259,7 +304,10 @@ def test_sobol_raw_estimates_are_not_clipped_and_validation_reports_envelope() -
     total = {name: 0.0 for name in COMPONENT_NAMES}
     validation = _sobol_validation(raw, total, intervals)
     assert validation["passed"] is False
-    assert validation["point_sanity_envelope"] == {"lower": -0.25, "upper": 1.25}
+    assert validation["point_sanity_envelopes"] == {
+        "first_order": {"lower": -0.05, "upper": 1.0},
+        "total_order": {"lower": -0.05, "upper": 1.05},
+    }
     assert validation["point_violations"][0]["family"] == "first_order"
     assert validation["point_violations"][0]["component"] == "data"
     assert validation["point_violations"][0]["value"] == pytest.approx(1.3349)
@@ -308,7 +356,10 @@ def test_real_sobol_estimates_intervals_and_sanity_gate(pilot_result: Any) -> No
     assert tuple(propagation["total_order_sobol"]) == COMPONENT_NAMES
     validation = propagation["sobol_validation"]
     assert validation["passed"] is True
-    assert validation["point_sanity_envelope"] == {"lower": -0.25, "upper": 1.25}
+    assert validation["point_sanity_envelopes"] == {
+        "first_order": {"lower": -0.05, "upper": 1.0},
+        "total_order": {"lower": -0.05, "upper": 1.05},
+    }
     assert validation["point_violations"] == []
     assert validation["nonfinite_points"] == []
     assert validation["interval_bound_failures"] == []

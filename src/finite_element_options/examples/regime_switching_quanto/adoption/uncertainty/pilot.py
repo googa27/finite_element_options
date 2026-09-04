@@ -44,7 +44,10 @@ DECISION_POLICY = (
     "component provenance, and RNG isolation pass; "
     "never promote to core/base or production maturity in this pilot."
 )
-SOBOL_SANITY_ENVELOPE = (-0.25, 1.25)
+SOBOL_SANITY_ENVELOPES = {
+    "first_order": (-0.05, 1.0),
+    "total_order": (-0.05, 1.05),
+}
 
 
 def verify_predecessor_hashes(root: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -56,7 +59,10 @@ def verify_predecessor_hashes(root: Path | None = None) -> dict[str, dict[str, A
     }
     out: dict[str, dict[str, Any]] = {}
     for name, (relative, expected, used) in checks.items():
-        observed = None if root is None else file_sha256(root / relative)
+        try:
+            observed = None if root is None else file_sha256(root / relative)
+        except FileNotFoundError as exc:
+            raise ValueError(f"missing predecessor artifact: {relative}") from exc
         if observed is not None and observed != expected:
             raise ValueError(
                 f"hash mismatch for {relative}: expected {expected}, observed {observed}"
@@ -92,7 +98,7 @@ def run_openturns_uq_pilot(
     )
     sobol_validation = _sobol_validation(first, total, sobol_intervals)
     component_variances = component_variance_estimates(
-        lambda row: evaluate_response(row, calibration), calibration, controls
+        lambda row: evaluate_response(row, calibration), controls
     )
     propagation = UQPropagationResult(
         prices=price_summary,
@@ -115,7 +121,8 @@ def run_openturns_uq_pilot(
     attribution = _attribution_table(components, propagation)
     source_hashes_present = _all_source_hashes_present(components, calibration)
     predecessor_hashes_verified = all(
-        bool(check["verified"]) for check in predecessor_checks.values()
+        check["verification_mode"] == "file_sha256" and check["verified"] is True
+        for check in predecessor_checks.values()
     )
     passed = bool(
         direct.passed
@@ -277,6 +284,7 @@ def _all_source_hashes_present(components: tuple[Any, ...], calibration: Any) ->
             calibration.coarse_grid_hash,
             calibration.baseline_model_hash,
             calibration.payoff_hash,
+            calibration.oracle_hash,
         ]
     )
     return all(_is_lower_sha256_string(value) for value in hashes)
@@ -295,13 +303,13 @@ def _sobol_validation(
     total: dict[ComponentName, float],
     intervals: dict[str, dict[ComponentName, dict[str, float]]],
 ) -> dict[str, Any]:
-    lower, upper = SOBOL_SANITY_ENVELOPE
     point_violations: list[dict[str, Any]] = []
     nonfinite_points: list[dict[str, str]] = []
     interval_violations: list[dict[str, Any]] = []
     interval_bound_failures: list[dict[str, Any]] = []
 
     for family, values in (("first_order", first), ("total_order", total)):
+        lower, upper = SOBOL_SANITY_ENVELOPES[family]
         for component, value in values.items():
             if not np.isfinite(value):
                 nonfinite_points.append({"family": family, "component": component})
@@ -311,6 +319,7 @@ def _sobol_validation(
                 )
 
     for family, components in intervals.items():
+        lower, upper = SOBOL_SANITY_ENVELOPES[family]
         for component, bounds in components.items():
             low = float(bounds["lower"])
             high = float(bounds["upper"])
@@ -347,7 +356,10 @@ def _sobol_validation(
     passed = not (nonfinite_points or point_violations or interval_bound_failures)
     return {
         "passed": bool(passed),
-        "point_sanity_envelope": {"lower": lower, "upper": upper},
+        "point_sanity_envelopes": {
+            family: {"lower": bounds[0], "upper": bounds[1]}
+            for family, bounds in SOBOL_SANITY_ENVELOPES.items()
+        },
         "point_violations": point_violations,
         "nonfinite_points": nonfinite_points,
         "interval_bound_failures": interval_bound_failures,
@@ -355,8 +367,9 @@ def _sobol_validation(
         "interval_bounds_outside_point_envelope_gate": "reported_only",
         "interpretation": (
             "Raw Saltelli finite-sample point estimates are not clipped. The gate requires finite "
-            "points within the declared pilot sanity envelope and finite confidence-interval bounds "
-            "with lower<=upper; small negative estimates or intervals crossing zero are sampling noise."
+            "points within the declared family-specific pilot sanity envelopes and finite "
+            "confidence-interval bounds with lower<=upper; small negative estimates or intervals "
+            "crossing zero are sampling noise."
         ),
     }
 

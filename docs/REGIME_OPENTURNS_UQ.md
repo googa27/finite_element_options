@@ -21,13 +21,13 @@ Package extra: `uncertainty = ["openturns>=1.27,<2"]`.
 
 Observed execution used OpenTURNS `1.27.post1`. That release exposes `JointDistribution`, which the canonical artifact records as the constructor actually used; the adapter will select and report `ComposedDistribution` only when a future compatible OpenTURNS release exposes it. The adapter imports OpenTURNS lazily via `require_optional("openturns")`; missing dependency errors name `finite-element-options[uncertainty]` exactly. Public contracts/results are immutable dataclasses containing only JSON-safe values; no OpenTURNS objects cross the boundary.
 
-OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps all OpenTURNS seeded calls in a re-entrant lock, saves `RandomGenerator.GetState()`, calls `RandomGenerator.SetSeed(...)`, and restores `RandomGenerator.SetState(...)` in `finally`.
+OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps all OpenTURNS seeded calls in a re-entrant lock, saves `RandomGenerator.GetState()`, calls `RandomGenerator.SetSeed(...)`, and restores `RandomGenerator.SetState(...)` in `finally`. This deliberately serializes OpenTURNS use within one interpreter; thread safety and reproducibility take priority over thread-level parallelism for this bounded pilot.
 
 ## Canonical artifact
 
 - Artifact: `docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json`
-- Artifact SHA-256: `ae1ec2d104a096bac1628ce822171ab2eb61e4f895a648beb7c993e784fa864c`
-- Canonical input hash: `89b931ad4c307c03367a98a03fdf6e0c5b0da0828be9b458a0405d0cd7836457`
+- Artifact SHA-256: `d6064d39f2a276ccae8f11f4cbe3f08685d644fa7c4a91f081018b58eaf81c31`
+- Canonical input hash: `b7b38e5ec554b005222d12820c4121e12276823b41fd54d3b3a89b81f52f3cfd`
 - CLI: `python scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify`
 
 The CLI verifies predecessor evidence before execution. The baseline model/payoff conventions derive from `docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json` SHA `ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056` (`quanto_positive_correlation`). The iminuit predecessor artifact SHA `6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b` is verified as a sequencing prerequisite but is not used as a parameter source.
@@ -49,6 +49,7 @@ Baseline:
 - equity volatility: `0.20`;
 - FX volatility: `0.12`;
 - full quanto correlation endpoint: `0.35`;
+- baseline midpoint correlation: `0.175`;
 - CTMC generator/probability: one absorbing regime, `[[0.0]]`, `[1.0]`.
 
 Model-form mapping: normalized `z_model_form ~ U(-1,1)` maps to `weight=(z_model_form+1)/2`. `weight=0` is the `zero_correlation_independent_equity_fx_generator` endpoint; `weight=1` is the `full_quanto_correlation_generator` endpoint; correlation used by the FEM solver is `rho = 0.35 * weight`. This is a continuous homotopy between zero-coupling and full-coupling generators, not a posterior probability over models.
@@ -60,7 +61,7 @@ Model-form mapping: normalized `z_model_form ~ U(-1,1)` maps to `weight=(z_model
 | `data` | `z_data ~ U(-1,1)`, `spot = 100 * (1 + 0.05*z_data)` | FEM perturbation | public-synthetic spot/input-state band |
 | `parameter` | `z_parameter ~ U(-1,1)`, `sigmaS = 0.20 * (1 + 0.15*z_parameter)` | FEM perturbation | equity-volatility-only band |
 | `model_form` | `z_model_form ~ U(-1,1)`, correlation inclusion `weight=(z+1)/2` | FEM perturbation | zero-correlation vs full-quanto coupling interpolation |
-| `numerical` | `z_numerical ~ U(-1,1)`, additive `half_width*z_numerical` | additive validation-estimator error | coarse-vs-fine FEM discrepancy |
+| `numerical` | `z_numerical ~ U(-1,1)`, additive `half_width*z_numerical` | additive validation-estimator error | exact one-regime analytical oracle plus coarse/fine FEM errors |
 | `monte_carlo` | `z_monte_carlo ~ N(0,1)`, additive `standard_error*z_monte_carlo` | additive validation-estimator error | seeded direct MC standard error |
 
 Numerical error is **not included** in parameter uncertainty. Monte Carlo error is **estimator uncertainty** in the seeded direct MC validation estimator, not intrinsic fair-value uncertainty.
@@ -75,47 +76,51 @@ Calibration values:
 
 - baseline fine FEM price: `5711.946360858297`;
 - baseline coarse FEM price: `5679.906373622954`;
-- numerical half-width formula: `max(1.5 * abs(fine_fem_price - coarse_fem_price), 1e-12)`;
-- numerical half-width: `48.05998085301553`;
+- exact one-regime analytical-oracle price at the midpoint correlation: `5615.51290798328`;
+- fine/coarse absolute oracle errors: `96.43345287501779 / 64.3934656396741`;
+- numerical half-width formula: `max(abs(fine - oracle), abs(coarse - oracle), 1.5 * abs(fine - coarse), 1e-12)`;
+- numerical half-width: `96.43345287501779`;
+- analytical-oracle source hash: `c09a86ec3e9f83f522c73dc5bd798fd2c7cab5f55ceab6d24e68219303228b21`;
 - MC calibration: seed `134011`, paths `4096`, steps/year `32`, realized steps `41`;
 - MC calibration price: `5507.523029993026`;
 - MC standard error: `166.43859006226404`.
 
 ## Propagation results
 
-OpenTURNS propagation controls: sample seed `134101`, sample size `64`, Sobol seed `134201`, Sobol base size `128`; all `64` propagated prices were finite. The canonical runner wrote the artifact in `19.083011` seconds in the local verification environment.
+OpenTURNS propagation controls: sample seed `134101`, sample size `64`, Sobol seed `134201`, Sobol base size `128`; all `64` propagated prices were finite.
 
 Price summary:
 
 | Statistic | Value |
 |---|---:|
-| mean | `5575.921813648002` |
-| std | `1261.6666138891171` |
-| q01 | `3195.7187677162465` |
-| q05 | `3712.7287270361494` |
-| median | `5514.233154184234` |
-| q95 | `7728.005162008185` |
-| q99 | `7976.752792904593` |
+| mean | `5571.171201222316` |
+| std | `1263.6897202678374` |
+| q01 | `3205.5217706602734` |
+| q05 | `3704.3624619639013` |
+| median | `5502.22198885523` |
+| q95 | `7713.934583279243` |
+| q99 | `7972.650857366672` |
 
-OpenTURNS/Saltelli results below are **raw finite-sample estimators**, not constrained physical Sobol values. Small negative values and confidence intervals that cross zero are accepted sampling noise in this pilot when finite and within the declared sanity envelope for point estimates.
+OpenTURNS/Saltelli results below are **raw finite-sample estimators**, not constrained physical Sobol values. Small negative values and confidence intervals that cross zero are accepted sampling noise in this pilot when finite and when point estimates remain inside the family-specific sanity envelopes.
 
 | Component | Raw first | First 95% CI | Raw total | Total 95% CI | Standalone variance |
 |---|---:|---:|---:|---:|---:|
-| `data` | `0.643108983272484` | `[0.44096304489700544, 0.8452549216479626]` | `0.7480793278673056` | `[0.5913488422972422, 0.904809813437369]` | `1252607.0498698635` |
-| `parameter` | `0.2266460256514087` | `[0.0611779906865349, 0.3921140606162825]` | `0.2591108219249379` | `[0.15540183744490443, 0.36281980640497136]` | `390695.6500075577` |
-| `model_form` | `-0.019071398272156582` | `[-0.18021024573086622, 0.14206744918655304]` | `0.029784085341486986` | `[0.008931262567658228, 0.050636908115315744]` | `14690.954139377493` |
-| `numerical` | `-0.03014132278088872` | `[-0.19789793599100935, 0.13761529042923193]` | `0.00019626540807452078` | `[-0.005461504863314352, 0.005854035679463393]` | `843.6043926635601` |
-| `monte_carlo` | `-0.02351920804591386` | `[-0.1907998177347331, 0.14376140164290535]` | `-0.00047658364820923617` | `[-0.032258565961463564, 0.03130539866504509]` | `29032.749639657857` |
+| `data` | `0.6405603739634472` | `[0.43932859593568463, 0.8417921519912098]` | `0.747825299833858` | `[0.5906369654985516, 0.9050136341691645]` | `1083790.755181209` |
+| `parameter` | `0.22254970142880282` | `[0.05702051628388416, 0.38807888657372147]` | `0.26185939125933533` | `[0.1586424140064583, 0.36507636851221237]` | `396464.8514628893` |
+| `model_form` | `-0.021948290552655264` | `[-0.18326012322493787, 0.13936354211962734]` | `0.02960733426913182` | `[0.008768553306239397, 0.05044611523202425]` | `15962.866796680411` |
+| `numerical` | `-0.026873003393818113` | `[-0.19473266026027833, 0.14098665347264208]` | `0.0013996501535442835` | `[-0.009930180792867324, 0.012729481099955892]` | `2670.4810626966723` |
+| `monte_carlo` | `-0.02694099690606333` | `[-0.1942964089654435, 0.14041441515331685]` | `-0.00034997760871053837` | `[-0.03196565460428819, 0.03126569938686711]` | `22639.199033575667` |
 
 Sobol validation gate:
 
-- point sanity envelope: `[-0.25, 1.25]`;
+- first-order point sanity envelope: `[-0.05, 1.0]`;
+- total-order point sanity envelope: `[-0.05, 1.05]`;
 - point violations: none;
 - non-finite point estimates: none;
 - interval bound failures: none;
-- interval bounds outside the point envelope: none.
+- three first-order confidence intervals extend below the point-estimate envelope; this is reported, not used as a point-estimate gate.
 
-The standalone component variance estimates vary one normalized input at a time around zero with a deterministic design. They are not Sobol indices and do not include interactions.
+The standalone component variance estimates vary one normalized input at a time around zero using seed `134401` and draws from the same OpenTURNS marginals used by propagation. They are not Sobol indices and do not include interactions.
 
 ## Direct NumPy reference parity
 
@@ -125,13 +130,13 @@ Tolerances are statistical rather than bitwise because OpenTURNS and NumPy gener
 
 Parity differences all passed:
 
-- mean difference `202.6888442428708` <= tolerance `637.451895490632`;
-- std difference `122.47337992861435` <= tolerance `454.3098273286806`;
-- q01 difference `267.14510194892773` <= tolerance `1062.4656437861463`;
-- q05 difference `253.98278938563635` <= tolerance `1019.3575536088321`;
-- median difference `452.85960160579725` <= tolerance `993.4658605220817`;
-- q95 difference `8.255430176451227` <= tolerance `1111.4012813417735`;
-- q99 difference `99.37602687454182` <= tolerance `947.5651564253385`.
+- mean difference `210.1885018971252` <= tolerance `637.976608251052`;
+- std difference `124.65014485365009` <= tolerance `454.683788352673`;
+- q01 difference `238.36483560422266` <= tolerance `1053.171026776181`;
+- q05 difference `267.88931430335833` <= tolerance `1048.6718730020193`;
+- median difference `465.2062887597649` <= tolerance `984.5338421134261`;
+- q95 difference `9.837441692216998` <= tolerance `1121.9682452268146`;
+- q99 difference `112.04269756486974` <= tolerance `921.6915711486927`.
 
 ## Additive Sobol recovery
 
@@ -144,6 +149,14 @@ Cheap synthetic additive model coefficients `[2.0, 1.0, 0.5, 0.0, 1.5]` over the
 - max total-order error: `0.021497828244435357`;
 - tolerance: `0.08`;
 - gate: pass.
+
+## Limitations
+
+- The exact one-regime analytical reduction now bounds the observed baseline fine/coarse FEM errors; the finer pilot grid is **not** claimed to form a convergent sequence, and the baseline half-width is not a uniform error bound over the full uncertain-input domain.
+- The Monte Carlo standard error comes from one declared seed/path budget and is validation-estimator uncertainty only.
+- The model-form coordinate is a continuous generator homotopy, not a calibrated posterior over discrete model classes.
+- Sample sizes and asymptotic Saltelli intervals are appropriate only for an experimental screening pilot; the raw estimates are not production sensitivity estimates.
+- OpenTURNS calls are serialized inside one interpreter because its RNG state is process-global.
 
 ## Verification commands
 

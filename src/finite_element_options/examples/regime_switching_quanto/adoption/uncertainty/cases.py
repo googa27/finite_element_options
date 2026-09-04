@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 
+from finite_element_options.core.market import Market
+from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.examples.regime_switching_quanto import fem as regime_fem
 from finite_element_options.examples.regime_switching_quanto.contracts import (
     ContractSpec,
@@ -55,6 +57,12 @@ COARSE_GRID = FEMGridSpec((-1.6, 1.6), (-0.7, 0.7), nx=21, ny=5, time_steps=10)
 MC_CALIBRATION_SEED = 134_011
 MC_CALIBRATION_PATHS = 4096
 MC_CALIBRATION_STEPS_PER_YEAR = 32
+ANALYTICAL_ORACLE_IDENTITY = "core.EuropeanOptionBs fixed-FX one-regime quanto reduction"
+NUMERICAL_HALF_WIDTH_FORMULA = (
+    "max(abs(fine_fem_price - analytical_oracle_price), "
+    "abs(coarse_fem_price - analytical_oracle_price), "
+    "1.5 * abs(fine_fem_price - coarse_fem_price), 1e-12)"
+)
 
 
 def baseline_model(
@@ -122,7 +130,8 @@ def canonical_study_input(config: UQPilotConfig | None = None) -> dict[str, Any]
                 "zero_correlation_independent_equity_fx_generator",
                 "full_quanto_correlation_generator",
             ],
-            "normalized_zero_correlation_weight": 0.5,
+            "normalized_zero_input_correlation_weight": 0.5,
+            "baseline_correlation": 0.5 * BASELINE_FULL_CORRELATION,
             "model": model.to_dict(),
             "payoff": contract.to_dict(),
         },
@@ -132,6 +141,10 @@ def canonical_study_input(config: UQPilotConfig | None = None) -> dict[str, Any]
             "seed": MC_CALIBRATION_SEED,
             "paths": MC_CALIBRATION_PATHS,
             "steps_per_year": MC_CALIBRATION_STEPS_PER_YEAR,
+        },
+        "numerical_calibration": {
+            "oracle_identity": ANALYTICAL_ORACLE_IDENTITY,
+            "half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
         },
         "component_names": COMPONENT_NAMES,
         "predecessor_source": {
@@ -147,6 +160,25 @@ def canonical_uq_input_hash(config: UQPilotConfig | None = None) -> str:
     """Return the SHA-256 hash of the canonical study input."""
 
     return canonical_json_sha256(canonical_study_input(config))
+
+
+def baseline_analytical_price() -> float:
+    """Return the exact one-regime fixed-FX quanto reduction at the baseline midpoint."""
+
+    correlation = 0.5 * BASELINE_FULL_CORRELATION
+    q_eff = (
+        BASELINE_DIVIDEND
+        + BASELINE_DOMESTIC_RATE
+        - BASELINE_FOREIGN_RATE
+        + correlation * BASELINE_SIGMA * BASELINE_FX_VOL
+    )
+    option = EuropeanOptionBs(
+        k=BASELINE_STRIKE,
+        q=q_eff,
+        mkt=Market(r=BASELINE_DOMESTIC_RATE),
+    )
+    call = option.call_from_volatility(BASE_MATURITY, BASELINE_SPOT, BASELINE_SIGMA)
+    return float(call) * BASELINE_FIXED_FX
 
 
 def calibrate_scales() -> UQCalibration:
@@ -180,15 +212,35 @@ def calibrate_scales() -> UQCalibration:
         seed=MC_CALIBRATION_SEED,
         steps_per_year=MC_CALIBRATION_STEPS_PER_YEAR,
     )
+    oracle_price = baseline_analytical_price()
     discrepancy = abs(fine.mixture_price - coarse.mixture_price)
-    half_width = max(1.5 * discrepancy, 1.0e-12)
+    fine_oracle_error = abs(fine.mixture_price - oracle_price)
+    coarse_oracle_error = abs(coarse.mixture_price - oracle_price)
+    half_width = max(fine_oracle_error, coarse_oracle_error, 1.5 * discrepancy, 1.0e-12)
     fine_identity = grid_identity(FINE_GRID)
     coarse_identity = grid_identity(COARSE_GRID)
+    model_hash = canonical_json_sha256(model.to_dict())
+    payoff_hash = canonical_json_sha256(contract.to_dict())
+    oracle_payload = {
+        "identity": ANALYTICAL_ORACLE_IDENTITY,
+        "maturity": BASE_MATURITY,
+        "equity_spot": BASELINE_SPOT,
+        "equity_volatility": BASELINE_SIGMA,
+        "correlation": 0.5 * BASELINE_FULL_CORRELATION,
+        "fx_volatility": BASELINE_FX_VOL,
+        "model_hash": model_hash,
+        "payoff_hash": payoff_hash,
+        "price": oracle_price,
+    }
     return UQCalibration(
         baseline_price_fine=float(fine.mixture_price),
         baseline_price_coarse=float(coarse.mixture_price),
+        baseline_price_oracle=oracle_price,
+        fine_oracle_abs_error=float(fine_oracle_error),
+        coarse_oracle_abs_error=float(coarse_oracle_error),
+        oracle_identity=ANALYTICAL_ORACLE_IDENTITY,
         numerical_half_width=float(half_width),
-        numerical_formula="max(1.5 * abs(fine_fem_price - coarse_fem_price), 1e-12)",
+        numerical_formula=NUMERICAL_HALF_WIDTH_FORMULA,
         mc_price=float(mc.price),
         mc_standard_error=float(mc.standard_error),
         mc_seed=MC_CALIBRATION_SEED,
@@ -199,8 +251,9 @@ def calibrate_scales() -> UQCalibration:
         coarse_grid=coarse_identity,
         fine_grid_hash=str(fine_identity["hash"]),
         coarse_grid_hash=str(coarse_identity["hash"]),
-        baseline_model_hash=canonical_json_sha256(model.to_dict()),
-        payoff_hash=canonical_json_sha256(contract.to_dict()),
+        baseline_model_hash=model_hash,
+        payoff_hash=payoff_hash,
+        oracle_hash=canonical_json_sha256(oracle_payload),
     )
 
 
@@ -260,13 +313,18 @@ def build_components(
             scale_or_range={"half_width": calibration.numerical_half_width},
             units="price currency units",
             role="additive_validation_estimator_error",
-            source_identity="baseline coarse-vs-fine FEM deterministic discrepancy",
+            source_identity="baseline analytical one-regime oracle plus coarse/fine FEM errors",
             source_hash=canonical_json_sha256(
                 {
                     "fine_grid_hash": calibration.fine_grid_hash,
                     "coarse_grid_hash": calibration.coarse_grid_hash,
                     "baseline_price_fine": calibration.baseline_price_fine,
                     "baseline_price_coarse": calibration.baseline_price_coarse,
+                    "baseline_price_oracle": calibration.baseline_price_oracle,
+                    "fine_oracle_abs_error": calibration.fine_oracle_abs_error,
+                    "coarse_oracle_abs_error": calibration.coarse_oracle_abs_error,
+                    "oracle_identity": calibration.oracle_identity,
+                    "oracle_hash": calibration.oracle_hash,
                     "numerical_half_width": calibration.numerical_half_width,
                     "formula": calibration.numerical_formula,
                 }
@@ -290,8 +348,13 @@ def build_components(
                     "paths": calibration.mc_paths,
                     "steps": calibration.mc_steps,
                     "steps_per_year": calibration.mc_steps_per_year,
+                    "maturity": BASE_MATURITY,
+                    "equity_spot": BASELINE_SPOT,
+                    "fx_spot": BASELINE_FX_SPOT,
                     "model_hash": calibration.baseline_model_hash,
                     "payoff_hash": calibration.payoff_hash,
+                    "mc_price": calibration.mc_price,
+                    "mc_standard_error": calibration.mc_standard_error,
                 }
             ),
             perturbs_fem_model=False,
