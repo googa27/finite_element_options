@@ -143,6 +143,8 @@ The machine-readable architecture contract is `docs/architecture_contract.toml`.
 
 Issue #50 is governed by `docs/MODULE_OWNERSHIP.md` and the `[[module_ownership]]` table in `docs/architecture_contract.toml`. Every package-root module or package is classified exactly once as `core`, `validation`, `compatibility`, `optional`, `example`, `app`, or `cli`. The finite-difference route `fdsolver.py` is compatibility-only, belongs to `finite_difference_options` for production ownership, requires the `fd` extra, emits targeted `DeprecationWarning`s, and must not be re-exported by the base package. UI, plotting, calibration, JAX and IO modules remain optional outer layers and are forbidden from the FEM core import graph; pure-Python UI validation lives in `ui_config.py` so Streamlit widgets can fail closed before allocation without importing Streamlit in core paths. Executable examples live under `finite_element_options.examples`; duplicate root `examples/` Python files are forbidden by the architecture contract.
 
+The `examples.regime_switching_quanto` research package is an outer validation client. It consumes caller-provided/PDP-exported dataframes but imports no PDP internals, lazily imports statsmodels only during calibration, assembles its coupled scikit-fem operator locally, and exposes its non-production assumptions and failed discontinuous-payoff gates in `REGIME_SWITCHING_QUANTO_RESEARCH.md`. Its cached sparse factorizations report reuse counts; this example does not redefine the canonical core solver policy.
+
 ## 6. Dependency direction
 
 ```text
