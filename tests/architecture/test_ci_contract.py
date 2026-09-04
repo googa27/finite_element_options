@@ -48,6 +48,31 @@ def test_ci_profiles_are_required_and_named() -> None:
         assert f"profile: {profile}" in text
 
 
+def test_new_optional_profiles_import_actual_dependency_and_cover_supported_pythons() -> None:
+    """Issue #130 CI must prove each new extra on Python 3.11 and 3.12."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    required = {
+        "volatility": "arch",
+        "changepoints": "ruptures",
+        "quantlib": "QuantLib",
+        "identifiability": "iminuit",
+    }
+    for profile, dependency in required.items():
+        for python_version in ("3.11", "3.12"):
+            pattern = re.compile(
+                rf"profile:\s*{profile}\b(?:(?!\n\s*-\s*profile:).)*"
+                rf"python-version:\s*['\"]?{re.escape(python_version)}['\"]?(?:(?!\n\s*-\s*profile:).)*"
+                rf"dependency:\s*{re.escape(dependency)}\b",
+                re.DOTALL,
+            )
+            assert pattern.search(text), f"missing {profile} {python_version} dependency proof"
+    assert "DEPENDENCY: ${{ matrix.dependency }}" in text
+    assert "importlib.import_module(dependency)" in text or "require_optional(dependency)" in text
+    assert "quantlib_evaluation_date" in text
+    assert "forced QuantLib failure" in text
+
+
 def test_supply_chain_and_artifact_gates_are_present() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for snippet in (

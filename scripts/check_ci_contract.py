@@ -57,7 +57,32 @@ REQUIRED_SNIPPETS = {
     "optional changepoints profile": "profile: changepoints",
     "optional quantlib profile": "profile: quantlib",
     "optional identifiability profile": "profile: identifiability",
+    "optional dependency matrix field": "DEPENDENCY: ${{ matrix.dependency }}",
+    "optional dependency import proof": "importlib.import_module(dependency)",
+    "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
+    "QuantLib failure restoration proof": "forced QuantLib failure",
 }
+
+OPTIONAL_PROFILE_DEPENDENCIES = {
+    "fd": "findiff",
+    "jax": "jax",
+    "calibration": "pymc",
+    "viz": "matplotlib",
+    "ui": "streamlit",
+    "volatility": "arch",
+    "changepoints": "ruptures",
+    "quantlib": "QuantLib",
+    "identifiability": "iminuit",
+}
+
+NEW_OPTIONAL_PROFILES = {
+    "volatility",
+    "changepoints",
+    "quantlib",
+    "identifiability",
+}
+
+NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
 
 
 def _workflow_text() -> str:
@@ -85,7 +110,89 @@ def _job_blocks(text: str) -> dict[str, str]:
     return {name: "\n".join(block) for name, block in blocks.items()}
 
 
+def _yaml_scalar(value: str) -> str:
+    return value.strip().strip("'\"")
+
+
+def _matrix_include_entries(job_block: str) -> list[dict[str, str]]:
+    if "include:" not in job_block:
+        return []
+    include_block = job_block.split("include:", 1)[1].split("steps:", 1)[0]
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    item = re.compile(r"^\s*-\s+([A-Za-z0-9_-]+):\s*(.+?)\s*$")
+    field = re.compile(r"^\s+([A-Za-z0-9_-]+):\s*(.+?)\s*$")
+
+    for line in include_block.splitlines():
+        item_match = item.match(line)
+        if item_match:
+            current = {item_match.group(1): _yaml_scalar(item_match.group(2))}
+            entries.append(current)
+            continue
+        field_match = field.match(line)
+        if current is not None and field_match:
+            current[field_match.group(1)] = _yaml_scalar(field_match.group(2))
+    return entries
+
+
+def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
+    block = blocks.get("optional_imports")
+    if block is None:
+        return ["optional_imports job is required for optional dependency proofs"]
+
+    errors: list[str] = []
+    entries = _matrix_include_entries(block)
+    if not entries:
+        return ["optional_imports job must use an explicit matrix.include list"]
+
+    for entry in entries:
+        profile = entry.get("profile")
+        dependency = entry.get("dependency")
+        if not profile:
+            errors.append(f"optional_imports matrix entry lacks profile: {entry}")
+            continue
+        if not dependency:
+            errors.append(f"optional profile {profile} must declare dependency")
+            continue
+        expected_dependency = OPTIONAL_PROFILE_DEPENDENCIES.get(profile)
+        if expected_dependency is None:
+            errors.append(f"unexpected optional profile in CI matrix: {profile}")
+        elif dependency != expected_dependency:
+            errors.append(
+                f"optional profile {profile} must import dependency "
+                f"{expected_dependency!r}, got {dependency!r}"
+            )
+
+    for profile in NEW_OPTIONAL_PROFILES:
+        covered = {
+            entry.get("python-version")
+            for entry in entries
+            if entry.get("profile") == profile
+            and entry.get("dependency") == OPTIONAL_PROFILE_DEPENDENCIES[profile]
+        }
+        missing = sorted(NEW_OPTIONAL_PROFILE_PYTHONS - covered)
+        if missing:
+            errors.append(
+                f"optional profile {profile} must cover Python "
+                f"{sorted(NEW_OPTIONAL_PROFILE_PYTHONS)}, missing {missing}"
+            )
+
+    steps_block = block.split("steps:", 1)[1] if "steps:" in block else ""
+    setup_is_matrixed = "${{ matrix.python-version }}" in steps_block
+    name_is_matrixed = "${{ matrix.python-version }}" in block.split("steps:", 1)[0]
+    if not setup_is_matrixed:
+        errors.append("optional_imports must set up matrix.python-version")
+    if "${{ matrix.profile }}" not in block:
+        errors.append("optional_imports job name must include matrix.profile")
+    if not name_is_matrixed:
+        errors.append("optional_imports job name must include matrix.python-version")
+
+    return errors
+
+
 def check_ci_contract() -> list[str]:
+    """Return CI workflow contract violations, or an empty list when valid."""
+
     text = _workflow_text()
     errors: list[str] = []
 
@@ -114,10 +221,14 @@ def check_ci_contract() -> list[str]:
         if "runs-on:" not in block:
             errors.append(f"job {name} must declare runs-on")
 
+    errors.extend(_check_optional_import_matrix(blocks))
+
     return errors
 
 
 def main() -> int:
+    """Run CI workflow contract checks as a command-line gate."""
+
     errors = check_ci_contract()
     if errors:
         print("CI contract violations:", file=sys.stderr)

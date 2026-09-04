@@ -189,3 +189,60 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(
         """
     )
     _run([str(python), "-c", code], cwd=tmp_path, env=env)
+
+
+def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies(
+    tmp_path: Path,
+) -> None:
+    """The base installed wheel must not import adoption-only optional libraries."""
+
+    outdir = tmp_path / "dist"
+    venv = tmp_path / "base-wheel-venv"
+    _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
+    wheel = next(outdir.glob("finite_element_options-*.whl"))
+
+    _run([sys.executable, "-m", "venv", str(venv)], cwd=tmp_path)
+    python = venv / "bin" / "python"
+    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=tmp_path)
+
+    env = {**os.environ, "PYTHONPATH": ""}
+    code = textwrap.dedent(
+        f"""
+        import importlib
+        import importlib.abc
+        import pathlib
+        import sys
+
+        blocked = {{'arch', 'ruptures', 'QuantLib', 'iminuit'}}
+        checkout = pathlib.Path({str(ROOT)!r}).resolve()
+
+        preloaded = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
+        assert preloaded == [], preloaded
+
+        class BlockAdoptionOptionals(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname.split('.')[0] in blocked:
+                    raise ModuleNotFoundError(
+                        f'blocked adoption optional dependency: {{fullname}}',
+                        name=fullname,
+                    )
+                return None
+
+        sys.meta_path.insert(0, BlockAdoptionOptionals())
+        for module_name in (
+            'finite_element_options',
+            'finite_element_options.examples.regime_switching_quanto',
+            'finite_element_options.examples.regime_switching_quanto.adoption',
+            'finite_element_options.examples.regime_switching_quanto.adoption.optional',
+            'finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state',
+        ):
+            module = importlib.import_module(module_name)
+            module_file = pathlib.Path(module.__file__).resolve()
+            assert checkout not in module_file.parents, module_file
+
+        leaked = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
+        assert leaked == [], leaked
+        print('installed wheel blocked adoption optionals OK')
+        """
+    )
+    _run([str(python), "-c", code], cwd=tmp_path, env=env)
