@@ -154,6 +154,32 @@ def test_unsupported_conventions_raise_typed_actionable_error(
     assert error.to_dict() == {"field": field, "received": value, "supported": list(supported)}
 
 
+def test_quantlib_date_invariant_failure_is_typed_and_json_safe() -> None:
+    """Runtime QuantLib date mismatches must not rely on removable assertions."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle import (
+        QuantLibReductionError,
+    )
+    from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.adapter import (
+        _require_matching_quantlib_date,
+    )
+
+    with pytest.raises(QuantLibReductionError) as exc_info:
+        _require_matching_quantlib_date(
+            field="exercise_date",
+            received="September 5th, 2027",
+            expected="September 4th, 2027",
+            kind="vanilla",
+        )
+
+    assert exc_info.value.to_dict() == {
+        "field": "exercise_date",
+        "received": "September 5th, 2027",
+        "expected": "September 4th, 2027",
+        "kind": "vanilla",
+    }
+
+
 @pytest.mark.parametrize(
     "field,value,expected",
     [

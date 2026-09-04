@@ -12,7 +12,7 @@ from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_s
     quantlib_evaluation_date,
 )
 
-from .contracts import QuantLibOracleResult, QuantLibOracleSpec
+from .contracts import QuantLibOracleResult, QuantLibOracleSpec, QuantLibReductionError
 
 SCHEMA_VERSION = "regime_quantlib_oracle.v1"
 ANALYTICAL_TOLERANCE = 1.0e-9
@@ -29,13 +29,25 @@ def price_quantlib_oracle(spec: QuantLibOracleSpec) -> QuantLibOracleResult:
         explicit_maturity = _ql_date(quantlib, spec.maturity_date)
         calendar = quantlib.TARGET()
         ql_maturity = calendar.adjust(explicit_maturity, quantlib.Unadjusted)
-        assert ql_maturity == explicit_maturity
+        _require_matching_quantlib_date(
+            field="business_day_convention_result",
+            received=ql_maturity,
+            expected=explicit_maturity,
+            kind=spec.kind,
+        )
         day_count = quantlib.Actual365Fixed()
         year_fraction = float(day_count.yearFraction(ql_eval, ql_maturity))
         process = _bsm_process(quantlib, spec, ql_eval, calendar, day_count)
         payoff = quantlib.PlainVanillaPayoff(quantlib.Option.Call, float(spec.strike))
         exercise = quantlib.EuropeanExercise(ql_maturity)
-        assert list(exercise.dates()) == [explicit_maturity]
+        exercise_dates = list(exercise.dates())
+        received_exercise_date = exercise_dates[0] if len(exercise_dates) == 1 else exercise_dates
+        _require_matching_quantlib_date(
+            field="exercise_date",
+            received=received_exercise_date,
+            expected=explicit_maturity,
+            kind=spec.kind,
+        )
         if spec.kind == "vanilla":
             option = quantlib.EuropeanOption(payoff, exercise)
             option.setPricingEngine(quantlib.AnalyticEuropeanEngine(process))
@@ -92,6 +104,18 @@ def analytical_oracle_price(spec: QuantLibOracleSpec, *, year_fraction: float) -
         option.call_from_volatility(year_fraction, float(spec.spot), float(spec.equity_vol))
     )
     return raw if spec.kind == "vanilla" else raw * float(spec.fixed_fx)
+
+
+def _require_matching_quantlib_date(*, field: str, received: Any, expected: Any, kind: str) -> None:
+    """Raise a JSON-safe typed error when QuantLib changes an explicit date."""
+
+    if received != expected:
+        raise QuantLibReductionError(
+            field=field,
+            received=str(received),
+            expected=str(expected),
+            kind=kind,
+        )
 
 
 def _bsm_process(
