@@ -7,6 +7,7 @@ import json
 import math
 import os
 from pathlib import Path
+import tempfile
 from typing import Any
 
 import numpy as np
@@ -188,9 +189,21 @@ def write_atomic_json(path: str | Path, payload: Any) -> str:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     text = canonical_json(payload) + "\n"
-    tmp = target.with_name(f".{target.name}.tmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, target)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=target.parent,
+        prefix=f".{target.name}.",
+        suffix=".tmp",
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, target)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 

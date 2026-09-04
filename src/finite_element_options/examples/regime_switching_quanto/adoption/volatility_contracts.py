@@ -28,7 +28,6 @@ class VolatilityBenchmarkConfig:
     markov_search_iter: int = 5
     markov_maxiter: int = 150
     arch_maxiter: int = 150
-    forecast_simulations: int = 400
     changepoint_window: int = 63
     changepoint_penalty: float = 6.0
     high_volatility_probability_threshold: float = 0.5

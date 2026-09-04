@@ -16,7 +16,7 @@ Immutable input contract:
 - Response: `100 * (sp500_log_return + usdclp_log_return)`
 - First rolling train window: `2023-02-28` through `2026-03-05`
 - Hold-out: `2026-03-06` through `2026-09-03`
-- Artifact SHA-256: `8cfcca8090169b3189b62e307e8be568cfd4fabeeff67e5b2d7055fc3d72602e`
+- Artifact SHA-256: `3ef33542865cc7370bc639b15b60aba207a2be3981ad77b9d1132f5f0e15f9ad`
 
 Regenerate from any local checkout with the optional research profiles installed:
 

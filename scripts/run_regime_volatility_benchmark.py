@@ -22,7 +22,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--arch-maxiter", type=int, default=150)
     parser.add_argument("--markov-maxiter", type=int, default=150)
     parser.add_argument("--markov-search-reps", type=int, default=2)
-    parser.add_argument("--forecast-simulations", type=int, default=400)
     parser.add_argument("--changepoint-window", type=int, default=63)
     parser.add_argument("--changepoint-penalty", type=float, default=6.0)
     parser.add_argument("--verify", action="store_true", help="regenerate and compare output")
@@ -57,7 +56,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         arch_maxiter=args.arch_maxiter,
         markov_maxiter=args.markov_maxiter,
         markov_search_reps=args.markov_search_reps,
-        forecast_simulations=args.forecast_simulations,
         changepoint_window=args.changepoint_window,
         changepoint_penalty=args.changepoint_penalty,
     )

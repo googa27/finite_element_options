@@ -201,9 +201,7 @@ def markov_forecast(
     values = np.asarray(fitted.params, dtype=float)
     k = int(fitted.k_regimes)
     const = np.array([values[names.index(f"const[{i}]")] for i in range(k)], dtype=float)
-    sig2 = np.maximum(
-        np.array([values[names.index(f"sigma2[{i}]")] for i in range(k)]), 1.0e-12
-    )
+    sig2 = np.maximum(np.array([values[names.index(f"sigma2[{i}]")] for i in range(k)]), 1.0e-12)
     ar = np.array(
         [[values[names.index(f"ar.L{lag}[{i}]")] for lag in (1, 2)] for i in range(k)],
         dtype=float,

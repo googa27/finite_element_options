@@ -185,6 +185,23 @@ def test_failure_records_and_canonical_artifact_are_serializable() -> None:
     )
 
 
+def test_atomic_artifact_write_replaces_target_without_shared_temp_file(tmp_path: Path) -> None:
+    """Canonical artifact writes must be atomic and leave no temp-file debris."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.volatility_benchmark import (
+        write_atomic_json,
+    )
+
+    target = tmp_path / "artifact.json"
+    target.write_text("stale\n", encoding="utf-8")
+
+    digest = write_atomic_json(target, {"schema": "test", "value": 7})
+
+    assert target.read_text(encoding="utf-8") == '{"schema":"test","value":7}\n'
+    assert len(digest) == 64
+    assert list(tmp_path.glob(".artifact.json.*.tmp")) == []
+
+
 def test_adoption_facade_and_base_import_do_not_eagerly_load_optional_stacks() -> None:
     """The volatility benchmark remains lazy behind the adoption facade."""
 
@@ -538,7 +555,7 @@ def test_real_artifact_is_bounded_canonical_and_schema_stable() -> None:
     payload = json.loads(artifact.read_text(encoding="utf-8"))
     assert artifact.read_text(encoding="utf-8") == canonical_json(payload) + "\n"
     assert (
-        file_sha256(artifact) == "8cfcca8090169b3189b62e307e8be568cfd4fabeeff67e5b2d7055fc3d72602e"
+        file_sha256(artifact) == "3ef33542865cc7370bc639b15b60aba207a2be3981ad77b9d1132f5f0e15f9ad"
     )
     encoded = json.dumps(payload, sort_keys=True)
     assert "/tmp/" not in encoded
