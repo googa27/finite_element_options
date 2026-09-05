@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 import hashlib
+from importlib.metadata import distribution
 import json
 import math
 import os
@@ -91,6 +92,21 @@ def quantize_upper_bound(value: float, *, significant_digits: int = 10) -> float
     return math.ceil(number / quantum) * quantum
 
 
+def distribution_install_mode(name: str) -> str:
+    """Classify an installed distribution as wheel, editable, or unknown."""
+
+    direct_url_text = distribution(name).read_text("direct_url.json")
+    if direct_url_text is None:
+        return "wheel"
+    try:
+        direct_url = json.loads(direct_url_text)
+    except json.JSONDecodeError:
+        return "unknown"
+    if direct_url.get("dir_info", {}).get("editable") is True:
+        return "editable"
+    return "wheel"
+
+
 def file_sha256(path: str | Path) -> str:
     """Return SHA-256 of a file without storing its path."""
 
@@ -126,6 +142,7 @@ def write_atomic_json(path: str | Path, payload: Any) -> str:
 __all__ = [
     "canonical_json",
     "canonical_json_sha256",
+    "distribution_install_mode",
     "file_sha256",
     "json_safe",
     "quantize_json_floats",

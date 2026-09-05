@@ -86,9 +86,11 @@ The separate [`reduction`](docs/BLACK_SCHOLES_PYMOR_ROM.md) profile provides an 
 
 The [`PETSc external VI assessment`](docs/PETSC_VI_ASSESSMENT.md) is separately triggered by the existing American lower-obstacle route. A matched PETSc/petsc4py `3.24.6` Python 3.12 environment ran real KSP, SNES-VI, and TS doctors plus an 80-step equal-discretization American-put comparison. The single-rank adapter passed residual and price/Delta/Gamma gates and was `46.77x` faster than the Python projected-SOR reference, but SciPy remains canonical; there is no package extra, distributed-assembly claim, or capability-matrix upgrade.
 
+The [`bayesian` / `bayesian-jax` Python 3.12 profile`](docs/BAYESIAN_JAX_PROFILE.md) separates PyMC/ArviZ from lightweight `calibration` and keeps NumPyro/JAX-native inference isolated from scikit-fem/SciPy. A hash-pinned clean-wheel environment recovers an exact conjugate synthetic posterior with finite log density, R-hat `1.00`, bulk ESS above `200`, zero divergences, and posterior-predictive checks in both engines. Automatic FEM differentiation remains explicitly unsupported.
+
 ## Installation
 
-The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `volatility`, `changepoints`, `quantlib`, `identifiability`, `uncertainty`, `reduction`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.
+The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `volatility`, `changepoints`, `quantlib`, `identifiability`, `uncertainty`, `reduction`, `bayesian`, `bayesian-jax`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.
 
 ```text
 python -m pip install .
@@ -100,7 +102,7 @@ python scripts/export_arxiv_lab_black_scholes_fixture.py
 
 ## Architecture and ownership
 
-The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional stack import boundaries and the module ownership table used by [docs/MODULE_OWNERSHIP.md](docs/MODULE_OWNERSHIP.md). Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, the regime-switching quanto adoption libraries use `volatility`, `changepoints`, `quantlib`, `identifiability`, or `uncertainty`, the pyMOR pilot uses `reduction`, and UI/plotting code uses `ui` or `viz`.
+The CI-enforced architecture contract is `docs/architecture_contract.toml`. It records the `finite_element_options` source-layout package topology, optional stack import boundaries and the module ownership table used by [docs/MODULE_OWNERSHIP.md](docs/MODULE_OWNERSHIP.md). Treat the base install as the FEM core; finite-difference compatibility uses the `fd` extra, calibration uses `calibration`, JAX Greeks use `jax`, IO/dataframe helpers use `io`, the regime-switching quanto adoption libraries use `volatility`, `changepoints`, `quantlib`, `identifiability`, or `uncertainty`, the pyMOR pilot uses `reduction`, Bayesian inference uses `bayesian` or `bayesian-jax`, and UI/plotting code uses `ui` or `viz`.
 
 Launch the optional Streamlit application with the `ui` extra installed via the entry module path `finite_element_options.examples.streamlit_app`. Run the adaptive mesh demo via `python -m finite_element_options.examples.adaptive_mesh_refinement` when plotting dependencies are available. These demos are not maturity upgrades.
 
@@ -152,7 +154,7 @@ The optional `FenicsSolver` mirrors selected scikit-fem behavior using FEniCSx a
 
 ## Continuous integration
 
-CI evidence includes package builds for Python 3.11 and 3.12, installed-wheel import checks, README example execution from an installed package context, docstring/Ruff/mypy gates, architecture and packaging contracts, coverage, validated benchmark smoke artifacts, optional-profile import gates, focused QuantLib oracle/state tests in `quantlib`, iminuit tests in `identifiability`, OpenTURNS tests in `uncertainty`, pyMOR affine/POD/holdout/fallback tests in `reduction`, `pip-audit`, and a CycloneDX SBOM.
+CI evidence includes package builds for Python 3.11 and 3.12, installed-wheel import checks, README example execution from an installed package context, docstring/Ruff/mypy gates, architecture and packaging contracts, coverage, validated benchmark smoke artifacts, optional-profile import gates, focused QuantLib oracle/state tests in `quantlib`, iminuit tests in `identifiability`, OpenTURNS tests in `uncertainty`, pyMOR affine/POD/holdout/fallback tests in `reduction`, Python 3.12 PyMC diagnostics in `bayesian`, Python 3.12 NumPyro/JAX diagnostics plus profile replay in `bayesian-jax`, `pip-audit`, and a CycloneDX SBOM.
 
 ## Local verification
 
@@ -170,10 +172,12 @@ uv run --extra quantlib python scripts/run_quantlib_oracle_matrix.py --output do
 uv run --extra identifiability python scripts/run_iminuit_identifiability.py --output docs/evidence/regime_switching_quanto_iminuit_identifiability_2026-09-04.json --verify
 uv run --extra reduction python scripts/run_pymor_rom_benchmark.py --verify
 PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python scripts/run_petsc_vi_assessment.py --verify
+JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 /tmp/feo-bayes-wheel/bin/python scripts/run_bayesian_jax_profile.py --verify
 uv run --extra quantlib pytest -q tests/examples/test_regime_switching_quanto_quantlib_oracle.py tests/examples/test_regime_switching_quanto_adoption_boundaries.py --no-cov
 uv run --extra identifiability --extra validation pytest -q tests/examples/test_regime_switching_quanto_iminuit_identifiability.py tests/examples/test_regime_switching_quanto_adoption_boundaries.py --no-cov
 uv run --extra reduction pytest -q tests/integration/test_pymor_black_scholes_rom.py tests/validation/test_pymor_rom_evidence.py --no-cov
 PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python -m pytest -q external_tests/petsc_vi/test_petsc_vi_external.py --no-cov
+JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 /tmp/feo-bayes-wheel/bin/python -m pytest -q external_tests/bayesian_profile --no-cov
 pytest -q tests/architecture --no-cov
 pytest -q tests/test_packaging_contract.py --no-cov
 pytest -q tests/test_benchmark_black_scholes.py tests/test_pinares_fem_proxy.py tests/test_capability_matrix_docs.py --no-cov

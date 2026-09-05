@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from importlib.metadata import distribution, version
-import json
+from importlib.metadata import version
 from pathlib import Path
 import platform
 from time import perf_counter
@@ -29,6 +28,7 @@ from finite_element_options.time_integration.lcp import (
 )
 from finite_element_options.time_integration.stepper import ThetaScheme
 from finite_element_options.validation.evidence.serialization import (
+    distribution_install_mode,
     file_sha256,
     quantize_json_floats,
 )
@@ -111,7 +111,7 @@ def run_petsc_vi_assessment(
     selected = config or PetscVIAssessmentConfig()
     predecessor = _predecessor(root)
     trigger = _trigger_evidence()
-    install_mode = _distribution_install_mode()
+    install_mode = distribution_install_mode("finite-element-options")
     doctor = petsc_runtime_doctor()
     space = _space(selected)
     times = np.linspace(0.0, selected.maturity, selected.time_steps + 1)
@@ -202,20 +202,6 @@ def run_petsc_vi_assessment(
     if not isinstance(normalized, dict):  # pragma: no cover - payload is a dict
         raise TypeError("PETSc assessment serialization must return a mapping")
     return normalized
-
-
-def _distribution_install_mode() -> str:
-    metadata = distribution("finite-element-options")
-    direct_url_text = metadata.read_text("direct_url.json")
-    if direct_url_text is None:
-        return "wheel"
-    try:
-        direct_url = json.loads(direct_url_text)
-    except json.JSONDecodeError:
-        return "unknown"
-    if direct_url.get("dir_info", {}).get("editable") is True:
-        return "editable"
-    return "wheel"
 
 
 def _trigger_evidence() -> dict[str, object]:

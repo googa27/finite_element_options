@@ -6,10 +6,13 @@ import importlib.metadata as metadata
 import os
 import subprocess
 import sys
+import tarfile
 import textwrap
 import zipfile
 from pathlib import Path
 
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 import pytest
 
 pytestmark = pytest.mark.packaging
@@ -46,6 +49,30 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert "finite_element_options/time/stepper.py" not in names
 
 
+def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) -> None:
+    """Source releases must not contain README links to omitted verification assets."""
+
+    outdir = tmp_path / "dist"
+    _run([sys.executable, "-m", "build", "--sdist", "--outdir", str(outdir)], cwd=ROOT)
+    sdist = next(outdir.glob("finite_element_options-*.tar.gz"))
+    required = {
+        ".github/workflows/ci.yml",
+        "MANIFEST.in",
+        "docs/BAYESIAN_JAX_PROFILE.md",
+        "docs/architecture_contract.toml",
+        "docs/evidence/bayesian_jax_profile_2026-09-05.json",
+        "environments/bayesian-py312/requirements.lock",
+        "environments/bayesian-jax-py312/requirements.lock",
+        "external_tests/bayesian_profile/test_pymc_profile.py",
+        "external_tests/bayesian_profile/test_numpyro_profile.py",
+        "scripts/run_bayesian_jax_profile.py",
+        "tests/validation/test_bayesian_jax_profile_evidence.py",
+    }
+    with tarfile.open(sdist, mode="r:gz") as archive:
+        members = {name.split("/", 1)[1] for name in archive.getnames() if "/" in name}
+    assert required <= members
+
+
 def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(
     tmp_path: Path,
 ) -> None:
@@ -76,11 +103,15 @@ def _requires_dist() -> list[str]:
 
 
 def _has_extra_dependency(requires_dist: list[str], extra: str, dependency: str) -> bool:
-    return any(
-        item.lower().startswith(dependency.lower())
-        and f'extra == "{extra.lower()}"' in item.lower()
-        for item in requires_dist
-    )
+    expected = canonicalize_name(dependency)
+    for item in requires_dist:
+        requirement = Requirement(item)
+        applies = requirement.marker is None or requirement.marker.evaluate(
+            {"extra": extra, "python_version": "3.12"}
+        )
+        if canonicalize_name(requirement.name) == expected and applies:
+            return True
+    return False
 
 
 def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
@@ -88,6 +119,7 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
     forbidden_core = [
         "aleatory",
         "arch",
+        "arviz",
         "findiff",
         "iminuit",
         "jax",
@@ -98,19 +130,20 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
         "pymc",
         "pymor",
         "petsc4py",
+        "numpyro",
         "quantlib",
         "ruptures",
         "statsmodels",
         "streamlit",
         "xarray",
     ]
-    offenders = [
-        item
-        for item in requires_dist
-        if "extra ==" not in item.lower()
-        for name in forbidden_core
-        if item.lower().startswith(name)
-    ]
+    forbidden_names = {canonicalize_name(name) for name in forbidden_core}
+    offenders = []
+    for item in requires_dist:
+        requirement = Requirement(item)
+        applies_to_base = requirement.marker is None or requirement.marker.evaluate({"extra": ""})
+        if canonicalize_name(requirement.name) in forbidden_names and applies_to_base:
+            offenders.append(item)
     assert not offenders, (
         f"Optional stacks leaked into core dependencies: {offenders}\n" + "\n".join(requires_dist)
     )
@@ -146,17 +179,48 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
         "identifiability": "iminuit",
         "uncertainty": "openturns",
         "reduction": "pymor",
+        "calibration": "statsmodels",
+        "bayesian": "pymc",
+        "bayesian-jax": "numpyro",
     }
     for extra, dependency in expected.items():
         assert _has_extra_dependency(requires_dist, extra, dependency), (
             f"The {extra!r} extra must install {dependency!r}; requires-dist was:\n"
             + "\n".join(requires_dist)
         )
+    assert not _has_extra_dependency(requires_dist, "calibration", "pymc")
+    assert not _has_extra_dependency(requires_dist, "calibration", "arviz")
+    assert _has_extra_dependency(requires_dist, "bayesian", "arviz")
+    for dependency in ("arviz", "jax", "pymc", "numpyro"):
+        assert _has_extra_dependency(requires_dist, "bayesian-jax", dependency)
     assert not _has_extra_dependency(requires_dist, "petsc", "petsc4py"), (
         "PETSc must remain an explicit matched external environment, not a portable extra"
     )
     provides_extras = metadata.metadata("finite-element-options").get_all("Provides-Extra") or []
     assert "petsc" not in {extra.lower() for extra in provides_extras}
+
+
+def test_bayesian_extras_are_bounded_to_python_312() -> None:
+    """Bayesian/JAX extras must fail closed outside the evidenced Python minor."""
+
+    requirements = [Requirement(item) for item in _requires_dist()]
+    for extra, names in {
+        "bayesian": {"arviz", "pymc"},
+        "bayesian-jax": {"arviz", "jax", "numpyro", "pymc"},
+    }.items():
+        canonical_names = {canonicalize_name(name) for name in names}
+        selected = [
+            requirement
+            for requirement in requirements
+            if canonicalize_name(requirement.name) in canonical_names
+            and requirement.marker is not None
+            and requirement.marker.evaluate({"extra": extra, "python_version": "3.12"})
+        ]
+        assert {canonicalize_name(item.name) for item in selected} == canonical_names
+        for requirement in selected:
+            assert requirement.marker is not None
+            assert not requirement.marker.evaluate({"extra": extra, "python_version": "3.11"})
+            assert not requirement.marker.evaluate({"extra": extra, "python_version": "3.13"})
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(
@@ -222,7 +286,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         import pathlib
         import sys
 
-        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns", "pymor", "petsc4py"}
+        blocked = {"arch", "arviz", "jax", "pandas", "pymc", "ruptures", "QuantLib", "iminuit", "openturns", "pymor", "petsc4py", "numpyro", "statsmodels"}
         checkout = pathlib.Path({str(ROOT)!r}).resolve()
 
         preloaded = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
@@ -248,6 +312,9 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             'finite_element_options.validation.evidence.reduced_order.pymor_adapter',
             'finite_element_options.validation.evidence.petsc_vi',
             'finite_element_options.validation.evidence.petsc_vi.adapter',
+            'finite_element_options.estimation.bayesian_profile',
+            'finite_element_options.estimation.bayesian_profile.pymc_smoke',
+            'finite_element_options.estimation.bayesian_profile.numpyro_smoke',
         ):
             module = importlib.import_module(module_name)
             module_file = pathlib.Path(module.__file__).resolve()

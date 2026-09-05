@@ -9,6 +9,8 @@ findiff
 jax
 statsmodels
 pymc
+arviz
+numpyro; python_version >= "3.12" and python_version < "3.13"
 pandas
 xarray
 pyarrow

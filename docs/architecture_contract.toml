@@ -162,9 +162,9 @@ extra = "io"
 path = "estimation"
 layer = "optional"
 owner = "finite_element_options"
-treatment = "SciPy/PyMC calibration research adapters; synthetic unless evidence says otherwise"
-public_surface = "optional research/calibration"
-extra = "calibration"
+treatment = "outer estimation layer: deterministic/statsmodels calibration at root plus isolated Bayesian/JAX profile subpackage"
+public_surface = "optional deterministic and Bayesian research profiles"
+extra = "calibration | bayesian | bayesian-jax"
 
 [[module_ownership]]
 path = "jax_greeks.py"

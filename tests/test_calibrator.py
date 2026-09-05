@@ -152,6 +152,31 @@ def test_estimation_source_has_no_private_statsmodels_nonlinls_import() -> None:
     assert offenders == []
 
 
+def test_legacy_pymc_api_names_dedicated_bayesian_extra(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compatibility exports must fail with the isolated-extra remedy."""
+
+    original_import = builtins.__import__
+
+    def blocked_import(
+        name: str,
+        globals: Mapping[str, object] | None = None,
+        locals: Mapping[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> object:
+        if name == "pymc":
+            raise ModuleNotFoundError("blocked for contract test", name="pymc")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    data, _ = _surface()
+    calibrator = PyMCCalibrator(data)
+    with pytest.raises(ModuleNotFoundError, match=r"finite-element-options\[bayesian\]"):
+        calibrator.calibrate(draws=100, chains=2)
+
+
 def test_pymc_calibration_recovers_parameters() -> None:
     data, true_params = _surface()
     calibrator = PyMCCalibrator(data)

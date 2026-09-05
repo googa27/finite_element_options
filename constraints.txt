@@ -1,6 +1,11 @@
 # CI/test dependency constraints for known transitive compatibility gaps.
-# PyMC imports ArviZ during calibration tests; ArviZ 1.x currently lacks the concat API PyMC 5.26 uses.
-arviz>=0.23,<1
+# Issue #137 isolates the verified Python 3.12 Bayesian/JAX profile. Keep its
+# public API surface on the tested minor lines; the hash-pinned external lock
+# fixes all transitive versions for the canonical replay.
+arviz==0.23.*
+pymc==5.26.*
+jax==0.9.*
+numpyro==0.21.*
 # Ruff 0.13+ expands default lint enforcement for the historical source tree;
 # keep CI deterministic until the repository intentionally adopts that rule set.
 ruff>=0.8,<0.13

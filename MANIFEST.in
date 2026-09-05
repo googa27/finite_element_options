@@ -1,0 +1,12 @@
+include AGENTS.md
+include CHANGELOG.md
+include README.md
+include constraints.txt
+include pyproject.toml
+include requirements.txt
+include .github/workflows/ci.yml
+recursive-include docs *.json *.md *.toml *.yaml *.yml
+recursive-include environments *.lock *.md
+recursive-include external_tests *.py
+recursive-include scripts *.py
+recursive-include tests *.md *.py

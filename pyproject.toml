@@ -41,10 +41,18 @@ fd = [
 ]
 jax = ["jax>=0.4,<1"]
 calibration = [
-    "arviz>=0.23,<1",
     "pandas>=2,<3",
-    "pymc>=5,<6",
     "statsmodels>=0.14,<1",
+]
+bayesian = [
+    "arviz==0.23.*; python_version >= '3.12' and python_version < '3.13'",
+    "pymc==5.26.*; python_version >= '3.12' and python_version < '3.13'",
+]
+bayesian-jax = [
+    "arviz==0.23.*; python_version >= '3.12' and python_version < '3.13'",
+    "jax==0.9.*; python_version >= '3.12' and python_version < '3.13'",
+    "numpyro==0.21.*; python_version >= '3.12' and python_version < '3.13'",
+    "pymc==5.26.*; python_version >= '3.12' and python_version < '3.13'",
 ]
 volatility = ["arch>=8,<9"]
 changepoints = ["ruptures>=1.1.10,<2"]
@@ -130,6 +138,7 @@ markers = [
     "uncertainty: optional OpenTURNS uncertainty-decomposition checks",
     "reduction: optional pyMOR reduced-order-model checks",
     "petsc_external: real PETSc/petsc4py external-profile checks",
+    "bayesian_external: isolated Python 3.12+ Bayesian/JAX profile checks",
 ]
 testpaths = ["tests"]
 
