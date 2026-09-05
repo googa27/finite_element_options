@@ -11,8 +11,8 @@
 | Hash-pinned lock | SHA `1f97148d…e1f7f` | present and verified | PASS |
 | PyMC posterior smoke | all 10 checks true | all true | PASS |
 | NumPyro posterior smoke | all 10 checks true | all true | PASS |
-| Cross-engine posterior mean / SD differences | `0.002` / `0.003` | ≤ `0.04` / `0.02` | PASS |
-| Cross-engine predictive mean / SD differences | `0.000194` / `0.00199` | ≤ `0.04` / `0.04` | PASS |
+| Cross-engine posterior mean / SD differences | `0.009` / `0.006` | ≤ `0.04` / `0.02` | PASS |
+| Cross-engine predictive mean / SD differences | `0.00165` / `0.00537` | ≤ `0.04` / `0.04` | PASS |
 | JAX/FEM differentiation | explicitly unsupported | fail closed | PASS |
 | Predecessor continuity | PETSc artifact exact hash | verified | PASS |
 
@@ -21,14 +21,14 @@ This is an environment and diagnostic capability only. It is not market calibrat
 ## Evidence
 
 - Artifact: [`evidence/bayesian_jax_profile_2026-09-05.json`](evidence/bayesian_jax_profile_2026-09-05.json)
-- Artifact SHA-256: `6b553154011591823db58bfbb5a816fe4ab8c55e53fd2b66e2b02fac2bb8b0d5`
+- Artifact SHA-256: `f00e3f73e043dcfcff0a12b0fb2edcac4a1d3418f968e118c8f545d9ff7026e7`
 - Study-input SHA-256: `4271c962f2bc9ab0d4844ac9d27557868e0dcc6eb62a8f4539198352c5d6b6bf`
 - Synthetic-data SHA-256: `1f5474034d123b0ee9fd7e67f3ae9c0e37e7ea8babe61e5090f56e6f83c364b3`
 - Combined lock: [`../environments/bayesian-jax-py312/requirements.lock`](../environments/bayesian-jax-py312/requirements.lock)
 - Combined lock SHA-256: `1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f`
 - PyMC-only lock: [`../environments/bayesian-py312/requirements.lock`](../environments/bayesian-py312/requirements.lock)
 - PyMC-only lock SHA-256: `86ef1f8939370f48573bc9ddf2733536c91c58b2ce8d78e2e727ec0b1628004d`
-- Predecessor PETSc artifact SHA-256: `b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35`
+- Predecessor PETSc artifact SHA-256: `f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368`
 - Privacy: `public_synthetic`
 
 ## Dependency split

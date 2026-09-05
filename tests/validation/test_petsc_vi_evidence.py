@@ -11,7 +11,7 @@ from finite_element_options.validation.evidence.petsc_vi import adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/petsc_vi_assessment_2026-09-05.json"
-EXPECTED_SHA256 = "b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35"
+EXPECTED_SHA256 = "f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368"
 
 
 def test_petsc_version_matching_rejects_mismatched_runtime() -> None:

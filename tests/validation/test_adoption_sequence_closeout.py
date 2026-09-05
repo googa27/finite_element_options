@@ -14,8 +14,8 @@ MATRIX = ROOT / "docs/evidence/adoption_sequence_closeout_2026-09-05.json"
 VISUAL = ROOT / "docs/images/adoption_sequence_closeout_2026-09-05.png"
 REPORT = ROOT / "docs/ADOPTION_SEQUENCE_CLOSEOUT.md"
 SCRIPT = ROOT / "scripts/generate_adoption_sequence_closeout.py"
-EXPECTED_MATRIX_SHA256 = "37470a486e058144d17fe352f92cbc8bcd027cb012ade80313f684422ec0d911"
-EXPECTED_VISUAL_SHA256 = "07b9246fbac85c10f0eb29b3bd1f91343df76cfd616dcda5b198953b6ba4d73e"
+EXPECTED_MATRIX_SHA256 = "b89fd522ca13a782130382f7495db2f237c078451becd83041dc3a6a4fd8f5bf"
+EXPECTED_VISUAL_SHA256 = "2b326ea720c6853c1ffefe95d2e07fd92ca153c0b3ff3c1996892e6b9101671f"
 
 
 def _sha256(path: Path) -> str:

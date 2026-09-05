@@ -15,7 +15,7 @@ from finite_element_options.validation.evidence.serialization import (
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/bayesian_jax_profile_2026-09-05.json"
 LOCK = ROOT / "environments/bayesian-jax-py312/requirements.lock"
-EXPECTED_SHA256 = "6b553154011591823db58bfbb5a816fe4ab8c55e53fd2b66e2b02fac2bb8b0d5"
+EXPECTED_SHA256 = "f00e3f73e043dcfcff0a12b0fb2edcac4a1d3418f968e118c8f545d9ff7026e7"
 EXPECTED_LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
 
 
