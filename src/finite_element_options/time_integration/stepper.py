@@ -18,6 +18,7 @@ from finite_element_options.time_integration.lcp import (
     DiscreteLCP,
     LCPConvergenceError,
     LCPDiagnostics,
+    LCPSolver,
     ProjectedSORSolver,
     ProjectedSORSolverSettings,
 )
@@ -92,6 +93,7 @@ class ThetaScheme(TimeStepper):
         startup_steps: int = 0,
         startup_substeps: int = 1,
         lcp_solver_settings: ProjectedSORSolverSettings | None = None,
+        lcp_solver: LCPSolver | None = None,
     ):
         """Store θ and sparse-direct solver-cache policy.
 
@@ -121,7 +123,9 @@ class ThetaScheme(TimeStepper):
         self.startup_substeps = int(startup_substeps)
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
-        self.lcp_solver = ProjectedSORSolver(lcp_solver_settings)
+        if lcp_solver is not None and lcp_solver_settings is not None:
+            raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
+        self.lcp_solver = lcp_solver or ProjectedSORSolver(lcp_solver_settings)
         self.last_lcp_diagnostics: list[LCPDiagnostics] = []
         self.last_solve_diagnostics = LinearSolveDiagnostics(
             linear_solver=linear_solver,

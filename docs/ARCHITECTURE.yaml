@@ -294,6 +294,30 @@
         "maturity": "experimental"
       },
       {
+        "capability": "external American-option variational-inequality solve adapter",
+        "selected": [
+          "PETSc/petsc4py matched 3.24.6 external profile"
+        ],
+        "alternatives": [
+          "canonical SciPy projected SOR",
+          "custom semismooth Newton",
+          "FEniCSx PETSc assembly"
+        ],
+        "evidence": "Issue #136 triggers on FEM-AMERICAN-LCP-REFERENCE and records real KSP, SNES VI, TS, equal-discretization American-put parity, residual, runtime, memory, iteration, and typed-failure evidence in docs/evidence/petsc_vi_assessment_2026-09-05.json (sha256 cdbbfeea7dc50f562395b9fb7d4c38b32d2748946435b07dcad1b52c58cbcdc6).",
+        "adapter_boundary": "finite_element_options.validation.evidence.petsc_vi imports petsc4py only inside calls; no package extra claims portable installation, and docs/PETSC_VI_ASSESSMENT.md defines the matched external Python 3.12 build.",
+        "custom_code_reason": "Repository code owns scikit-fem/SciPy assembly, canonical LCP diagnostics, ThetaScheme time stepping, parity gates, and evidence; PETSc owns SNESVINEWTONRSLS and nested KSP/PC solves.",
+        "maintenance_evidence": "https://petsc.org/release/ and https://pypi.org/project/petsc4py/",
+        "api_stability_evidence": "https://petsc.org/release/petsc4py/reference/petsc4py.PETSc.SNES.html and https://petsc.org/release/manual/snes/",
+        "license_evidence": "https://petsc.org/release/install/license/ (BSD-2-Clause)",
+        "rollback_or_defer_policy": "Keep SciPy projected SOR canonical; disable the external adapter if matched PETSc/petsc4py, real non-skipped runtime doctor, residual, parity, or typed failure gates fail.",
+        "oracle_or_reference_tests": [
+          "tests/integration/test_petsc_vi_external.py",
+          "tests/validation/test_petsc_vi_evidence.py",
+          "scripts/run_petsc_vi_assessment.py --verify"
+        ],
+        "maturity": "experimental-external-single-rank"
+      },
+      {
         "capability": "FEM verification evidence",
         "selected": [
           "SymPy >=1.12,<2",

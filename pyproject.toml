@@ -129,6 +129,7 @@ markers = [
     "identifiability: optional iminuit profile-likelihood checks",
     "uncertainty: optional OpenTURNS uncertainty-decomposition checks",
     "reduction: optional pyMOR reduced-order-model checks",
+    "petsc_external: real PETSc/petsc4py external-profile checks",
 ]
 testpaths = ["tests"]
 

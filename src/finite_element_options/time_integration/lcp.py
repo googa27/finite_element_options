@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 import scipy.sparse as sps
@@ -61,6 +61,9 @@ class LCPDiagnostics:
     exercise_set: tuple[bool, ...]
     message: str
     solve_time_sec: float
+    solver: str = "projected_sor"
+    backend_reason: str = ""
+    linear_iterations: int = 0
 
     def to_public_dict(self) -> dict[str, object]:
         """Return a JSON-safe diagnostic payload."""
@@ -79,6 +82,9 @@ class LCPDiagnostics:
             "exercise_set": self.exercise_set,
             "message": self.message,
             "solve_time_sec": self.solve_time_sec,
+            "solver": self.solver,
+            "backend_reason": self.backend_reason,
+            "linear_iterations": self.linear_iterations,
         }
 
 
@@ -89,6 +95,21 @@ class LCPResult:
     values: np.ndarray
     success: bool
     diagnostics: LCPDiagnostics
+
+
+class LCPSolver(Protocol):
+    """Structural contract for interchangeable lower-obstacle solvers."""
+
+    def solve(
+        self,
+        problem: DiscreteLCP,
+        *,
+        initial: np.ndarray | None = None,
+        fail_on_nonconvergence: bool = True,
+    ) -> LCPResult:
+        """Solve one discrete LCP under the canonical convention."""
+
+        ...
 
 
 class LCPConvergenceError(RuntimeError):
@@ -118,7 +139,7 @@ class ProjectedSORSolver:
     ) -> LCPResult:
         """Solve ``problem`` and optionally raise on nonconvergence."""
 
-        matrix, rhs, obstacle = _validate_problem(problem)
+        matrix, rhs, obstacle = validate_discrete_lcp(problem)
         started = perf_counter()
         if initial is None:
             values = obstacle.copy()
@@ -231,6 +252,64 @@ def _projected_sor_sweep(
         values[row] = max(obstacle[row], relaxed)
 
 
+def validate_discrete_lcp(
+    problem: DiscreteLCP,
+) -> tuple[sps.csr_matrix, np.ndarray, np.ndarray]:
+    """Validate and canonicalize one lower-obstacle LCP for backend adapters."""
+
+    return _validate_problem(problem)
+
+
+def evaluate_lcp_solution(
+    problem: DiscreteLCP,
+    values: np.ndarray,
+    *,
+    tolerance: float,
+    success: bool,
+    iterations: int,
+    max_update: float,
+    message: str,
+    solve_time_sec: float,
+    solver: str,
+    relaxation: float = 0.0,
+    backend_reason: str = "",
+    linear_iterations: int = 0,
+) -> LCPDiagnostics:
+    """Evaluate one candidate against the canonical lower-obstacle convention."""
+
+    matrix, rhs, obstacle = _validate_problem(problem)
+    candidate = np.asarray(values, dtype=float)
+    if candidate.shape != rhs.shape or not np.all(np.isfinite(candidate)):
+        raise ValueError("candidate LCP values must be finite and match rhs shape")
+    if not np.isfinite(tolerance) or tolerance <= 0.0:
+        raise ValueError("LCP diagnostic tolerance must be finite and positive")
+    residual = np.asarray(matrix @ candidate - rhs, dtype=float)
+    slack = candidate - obstacle
+    primal_violation = np.maximum(obstacle - candidate, 0.0)
+    dual_violation = np.maximum(-residual, 0.0)
+    complementarity = np.abs(slack * residual)
+    projected_residual = np.minimum(slack, residual)
+    exercise_set = tuple(bool(item) for item in candidate <= obstacle + tolerance)
+    return LCPDiagnostics(
+        success=bool(success),
+        iterations=int(iterations),
+        tolerance=float(tolerance),
+        relaxation=float(relaxation),
+        primal_violation_max=_max_or_zero(primal_violation),
+        dual_violation_max=_max_or_zero(dual_violation),
+        complementarity_max=_max_or_zero(complementarity),
+        projected_residual_max=_max_or_zero(np.abs(projected_residual)),
+        max_update=float(max_update),
+        exercise_count=sum(exercise_set),
+        exercise_set=exercise_set,
+        message=message,
+        solve_time_sec=float(solve_time_sec),
+        solver=solver,
+        backend_reason=backend_reason,
+        linear_iterations=int(linear_iterations),
+    )
+
+
 def _diagnostics(
     matrix: sps.csr_matrix,
     rhs: np.ndarray,
@@ -244,27 +323,17 @@ def _diagnostics(
     message: str,
     solve_time_sec: float,
 ) -> LCPDiagnostics:
-    residual = np.asarray(matrix @ values - rhs, dtype=float)
-    slack = values - obstacle
-    primal_violation = np.maximum(obstacle - values, 0.0)
-    dual_violation = np.maximum(-residual, 0.0)
-    complementarity = np.abs(slack * residual)
-    projected_residual = np.minimum(values - obstacle, residual)
-    exercise_set = tuple(bool(item) for item in values <= obstacle + settings.tolerance)
-    return LCPDiagnostics(
+    return evaluate_lcp_solution(
+        DiscreteLCP(matrix=matrix, rhs=rhs, obstacle=obstacle),
+        values,
+        tolerance=settings.tolerance,
         success=success,
-        iterations=int(iterations),
-        tolerance=float(settings.tolerance),
-        relaxation=float(settings.relaxation),
-        primal_violation_max=_max_or_zero(primal_violation),
-        dual_violation_max=_max_or_zero(dual_violation),
-        complementarity_max=_max_or_zero(complementarity),
-        projected_residual_max=_max_or_zero(np.abs(projected_residual)),
-        max_update=float(max_update),
-        exercise_count=sum(exercise_set),
-        exercise_set=exercise_set,
+        iterations=iterations,
+        max_update=max_update,
         message=message,
-        solve_time_sec=float(solve_time_sec),
+        solve_time_sec=solve_time_sec,
+        solver="projected_sor",
+        relaxation=settings.relaxation,
     )
 
 
@@ -289,6 +358,9 @@ __all__ = [
     "LCPConvergenceError",
     "LCPDiagnostics",
     "LCPResult",
+    "LCPSolver",
     "ProjectedSORSolver",
     "ProjectedSORSolverSettings",
+    "evaluate_lcp_solution",
+    "validate_discrete_lcp",
 ]
