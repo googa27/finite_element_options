@@ -8,8 +8,8 @@
 
 - Baseline evidence: [`REGIME_SWITCHING_QUANTO_RESEARCH.md`](REGIME_SWITCHING_QUANTO_RESEARCH.md)
 - Canonical adoption matrix: [`evidence/adoption_sequence_closeout_2026-09-05.json`](evidence/adoption_sequence_closeout_2026-09-05.json)
-- Matrix SHA-256: `9065eaf3c7a89b2d58c647a6e3674c94fd7212a334d2fc2c9146ca442f767866`
-- Visual SHA-256: `b4b343818625221510cf6ed98b9ea8eb7974168736c1dec15d097242cbcfc741`
+- Matrix SHA-256: `37470a486e058144d17fe352f92cbc8bcd027cb012ade80313f684422ec0d911`
+- Visual SHA-256: `07b9246fbac85c10f0eb29b3bd1f91343df76cfd616dcda5b198953b6ba4d73e`
 - Regenerate: `uv run --python 3.11 --extra dev python scripts/generate_adoption_sequence_closeout.py`
 - Privacy: public-synthetic research evidence only
 
@@ -17,7 +17,7 @@
 
 | Step | Issue | Decision | Evidence | Boundary |
 |---:|---:|---|---|---|
-| 1 | [#130](https://github.com/googa27/finite_element_options/issues/130) | **ADOPT** isolated dependency boundaries | 17 named extras; zero optional-stack base leaks | Optional adapters only; base FEM imports stay lightweight. |
+| 1 | [#130](https://github.com/googa27/finite_element_options/issues/130) | **ADOPT** isolated dependency boundaries | 4 research extras isolated; zero optional-stack base leaks | Optional adapters only; base FEM imports stay lightweight. |
 | 2 | [#131](https://github.com/googa27/finite_element_options/issues/131) | **REJECT** challenger promotion | Best candidate was GJR-GARCH/skewed-t | The Markov AR(2) baseline did not converge, so comparison was invalid. |
 | 3 | [#132](https://github.com/googa27/finite_element_options/issues/132) | **RETAIN** QuantLib oracle | 4 cases; maximum QuantLib/analytical error `7.28e-12` | One-regime vanilla and fixed-FX quanto reductions only. |
 | 4 | [#133](https://github.com/googa27/finite_element_options/issues/133) | **RETAIN** iminuit profiles | 1/2 cases identified | The deliberately weak correlation/FX-volatility case fails closed. |

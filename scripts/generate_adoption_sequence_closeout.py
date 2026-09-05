@@ -8,7 +8,6 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
-import tomllib
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,9 +29,9 @@ def _source(path: str) -> dict[str, str]:
 
 
 def build_matrix() -> dict[str, Any]:
-    """Build a bounded decision matrix from the seven canonical evidence artifacts."""
+    """Build a bounded decision matrix from immutable canonical evidence artifacts."""
 
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    boundaries = _load("dependency_boundaries_2026-09-04.json")
     volatility = _load("regime_switching_quanto_volatility_benchmark_2026-09-03.json")
     quantlib = _load("regime_switching_quanto_quantlib_oracle_2026-09-04.json")
     iminuit = _load("regime_switching_quanto_iminuit_identifiability_2026-09-04.json")
@@ -41,20 +40,21 @@ def build_matrix() -> dict[str, Any]:
     petsc = _load("petsc_vi_assessment_2026-09-05.json")
     bayesian = _load("bayesian_jax_profile_2026-09-05.json")
 
-    optional = project["optional-dependencies"]
     holdouts = pymor["holdouts"]
     steps = [
         {
             "step": 1,
             "issue": 130,
             "title": "Dependency boundaries",
-            "decision": "adopt_isolated_optional_boundaries",
+            "decision": boundaries["decision"]["status"],
             "class": "ADOPT",
             "decision_complete": True,
             "route_action": "adopt",
-            "metric": f"{len(optional)} named extras; zero optional-stack base leaks",
+            "metric": (
+                f"{len(boundaries['isolated_profiles'])} research extras isolated; zero base leaks"
+            ),
             "boundary": "Optional adapters only; base FEM imports remain lightweight.",
-            "evidence": [_source("pyproject.toml")],
+            "evidence": [_source("docs/evidence/dependency_boundaries_2026-09-04.json")],
         },
         {
             "step": 2,

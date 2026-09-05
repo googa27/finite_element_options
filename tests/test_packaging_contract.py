@@ -62,6 +62,7 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
         "docs/BAYESIAN_JAX_PROFILE.md",
         "docs/architecture_contract.toml",
         "docs/evidence/adoption_sequence_closeout_2026-09-05.json",
+        "docs/evidence/dependency_boundaries_2026-09-04.json",
         "docs/evidence/bayesian_jax_profile_2026-09-05.json",
         "docs/images/adoption_sequence_closeout_2026-09-05.png",
         "docs/images/fem_capability_pipeline.svg",

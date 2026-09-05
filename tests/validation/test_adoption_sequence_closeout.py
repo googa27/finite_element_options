@@ -14,8 +14,8 @@ MATRIX = ROOT / "docs/evidence/adoption_sequence_closeout_2026-09-05.json"
 VISUAL = ROOT / "docs/images/adoption_sequence_closeout_2026-09-05.png"
 REPORT = ROOT / "docs/ADOPTION_SEQUENCE_CLOSEOUT.md"
 SCRIPT = ROOT / "scripts/generate_adoption_sequence_closeout.py"
-EXPECTED_MATRIX_SHA256 = "9065eaf3c7a89b2d58c647a6e3674c94fd7212a334d2fc2c9146ca442f767866"
-EXPECTED_VISUAL_SHA256 = "b4b343818625221510cf6ed98b9ea8eb7974168736c1dec15d097242cbcfc741"
+EXPECTED_MATRIX_SHA256 = "37470a486e058144d17fe352f92cbc8bcd027cb012ade80313f684422ec0d911"
+EXPECTED_VISUAL_SHA256 = "07b9246fbac85c10f0eb29b3bd1f91343df76cfd616dcda5b198953b6ba4d73e"
 
 
 def _sha256(path: Path) -> str:
@@ -41,6 +41,12 @@ def test_closeout_matrix_is_hash_bound_and_fail_closed() -> None:
     assert [step["step"] for step in payload["steps"]] == list(range(1, 9))
     assert [step["issue"] for step in payload["steps"]] == list(range(130, 138))
     assert sum(step["class"] == "REJECT" for step in payload["steps"]) == 1
+    assert payload["steps"][0]["evidence"] == [
+        {
+            "path": "docs/evidence/dependency_boundaries_2026-09-04.json",
+            "sha256": _sha256(ROOT / "docs/evidence/dependency_boundaries_2026-09-04.json"),
+        }
+    ]
     assert all(step["decision_complete"] for step in payload["steps"])
     assert [step["route_action"] for step in payload["steps"]] == [
         "adopt",

@@ -471,7 +471,8 @@
       "test": "python -m pytest -q",
       "lint": "ruff check . && ruff format --check .",
       "type": "mypy src",
-      "architecture": "python scripts/check_portfolio_architecture.py && pytest tests/architecture -q"
+      "architecture": "python scripts/check_portfolio_architecture.py && pytest tests/architecture -q",
+      "adoption_closeout": "pytest -q tests/validation/test_adoption_sequence_closeout.py"
     },
     "ci_workflow": ".github/workflows/portfolio-architecture.yml",
     "mirror_source": "where pertinent"
@@ -509,9 +510,22 @@
     "checker": "scripts/check_portfolio_architecture.py",
     "required_documents": [
       "AGENTS.md",
+      "docs/ADOPTION_SEQUENCE_CLOSEOUT.md",
       "docs/ARCHITECTURE.yaml",
       "docs/ARCHITECTURE.md"
     ],
+    "adoption_sequence_closeout": {
+      "parent_issue": 128,
+      "baseline_issue": 129,
+      "adoption_issues": "130-137",
+      "report": "docs/ADOPTION_SEQUENCE_CLOSEOUT.md",
+      "matrix": "docs/evidence/adoption_sequence_closeout_2026-09-05.json",
+      "dependency_boundary_snapshot": "docs/evidence/dependency_boundaries_2026-09-04.json",
+      "visual": "docs/images/adoption_sequence_closeout_2026-09-05.png",
+      "generator": "scripts/generate_adoption_sequence_closeout.py",
+      "fitness_test": "tests/validation/test_adoption_sequence_closeout.py",
+      "maturity_policy": "No production or capability-matrix maturity upgrade follows from closeout alone."
+    },
     "exception_policy": "exact scope, reason, owner, risk, accepted ceiling, and refactoring trigger; no-growth ratchet",
     "ai_assisted_development": {
       "output_trust": "untrusted_until_human_review_and_executable_verification",
