@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from importlib.metadata import version
+from importlib.metadata import distribution, version
+import json
 from pathlib import Path
 import platform
 from time import perf_counter
@@ -110,6 +111,7 @@ def run_petsc_vi_assessment(
     selected = config or PetscVIAssessmentConfig()
     predecessor = _predecessor(root)
     trigger = _trigger_evidence()
+    install_mode = _distribution_install_mode()
     doctor = petsc_runtime_doctor()
     space = _space(selected)
     times = np.linspace(0.0, selected.maturity, selected.time_steps + 1)
@@ -138,6 +140,7 @@ def run_petsc_vi_assessment(
     )
     checks = {
         "predecessor_verified": bool(predecessor["verified"]),
+        "installed_wheel": install_mode == "wheel",
         "american_vi_trigger": bool(trigger["triggered"]),
         "runtime_ksp_snes_vi_ts": bool(doctor["passed"]),
         "equal_discretization_parity": parity_passed,
@@ -166,6 +169,7 @@ def run_petsc_vi_assessment(
             "numpy": version("numpy"),
             "scipy": version("scipy"),
             "scikit_fem": version("scikit-fem"),
+            "finite_element_options_install_mode": install_mode,
             "petsc4py": doctor["petsc4py_version"],
             "petsc": doctor["petsc_version"],
             "comm_size": doctor["comm_size"],
@@ -200,14 +204,24 @@ def run_petsc_vi_assessment(
     return normalized
 
 
+def _distribution_install_mode() -> str:
+    metadata = distribution("finite-element-options")
+    direct_url_text = metadata.read_text("direct_url.json")
+    if direct_url_text is None:
+        return "wheel"
+    try:
+        direct_url = json.loads(direct_url_text)
+    except json.JSONDecodeError:
+        return "unknown"
+    if direct_url.get("dir_info", {}).get("editable") is True:
+        return "editable"
+    return "wheel"
+
+
 def _trigger_evidence() -> dict[str, object]:
     capability_id = "FEM-AMERICAN-LCP-REFERENCE"
     record = next(
-        (
-            item
-            for item in DEFAULT_CAPABILITY_RECORDS
-            if item.capability_id == capability_id
-        ),
+        (item for item in DEFAULT_CAPABILITY_RECORDS if item.capability_id == capability_id),
         None,
     )
     triggered = bool(

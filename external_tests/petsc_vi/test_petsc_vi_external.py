@@ -9,7 +9,12 @@ import pytest
 import scipy.sparse as sps
 
 pytestmark = pytest.mark.petsc_external
-pytest.importorskip("petsc4py", reason="follow docs/PETSC_VI_ASSESSMENT.md external profile")
+try:
+    from petsc4py import PETSc as _PETSC_RUNTIME  # noqa: F401
+except ImportError as exc:  # pragma: no cover - this profile must fail, never skip
+    raise RuntimeError(
+        "PETSc external tests require the matched environment in docs/PETSC_VI_ASSESSMENT.md"
+    ) from exc
 
 from finite_element_options.time_integration.lcp import (  # noqa: E402
     DiscreteLCP,

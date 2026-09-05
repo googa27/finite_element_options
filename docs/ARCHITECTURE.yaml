@@ -303,7 +303,7 @@
           "custom semismooth Newton",
           "FEniCSx PETSc assembly"
         ],
-        "evidence": "Issue #136 triggers on FEM-AMERICAN-LCP-REFERENCE and records real KSP, SNES VI, TS, equal-discretization American-put parity, residual, runtime, memory, iteration, and typed-failure evidence in docs/evidence/petsc_vi_assessment_2026-09-05.json (sha256 cdbbfeea7dc50f562395b9fb7d4c38b32d2748946435b07dcad1b52c58cbcdc6).",
+        "evidence": "Issue #136 triggers on FEM-AMERICAN-LCP-REFERENCE and records real KSP, SNES VI, TS, equal-discretization American-put parity, residual, runtime, memory, iteration, and typed-failure evidence in docs/evidence/petsc_vi_assessment_2026-09-05.json (sha256 b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35).",
         "adapter_boundary": "finite_element_options.validation.evidence.petsc_vi imports petsc4py only inside calls; no package extra claims portable installation, and docs/PETSC_VI_ASSESSMENT.md defines the matched external Python 3.12 build.",
         "custom_code_reason": "Repository code owns scikit-fem/SciPy assembly, canonical LCP diagnostics, ThetaScheme time stepping, parity gates, and evidence; PETSc owns SNESVINEWTONRSLS and nested KSP/PC solves.",
         "maintenance_evidence": "https://petsc.org/release/ and https://pypi.org/project/petsc4py/",
@@ -311,7 +311,7 @@
         "license_evidence": "https://petsc.org/release/install/license/ (BSD-2-Clause)",
         "rollback_or_defer_policy": "Keep SciPy projected SOR canonical; disable the external adapter if matched PETSc/petsc4py, real non-skipped runtime doctor, residual, parity, or typed failure gates fail.",
         "oracle_or_reference_tests": [
-          "tests/integration/test_petsc_vi_external.py",
+          "external_tests/petsc_vi/test_petsc_vi_external.py",
           "tests/validation/test_petsc_vi_evidence.py",
           "scripts/run_petsc_vi_assessment.py --verify"
         ],

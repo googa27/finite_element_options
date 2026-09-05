@@ -10,7 +10,7 @@ from finite_element_options.validation.evidence.serialization import file_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/petsc_vi_assessment_2026-09-05.json"
-EXPECTED_SHA256 = "cdbbfeea7dc50f562395b9fb7d4c38b32d2748946435b07dcad1b52c58cbcdc6"
+EXPECTED_SHA256 = "b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35"
 
 
 def test_petsc_external_evidence_is_real_bounded_and_fail_closed() -> None:
@@ -23,6 +23,7 @@ def test_petsc_external_evidence_is_real_bounded_and_fail_closed() -> None:
     assert payload["trigger"]["triggered"] is True
     assert payload["trigger"]["capability_status"] == "validated"
     assert payload["runtime_doctor"]["passed"] is True
+    assert payload["environment"]["finite_element_options_install_mode"] == "wheel"
     assert payload["runtime_doctor"]["ksp"]["converged"] is True
     assert payload["runtime_doctor"]["snes_vi"]["converged"] is True
     assert payload["runtime_doctor"]["ts"]["converged"] is True

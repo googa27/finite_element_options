@@ -10,6 +10,7 @@ The trigger is real: `FEM-AMERICAN-LCP-REFERENCE` already solves a lower-obstacl
 |---|---:|---:|:---:|
 | Existing American-VI trigger | validated lower-obstacle route | present | PASS |
 | Runtime KSP / SNES-VI / TS | all converged | real execution | PASS |
+| Package origin | installed wheel from clean `/tmp` venv | wheel, not editable checkout | PASS |
 | Grid max error vs projected SOR | `4.059721096e-7` | ≤ `5e-7` | PASS |
 | Price error | `7.60093746e-8` | ≤ `2e-7` | PASS |
 | Delta error | `5.251533163e-7` | ≤ `2e-6` | PASS |
@@ -25,7 +26,7 @@ This is **not** a capability-matrix upgrade, a distributed-assembly claim, a PET
 ## Evidence
 
 - Artifact: [`evidence/petsc_vi_assessment_2026-09-05.json`](evidence/petsc_vi_assessment_2026-09-05.json)
-- Artifact SHA-256: `cdbbfeea7dc50f562395b9fb7d4c38b32d2748946435b07dcad1b52c58cbcdc6`
+- Artifact SHA-256: `b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35`
 - Predecessor pyMOR artifact SHA-256: `f30d712e054937ac7e17ea452fc2bcbc0a874087b1ec180caa5e63dc190ea4b7`
 - Runtime: CPython `3.12.3`, PETSc `3.24.6`, petsc4py `3.24.6`, NumPy `2.4.6`, SciPy `1.18.1`, scikit-fem `12.0.2`
 - Privacy: `public_synthetic`
@@ -37,18 +38,24 @@ There is intentionally no `finite-element-options[petsc]` extra. PyPI builds PET
 The verified Linux/Homebrew route was:
 
 ```bash
+REPO="$PWD"
 PETSC_DIR="$(brew --prefix petsc)"       # verified PETSc 3.24.6
-uv venv --python 3.12 .venv-petsc
-uv pip install --python .venv-petsc/bin/python \
+VENV=/tmp/feo-petsc-wheel
+DIST=/tmp/feo-petsc-dist
+uv build --wheel --out-dir "$DIST"
+uv venv --python 3.12 "$VENV"
+uv pip install --python "$VENV/bin/python" \
   'setuptools>=77' wheel 'cython==3.0.12' 'numpy==2.4.6'
 PETSC_DIR="$PETSC_DIR" uv pip install \
-  --python .venv-petsc/bin/python --no-build-isolation 'petsc4py==3.24.6'
-uv pip install --python .venv-petsc/bin/python -e . pytest pytest-cov
+  --python "$VENV/bin/python" --no-build-isolation 'petsc4py==3.24.6'
+uv pip install --python "$VENV/bin/python" "$DIST"/finite_element_options-*.whl pytest pytest-cov
 
-PETSC_DIR="$PETSC_DIR" .venv-petsc/bin/python -m pytest -q \
-  tests/integration/test_petsc_vi_external.py --no-cov
-PETSC_DIR="$PETSC_DIR" .venv-petsc/bin/python \
-  scripts/run_petsc_vi_assessment.py --verify
+cd /tmp
+PYTHONPATH="" PETSC_DIR="$PETSC_DIR" "$VENV/bin/python" -m pytest -q \
+  "$REPO/external_tests/petsc_vi/test_petsc_vi_external.py" --no-cov
+PYTHONPATH="" PETSC_DIR="$PETSC_DIR" "$VENV/bin/python" \
+  "$REPO/scripts/run_petsc_vi_assessment.py" \
+  --output "$REPO/docs/evidence/petsc_vi_assessment_2026-09-05.json" --verify
 ```
 
 `--verify` is an explicit **semantic gate replay**, not a byte-for-byte timing reproduction: it compares stable input/runtime/decision identities and reruns every current gate. Wall-clock fields are expected to change. The committed artifact's exact SHA-256 is separately enforced by `tests/validation/test_petsc_vi_evidence.py` in the ordinary base suite.
@@ -121,10 +128,10 @@ An untimed initial parity solve warms each backend. Three full repeated solves t
 
 | Backend | Samples (s) | Median (s) |
 |---|---|---:|
-| Projected SOR | `16.0440`, `16.2105`, `16.1188` | `16.11884948` |
-| PETSc SNES-VI | `0.3247`, `0.3362`, `0.3381` | `0.3362465003` |
+| Projected SOR | `15.7567`, `15.7174`, `15.7681` | `15.75673886` |
+| PETSc SNES-VI | `0.3300`, `0.3369`, `0.3429` | `0.3369057309` |
 
-PETSc's median solve time was `0.0208605×` the Python projected-SOR reference, or a **47.94× speedup**. This is evidence against the current Python reference on this host—not a comparison with an optimized native active-set implementation or a distributed scaling claim.
+PETSc's median solve time was `0.0213817×` the Python projected-SOR reference, or a **46.77× speedup**. This is evidence against the current Python reference on this host—not a comparison with an optimized native active-set implementation or a distributed scaling claim.
 
 ## Memory
 
