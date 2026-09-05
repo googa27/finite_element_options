@@ -36,8 +36,7 @@ def run_verification_benchmark() -> dict[str, Any]:
         for n in (16, 32, 64)
     )
     time_rows = tuple(
-        run_manufactured_case(ManufacturedRunConfig(elements=256, time_steps=n))
-        for n in (4, 8, 16)
+        run_manufactured_case(ManufacturedRunConfig(elements=256, time_steps=n)) for n in (4, 8, 16)
     )
     perturbations = {
         name: run_manufactured_case(
@@ -45,9 +44,7 @@ def run_verification_benchmark() -> dict[str, Any]:
         ).to_public_dict()
         for name in FAILURE_PERTURBATIONS
     }
-    bs_report = run_public_black_scholes_parity_fixture(
-        refinement_levels=(4, 5, 6), time_steps=80
-    )
+    bs_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 5, 6), time_steps=80)
     bs_rows = [row.to_public_dict() for row in bs_report.convergence_rows]
     arbitrage = _black_scholes_arbitrage_report()
     request = _request_payload()
@@ -66,9 +63,7 @@ def run_verification_benchmark() -> dict[str, Any]:
             "manufactured_h1_h": _orders(h_rows, "h1_error"),
             "manufactured_payoff_h": _orders(h_rows, "payoff_relevant_error"),
             "manufactured_l2_time": _orders(time_rows, "l2_error"),
-            "black_scholes_price_h": _orders_from_public_rows(
-                bs_rows, "absolute_error"
-            ),
+            "black_scholes_price_h": _orders_from_public_rows(bs_rows, "absolute_error"),
         },
     }
     hashes = {
@@ -166,7 +161,7 @@ def _backend_payload() -> dict[str, str]:
     try:
         package_version = metadata.version("finite-element-options")
     except metadata.PackageNotFoundError:
-        package_version = "0.1.0"
+        package_version = "0.2.0"
     return {
         "package": "finite_element_options",
         "package_version": package_version,
@@ -182,12 +177,10 @@ def _mesh_time_payload(
 ) -> dict[str, Any]:
     return {
         "h_refinement": [
-            {"elements": r.elements, "h": r.h, "time_steps": r.time_steps}
-            for r in h_rows
+            {"elements": r.elements, "h": r.h, "time_steps": r.time_steps} for r in h_rows
         ],
         "time_refinement": [
-            {"elements": r.elements, "dt": r.dt, "time_steps": r.time_steps}
-            for r in time_rows
+            {"elements": r.elements, "dt": r.dt, "time_steps": r.time_steps} for r in time_rows
         ],
         "separation_policy": "h-study fixes dt=1/2048; time-study fixes h=1/256",
     }

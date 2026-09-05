@@ -209,6 +209,22 @@ def test_bayesian_split_has_breaking_version_and_migration_evidence() -> None:
     assert "finite-element-options[bayesian]" in changelog
 
 
+def test_source_version_fallbacks_track_distribution_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Source-tree provenance must not drift from the packaged version."""
+
+    import finite_element_options.integrations.haircut_protocol as haircut_protocol
+    import finite_element_options.validation.fem_evidence as fem_evidence
+
+    def missing(_: str) -> str:
+        raise metadata.PackageNotFoundError
+
+    monkeypatch.setattr(haircut_protocol.metadata, "version", missing)
+    assert haircut_protocol._distribution_version() == "0.2.0"
+    assert fem_evidence._backend_payload()["package_version"] == "0.2.0"
+
+
 def test_bayesian_extras_are_bounded_to_python_312() -> None:
     """Bayesian/JAX extras must fail closed outside the evidenced Python minor."""
 
