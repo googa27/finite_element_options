@@ -321,6 +321,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             'finite_element_options.validation.evidence.reduced_order.pymor_adapter',
             'finite_element_options.validation.evidence.petsc_vi',
             'finite_element_options.validation.evidence.petsc_vi.adapter',
+            'finite_element_options.estimation',
             'finite_element_options.estimation.bayesian_profile',
             'finite_element_options.estimation.bayesian_profile.pymc_smoke',
             'finite_element_options.estimation.bayesian_profile.numpyro_smoke',
@@ -328,6 +329,14 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             module = importlib.import_module(module_name)
             module_file = pathlib.Path(module.__file__).resolve()
             assert checkout not in module_file.parents, module_file
+
+        estimation = importlib.import_module('finite_element_options.estimation')
+        try:
+            getattr(estimation, 'PyMCCalibrator')
+        except ModuleNotFoundError as exc:
+            assert 'finite-element-options[calibration,bayesian]' in str(exc)
+        else:
+            raise AssertionError('base wheel exposed PyMCCalibrator without its extras')
 
         leaked = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
         assert leaked == [], leaked

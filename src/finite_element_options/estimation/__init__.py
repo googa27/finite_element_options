@@ -30,6 +30,7 @@ _HESTON_EXPORTS = {
     "sample_statsmodels_calibration",
     "validate_heston_posterior_draws",
 }
+_PYMC_COMPAT_EXPORTS = {"PyMCCalibrator", "sample_pymc_calibration"}
 
 
 def __getattr__(name: str) -> Any:
@@ -38,6 +39,9 @@ def __getattr__(name: str) -> Any:
     if name in _CALIBRATOR_EXPORTS:
         return getattr(import_module(".calibrator", __name__), name)
     if name in _HESTON_EXPORTS:
+        if name in _PYMC_COMPAT_EXPORTS:
+            compatibility = import_module(".bayesian_profile.compat", __name__)
+            compatibility.require_legacy_pymc_dependencies()
         return getattr(import_module(".heston", __name__), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

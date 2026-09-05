@@ -173,7 +173,9 @@ def test_legacy_pymc_api_names_dedicated_bayesian_extra(
     monkeypatch.setattr(builtins, "__import__", blocked_import)
     data, _ = _surface()
     calibrator = PyMCCalibrator(data)
-    with pytest.raises(ModuleNotFoundError, match=r"finite-element-options\[bayesian\]"):
+    with pytest.raises(
+        ModuleNotFoundError, match=r"finite-element-options\[calibration,bayesian\]"
+    ):
         calibrator.calibrate(draws=100, chains=2)
 
 

@@ -358,7 +358,7 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[fd,volatility,changepoints,quantlib,identifiability,uncertainty,reduction]' -c constraints.txt
+          python -m pip install -e '.[build,calibration,fd,io,jax,viz,ui,volatility,changepoints,quantlib,identifiability,uncertainty,reduction]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         # pyMOR 2026.1 requires diskcache 5.6.3 and no patched PyPI release exists.

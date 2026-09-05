@@ -6,6 +6,9 @@ arviz==0.23.*
 pymc==5.26.*
 jax==0.9.*
 numpyro==0.21.*
+# Supply-chain audit floors for Streamlit/UI transitive dependencies.
+cryptography>=50.0.0
+GitPython>=3.1.59
 # Ruff 0.13+ expands default lint enforcement for the historical source tree;
 # keep CI deterministic until the repository intentionally adopts that rule set.
 ruff>=0.8,<0.13

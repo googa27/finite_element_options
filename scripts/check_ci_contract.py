@@ -109,6 +109,13 @@ NEW_OPTIONAL_PROFILES = {
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
 PY312_ONLY_OPTIONAL_PROFILES = {"bayesian", "bayesian-jax"}
 SUPPLY_CHAIN_AUDITED_EXTRAS = (
+    "build",
+    "calibration",
+    "fd",
+    "io",
+    "jax",
+    "viz",
+    "ui",
     "volatility",
     "changepoints",
     "quantlib",

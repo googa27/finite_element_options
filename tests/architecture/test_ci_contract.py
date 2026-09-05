@@ -19,12 +19,7 @@ check_ci_contract_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_ci_contract_module)
 check_ci_contract = check_ci_contract_module.check_ci_contract
 
-AUDITED_OPTIONAL_EXTRAS = (
-    "volatility",
-    "changepoints",
-    "quantlib",
-    "identifiability",
-)
+AUDITED_OPTIONAL_EXTRAS = check_ci_contract_module.SUPPLY_CHAIN_AUDITED_EXTRAS
 
 
 def test_ci_contract_script_passes() -> None:
@@ -139,7 +134,16 @@ def test_ci_contract_rejects_supply_chain_audit_missing_new_optional_extra(
     """The executable CI contract must reject dropped audit coverage."""
 
     text = WORKFLOW.read_text(encoding="utf-8")
-    mutated = text.replace(f",{removed_extra}", "", 1)
+    prefix, supply_chain = text.split("  supply_chain:", 1)
+    escaped = re.escape(removed_extra)
+    mutated_supply_chain = re.sub(
+        rf"(?<=\[){escaped},|,{escaped}(?=,|\])",
+        "",
+        supply_chain,
+        count=1,
+    )
+    assert mutated_supply_chain != supply_chain
+    mutated = prefix + "  supply_chain:" + mutated_supply_chain
     workflow = tmp_path / "ci.yml"
     workflow.write_text(mutated, encoding="utf-8")
     monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)

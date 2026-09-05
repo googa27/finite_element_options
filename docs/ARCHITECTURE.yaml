@@ -342,7 +342,7 @@
           "tests/validation/test_bayesian_jax_profile_evidence.py",
           "tests/test_packaging_contract.py source-distribution and Python-marker gates",
           "scripts/run_bayesian_jax_profile.py --verify",
-          ".github/workflows/ci.yml optional_imports and supply_chain_bayesian Python 3.12 profiles"
+          ".github/workflows/ci.yml optional_imports plus full non-Bayesian and Python 3.12 Bayesian supply-chain profiles"
         ],
         "maturity": "experimental-isolated"
       },

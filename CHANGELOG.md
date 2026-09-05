@@ -6,7 +6,8 @@
   PyMC or ArviZ. Migrate Bayesian calibration and posterior workflows to Python
   3.12 and install `finite-element-options[bayesian]`; add `[bayesian-jax]` only
   when the JAX-native NumPyro route is required. The legacy `PyMCCalibrator` and
-  `sample_pymc_calibration` imports remain as lazy compatibility names.
+  `sample_pymc_calibration` imports remain as lazy compatibility names and require
+  both `[calibration,bayesian]` because their Heston data path also uses pandas.
 
 - Added bounded, weighted pricing calibration primitives with explicit quote
   units, bid-ask/vega/explicit weighting, robust-loss metadata, deterministic
