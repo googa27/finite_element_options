@@ -26,15 +26,15 @@ OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps seeded
 ## Canonical artifact
 
 - Artifact: `docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json`
-- Artifact SHA-256: `07b3423bd7aa778bdd646186e906c88938627dc6dfd9515da26afea30703d8f7`
-- Canonical input hash: `e6a668c45eba43618c21451febd775cffb1d351c08c544826acce705e2160ecb`
+- Artifact SHA-256: `d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f`
+- Canonical input hash: `c334b7d7863b46df4aac3a8550aa52587090e79be7605f3f334fe1c224d9bf5b`
 - CLI: `python scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify`
 
 The CLI verifies predecessor evidence before execution. The baseline model/payoff conventions derive from `docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json` SHA `ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056` (`quanto_positive_correlation`). The iminuit predecessor artifact SHA `6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b` is verified as a sequencing prerequisite but is not used as a parameter source.
 
 The installed-wheel API does not require repository-only `docs/evidence/` resources: `run_openturns_uq_pilot()` with no `root` executes the FEM/UQ study, records predecessor provenance as `declared_digest_only`, and fails the retention decision closed because those files were not independently verified. Canonical evidence generation passes an explicit checkout root, records `file_sha256`, and requires both predecessor digests to match.
 
-Before source or artifact hashing, platform-sensitive floating-point evidence is normalized to **10 significant digits**; discrete provenance and identifiers remain exact. This suppresses harmless Python/NumPy/SciPy/BLAS last-bit drift while retaining substantially tighter precision than any scientific gate in this pilot.
+Before source or artifact hashing, platform-sensitive floating-point evidence is normalized to **10 significant digits**; conservative upper bounds are rounded outward at that precision so serialized calibration records remain self-validating and round-trippable. Discrete provenance and identifiers remain exact. This suppresses harmless Python/NumPy/SciPy/BLAS last-bit drift while retaining substantially tighter precision than any scientific gate in this pilot.
 
 ## Scientific design
 
@@ -83,8 +83,8 @@ Calibration values:
 - domain screen: `11 x 5 x 5 = 275` tensor points over spot `[95,105]`, sigma `[0.17,0.23]`, and correlation weight `[0,1]`;
 - maximum screened fine-FEM/oracle error: `123.1971435` at spot `100`, sigma `0.17`, correlation weight `0`;
 - domain-screen grid hash: `486f1ca0ffa9f29949c34d263a4742f0f50c049f571507f3824d98abc6b71d32`;
-- numerical half-width formula: `max(abs(fine - oracle), abs(coarse - oracle), 1.5*abs(fine - coarse), 1.10*max_domain_grid_error, 1e-12)`;
-- fixed independent numerical half-width: `135.5168578`;
+- numerical half-width formula: `ceil_10sig(max(abs(fine - oracle), abs(coarse - oracle), 1.5*abs(fine - coarse), 1.10*max_domain_grid_error, 1e-12))`;
+- fixed independent numerical half-width: `135.5168579`;
 - analytical-oracle source hash: `447acf13d03969fe0b96a590d989fcf849ea1ce8c0891b36beaa4b12ae29f5a7`;
 - MC calibration: seed `134011`, paths `4096`, steps/year `32`, realized steps `41`;
 - MC calibration price: `5507.52303`;

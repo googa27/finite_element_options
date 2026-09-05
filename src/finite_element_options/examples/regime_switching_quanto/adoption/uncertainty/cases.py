@@ -18,7 +18,11 @@ from finite_element_options.examples.regime_switching_quanto.monte_carlo import 
     price_contract_monte_carlo,
 )
 
-from ..evidence_io import canonical_json_sha256, quantize_json_floats
+from ..evidence_io import (
+    canonical_json_sha256,
+    quantize_json_floats,
+    quantize_upper_bound,
+)
 from .contracts import (
     COMPONENT_NAMES,
     UQCalibration,
@@ -60,10 +64,10 @@ ANALYTICAL_ORACLE_IDENTITY = "core.EuropeanOptionBs fixed-FX one-regime quanto r
 DOMAIN_ERROR_GRID = {"spot_levels": 11, "sigma_levels": 5, "correlation_weight_levels": 5}
 DOMAIN_ERROR_SAFETY_FACTOR = 1.10
 NUMERICAL_HALF_WIDTH_FORMULA = (
-    "max(abs(fine_fem_price - analytical_oracle_price), "
+    "ceil_10sig(max(abs(fine_fem_price - analytical_oracle_price), "
     "abs(coarse_fem_price - analytical_oracle_price), "
     "1.5 * abs(fine_fem_price - coarse_fem_price), "
-    "1.10 * max_domain_grid_fine_oracle_error, 1e-12)"
+    "1.10 * max_domain_grid_fine_oracle_error, 1e-12))"
 )
 
 
@@ -275,12 +279,15 @@ def calibrate_scales() -> UQCalibration:
     fine_oracle_error = abs(fine.mixture_price - oracle_price)
     coarse_oracle_error = abs(coarse.mixture_price - oracle_price)
     domain_error = domain_error_calibration()
-    half_width = max(
-        fine_oracle_error,
-        coarse_oracle_error,
-        1.5 * discrepancy,
-        DOMAIN_ERROR_SAFETY_FACTOR * float(domain_error["max_error"]),
-        1.0e-12,
+    half_width = quantize_upper_bound(
+        max(
+            fine_oracle_error,
+            coarse_oracle_error,
+            1.5 * discrepancy,
+            DOMAIN_ERROR_SAFETY_FACTOR * float(domain_error["max_error"]),
+            1.0e-12,
+        ),
+        significant_digits=10,
     )
     fine_identity = grid_identity(FINE_GRID)
     coarse_identity = grid_identity(COARSE_GRID)

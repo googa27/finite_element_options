@@ -46,6 +46,21 @@ def quantize_json_floats(payload: Any, *, significant_digits: int = 10) -> Any:
     return 0.0 if normalized == 0.0 else normalized
 
 
+def quantize_upper_bound(value: float, *, significant_digits: int = 10) -> float:
+    """Round a non-negative bound outward at the declared significant-digit precision."""
+
+    number = float(value)
+    if not 6 <= significant_digits <= 17:
+        raise ValueError("significant_digits must be within [6, 17]")
+    if not math.isfinite(number) or number < 0.0:
+        raise ValueError("upper bound must be finite and non-negative")
+    if number == 0.0:
+        return 0.0
+    exponent = math.floor(math.log10(number))
+    quantum = 10.0 ** (exponent - significant_digits + 1)
+    return math.ceil(number / quantum) * quantum
+
+
 def file_sha256(path: str | Path) -> str:
     """Return SHA-256 of a file without storing its path."""
 
@@ -85,5 +100,6 @@ __all__ = [
     "canonical_json_sha256",
     "file_sha256",
     "quantize_json_floats",
+    "quantize_upper_bound",
     "write_atomic_json",
 ]

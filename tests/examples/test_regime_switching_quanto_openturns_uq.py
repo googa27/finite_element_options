@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "07b3423bd7aa778bdd646186e906c88938627dc6dfd9515da26afea30703d8f7"
+EXPECTED_ARTIFACT_SHA256 = "d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f"
 _VALID_SHA = "0" * 64
 
 
@@ -146,11 +146,13 @@ def test_float_evidence_normalization_is_cross_platform_stable() -> None:
 
     from finite_element_options.examples.regime_switching_quanto.adoption.evidence_io import (
         quantize_json_floats,
+        quantize_upper_bound,
     )
 
     first = quantize_json_floats({"price": 5679.906373622954})
     second = quantize_json_floats({"price": 5679.906373622943})
     assert first == second == {"price": 5679.906374}
+    assert quantize_upper_bound(1.1 * 123.19714346893579) == pytest.approx(135.5168579)
     with pytest.raises(ValueError, match="significant_digits"):
         quantize_json_floats(first, significant_digits=5)
 
@@ -284,6 +286,8 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     assert calibration.mc_seed == 134_011
     assert calibration.fine_grid_hash != calibration.coarse_grid_hash
     assert calibration.oracle_hash != calibration.fine_grid_hash
+    roundtrip = type(calibration)(**calibration.to_dict())
+    assert roundtrip.to_dict() == calibration.to_dict()
 
 
 def test_numerical_error_envelope_covers_supported_domain_screening_case() -> None:
