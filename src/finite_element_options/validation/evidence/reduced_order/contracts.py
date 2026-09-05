@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from hashlib import sha256
-import json
 from math import isfinite
 from typing import Any
 
 import numpy as np
+
+from finite_element_options.validation.evidence.serialization import canonical_json_sha256
 
 
 SCHEMA_VERSION = "pymor-black-scholes-rom/v1"
@@ -52,6 +52,7 @@ class PymorBlackScholesConfig:
     domain_max: float = 4.0
     greek_bump: float = 0.02
     affine_relative_tolerance: float = 1.0e-11
+    linear_residual_tolerance: float = 1.0e-9
     price_abs_tolerance: float = 1.0e-7
     delta_abs_tolerance: float = 1.0e-6
     gamma_abs_tolerance: float = 1.0e-5
@@ -75,6 +76,7 @@ class PymorBlackScholesConfig:
             self.domain_max,
             self.greek_bump,
             self.affine_relative_tolerance,
+            self.linear_residual_tolerance,
             self.price_abs_tolerance,
             self.delta_abs_tolerance,
             self.gamma_abs_tolerance,
@@ -110,6 +112,12 @@ class PymorBlackScholesConfig:
             raise ValueError("benchmark timing requires at least three repeats and one warmup")
         if self.maximum_ten_x_amortization_solves < 1:
             raise ValueError("maximum_ten_x_amortization_solves must be positive")
+        if self.minimum_online_speedup < 10.0:
+            raise ValueError("minimum_online_speedup cannot weaken the fixed 10x policy")
+        if self.maximum_ten_x_amortization_solves > 1000:
+            raise ValueError(
+                "maximum_ten_x_amortization_solves cannot weaken the fixed 1000-query policy"
+            )
         training = tuple(float(value) for value in self.training_volatilities)
         holdout = tuple(float(value) for value in self.holdout_volatilities)
         if len(training) < 3 or len(holdout) < 3:
@@ -134,8 +142,7 @@ class PymorBlackScholesConfig:
     def input_hash(self) -> str:
         """Return the canonical SHA-256 of the numerical study inputs."""
 
-        encoded = json.dumps(self.to_input_dict(), sort_keys=True, separators=(",", ":"))
-        return sha256(encoded.encode("utf-8")).hexdigest()
+        return canonical_json_sha256(self.to_input_dict())
 
     def to_input_dict(self) -> dict[str, Any]:
         """Return JSON-safe benchmark inputs without environment or timings."""
@@ -171,6 +178,35 @@ class FullOrderSolution:
     final_interior: np.ndarray
     snapshots: np.ndarray | None
     elapsed_seconds: float
+    residual_linf: float
+    linear_solves: int
+    operator_nnz: int
+
+    def __post_init__(self) -> None:
+        """Require an auditable finite residual and non-empty sparse solve."""
+
+        if not isfinite(self.residual_linf) or self.residual_linf < 0.0:
+            raise FloatingPointError("full-order residual must be finite and non-negative")
+        if self.linear_solves < 1 or self.operator_nnz < 1:
+            raise ValueError("full-order diagnostics require solves and nonzeros")
+
+
+@dataclass(frozen=True, slots=True)
+class ReducedOrderSolution:
+    """One reduced solve plus final linear-system diagnostics."""
+
+    outputs: OptionOutputs
+    residual_linf: float
+    linear_solves: int
+    reduced_dimension: int
+
+    def __post_init__(self) -> None:
+        """Require auditable finite reduced diagnostics."""
+
+        if not isfinite(self.residual_linf) or self.residual_linf < 0.0:
+            raise FloatingPointError("reduced residual must be finite and non-negative")
+        if self.linear_solves < 1 or self.reduced_dimension < 1:
+            raise ValueError("reduced diagnostics require solves and dimension")
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,6 +267,7 @@ __all__ = [
     "OptionOutputs",
     "PODProjection",
     "PymorBlackScholesConfig",
+    "ReducedOrderSolution",
     "ROMEnvelopeError",
     "SCHEMA_VERSION",
 ]

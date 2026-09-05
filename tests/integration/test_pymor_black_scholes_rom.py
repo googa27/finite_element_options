@@ -17,6 +17,9 @@ from finite_element_options.validation.evidence.reduced_order import (  # noqa: 
     build_affine_black_scholes_system,
     train_pymor_rom,
 )
+from finite_element_options.validation.evidence.reduced_order.assembly import (  # noqa: E402
+    space_solver,
+)
 
 
 def smoke_config() -> PymorBlackScholesConfig:
@@ -60,6 +63,10 @@ def test_config_is_hash_bound_and_rejects_overlapping_or_invalid_domains() -> No
         replace(config, domain_max=1.0, spot=0.5)
     with pytest.raises(ValueError, match="asymptotic call boundary"):
         replace(config, rate=-0.5, domain_max=1.2, spot=0.5)
+    with pytest.raises(ValueError, match="fixed 10x policy"):
+        replace(config, minimum_online_speedup=9.99)
+    with pytest.raises(ValueError, match="fixed 1000-query policy"):
+        replace(config, maximum_ten_x_amortization_solves=1001)
 
 
 def test_affine_operator_reconstructs_direct_fem_assembly() -> None:
@@ -72,6 +79,15 @@ def test_affine_operator_reconstructs_direct_fem_assembly() -> None:
         denominator = np.linalg.norm(direct.toarray())
         assert numerator / denominator <= config.affine_relative_tolerance
     assert system.boundary_policy == "volatility-independent-asymptotic-call"
+    full_price_weights = np.zeros(system.full_dofs)
+    full_price_weights[system.interior] = system.output_weights[0]
+    full_price_weights[[system.left_boundary, system.right_boundary]] = (
+        system.output_boundary_weights[0]
+    )
+    expected_probe = np.asarray(
+        space_solver(config, 0.2).Vh.probes(np.array([[config.spot]])).toarray()
+    ).ravel()
+    assert full_price_weights == pytest.approx(expected_probe)
 
 
 def test_nonunit_maturity_gamma_oracle_includes_sqrt_time() -> None:
@@ -120,18 +136,27 @@ def test_pymor_pod_galerkin_matches_full_order_price_and_greeks(
     import pymor.core.cache as pymor_cache
 
     cache_disabled = False
+    cache_restored = False
     original_disable = pymor_cache.disable_caching
+    original_enable = pymor_cache.enable_caching
 
     def record_disable() -> None:
         nonlocal cache_disabled
         cache_disabled = True
         original_disable()
 
+    def record_enable() -> None:
+        nonlocal cache_restored
+        cache_restored = True
+        original_enable()
+
     monkeypatch.setattr(pymor_cache, "disable_caching", record_disable)
+    monkeypatch.setattr(pymor_cache, "enable_caching", record_enable)
     config = smoke_config()
     system = build_affine_black_scholes_system(config)
     trained = train_pymor_rom(system, config)
     assert cache_disabled
+    assert cache_restored
     assert trained.library == "pymor"
     assert trained.basis_size <= config.max_basis_size
     assert trained.basis_size > 0
@@ -141,10 +166,14 @@ def test_pymor_pod_galerkin_matches_full_order_price_and_greeks(
     assert not hasattr(trained, "system")
     for volatility in config.holdout_volatilities:
         fom = system.solve_full_order(volatility)
-        rom = trained.solve(volatility)
-        assert abs(rom.price - fom.outputs.price) <= config.price_abs_tolerance
-        assert abs(rom.delta - fom.outputs.delta) <= config.delta_abs_tolerance
-        assert abs(rom.gamma - fom.outputs.gamma) <= config.gamma_abs_tolerance
+        rom = trained.solve_with_diagnostics(volatility)
+        assert fom.residual_linf <= config.linear_residual_tolerance
+        assert rom.residual_linf <= config.linear_residual_tolerance
+        assert fom.linear_solves == rom.linear_solves == config.time_steps
+        assert fom.operator_nnz > 0
+        assert abs(rom.outputs.price - fom.outputs.price) <= config.price_abs_tolerance
+        assert abs(rom.outputs.delta - fom.outputs.delta) <= config.delta_abs_tolerance
+        assert abs(rom.outputs.gamma - fom.outputs.gamma) <= config.gamma_abs_tolerance
 
 
 def test_rom_refuses_outside_envelope_and_names_full_order_fallback() -> None:

@@ -26,6 +26,7 @@ from .contracts import (
     OptionOutputs,
     PODProjection,
     PymorBlackScholesConfig,
+    ReducedOrderSolution,
     ROMEnvelopeError,
 )
 from .pymor_adapter import build_pod_projection
@@ -88,6 +89,7 @@ class AffineBlackScholesSystem:
         return PreparedFullOrderSolver(
             system=self,
             volatility=sigma,
+            lhs_interior=lhs_ii,
             rhs_interior=sps.csc_matrix(rhs_operator[interior][:, interior]),
             lhs_right=np.asarray(lhs[interior, self.right_boundary].toarray()).ravel(),
             rhs_right=np.asarray(rhs_operator[interior, self.right_boundary].toarray()).ravel(),
@@ -109,6 +111,9 @@ class AffineBlackScholesSystem:
             final_interior=solution.final_interior,
             snapshots=solution.snapshots,
             elapsed_seconds=perf_counter() - started,
+            residual_linf=solution.residual_linf,
+            linear_solves=solution.linear_solves,
+            operator_nnz=solution.operator_nnz,
         )
 
     def analytical_outputs(self, volatility: float) -> OptionOutputs:
@@ -145,6 +150,7 @@ class PreparedFullOrderSolver:
 
     system: AffineBlackScholesSystem
     volatility: float
+    lhs_interior: sps.csc_matrix
     rhs_interior: sps.csc_matrix
     lhs_right: np.ndarray
     rhs_right: np.ndarray
@@ -161,15 +167,16 @@ class PreparedFullOrderSolver:
             0.0,
         )
         snapshots: list[np.ndarray] | None = [current.copy()] if capture_snapshots else None
+        last_rhs = np.empty_like(current)
         for index in range(config.time_steps):
             start = index * dt
             end = (index + 1) * dt
-            rhs = (
+            last_rhs = (
                 self.rhs_interior @ current
                 + self.rhs_right * self.system._right_boundary_value(start)
                 - self.lhs_right * self.system._right_boundary_value(end)
             )
-            current = np.asarray(self.factorized.solve(rhs), dtype=float)
+            current = np.asarray(self.factorized.solve(last_rhs), dtype=float)
             if snapshots is not None:
                 snapshots.append(current.copy())
         boundary = np.array([0.0, self.system._right_boundary_value(config.maturity)])
@@ -181,6 +188,9 @@ class PreparedFullOrderSolver:
             final_interior=current,
             snapshots=None if snapshots is None else np.column_stack(snapshots),
             elapsed_seconds=perf_counter() - started,
+            residual_linf=float(np.max(np.abs(self.lhs_interior @ current - last_rhs))),
+            linear_solves=config.time_steps,
+            operator_nnz=int(self.lhs_interior.nnz),
         )
 
 
@@ -227,6 +237,11 @@ class TrainedPymorROM:
     def solve(self, volatility: float) -> OptionOutputs:
         """Solve only reduced systems after checking the training envelope."""
 
+        return self.solve_with_diagnostics(volatility).outputs
+
+    def solve_with_diagnostics(self, volatility: float) -> ReducedOrderSolution:
+        """Solve the reduced system and report its final linear residual."""
+
         sigma = _validated_volatility(self.config, volatility, require_envelope=True)
         config = self.config
         projection = self.projection
@@ -247,18 +262,24 @@ class TrainedPymorROM:
         )
         factorized = sla.lu_factor(lhs)
         current = projection.reduced_initial.copy()
+        last_rhs = np.empty_like(current)
         for index in range(config.time_steps):
             start = index * dt
             end = (index + 1) * dt
-            rhs = (
+            last_rhs = (
                 rhs_operator @ current
                 + rhs_right * _right_boundary_value(config, start)
                 - lhs_right * _right_boundary_value(config, end)
             )
-            current = sla.lu_solve(factorized, rhs)
+            current = sla.lu_solve(factorized, last_rhs)
         boundary = np.array([0.0, _right_boundary_value(config, config.maturity)])
         values = projection.reduced_outputs @ current + self.output_boundary_weights @ boundary
-        return OptionOutputs(*np.asarray(values, dtype=float))
+        return ReducedOrderSolution(
+            outputs=OptionOutputs(*np.asarray(values, dtype=float)),
+            residual_linf=float(np.max(np.abs(lhs @ current - last_rhs))),
+            linear_solves=config.time_steps,
+            reduced_dimension=self.basis_size,
+        )
 
 
 def build_affine_black_scholes_system(
@@ -279,7 +300,7 @@ def build_affine_black_scholes_system(
     left = int(np.argmin(np.abs(coordinates)))
     right = int(np.argmin(np.abs(coordinates - config.domain_max)))
     interior = np.setdiff1d(np.arange(coordinates.size), np.array([left, right]))
-    full_output_weights = build_output_weights(config, coordinates)
+    full_output_weights = build_output_weights(config, low.Vh)
     boundaries = np.array([left, right])
     output_weights = full_output_weights[:, interior]
     output_boundary_weights = full_output_weights[:, boundaries]

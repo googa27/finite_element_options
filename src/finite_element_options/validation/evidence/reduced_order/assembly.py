@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import scipy.sparse as sps  # type: ignore[import-untyped]
+from skfem import Basis
 
 from finite_element_options.core.dynamics_black_scholes import (
     DynamicsParametersBlackScholes,
@@ -43,13 +44,13 @@ def space_solver(config: PymorBlackScholesConfig, volatility: float) -> SpaceSol
 
 def output_weights(
     config: PymorBlackScholesConfig,
-    coordinates: np.ndarray,
+    basis: Basis,
 ) -> np.ndarray:
     """Build centered finite-bump price, Delta, and Gamma functionals."""
 
-    lower = _value_weights(coordinates, config.spot - config.greek_bump)
-    center = _value_weights(coordinates, config.spot)
-    upper = _value_weights(coordinates, config.spot + config.greek_bump)
+    lower = _value_weights(basis, config.spot - config.greek_bump)
+    center = _value_weights(basis, config.spot)
+    upper = _value_weights(basis, config.spot + config.greek_bump)
     delta = (upper - lower) / (2.0 * config.greek_bump)
     gamma = (upper - 2.0 * center + lower) / (config.greek_bump**2)
     return np.vstack((center, delta, gamma))
@@ -89,16 +90,9 @@ def decomposition_hash(
     return canonical_json_sha256(payload)
 
 
-def _value_weights(coordinates: np.ndarray, target: float) -> np.ndarray:
-    nearest = np.argsort(np.abs(coordinates - target))[:3]
-    nearest = nearest[np.argsort(coordinates[nearest])]
-    vandermonde = np.array(
-        [[coordinates[index] ** 2, coordinates[index], 1.0] for index in nearest]
-    )
-    coefficients = np.array([target**2, target, 1.0]) @ np.linalg.inv(vandermonde)
-    weights = np.zeros(coordinates.size, dtype=float)
-    weights[nearest] = coefficients
-    return weights
+def _value_weights(basis: Basis, target: float) -> np.ndarray:
+    probe = basis.probes(np.array([[target]], dtype=float))
+    return np.asarray(probe.toarray(), dtype=float).ravel()
 
 
 __all__ = ["decomposition_hash", "output_weights", "space_solver"]

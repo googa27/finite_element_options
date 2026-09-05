@@ -601,7 +601,7 @@ requires-dist = [
     { name = "pydocstyle", marker = "extra == 'validation'", specifier = ">=6,<7" },
     { name = "pymc", marker = "extra == 'calibration'", specifier = ">=5,<6" },
     { name = "pymc", marker = "extra == 'dev'", specifier = ">=5,<6" },
-    { name = "pymor", marker = "extra == 'reduction'", specifier = ">=2026.1,<2027" },
+    { name = "pymor", marker = "extra == 'reduction'", specifier = "==2026.1.*" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9,<10" },
     { name = "pytest", marker = "extra == 'validation'", specifier = ">=9,<10" },
     { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4,<6" },

@@ -10,10 +10,11 @@ The canonical public-synthetic run passed every promotion gate:
 |---|---:|---:|:---:|
 | Exact affine reconstruction | relative error ≤ `1e-11` | `2.045146659e-16` | PASS |
 | Maximum ROM/FOM price error | ≤ `1e-7` | `2.637945418e-11` | PASS |
-| Maximum ROM/FOM Delta error | ≤ `1e-6` | `1.005010972e-7` | PASS |
-| Maximum ROM/FOM Gamma error | ≤ `1e-5` | `5.579224235e-6` | PASS |
-| Median online speedup | ≥ `10x` | `29.38726099x` | PASS |
-| Queries to amortize offline cost at `10x` | ≤ `1000` | `368` | PASS |
+| Maximum ROM/FOM Delta error | ≤ `1e-6` | `1.005116472e-7` | PASS |
+| Maximum ROM/FOM Gamma error | ≤ `1e-5` | `5.587854562e-6` | PASS |
+| Maximum FOM / ROM linear residual | ≤ `1e-9` | `1.580398139e-14` / `1.421085472e-14` | PASS |
+| Median online speedup | ≥ `10x` | `27.66702804x` | PASS |
+| Queries to amortize offline cost at `10x` | ≤ `1000` | `364` | PASS |
 | Out-of-envelope behavior | refuse and name FOM fallback | both sides refused | PASS |
 | Predecessor continuity | issue #134 artifact hash verified | exact SHA-256 match | PASS |
 
@@ -22,9 +23,9 @@ This does **not** promote reduced-order modeling as a general solver capability.
 ## Reproducible evidence
 
 - Artifact: [`evidence/black_scholes_pymor_rom_2026-09-05.json`](evidence/black_scholes_pymor_rom_2026-09-05.json)
-- Artifact SHA-256: `3de04c89a854b9b8751c9a24be38581c2b7a56ba5a882a212428857fb6de1f55`
-- Study-input SHA-256: `5360959855b4e573914e5e18ead47c3b55cfbc2f419cf62f6939445f29ab17be`
-- Affine-decomposition SHA-256: `c490ffbb04eaf20d24bfe4192a14c9ab591eee03a2ab32cb05dddd98d61ddb6d`
+- Artifact SHA-256: `59b585de5e53acb7310ed291a9e7de771db002db15f3702a69b2bd47c8ab6f9c`
+- Study-input SHA-256: `d56805683c07bd8ef5bd7a54b39c3faca3bcd48fd01366ef0de3f7e7a97a0044`
+- Affine-decomposition SHA-256: `196f8dd754d88268a081555605ff77bdfd3448f4da2feeb48a102d68ec8e2070`
 - Predecessor artifact SHA-256: `d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f`
 - Environment: CPython `3.11.15`, pyMOR `2026.1.0`, NumPy `2.4.6`, SciPy `1.17.1`, scikit-fem `12.0.2`
 - Privacy class: `public_synthetic`
@@ -82,36 +83,38 @@ Repository code owns the domain semantics: FEM assembly, affine decomposition, b
 
 ## Holdout accuracy
 
-Greeks use the same centered output policy in both routes: quadratic FEM interpolation at `S₀-h`, `S₀`, and `S₀+h`, with `h=0.02`, followed by centered Delta and Gamma differences.
+Greeks use the same centered output policy in both routes: scikit-fem `Basis.probes` supplies the actual containing-element P2 interpolation weights at `S₀-h`, `S₀`, and `S₀+h`, with `h=0.02`, followed by centered Delta and Gamma differences.
 
 | `σ` | Price error | Delta error | Gamma error | FOM/oracle price | FOM/oracle Delta | FOM/oracle Gamma |
 |---:|---:|---:|---:|---:|---:|---:|
-| 0.1125 | `7.9904e-12` | `1.0050e-7` | `5.5792e-6` | `3.2847e-5` | `1.3067e-3` | `4.0649e-3` |
-| 0.1375 | `9.4252e-12` | `5.2164e-8` | `9.2778e-7` | `4.2523e-5` | `8.7529e-4` | `4.2233e-3` |
-| 0.1875 | `6.2533e-12` | `5.5658e-8` | `2.8225e-6` | `6.1032e-5` | `5.0760e-4` | `3.9695e-3` |
-| 0.2375 | `1.9086e-12` | `1.3727e-8` | `5.6643e-7` | `7.8966e-5` | `3.6119e-4` | `3.5037e-3` |
-| 0.3125 | `2.0147e-11` | `3.3855e-8` | `1.2018e-6` | `1.0549e-4` | `2.6628e-4` | `2.8813e-3` |
-| 0.3375 | `2.6379e-11` | `1.8383e-8` | `4.7267e-7` | `1.1430e-4` | `2.4892e-4` | `2.7100e-3` |
+| 0.1125 | `7.9904e-12` | `1.0051e-7` | `5.5879e-6` | `3.2847e-5` | `1.3067e-3` | `4.0665e-3` |
+| 0.1375 | `9.4252e-12` | `5.2203e-8` | `9.2923e-7` | `4.2523e-5` | `8.7523e-4` | `4.2242e-3` |
+| 0.1875 | `6.2533e-12` | `5.5670e-8` | `2.8247e-6` | `6.1032e-5` | `5.0756e-4` | `3.9698e-3` |
+| 0.2375 | `1.9086e-12` | `1.3731e-8` | `5.6589e-7` | `7.8966e-5` | `3.6116e-4` | `3.5038e-3` |
+| 0.3125 | `2.0147e-11` | `3.3870e-8` | `1.2013e-6` | `1.0549e-4` | `2.6627e-4` | `2.8813e-3` |
+| 0.3375 | `2.6379e-11` | `1.8394e-8` | `4.6735e-7` | `1.1430e-4` | `2.4891e-4` | `2.7100e-3` |
 
 The analytical Black–Scholes comparison validates that the FOM reference itself remains within the declared discretization tolerances: price `2e-4`, Delta `2e-3`, Gamma `5e-3`.
 
+Each holdout records 160 linear solves, 16,375 FOM interior nonzeros, and final infinity-norm algebraic residuals. Maxima were `1.580398139e-14` (FOM) and `1.421085472e-14` (ROM), both gated against `1e-9`. The repeated timing path builds one parameter-specific FOM factorization and reuses it 13 times after its first solve.
+
 ## Timing and amortization
 
-Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002961883554 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
+Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002908021677 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
 
 | Metric | FOM | ROM |
 |---|---:|---:|
-| Median | `0.109507231 s` | `0.003726350376 s` |
-| MAD | `0.001814300893 s` | `0.0001362378243 s` |
-| 5th percentile | `0.1068775215 s` | `0.003562393016 s` |
-| 95th percentile | `0.1229440019 s` | `0.004427555366 s` |
+| Median | `0.1076977253 s` | `0.003892638022 s` |
+| MAD | `0.001155251404 s` | `0.0000910689123 s` |
+| 5th percentile | `0.1062082868 s` | `0.003765875124 s` |
+| 95th percentile | `0.1156862294 s` | `0.0043918757 s` |
 
-Offline total: `2.657323357 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
+Offline total: `2.50186284 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
 
-- Raw median online speedup: `29.38726099x`.
-- Ordinary break-even: 26 solves.
-- First solve count reaching an amortized `10x`: 368 solves.
-- Amortized speedup at the declared 1,000-query horizon: `17.15426502x`.
+- Raw median online speedup: `27.66702804x`.
+- Ordinary break-even: 25 solves.
+- First solve count reaching an amortized `10x`: 364 solves.
+- Amortized speedup at the declared 1,000-query horizon: `16.84224111x`.
 
 ## Memory evidence
 
@@ -127,7 +130,7 @@ The trained ROM deliberately does not retain the full-order system; the caller k
 
 ## Fail-closed envelope
 
-The trained ROM accepts only `σ ∈ [0.10, 0.35]`. Calls at `0.09` and `0.36` raised `ROMEnvelopeError` with:
+The trained ROM accepts only `σ ∈ [0.10, 0.35]`. Calls at `0.05` and `0.3675` raised `ROMEnvelopeError` with:
 
 ```text
 reason   = parameter_out_of_envelope
@@ -140,7 +143,7 @@ There is no extrapolation flag and no silent clipping.
 
 pyMOR `2026.1.0` declares `diskcache` as a mandatory dependency. PyPI currently provides only `diskcache 5.6.3`, affected by `PYSEC-2026-2447` / `CVE-2025-69872`: unsafe pickle deserialization if an attacker can write a cache directory later read by the process. No patched PyPI release exists.
 
-This adapter does not accept cache paths or persisted cache objects and calls pyMOR's public `disable_caching()` before constructing any pyMOR object. The reduction CI jobs execute that path, and the supply-chain audit carries one exact, commented `--ignore-vuln PYSEC-2026-2447`; all other findings remain blocking. Remove the ignore as soon as a patched DiskCache release is available or pyMOR removes the dependency. The global cache disablement is a deliberate security side effect of invoking this experimental adapter.
+This adapter does not accept cache paths or persisted cache objects. It temporarily sets `PYMOR_CACHE_DISABLE=1`, calls pyMOR's public `disable_caching()` before constructing any pyMOR object, then restores the caller's prior environment policy with `enable_caching()` in `finally`. The reduction CI jobs execute that path, and the supply-chain audit carries one exact, commented `--ignore-vuln PYSEC-2026-2447`; all other findings remain blocking. Remove the ignore as soon as a patched DiskCache release is available or pyMOR removes the dependency.
 
 ## Limitations and next evidence
 
@@ -154,7 +157,7 @@ This adapter does not accept cache paths or persisted cache objects and calls py
 
 | Capability | Selected | Alternatives | Reason |
 |---|---|---|---|
-| POD + Galerkin projection | pyMOR `>=2026.1,<2027` | custom NumPy/SciPy, RBniCSx, neural surrogate | Maintained public POD/operator-projection APIs; avoids hand-written MOR algorithms; clean lazy adapter boundary |
+| POD + Galerkin projection | pyMOR `==2026.1.*` | custom NumPy/SciPy, RBniCSx, neural surrogate | Maintained public POD/operator-projection APIs; avoids hand-written MOR algorithms; clean lazy adapter boundary |
 | FOM assembly/time stepping | existing scikit-fem/SciPy stack | pyMOR discretizer rewrite | Reuses the repository’s validated FEM semantics and keeps FOM authoritative |
 | Evidence and gates | repository contracts | benchmark prose only | Domain-specific tolerances, fallback policy, lineage, and amortization are repository responsibilities |
 

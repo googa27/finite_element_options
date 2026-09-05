@@ -101,7 +101,7 @@ dev = [
     "xarray>=2024.1,<2027",
 ]
 reduction = [
-    "pymor>=2026.1,<2027",
+    "pymor==2026.1.*",
 ]
 
 [project.urls]

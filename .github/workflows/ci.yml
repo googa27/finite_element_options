@@ -329,7 +329,7 @@ jobs:
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         # pyMOR 2026.1 requires diskcache 5.6.3 and no patched PyPI release exists.
-        # The optional adapter disables pyMOR caching before object construction and
+        # The optional adapter scopes cache disablement to object construction and
         # never reads persisted cache data; remove this exact ignore when a fix ships.
         run: python -m pip_audit --progress-spinner=off --skip-editable --ignore-vuln PYSEC-2026-2447
       - name: Generate CycloneDX SBOM

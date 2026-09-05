@@ -19,6 +19,7 @@ from .contracts import (
     OptionOutputs,
     PODProjection,
     PymorBlackScholesConfig,
+    ReducedOrderSolution,
     ROMEnvelopeError,
     SCHEMA_VERSION,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "PreparedFullOrderSolver",
     "PymorBenchmarkReport",
     "PymorBlackScholesConfig",
+    "ReducedOrderSolution",
     "ROMEnvelopeError",
     "SCHEMA_VERSION",
     "TimingSummary",

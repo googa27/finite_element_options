@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from functools import wraps
 from importlib.metadata import version
+import os
 from time import perf_counter
+from typing import Any, Callable
 
 import numpy as np
 import scipy.linalg as sla  # type: ignore[import-untyped]
@@ -15,6 +18,29 @@ from .contracts import PODProjection
 INSTALL_HINT = "install finite-element-options[reduction] to use the pyMOR adapter"
 
 
+def _without_persisted_pymor_cache(function: Callable[..., Any]) -> Callable[..., Any]:
+    @wraps(function)
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        try:
+            from pymor.core import cache as pymor_cache
+        except ImportError as exc:  # pragma: no cover - isolated wheel probe
+            raise ModuleNotFoundError(INSTALL_HINT) from exc
+        previous = os.environ.get("PYMOR_CACHE_DISABLE")
+        os.environ["PYMOR_CACHE_DISABLE"] = "1"
+        pymor_cache.disable_caching()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            if previous is None:
+                os.environ.pop("PYMOR_CACHE_DISABLE", None)
+            else:
+                os.environ["PYMOR_CACHE_DISABLE"] = previous
+            pymor_cache.enable_caching()
+
+    return wrapped
+
+
+@_without_persisted_pymor_cache
 def build_pod_projection(
     *,
     snapshots: np.ndarray,
@@ -36,15 +62,10 @@ def build_pod_projection(
         from pymor.algorithms.pod import pod
         from pymor.algorithms.projection import project
         from pymor.algorithms.to_matrix import to_matrix
-        from pymor.core.cache import disable_caching
         from pymor.operators.numpy import NumpyMatrixOperator
         from pymor.vectorarrays.numpy import NumpyVectorSpace
     except ImportError as exc:  # pragma: no cover - tested in isolated wheel probe
         raise ModuleNotFoundError(INSTALL_HINT) from exc
-
-    # pyMOR 2026.1 requires vulnerable diskcache 5.6.3. This adapter never accepts
-    # persisted caches and disables all pyMOR caching before touching its objects.
-    disable_caching()
 
     snapshot_matrix = np.asarray(snapshots, dtype=float)
     if snapshot_matrix.ndim != 2 or snapshot_matrix.shape[1] < 2:
@@ -68,7 +89,8 @@ def build_pod_projection(
     pod_seconds = perf_counter() - started
     if len(basis) < 1:
         raise RuntimeError("pyMOR POD returned an empty basis")
-    snapshot_energy = float(np.sum(snapshot_matrix * (mass @ snapshot_matrix)))
+    mass_snapshots = mass @ snapshot_matrix
+    snapshot_energy = float(np.einsum("ij,ij->", snapshot_matrix, mass_snapshots))
     captured_energy = float(np.sum(np.asarray(singular_values, dtype=float) ** 2))
     captured_energy_fraction = captured_energy / snapshot_energy
 

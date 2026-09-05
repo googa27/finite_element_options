@@ -75,6 +75,12 @@ def benchmark_online(
         "full_order_policy": "parameter-specific assembly/factorization cached before repeated marches",
         "warmups_per_holdout": config.benchmark_warmups,
         "repeats_per_holdout": config.benchmark_repeats,
+        "full_order_factorization_uses_per_holdout": (
+            config.benchmark_warmups + config.benchmark_repeats
+        ),
+        "full_order_factorization_reuses_per_holdout": (
+            config.benchmark_warmups + config.benchmark_repeats - 1
+        ),
         "full_order_setup": setup.to_dict(),
         "full_order": full.to_dict(),
         "reduced_order": reduced.to_dict(),
@@ -155,7 +161,10 @@ def environment_evidence(trained: TrainedPymorROM) -> dict[str, Any]:
         "scikit_fem": version("scikit-fem"),
         "pymor": trained.projection.library_version,
         "pymor_license": "BSD-2-Clause AND BSD-3-Clause",
-        "pymor_cache_policy": "disabled before adapter object construction; no persisted cache read",
+        "pymor_cache_policy": (
+            "scoped disable during adapter construction; prior environment policy restored; "
+            "no persisted cache read"
+        ),
         "thread_environment": {
             key: os.environ.get(key)
             for key in (

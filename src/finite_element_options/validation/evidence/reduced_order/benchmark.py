@@ -12,6 +12,7 @@ import scipy.sparse.linalg as spla  # type: ignore[import-untyped]
 from finite_element_options.validation.evidence.serialization import (
     canonical_json_sha256,
     file_sha256,
+    json_safe,
     quantize_json_floats,
 )
 
@@ -35,8 +36,9 @@ PREDECESSOR_PATH = "docs/evidence/regime_switching_quanto_openturns_uq_2026-09-0
 PREDECESSOR_SHA256 = "d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f"
 DECISION_POLICY = (
     "Promote pyMOR only as an optional POD/Galerkin adapter when an exact affine "
-    "decomposition, holdout price/Greek tolerances, fail-closed envelope, median "
-    "online speedup >=10x, and finite <=1000-query 10x amortization all pass."
+    "decomposition, <=declared FOM/ROM linear residuals, holdout price/Greek "
+    "tolerances, fail-closed envelope, median online speedup >=10x, and finite "
+    "<=1000-query 10x amortization all pass."
 )
 
 
@@ -50,6 +52,10 @@ class HoldoutEvaluation:
     analytical_oracle: OptionOutputs
     rom_fom_errors: OptionOutputs
     fom_oracle_errors: OptionOutputs
+    full_order_residual_linf: float
+    reduced_order_residual_linf: float
+    full_order_operator_nnz: int
+    linear_solves_per_query: int
     passed: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -62,6 +68,12 @@ class HoldoutEvaluation:
             "analytical_oracle": self.analytical_oracle.to_dict(),
             "rom_fom_errors": self.rom_fom_errors.to_dict(),
             "fom_oracle_errors": self.fom_oracle_errors.to_dict(),
+            "solver_diagnostics": {
+                "full_order_residual_linf": self.full_order_residual_linf,
+                "reduced_order_residual_linf": self.reduced_order_residual_linf,
+                "full_order_operator_nnz": self.full_order_operator_nnz,
+                "linear_solves_per_query": self.linear_solves_per_query,
+            },
             "passed": self.passed,
         }
 
@@ -107,6 +119,11 @@ class PymorBenchmarkReport:
         normalized = quantize_json_floats(payload, significant_digits=10)
         if not isinstance(normalized, dict):  # pragma: no cover - payload is a dict
             raise TypeError("benchmark serialization must return a mapping")
+        raw_input = json_safe(self.config.to_input_dict())
+        if not isinstance(raw_input, dict):  # pragma: no cover - input is a dict
+            raise TypeError("study input serialization must return a mapping")
+        normalized["study_input"] = raw_input
+        normalized["study_input_hash"] = canonical_json_sha256(raw_input)
         return normalized
 
 
@@ -150,6 +167,11 @@ def run_pymor_benchmark(
         "predecessor_verified": bool(predecessor["verified"]),
         "affine_decomposition": bool(decomposition["passed"]),
         "holdout_accuracy": all(row.passed for row in holdouts),
+        "solver_residuals": all(
+            row.full_order_residual_linf <= selected.linear_residual_tolerance
+            and row.reduced_order_residual_linf <= selected.linear_residual_tolerance
+            for row in holdouts
+        ),
         "out_of_envelope_refusal": len(refusals) == 2 and all(row["passed"] for row in refusals),
         "median_online_speedup": timing["median_online_speedup"] >= selected.minimum_online_speedup,
         "ten_x_amortization": timing["ten_x_amortization_solve_count"] is not None
@@ -201,6 +223,7 @@ def verify_pymor_benchmark(
     gates = {
         "fresh_decision_promoted": bool(observed["decision"]["promoted"]),
         "fresh_accuracy_passed": bool(observed["decision"]["checks"]["holdout_accuracy"]),
+        "fresh_residuals_passed": bool(observed["decision"]["checks"]["solver_residuals"]),
         "fresh_speed_passed": bool(observed["decision"]["checks"]["median_online_speedup"]),
         "fresh_amortization_passed": bool(observed["decision"]["checks"]["ten_x_amortization"]),
     }
@@ -233,6 +256,7 @@ def _validate_affine_decomposition(system: AffineBlackScholesSystem) -> dict[str
         "operator_formula": "K(eta)=K_constant+eta*K_variance",
         "boundary_policy": system.boundary_policy,
         "fixed_mesh_and_time_grid": True,
+        "interior_operator_nnz": int(system.assemble_affine_operator(config.volatility_min).nnz),
         "sample_relative_errors": errors,
         "maximum_relative_error": maximum,
         "tolerance": config.affine_relative_tolerance,
@@ -248,8 +272,10 @@ def _evaluate_holdouts(
     config = system.config
     rows: list[HoldoutEvaluation] = []
     for volatility in config.holdout_volatilities:
-        full = system.solve_full_order(volatility).outputs
-        reduced = trained.solve(volatility)
+        full_solution = system.solve_full_order(volatility)
+        reduced_solution = trained.solve_with_diagnostics(volatility)
+        full = full_solution.outputs
+        reduced = reduced_solution.outputs
         oracle = system.analytical_outputs(volatility)
         rom_errors = _absolute_errors(reduced, full)
         oracle_errors = _absolute_errors(full, oracle)
@@ -260,6 +286,8 @@ def _evaluate_holdouts(
             and oracle_errors.price <= config.fom_oracle_price_tolerance
             and oracle_errors.delta <= config.fom_oracle_delta_tolerance
             and oracle_errors.gamma <= config.fom_oracle_gamma_tolerance
+            and full_solution.residual_linf <= config.linear_residual_tolerance
+            and reduced_solution.residual_linf <= config.linear_residual_tolerance
         )
         rows.append(
             HoldoutEvaluation(
@@ -269,6 +297,10 @@ def _evaluate_holdouts(
                 analytical_oracle=oracle,
                 rom_fom_errors=rom_errors,
                 fom_oracle_errors=oracle_errors,
+                full_order_residual_linf=full_solution.residual_linf,
+                reduced_order_residual_linf=reduced_solution.residual_linf,
+                full_order_operator_nnz=full_solution.operator_nnz,
+                linear_solves_per_query=full_solution.linear_solves,
                 passed=passed,
             )
         )
@@ -279,7 +311,10 @@ def _verify_envelope_refusal(
     trained: TrainedPymorROM,
 ) -> tuple[dict[str, Any], ...]:
     config = trained.config
-    values = (config.volatility_min - 0.01, config.volatility_max + 0.01)
+    values = (
+        config.volatility_min / 2.0,
+        config.volatility_max + max(0.01, 0.05 * config.volatility_max),
+    )
     rows: list[dict[str, Any]] = []
     for volatility in values:
         try:
