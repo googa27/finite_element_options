@@ -41,9 +41,9 @@ This is an environment and diagnostic capability only. It is not market calibrat
 | `jax` | existing narrow JAX Greek experiments | JAX |
 | `bayesian-jax` | JAX-native probabilistic inference | PyMC, ArviZ, JAX, NumPyro |
 
-On Python 3.12, PyMC/ArviZ are no longer installed by the `calibration` extra. Temporary `<3.12` compatibility markers preserve the existing Python 3.11 calibration workflow; removal follows the Python 3.11 support retirement rather than silently breaking it. Both Bayesian extras carry `>=3.12,<3.13` dependency markers and their runners fail closed outside Python 3.12. `bayesian-jax` is intentionally distinct from the existing narrow `jax` extra and from scikit-fem/SciPy runtime arrays.
+PyMC/ArviZ are no longer installed by the `calibration` extra. This is an explicit `0.2.0` dependency-interface break: migrate Bayesian workflows to Python 3.12 and `[bayesian]` (or `[bayesian-jax]` when NumPyro is required), as recorded in `CHANGELOG.md`. Both Bayesian extras carry `>=3.12,<3.13` dependency markers and their runners fail closed outside Python 3.12. `bayesian-jax` is intentionally distinct from the existing narrow `jax` extra and from scikit-fem/SciPy runtime arrays.
 
-The root `PyMCCalibrator` and `sample_pymc_calibration` names remain as legacy compatibility APIs; they load PyMC lazily and report the supported remedy for Python 3.11 (`[calibration]`) or Python 3.12 (`[bayesian]`) when it is absent.
+The root `PyMCCalibrator` and `sample_pymc_calibration` names remain as lazy compatibility APIs; when PyMC is absent they report the `0.2` migration to Python 3.12 and `[bayesian]`.
 
 ## Recreate from a clean location
 
@@ -133,6 +133,8 @@ Each engine must provide:
 - posterior mean and standard deviation close to the exact conjugate result;
 - finite posterior predictive samples whose mean and standard deviation are close to the exact predictive result;
 - posterior and predictive mean/standard-deviation parity across engines.
+
+The configuration contract rejects convergence, sampling-budget, posterior, predictive, and cross-engine controls weaker than these evidence-backed defaults; callers may only tighten the adoption gates.
 
 This is deliberately a bounded smoke, not proof that all future hierarchical/PDE calibration models mix well.
 

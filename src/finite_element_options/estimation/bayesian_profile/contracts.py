@@ -97,12 +97,41 @@ class BayesianSmokeConfig:
         )
         if any(not isfinite(value) or value <= 0.0 for value in positive):
             raise ValueError("Bayesian smoke controls must be finite and positive")
-        if self.chains < 2 or self.warmup < 100 or self.draws < 100:
-            raise ValueError("Bayesian diagnostics require >=2 chains and >=100 tune/draws")
-        if not 0.5 < self.target_accept < 1.0:
-            raise ValueError("target_accept must lie in (0.5, 1)")
-        if self.maximum_rhat > 1.1 or self.minimum_bulk_ess < 50.0:
+        if self.chains < 2 or self.warmup < 300 or self.draws < 300:
+            raise ValueError("Bayesian diagnostics require >=2 chains and >=300 tune/draws")
+        if not 0.9 <= self.target_accept < 1.0:
+            raise ValueError("target_accept cannot be below the evidenced 0.9")
+        if self.maximum_rhat > 1.05 or self.minimum_bulk_ess < 100.0:
             raise ValueError("Bayesian convergence controls cannot be weakened")
+        accuracy_limits = (
+            ("posterior_mean_tolerance", self.posterior_mean_tolerance, 0.04),
+            ("posterior_sd_tolerance", self.posterior_sd_tolerance, 0.03),
+            ("predictive_mean_tolerance", self.predictive_mean_tolerance, 0.12),
+            ("predictive_sd_tolerance", self.predictive_sd_tolerance, 0.04),
+            (
+                "maximum_cross_engine_mean_difference",
+                self.maximum_cross_engine_mean_difference,
+                0.04,
+            ),
+            (
+                "maximum_cross_engine_sd_difference",
+                self.maximum_cross_engine_sd_difference,
+                0.02,
+            ),
+            (
+                "maximum_cross_engine_predictive_mean_difference",
+                self.maximum_cross_engine_predictive_mean_difference,
+                0.04,
+            ),
+            (
+                "maximum_cross_engine_predictive_sd_difference",
+                self.maximum_cross_engine_predictive_sd_difference,
+                0.04,
+            ),
+        )
+        weakened = [name for name, value, limit in accuracy_limits if value > limit]
+        if weakened:
+            raise ValueError(f"Bayesian accuracy controls cannot be weakened: {weakened}")
         if any(
             not isinstance(seed, int) or seed < 0
             for seed in (

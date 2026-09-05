@@ -200,27 +200,13 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     assert "petsc" not in {extra.lower() for extra in provides_extras}
 
 
-def test_calibration_preserves_python_311_pymc_compatibility_only() -> None:
-    """The 3.12 split must not silently break the supported 3.11 workflow."""
+def test_bayesian_split_has_breaking_version_and_migration_evidence() -> None:
+    """Removing PyMC from calibration must be an explicit versioned migration."""
 
-    requirements = [Requirement(item) for item in _requires_dist()]
-    for dependency in ("arviz", "pymc"):
-        expected = canonicalize_name(dependency)
-        candidates = [
-            requirement
-            for requirement in requirements
-            if canonicalize_name(requirement.name) == expected and requirement.marker is not None
-        ]
-        assert any(
-            item.marker is not None
-            and item.marker.evaluate({"extra": "calibration", "python_version": "3.11"})
-            for item in candidates
-        )
-        assert not any(
-            item.marker is not None
-            and item.marker.evaluate({"extra": "calibration", "python_version": "3.12"})
-            for item in candidates
-        )
+    assert metadata.version("finite-element-options") == "0.2.0"
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "Breaking in 0.2.0" in changelog
+    assert "finite-element-options[bayesian]" in changelog
 
 
 def test_bayesian_extras_are_bounded_to_python_312() -> None:

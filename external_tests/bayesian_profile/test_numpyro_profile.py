@@ -23,7 +23,7 @@ from finite_element_options.estimation.bayesian_profile import (
 def test_numpyro_posterior_predictive_and_log_density() -> None:
     """JAX-native NumPyro NUTS must recover the identifiable exact posterior."""
 
-    config = BayesianSmokeConfig(draws=200, warmup=200)
+    config = BayesianSmokeConfig(draws=300, warmup=300)
     result = run_numpyro_smoke(config)
     exact = exact_normal_posterior(config)
     assert result["passed"] is True

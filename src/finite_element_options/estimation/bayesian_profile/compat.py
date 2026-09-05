@@ -12,8 +12,8 @@ def require_pymc() -> ModuleType:
         import pymc
     except ModuleNotFoundError as exc:  # pragma: no cover - dependency-absence contract test
         raise ModuleNotFoundError(
-            "install finite-element-options[calibration] on Python 3.11 or "
-            "finite-element-options[bayesian] on Python 3.12"
+            "finite-element-options 0.2 moves PyMC support to Python 3.12; install "
+            "finite-element-options[bayesian] in that environment"
         ) from exc
     return pymc
 

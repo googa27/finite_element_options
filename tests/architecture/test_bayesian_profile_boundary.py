@@ -87,6 +87,26 @@ def test_profile_facade_does_not_traverse_numpy_scipy_or_fem() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "posterior_mean_tolerance",
+        "posterior_sd_tolerance",
+        "predictive_mean_tolerance",
+        "predictive_sd_tolerance",
+        "maximum_cross_engine_mean_difference",
+        "maximum_cross_engine_sd_difference",
+        "maximum_cross_engine_predictive_mean_difference",
+        "maximum_cross_engine_predictive_sd_difference",
+    ],
+)
+def test_bayesian_accuracy_controls_cannot_be_weakened(field: str) -> None:
+    """Custom smoke configs may tighten but never relax adoption tolerances."""
+
+    with pytest.raises(ValueError, match="accuracy controls cannot be weakened"):
+        contracts.BayesianSmokeConfig(**{field: 1e99})  # type: ignore[arg-type]
+
+
 def test_bayesian_profile_runtime_guard_rejects_python_311(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

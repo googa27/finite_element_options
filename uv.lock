@@ -473,7 +473,7 @@ wheels = [
 
 [[package]]
 name = "finite-element-options"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -501,9 +501,7 @@ build = [
     { name = "twine" },
 ]
 calibration = [
-    { name = "arviz", marker = "python_full_version < '3.12'" },
     { name = "pandas" },
-    { name = "pymc", marker = "python_full_version < '3.12'" },
     { name = "statsmodels" },
 ]
 changepoints = [
@@ -584,7 +582,6 @@ requires-dist = [
     { name = "arch", marker = "extra == 'volatility'", specifier = ">=8,<9" },
     { name = "arviz", marker = "python_full_version == '3.12.*' and extra == 'bayesian'", specifier = "==0.23.*" },
     { name = "arviz", marker = "python_full_version == '3.12.*' and extra == 'bayesian-jax'", specifier = "==0.23.*" },
-    { name = "arviz", marker = "python_full_version < '3.12' and extra == 'calibration'", specifier = ">=0.23,<1" },
     { name = "arviz", marker = "extra == 'dev'", specifier = ">=0.23,<1" },
     { name = "build", marker = "extra == 'build'", specifier = ">=1,<2" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1,<2" },
@@ -615,7 +612,6 @@ requires-dist = [
     { name = "pydocstyle", marker = "extra == 'validation'", specifier = ">=6,<7" },
     { name = "pymc", marker = "python_full_version == '3.12.*' and extra == 'bayesian'", specifier = "==5.26.*" },
     { name = "pymc", marker = "python_full_version == '3.12.*' and extra == 'bayesian-jax'", specifier = "==5.26.*" },
-    { name = "pymc", marker = "python_full_version < '3.12' and extra == 'calibration'", specifier = ">=5,<6" },
     { name = "pymc", marker = "extra == 'dev'", specifier = ">=5,<6" },
     { name = "pymor", marker = "extra == 'reduction'", specifier = "==2026.1.*" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9,<10" },

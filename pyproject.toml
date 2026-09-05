@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "finite-element-options"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reusable finite-element option pricing and PDE validation toolkit"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -41,9 +41,7 @@ fd = [
 ]
 jax = ["jax>=0.4,<1"]
 calibration = [
-    "arviz>=0.23,<1; python_version < '3.12'",
     "pandas>=2,<3",
-    "pymc>=5,<6; python_version < '3.12'",
     "statsmodels>=0.14,<1",
 ]
 bayesian = [
