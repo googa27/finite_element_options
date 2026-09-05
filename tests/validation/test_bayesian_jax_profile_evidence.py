@@ -15,8 +15,17 @@ from finite_element_options.validation.evidence.serialization import (
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/bayesian_jax_profile_2026-09-05.json"
 LOCK = ROOT / "environments/bayesian-jax-py312/requirements.lock"
-EXPECTED_SHA256 = "f00e3f73e043dcfcff0a12b0fb2edcac4a1d3418f968e118c8f545d9ff7026e7"
+EXPECTED_SHA256 = "3a4fde478b4f8b43c8eed31774f2086638105249f2029239ab7cb25d49d2c876"
 EXPECTED_LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
+
+
+def test_documented_jax_runtime_is_a_decision_gate() -> None:
+    payload = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+
+    assert payload["numpyro"]["jax_backend"] == "cpu"
+    assert payload["numpyro"]["jax_device_count"] == 2
+    assert payload["decision"]["checks"]["jax_cpu_backend"] is True
+    assert payload["decision"]["checks"]["jax_device_count"] is True
 
 
 def test_bayesian_jax_profile_artifact_is_hash_bound_and_passed() -> None:

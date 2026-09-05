@@ -11,8 +11,9 @@
 | Hash-pinned lock | SHA `1f97148d…e1f7f` | present and verified | PASS |
 | PyMC posterior smoke | all 10 checks true | all true | PASS |
 | NumPyro posterior smoke | all 10 checks true | all true | PASS |
-| Cross-engine posterior mean / SD differences | `0.009` / `0.006` | ≤ `0.04` / `0.02` | PASS |
-| Cross-engine predictive mean / SD differences | `0.00165` / `0.00537` | ≤ `0.04` / `0.04` | PASS |
+| JAX runtime route | CPU / 2 devices | documented and decision-gated | PASS |
+| Cross-engine posterior mean / SD differences | `0.002` / `0.003` | ≤ `0.04` / `0.02` | PASS |
+| Cross-engine predictive mean / SD differences | `0.000194` / `0.00199` | ≤ `0.04` / `0.04` | PASS |
 | JAX/FEM differentiation | explicitly unsupported | fail closed | PASS |
 | Predecessor continuity | PETSc artifact exact hash | verified | PASS |
 
@@ -21,7 +22,7 @@ This is an environment and diagnostic capability only. It is not market calibrat
 ## Evidence
 
 - Artifact: [`evidence/bayesian_jax_profile_2026-09-05.json`](evidence/bayesian_jax_profile_2026-09-05.json)
-- Artifact SHA-256: `f00e3f73e043dcfcff0a12b0fb2edcac4a1d3418f968e118c8f545d9ff7026e7`
+- Artifact SHA-256: `3a4fde478b4f8b43c8eed31774f2086638105249f2029239ab7cb25d49d2c876`
 - Study-input SHA-256: `4271c962f2bc9ab0d4844ac9d27557868e0dcc6eb62a8f4539198352c5d6b6bf`
 - Synthetic-data SHA-256: `1f5474034d123b0ee9fd7e67f3ae9c0e37e7ea8babe61e5090f56e6f83c364b3`
 - Combined lock: [`../environments/bayesian-jax-py312/requirements.lock`](../environments/bayesian-jax-py312/requirements.lock)
@@ -97,7 +98,7 @@ uv export --frozen --extra bayesian --no-dev --no-emit-project \
   --output-file environments/bayesian-py312/requirements.lock
 ```
 
-`--verify` is semantic: it reruns both stochastic engines and checks stable input/lock/package-version/decision identities, Python major/minor, and current diagnostics. Python patch and host platform remain provenance rather than equality gates, so equivalent Python 3.12 CI hosts replay portably. Exact artifact bytes include timing observations and are independently pinned by the ordinary static evidence test.
+`--verify` is semantic: it reruns both stochastic engines and checks stable input/lock/package-version/decision identities, Python major/minor, the documented CPU backend with two host devices, and current diagnostics. Python patch and host platform remain provenance rather than equality gates, so equivalent Python 3.12 CI hosts replay portably. Exact artifact bytes include timing observations and are independently pinned by the ordinary static evidence test.
 
 ## Identifiable synthetic model
 

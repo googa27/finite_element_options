@@ -8,8 +8,8 @@
 
 - Baseline evidence: [`REGIME_SWITCHING_QUANTO_RESEARCH.md`](REGIME_SWITCHING_QUANTO_RESEARCH.md)
 - Canonical adoption matrix: [`evidence/adoption_sequence_closeout_2026-09-05.json`](evidence/adoption_sequence_closeout_2026-09-05.json)
-- Matrix SHA-256: `b89fd522ca13a782130382f7495db2f237c078451becd83041dc3a6a4fd8f5bf`
-- Visual SHA-256: `2b326ea720c6853c1ffefe95d2e07fd92ca153c0b3ff3c1996892e6b9101671f`
+- Matrix SHA-256: `6bd088cd664f2dd6c69fa7a6188d177da031548226c7412bae67156be7914ca0`
+- Visual SHA-256: `8d9b8d8ac59c1da3e8c51e4e78c0ad597ab02a08b989e11affb37d4cd902b360`
 - Regenerate: `uv run --python 3.11 --extra dev python scripts/generate_adoption_sequence_closeout.py`
 - Privacy: public-synthetic research evidence only
 
@@ -24,7 +24,7 @@
 | 5 | [#134](https://github.com/googa27/finite_element_options/issues/134) | **RETAIN** OpenTURNS adapter | Additive Sobol max first/total errors `0.032` / `0.021` | Optional non-production pilot; NumPy remains the baseline. |
 | 6 | [#135](https://github.com/googa27/finite_element_options/issues/135) | **PROMOTE** optional pyMOR adapter | `28.6×` median online speedup; break-even 25 solves; max ROM/FOM price error `2.64e-11` | Full-order FEM remains the fallback outside the verified envelope. |
 | 7 | [#136](https://github.com/googa27/finite_element_options/issues/136) | **PROMOTE EXTERNAL** PETSc VI adapter | Single-rank PETSc/PSOR runtime ratio `0.021`; price gap `7.60e-08` | Single-rank external route only; SciPy projected SOR remains canonical. |
-| 8 | [#137](https://github.com/googa27/finite_element_options/issues/137) | **ADOPT** isolated Bayesian profiles | PyMC/NumPyro R-hat `1.00/1.00`; mean gap `0.009`; zero divergences | Python 3.12 wheel profile; automatic FEM differentiation remains fail-closed. |
+| 8 | [#137](https://github.com/googa27/finite_element_options/issues/137) | **ADOPT** isolated Bayesian profiles | PyMC/NumPyro R-hat `1.00/1.00`; mean gap `0.002`; zero divergences | Python 3.12 wheel profile; automatic FEM differentiation remains fail-closed. |
 
 ## Uncertainty ownership
 
