@@ -383,12 +383,45 @@ wheels = [
 ]
 
 [[package]]
+name = "cyclopts"
+version = "4.24.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "docstring-parser" },
+    { name = "rich" },
+    { name = "rich-rst" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/4e/9d8d4ac3be590cc6553047bfdd53dc6ed776fe3e180ad77559629b0d1c66/cyclopts-4.24.0.tar.gz", hash = "sha256:9bf9da3f09a0ff74aa6621e1644abfdde3b22158b0c09b5aaa6f82bd0c31c526", size = 200331, upload-time = "2026-09-03T13:02:13.314Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/9d/be0c38b950999b73befa59006dacd8f83e5ec5c3d3172b61883beacecc56/cyclopts-4.24.0-py3-none-any.whl", hash = "sha256:b3e44fd301ea498f0b30578d6192a9d9565fd0098e736bd9c8ca0a33f6989659", size = 240417, upload-time = "2026-09-03T13:02:11.96Z" },
+]
+
+[[package]]
 name = "dill"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/81/e1/56027a71e31b02ddc53c7d65b01e68edf64dea2932122fe7746a516f75d5/dill-0.4.1.tar.gz", hash = "sha256:423092df4182177d4d8ba8290c8a5b640c66ab35ec7da59ccfa00f6fa3eea5fa", size = 187315, upload-time = "2026-01-19T02:36:56.85Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/77/dc8c558f7593132cf8fefec57c4f60c83b16941c574ac5f619abb3ae7933/dill-0.4.1-py3-none-any.whl", hash = "sha256:1e1ce33e978ae97fcfcff5638477032b801c46c7c65cf717f95fbc2248f79a9d", size = 120019, upload-time = "2026-01-19T02:36:55.663Z" },
+]
+
+[[package]]
+name = "diskcache"
+version = "5.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
+]
+
+[[package]]
+name = "docstring-parser"
+version = "0.18.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz", hash = "sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015", size = 29341, upload-time = "2026-04-14T04:09:19.867Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/5f/ed01f9a3cdffbd5a008556fc7b2a08ddb1cc6ace7effa7340604b1d16699/docstring_parser-0.18.0-py3-none-any.whl", hash = "sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b", size = 22484, upload-time = "2026-04-14T04:09:18.638Z" },
 ]
 
 [[package]]
@@ -508,6 +541,9 @@ jax = [
 quantlib = [
     { name = "quantlib" },
 ]
+reduction = [
+    { name = "pymor" },
+]
 ui = [
     { name = "matplotlib" },
     { name = "streamlit" },
@@ -565,6 +601,7 @@ requires-dist = [
     { name = "pydocstyle", marker = "extra == 'validation'", specifier = ">=6,<7" },
     { name = "pymc", marker = "extra == 'calibration'", specifier = ">=5,<6" },
     { name = "pymc", marker = "extra == 'dev'", specifier = ">=5,<6" },
+    { name = "pymor", marker = "extra == 'reduction'", specifier = ">=2026.1,<2027" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9,<10" },
     { name = "pytest", marker = "extra == 'validation'", specifier = ">=9,<10" },
     { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4,<6" },
@@ -590,7 +627,7 @@ requires-dist = [
     { name = "xarray", marker = "extra == 'fd'", specifier = ">=2024.1,<2027" },
     { name = "xarray", marker = "extra == 'io'", specifier = ">=2024.1,<2027" },
 ]
-provides-extras = ["fd", "jax", "calibration", "volatility", "changepoints", "quantlib", "identifiability", "uncertainty", "io", "viz", "ui", "validation", "build", "dev"]
+provides-extras = ["fd", "jax", "calibration", "volatility", "changepoints", "quantlib", "identifiability", "uncertainty", "io", "viz", "ui", "validation", "build", "dev", "reduction"]
 
 [[package]]
 name = "fonttools"
@@ -1692,6 +1729,29 @@ wheels = [
 ]
 
 [[package]]
+name = "pymor"
+version = "2026.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cyclopts" },
+    { name = "diskcache" },
+    { name = "matplotlib" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "packaging" },
+    { name = "pillow" },
+    { name = "pygments" },
+    { name = "qtpy" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "threadpoolctl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/79/14af4cb406c8f2ffc7e8b4a355486d2e2bcac80cfe423441e1285910fafd/pymor-2026.1.0.tar.gz", hash = "sha256:bd28df82424763543e12a80000a855b7203cc2ab67f71a217973496317abfdaa", size = 845951, upload-time = "2026-09-04T17:14:35.891Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/61/bbec9e4ebd88b84b070f4e5e76b50b05cf88a76efd7fdf79f37432c98247/pymor-2026.1.0-py3-none-any.whl", hash = "sha256:3e66364f1729d3089beb8653c4629df5318c2b7542c6f7af6e01987f6896c946", size = 646425, upload-time = "2026-09-04T17:14:38.955Z" },
+]
+
+[[package]]
 name = "pyparsing"
 version = "3.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1821,6 +1881,18 @@ wheels = [
 ]
 
 [[package]]
+name = "qtpy"
+version = "2.4.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/01/392eba83c8e47b946b929d7c46e0f04b35e9671f8bb6fc36b6f7945b4de8/qtpy-2.4.3.tar.gz", hash = "sha256:db744f7832e6d3da90568ba6ccbca3ee2b3b4a890c3d6fbbc63142f6e4cdf5bb", size = 66982, upload-time = "2025-02-11T15:09:25.759Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/76/37c0ccd5ab968a6a438f9c623aeecc84c202ab2fabc6a8fd927580c15b5a/QtPy-2.4.3-py3-none-any.whl", hash = "sha256:72095afe13673e017946cc258b8d5da43314197b741ed2890e563cf384b51aa1", size = 95045, upload-time = "2025-02-11T15:09:24.162Z" },
+]
+
+[[package]]
 name = "quantlib"
 version = "1.43"
 source = { registry = "https://pypi.org/simple" }
@@ -1918,6 +1990,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c0/8f/0722ca900cc807c13a6a0c696dacf35430f72e0ec571c4275d2371fca3e9/rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36", size = 230680, upload-time = "2026-04-12T08:24:00.75Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb", size = 310654, upload-time = "2026-04-12T08:24:02.83Z" },
+]
+
+[[package]]
+name = "rich-rst"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pygments" },
+    { name = "rich" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e2/d6/d0b9fafc73b65767200da027acab1db1bdb1048f4fea5ebf659df01c700e/rich_rst-2.1.0.tar.gz", hash = "sha256:f4d117b49697f338769759fa5cacf5197da4888b347b9fda2e50aef5cd8d93bd", size = 302732, upload-time = "2026-07-05T02:59:44.308Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/68/1fc93dd759605b5d00fc98b50200739e41ed32bd22d6ba35ca6c3932371b/rich_rst-2.1.0-py3-none-any.whl", hash = "sha256:7ecd1343ee12c879d0e7ae74c3eb6d263b023d2929c6d114212eb1fd91057255", size = 272987, upload-time = "2026-07-05T02:59:42.792Z" },
 ]
 
 [[package]]

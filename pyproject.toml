@@ -100,6 +100,9 @@ dev = [
     "twine>=5,<7",
     "xarray>=2024.1,<2027",
 ]
+reduction = [
+    "pymor>=2026.1,<2027",
+]
 
 [project.urls]
 Repository = "https://github.com/googa27/finite_element_options"
@@ -125,6 +128,7 @@ markers = [
     "quantlib: optional QuantLib oracle checks",
     "identifiability: optional iminuit profile-likelihood checks",
     "uncertainty: optional OpenTURNS uncertainty-decomposition checks",
+    "reduction: optional pyMOR reduced-order-model checks",
 ]
 testpaths = ["tests"]
 

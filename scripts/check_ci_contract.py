@@ -58,12 +58,14 @@ REQUIRED_SNIPPETS = {
     "optional quantlib profile": "profile: quantlib",
     "optional identifiability profile": "profile: identifiability",
     "optional uncertainty profile": "profile: uncertainty",
+    "optional reduction profile": "profile: reduction",
     "optional dependency matrix field": "DEPENDENCY: ${{ matrix.dependency }}",
     "optional dependency import proof": "importlib.import_module(dependency)",
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
     "QuantLib failure restoration proof": "forced QuantLib failure",
     "iminuit focused installed-wheel tests": "test_regime_switching_quanto_iminuit_identifiability.py",
     "OpenTURNS focused installed-wheel tests": "test_regime_switching_quanto_openturns_uq.py",
+    "pyMOR focused installed-wheel tests": "test_pymor_black_scholes_rom.py",
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {
@@ -77,6 +79,7 @@ OPTIONAL_PROFILE_DEPENDENCIES = {
     "quantlib": "QuantLib",
     "identifiability": "iminuit",
     "uncertainty": "openturns",
+    "reduction": "pymor",
 }
 
 NEW_OPTIONAL_PROFILES = {
@@ -85,6 +88,7 @@ NEW_OPTIONAL_PROFILES = {
     "quantlib",
     "identifiability",
     "uncertainty",
+    "reduction",
 }
 
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
@@ -94,6 +98,7 @@ SUPPLY_CHAIN_AUDITED_EXTRAS = (
     "quantlib",
     "identifiability",
     "uncertainty",
+    "reduction",
 )
 PROJECT_EXTRA_INSTALL = re.compile(r"python -m pip install\b[^\n]*(?:-e\s+)?['\"]?\.\[([^\]\s]+)\]")
 
