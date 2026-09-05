@@ -101,7 +101,7 @@ def distribution_install_mode(name: str) -> str:
 
     direct_url_text = distribution(name).read_text("direct_url.json")
     if direct_url_text is None:
-        return "wheel"
+        return "unknown"
     try:
         direct_url = json.loads(direct_url_text)
     except (json.JSONDecodeError, TypeError):

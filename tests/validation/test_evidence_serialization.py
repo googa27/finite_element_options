@@ -26,7 +26,7 @@ def test_shared_serialization_handles_numpy_bool_and_preserves_compatibility_exp
 @pytest.mark.parametrize(
     ("direct_url", "expected"),
     [
-        (None, "wheel"),
+        (None, "unknown"),
         ('{"url":"file:///tmp/package.whl","archive_info":{}}', "wheel"),
         ('{"url":"file:///tmp/package.tar.gz","archive_info":{}}', "archive"),
         ('{"url":"file:///tmp/source","dir_info":{}}', "directory"),
