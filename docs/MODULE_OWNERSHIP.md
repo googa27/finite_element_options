@@ -24,7 +24,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | Path | Class | Target owner / treatment | Public surface | Extra / dependency profile | Removal or stabilization target |
 |---|---|---|---|---|---|
 | `__init__.py` | core | Lightweight package marker; no broad re-exports | Base import only | core | Keep narrow |
-| `contracts/` | core | Immutable native FEM/portfolio compatibility contracts, formula bundles and capability records | Stable public contracts | core | Stabilize under #48/#49 |
+| `contracts/` | core | Immutable native FEM/portfolio compatibility contracts, formula bundles, capability records, and dependency-light evidence serialization/provenance | Stable public contracts | core | Stabilize under #48/#49 |
 | `core/` | core | Market/model coefficient helpers and analytical references used by FEM tests | Public but FEM-owned | core | Consolidate with typed contracts under #48 |
 | `space/` | core | Domain specs, meshes, finite-element spaces, weak forms, named BCs, solvers and adaptivity | Public FEM mechanics | core | Stabilize under #48; domain/boundary metadata under #39 |
 | `time_integration/` | core | Theta stepping and time-policy mechanics | Public FEM mechanics | core | Stabilize under #48 |
@@ -34,7 +34,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | `integrations/` | validation | Optional Haircut `haircut.solver_backends` plugin boundary; validates QuantProblemSpec records before mesh or assembly work and imports Haircut only when the host runtime supplies it | Entry point only | host-supplied Haircut protocol | Stabilize through #115/#217 backend doctor evidence |
 | `fdsolver.py` | compatibility | Legacy finite-difference reference route retained only for benchmark/parity transition; production FD ownership belongs to `finite_difference_options` | Not re-exported by base package; emits `DeprecationWarning` on `FDSolver`, `solve_system`, and Greek helper use | fd | Removal version `0.3.0`, removal date `2026-10-31`; remove or replace with a benchmark oracle after FD parity and adapter gates (#49/#50) |
 | `data_utils.py` | optional | Experiment snapshot IO and dataframe/xarray utilities | Optional utility | io | Keep outside core import graph |
-| `estimation/` | optional | SciPy/PyMC calibration research adapters; synthetic unless evidence says otherwise | Optional research/calibration | calibration | Production Heston Bayesian route remains #54 |
+| `estimation/` | optional | Outer estimation layer: deterministic/statsmodels calibration at root plus isolated Bayesian/JAX profile subpackage; synthetic unless evidence says otherwise | Optional deterministic and Bayesian research profiles | calibration / bayesian / bayesian-jax | PyMC/ArviZ and NumPyro/JAX remain isolated in `estimation/bayesian_profile/` behind distinct extras |
 | `jax_greeks.py` | optional | Experimental AD Greek route with method/object diagnostics and synchronized JAX timing | Optional research helper | jax | Keep separate from core sensitivity claims; no AD-through-FEM claim until differentiable assembly/solve is validated (#46) |
 | `plots.py` | optional | Plotting helpers | Optional visualization | viz | Keep outside core import graph |
 | `sidebar.py` | app | Streamlit sidebar/application support | UI helper only | ui | Keep outside core import graph |

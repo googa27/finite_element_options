@@ -211,6 +211,7 @@ CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel pac
 - Emit the deterministic FEM evidence bundle: `fem-options validation run-benchmark fem-bs-001 --out /tmp/fem-bs-001-evidence.json`; omit `--out` for JSON stdout.
 - Replay the optional pyMOR promotion gates: `uv run --extra reduction python scripts/run_pymor_rom_benchmark.py --verify`; timing bytes are noisy, so verification compares stable identities and current accuracy/speed/amortization/fallback gates.
 - Replay PETSc only in the matched external environment documented by `docs/PETSC_VI_ASSESSMENT.md`: `PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python scripts/run_petsc_vi_assessment.py --verify`. A skipped petsc4py import is not support evidence.
+- Recreate and replay the Python 3.12 Bayesian wheel profiles from `environments/bayesian-py312/requirements.lock` or `environments/bayesian-jax-py312/requirements.lock` using `--require-hashes`, lock-first installation, and the no-dependencies wheel as documented in `docs/BAYESIAN_JAX_PROFILE.md`; run `scripts/run_bayesian_jax_profile.py --verify` with CPU JAX flags. PyMC/ArviZ do not belong in `calibration`, and NumPyro/JAX evidence does not imply FEM differentiation.
 - Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 
 ## 15. Evidence by change type

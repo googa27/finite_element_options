@@ -267,7 +267,8 @@ The current single `requirements.txt` combines core, FD, UI, calibration, datafr
 | `viz` | Plotting and export | Matplotlib/visualization packages |
 | `jax` | Experimental differentiable FEM/Greeks | JAX profile |
 | `calibration` | Deterministic statistical calibration | pandas/xarray/Statsmodels as required |
-| `bayes` | Bayesian research workflow | PyMC and its stack |
+| `bayesian` | Python 3.12 Bayesian research workflow | PyMC and ArviZ |
+| `bayesian-jax` | Python 3.12 JAX-native Bayesian research workflow | PyMC, ArviZ, JAX and NumPyro |
 | `columnar` | Arrow/Parquet experiment exchange | PyArrow and optional dataframe packages |
 | `fenicsx` | Optional FEniCSx backend | FEniCSx-compatible environment; contract tests run in CI even without runtime |
 | `petsc` | PETSc/petsc4py solver policy | Platform-specific HPC environment; KSP convergence diagnostics fail closed |

@@ -25,6 +25,7 @@ REQUIRED_JOBS = {
     "fenicsx_contract",
     "optional_imports",
     "supply_chain",
+    "supply_chain_bayesian",
 }
 
 REQUIRED_SNIPPETS = {
@@ -60,6 +61,8 @@ REQUIRED_SNIPPETS = {
     "optional identifiability profile": "profile: identifiability",
     "optional uncertainty profile": "profile: uncertainty",
     "optional reduction profile": "profile: reduction",
+    "optional bayesian profile": "profile: bayesian",
+    "optional bayesian-jax profile": "profile: bayesian-jax",
     "optional dependency matrix field": "DEPENDENCY: ${{ matrix.dependency }}",
     "optional dependency import proof": "importlib.import_module(dependency)",
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
@@ -67,12 +70,22 @@ REQUIRED_SNIPPETS = {
     "iminuit focused installed-wheel tests": "test_regime_switching_quanto_iminuit_identifiability.py",
     "OpenTURNS focused installed-wheel tests": "test_regime_switching_quanto_openturns_uq.py",
     "pyMOR focused installed-wheel tests": "test_pymor_black_scholes_rom.py",
+    "PyMC focused installed-wheel tests": "test_pymc_profile.py",
+    "NumPyro focused installed-wheel tests": "test_numpyro_profile.py",
+    "Bayesian/JAX semantic replay": "scripts/run_bayesian_jax_profile.py --verify",
+    "Bayesian/JAX hash-pinned lock install": "environments/bayesian-jax-py312/requirements.lock",
+    "Bayesian hash-pinned lock install": "environments/bayesian-py312/requirements.lock",
+    "Bayesian/JAX require hashes": "--require-hashes",
+    "Bayesian/JAX supply-chain artifact": "supply-chain-bayesian-jax-evidence",
+    "Bayesian/JAX audited release wheel": (
+        "python -m pip install --no-deps dist/finite_element_options-*.whl"
+    ),
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {
     "fd": "findiff",
     "jax": "jax",
-    "calibration": "pymc",
+    "calibration": "statsmodels",
     "viz": "matplotlib",
     "ui": "streamlit",
     "volatility": "arch",
@@ -81,6 +94,8 @@ OPTIONAL_PROFILE_DEPENDENCIES = {
     "identifiability": "iminuit",
     "uncertainty": "openturns",
     "reduction": "pymor",
+    "bayesian": "pymc",
+    "bayesian-jax": "numpyro",
 }
 
 NEW_OPTIONAL_PROFILES = {
@@ -90,10 +105,20 @@ NEW_OPTIONAL_PROFILES = {
     "identifiability",
     "uncertainty",
     "reduction",
+    "bayesian",
+    "bayesian-jax",
 }
 
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
+PY312_ONLY_OPTIONAL_PROFILES = {"bayesian", "bayesian-jax"}
 SUPPLY_CHAIN_AUDITED_EXTRAS = (
+    "build",
+    "calibration",
+    "fd",
+    "io",
+    "jax",
+    "viz",
+    "ui",
     "volatility",
     "changepoints",
     "quantlib",
@@ -184,16 +209,25 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
 
     for profile in NEW_OPTIONAL_PROFILES:
         covered = {
-            entry.get("python-version")
+            str(entry.get("python-version"))
             for entry in entries
             if entry.get("profile") == profile
             and entry.get("dependency") == OPTIONAL_PROFILE_DEPENDENCIES[profile]
+            and entry.get("python-version") is not None
         }
-        missing = sorted(NEW_OPTIONAL_PROFILE_PYTHONS - covered)
+        expected_versions = (
+            {"3.12"} if profile in PY312_ONLY_OPTIONAL_PROFILES else NEW_OPTIONAL_PROFILE_PYTHONS
+        )
+        missing = sorted(expected_versions - covered)
+        unexpected = sorted(covered - expected_versions)
         if missing:
             errors.append(
                 f"optional profile {profile} must cover Python "
-                f"{sorted(NEW_OPTIONAL_PROFILE_PYTHONS)}, missing {missing}"
+                f"{sorted(expected_versions)}, missing {missing}"
+            )
+        if unexpected:
+            errors.append(
+                f"optional profile {profile} has unsupported Python coverage {unexpected}"
             )
 
     steps_block = block.split("steps:", 1)[1] if "steps:" in block else ""
@@ -228,7 +262,22 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
     missing = sorted(set(SUPPLY_CHAIN_AUDITED_EXTRAS) - extras)
     if missing:
         return [f"supply_chain audited install missing optional extras: {missing}"]
-    return []
+
+    bayesian = blocks.get("supply_chain_bayesian", "")
+    errors: list[str] = []
+    if "python-version: '3.12'" not in bayesian:
+        errors.append("supply_chain_bayesian must use Python 3.12")
+    if "environments/bayesian-jax-py312/requirements.lock" not in bayesian:
+        errors.append("supply_chain_bayesian must install the Bayesian/JAX lock")
+    if "--require-hashes" not in bayesian:
+        errors.append("supply_chain_bayesian must enforce lock hashes")
+    if "python -m build --wheel --outdir dist" not in bayesian:
+        errors.append("supply_chain_bayesian must build the release wheel")
+    if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in bayesian:
+        errors.append("supply_chain_bayesian must install the release wheel before its SBOM")
+    if "python -m pip_audit" not in bayesian or "cyclonedx-py environment" not in bayesian:
+        errors.append("supply_chain_bayesian must run vulnerability and SBOM gates")
+    return errors
 
 
 def check_ci_contract() -> list[str]:

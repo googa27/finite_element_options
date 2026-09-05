@@ -151,6 +151,8 @@ Issue #135 adds `validation.evidence.reduced_order` with a lazy local `pymor_ada
 
 Issue #136 adds `validation.evidence.petsc_vi` and a structural `LCPSolver` injection point. The already-validated American lower-obstacle route supplies the PETSc trigger. scikit-fem/SciPy continue to own mesh/operator assembly and the base-wheel projected-SOR reference; the lazy external adapter converts canonical CSR LCPs to single-rank PETSc AIJ and delegates only each solve to SNES `vinewtonrsls` with nested KSP `preonly`/PC `lu`. A matched external Python 3.12 environment executes real KSP, SNES-VI, and TS doctors plus full American-put parity, residual, timing, memory, iteration, and typed-failure gates. SciPy remains canonical, and neither distributed assembly nor a capability-matrix upgrade is claimed.
 
+Issue #137 splits deterministic `calibration` (pandas/statsmodels) from Python 3.12-only `bayesian` (PyMC/ArviZ) and `bayesian-jax` (PyMC/ArviZ/JAX/NumPyro). `estimation.bayesian_profile` contains only lazy smoke calls, bounded JSON evidence, an exact conjugate oracle, and the fail-closed JAX/FEM policy. A hash-pinned requirements lock and clean installed-wheel environment run external tests that fail rather than skip; CI repeats the installed-wheel PyMC and NumPyro profiles on Python 3.12. JAX-native inference does not change core array types or imply differentiation through scikit-fem/SciPy.
+
 ## 6. Dependency direction
 
 ```text

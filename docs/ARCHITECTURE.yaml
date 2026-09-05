@@ -318,6 +318,35 @@
         "maturity": "experimental-external-single-rank"
       },
       {
+        "capability": "isolated Bayesian and JAX-native research profiles",
+        "selected": [
+          "PyMC 5.26.1 + ArviZ 0.23.4",
+          "NumPyro 0.21.0 + JAX/jaxlib 0.9.2",
+          "hash-pinned Python 3.12 PyMC-only and combined requirements locks"
+        ],
+        "alternatives": [
+          "Stan/CmdStanPy",
+          "BlackJAX",
+          "unisolated all-dependencies development environment"
+        ],
+        "evidence": "Issue #137 installs a clean 0.2.0 wheel after hash-verified Python 3.12 PyMC-only or combined locks, binds replay to the package and dependency versions, runs native PyMC and JAX-native NumPyro NUTS over an identifiable exact-posterior synthetic model, gates finite log density, R-hat, ESS, divergences, posterior and predictive mean/SD agreement, cross-engine parity, seeds, lock identity, Python markers, and fail-closed FEM differentiation in docs/evidence/bayesian_jax_profile_2026-09-05.json (sha256 6b553154011591823db58bfbb5a816fe4ab8c55e53fd2b66e2b02fac2bb8b0d5).",
+        "adapter_boundary": "finite_element_options.estimation.bayesian_profile uses dependency-light contracts.evidence_serialization provenance, imports no NumPy/SciPy/scikit-fem through its facade, and lazily imports PyMC, ArviZ, JAX, and NumPyro only inside smoke execution; the JAX-native NumPyro adapter has an AST gate forbidding NumPy, SciPy, scikit-fem, and FEM-layer imports; external tests live outside default collection and selected CI profiles fail rather than skip.",
+        "custom_code_reason": "Repository code owns literal synthetic data, exact conjugate oracle, evidence-capped non-weakenable thresholds, posterior/predictive summaries, lock lineage, and unsupported FEM-gradient policy; maintained PPLs own NUTS and ArviZ owns diagnostics.",
+        "maintenance_evidence": "https://github.com/pymc-devs/pymc/releases and https://github.com/pyro-ppl/numpyro/releases",
+        "api_stability_evidence": "https://www.pymc.io/projects/docs/en/stable/ and https://num.pyro.ai/en/stable/",
+        "license_evidence": "PyMC and ArviZ Apache-2.0; JAX and NumPyro Apache-2.0",
+        "rollback_or_defer_policy": "Version 0.2 makes the PyMC/ArviZ split from calibration explicit and records the Python 3.12 Bayesian migration; reject the isolated Bayesian profiles if Python 3.12 markers, clean lock-first wheel installation, exact lock hashes, finite log density, R-hat/ESS, posterior/predictive mean/SD, cross-engine, or fail-closed JAX/FEM gates fail.",
+        "oracle_or_reference_tests": [
+          "external_tests/bayesian_profile/test_pymc_profile.py",
+          "external_tests/bayesian_profile/test_numpyro_profile.py",
+          "tests/validation/test_bayesian_jax_profile_evidence.py",
+          "tests/test_packaging_contract.py source-distribution and Python-marker gates",
+          "scripts/run_bayesian_jax_profile.py --verify",
+          ".github/workflows/ci.yml optional_imports plus full non-Bayesian and Python 3.12 Bayesian supply-chain profiles"
+        ],
+        "maturity": "experimental-isolated"
+      },
+      {
         "capability": "FEM verification evidence",
         "selected": [
           "SymPy >=1.12,<2",

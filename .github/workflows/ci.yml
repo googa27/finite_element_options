@@ -92,7 +92,7 @@ jobs:
         run: |
           ruff check src tests scripts
           pydocstyle src/finite_element_options
-          mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation scripts/check_ci_contract.py
+          mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation src/finite_element_options/estimation/bayesian_profile scripts/check_ci_contract.py scripts/run_bayesian_jax_profile.py
       - name: Architecture contract
         run: python scripts/check_architecture_contract.py
       - name: CI contract
@@ -157,8 +157,8 @@ jobs:
             imports: finite_element_options.jax_greeks
           - profile: calibration
             python-version: '3.11'
-            dependency: pymc
-            imports: finite_element_options.estimation.calibrator,finite_element_options.estimation.heston
+            dependency: statsmodels
+            imports: finite_element_options.estimation.calibrator,finite_element_options.estimation.heston,finite_element_options.examples.calibration_examples
           - profile: viz
             python-version: '3.11'
             dependency: matplotlib
@@ -215,6 +215,14 @@ jobs:
             python-version: '3.12'
             dependency: pymor
             imports: finite_element_options.validation.evidence.reduced_order,finite_element_options.validation.evidence.reduced_order.pymor_adapter
+          - profile: bayesian
+            python-version: '3.12'
+            dependency: pymc
+            imports: arviz,pymc,finite_element_options.estimation.bayesian_profile
+          - profile: bayesian-jax
+            python-version: '3.12'
+            dependency: numpyro
+            imports: arviz,jax,numpyro,pymc,finite_element_options.estimation.bayesian_profile
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -238,7 +246,17 @@ jobs:
           python -m venv /tmp/feo-${PROFILE}-check
           /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
           WHEEL=$(ls dist/finite_element_options-*.whl)
-          /tmp/feo-${PROFILE}-check/bin/python -m pip install "${WHEEL}[${PROFILE}]"
+          if [ "${PROFILE}" = "bayesian" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/bayesian-py312/requirements.lock"
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
+          elif [ "${PROFILE}" = "bayesian-jax" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/bayesian-jax-py312/requirements.lock"
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
+          else
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install "${WHEEL}[${PROFILE}]"
+          fi
           cd /tmp
           /tmp/feo-${PROFILE}-check/bin/python - <<'PY'
           import importlib
@@ -308,6 +326,21 @@ jobs:
               --no-cov
             /tmp/feo-${PROFILE}-check/bin/python scripts/run_pymor_rom_benchmark.py --verify
           fi
+          if [ "${PROFILE}" = "bayesian" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            cd "${GITHUB_WORKSPACE}"
+            /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              external_tests/bayesian_profile/test_pymc_profile.py --no-cov
+          fi
+          if [ "${PROFILE}" = "bayesian-jax" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            cd "${GITHUB_WORKSPACE}"
+            JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+              /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              external_tests/bayesian_profile/test_numpyro_profile.py --no-cov
+            JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+              /tmp/feo-${PROFILE}-check/bin/python scripts/run_bayesian_jax_profile.py --verify
+          fi
 
   supply_chain:
     name: supply chain audit and SBOM
@@ -325,7 +358,7 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability,uncertainty,reduction]' -c constraints.txt
+          python -m pip install -e '.[build,calibration,fd,io,jax,viz,ui,volatility,changepoints,quantlib,identifiability,uncertainty,reduction]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         # pyMOR 2026.1 requires diskcache 5.6.3 and no patched PyPI release exists.
@@ -339,4 +372,46 @@ jobs:
         with:
           name: supply-chain-evidence
           path: sbom.json
+          if-no-files-found: error
+
+  supply_chain_bayesian:
+    name: Python 3.12 Bayesian/JAX supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Install hash-pinned Bayesian/JAX environment
+        run: |
+          python -m pip install --upgrade pip 'setuptools>=83'
+          python -m pip install build pip-audit cyclonedx-bom -c constraints.txt
+          python -m pip install --require-hashes \
+            -r environments/bayesian-jax-py312/requirements.lock
+      - name: Install release wheel into audited environment
+        run: |
+          python -m build --wheel --outdir dist
+          python -m pip install --no-deps dist/finite_element_options-*.whl
+          cd /tmp
+          python - <<'PY'
+          from importlib.metadata import version
+          from finite_element_options.contracts.evidence_serialization import distribution_install_mode
+
+          assert version("finite-element-options") == "0.2.0"
+          assert distribution_install_mode("finite-element-options") == "wheel"
+          PY
+      - name: Vulnerability audit
+        run: python -m pip_audit --progress-spinner=off
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --of JSON -o sbom-bayesian-jax.json
+      - name: Upload Bayesian/JAX supply-chain artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: supply-chain-bayesian-jax-evidence
+          path: sbom-bayesian-jax.json
           if-no-files-found: error

@@ -15,9 +15,7 @@ from typing import Any
 from finite_element_options.contracts import FEMCapabilityManifest
 
 HAIRCUT_BACKEND_ENTRY_POINT_GROUP = "haircut.solver_backends"
-HAIRCUT_BACKEND_ENTRY_POINT = (
-    "finite_element_options.integrations.haircut_backend:create_backend"
-)
+HAIRCUT_BACKEND_ENTRY_POINT = "finite_element_options.integrations.haircut_backend:create_backend"
 HAIRCUT_PUBLIC_CONTRACT_VERSION = "0.1.0"
 _DISTRIBUTION_NAME = "finite-element-options"
 _ISSUE_REFS = (
@@ -60,9 +58,7 @@ def build_haircut_contracts(
     """Construct Haircut-owned protocol values from an evidenced FEM manifest."""
 
     seam = _load_public_solver_seam()
-    _ensure_contract_major_compatible(
-        seam, manifest.contract_version, expected_contract_version
-    )
+    _ensure_contract_major_compatible(seam, manifest.contract_version, expected_contract_version)
     distribution_version = _distribution_version()
     identity = seam.BackendIdentity(
         distribution_name=_DISTRIBUTION_NAME,
@@ -114,9 +110,7 @@ def build_haircut_contracts(
     )
     errors = capability_manifest.validate()
     if errors:
-        raise RuntimeError(
-            "invalid Haircut FEM capability manifest: " + "; ".join(errors)
-        )
+        raise RuntimeError("invalid Haircut FEM capability manifest: " + "; ".join(errors))
     return HaircutContracts(identity=identity, capability_manifest=capability_manifest)
 
 
@@ -155,4 +149,4 @@ def _distribution_version() -> str:
     try:
         return metadata.version(_DISTRIBUTION_NAME)
     except metadata.PackageNotFoundError:
-        return "0.1.0"
+        return "0.2.0"

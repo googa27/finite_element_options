@@ -13,7 +13,6 @@ import pandas as pd
 
 from finite_element_options.estimation import (
     CalibrationResult,
-    PyMCCalibrator,
     StatsmodelsCalibrator,
     SyntheticSurfaceCalibrator,
 )
@@ -55,6 +54,8 @@ def run_statsmodels_shim() -> CalibrationResult:
 
 def run_pymc() -> CalibrationResult:
     """Estimate synthetic parameters via :class:`PyMCCalibrator`."""
+
+    from finite_element_options.estimation import PyMCCalibrator
 
     data, _ = synthetic_surface()
     calib = PyMCCalibrator(data)

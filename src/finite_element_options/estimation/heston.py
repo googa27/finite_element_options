@@ -1,9 +1,8 @@
 """Calibration adapters and synthetic surface fixtures.
 
 The historical module name is retained for compatibility, but the Heston-named
-calibrator is fail-closed until a real Heston pricing engine is wired in. The
-toy formula used by tests and examples lives behind explicitly synthetic class
-names so it cannot be mistaken for production Heston calibration.
+calibrator is fail-closed until a real Heston pricing engine is wired in.
+Tests use an explicitly synthetic formula, never a production Heston engine.
 """
 
 from __future__ import annotations
@@ -17,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .bayesian_profile.compat import require_pymc
 from .calibrator import (
     CalibrationObjective,
     CalibrationResult,
@@ -671,7 +671,7 @@ class PyMCCalibrator(SyntheticSurfaceCalibrator):
     ) -> CalibrationResult:
         """Return posterior means for the synthetic fixture parameters."""
 
-        import pymc as pm
+        pm = require_pymc()
 
         if tune is None:
             tune = draws
