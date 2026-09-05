@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "0806dd9dcef4663207b101a6c9f8c463598a0907f1cbc42dfeaf70c96d4b2fe3"
+EXPECTED_ARTIFACT_SHA256 = "c7e90d2857b9d43da5ed65221c2b85969aecfb62a2be45966bade82cd336b6a3"
 _VALID_SHA = "0" * 64
 
 
@@ -36,6 +36,11 @@ def _minimal_calibration():
         fine_oracle_abs_error=0.2,
         coarse_oracle_abs_error=0.1,
         oracle_identity="test analytical oracle",
+        domain_error_grid={"points": 8},
+        domain_error_grid_hash=_VALID_SHA,
+        domain_max_fine_oracle_abs_error=0.15,
+        domain_max_error_input={"spot": 100.0, "sigma": 0.2, "correlation_weight": 0.5},
+        domain_error_safety_factor=1.1,
         numerical_half_width=0.2,
         numerical_formula="test",
         mc_price=1.1,
@@ -97,8 +102,8 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
             if isinstance(value, (int, float)):
                 assert np.isfinite(value)
     numerical = next(item for item in artifact["components"] if item["name"] == "numerical")
-    assert numerical["scale_or_range"]["mode"] == "input_dependent_exact_oracle_absolute_error"
-    assert "fine_fem(input)" in numerical["distribution"]
+    assert numerical["scale_or_range"]["mode"] == "independent_domain_screened_oracle_envelope"
+    assert "domain_half_width" in numerical["distribution"]
 
 
 def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
@@ -215,6 +220,15 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     assert np.isfinite(value)
     assert calibration.numerical_half_width >= calibration.fine_oracle_abs_error > 0.0
     assert calibration.numerical_half_width >= calibration.coarse_oracle_abs_error > 0.0
+    assert calibration.numerical_half_width >= (
+        calibration.domain_error_safety_factor * calibration.domain_max_fine_oracle_abs_error
+    )
+    assert calibration.domain_error_grid["spot_levels"] == 11
+    assert calibration.domain_max_error_input == {
+        "spot": 100.0,
+        "sigma": 0.17,
+        "correlation_weight": 0.0,
+    }
     assert calibration.mc_standard_error > 0.0
     assert "analytical_oracle_price" in calibration.numerical_formula
     assert calibration.baseline_price_oracle == pytest.approx(5615.513349, rel=1.0e-7)
@@ -223,8 +237,8 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     assert calibration.oracle_hash != calibration.fine_grid_hash
 
 
-def test_numerical_error_scale_is_input_dependent_across_supported_domain() -> None:
-    """Off-baseline FEM errors use the exact oracle at that input, not the baseline scalar."""
+def test_numerical_error_envelope_covers_supported_domain_screening_case() -> None:
+    """The independent domain envelope covers the reviewer's worst screened input."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import cases
 
@@ -240,8 +254,11 @@ def test_numerical_error_scale_is_input_dependent_across_supported_domain() -> N
     )
     off_baseline_error = abs(fem_price - oracle_price)
 
-    assert off_baseline_error > calibration.numerical_half_width
-    assert perturbed_price - fem_price == pytest.approx(off_baseline_error)
+    assert off_baseline_error == pytest.approx(calibration.domain_max_fine_oracle_abs_error)
+    assert calibration.numerical_half_width >= (
+        calibration.domain_error_safety_factor * off_baseline_error
+    )
+    assert perturbed_price - fem_price == pytest.approx(calibration.numerical_half_width)
 
 
 def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
@@ -257,7 +274,7 @@ def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
     assert mapped["spot"] == 105.0
     assert mapped["sigma"] == pytest.approx(0.17)
     assert mapped["correlation_weight"] == 0.5
-    assert mapped["numerical_coordinate"] == pytest.approx(1.0)
+    assert mapped["numerical_error"] == pytest.approx(0.2)
     assert mapped["monte_carlo_error"] == pytest.approx(2.4)
 
     bad_inputs = (
@@ -291,6 +308,7 @@ def test_calibration_hashes_require_lowercase_sha256_hex() -> None:
         ("coarse_grid_hash", "g" * 64),
         ("baseline_model_hash", "0" * 63),
         ("oracle_hash", "Z" * 64),
+        ("domain_error_grid_hash", "x" * 64),
     ):
         payload = dict(baseline)
         payload[field] = bad_hash
@@ -299,7 +317,7 @@ def test_calibration_hashes_require_lowercase_sha256_hex() -> None:
 
     undercovered = dict(baseline)
     undercovered["numerical_half_width"] = 0.19
-    with pytest.raises(ValueError, match="must cover both baseline analytical-oracle errors"):
+    with pytest.raises(ValueError, match="must cover baseline and domain analytical errors"):
         UQCalibration(**undercovered)
 
 

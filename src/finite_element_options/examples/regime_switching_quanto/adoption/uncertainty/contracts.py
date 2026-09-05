@@ -112,6 +112,11 @@ class UQCalibration:
     fine_oracle_abs_error: float
     coarse_oracle_abs_error: float
     oracle_identity: str
+    domain_error_grid: dict[str, Any]
+    domain_error_grid_hash: str
+    domain_max_fine_oracle_abs_error: float
+    domain_max_error_input: dict[str, float]
+    domain_error_safety_factor: float
     numerical_half_width: float
     numerical_formula: str
     mc_price: float
@@ -137,6 +142,8 @@ class UQCalibration:
             self.baseline_price_oracle,
             self.fine_oracle_abs_error,
             self.coarse_oracle_abs_error,
+            self.domain_max_fine_oracle_abs_error,
+            self.domain_error_safety_factor,
             self.numerical_half_width,
             self.mc_price,
             self.mc_standard_error,
@@ -147,11 +154,17 @@ class UQCalibration:
             raise ValueError("calibration scales must be non-negative/positive as documented")
         if self.fine_oracle_abs_error < 0.0 or self.coarse_oracle_abs_error < 0.0:
             raise ValueError("analytical-oracle absolute errors must be non-negative")
+        if self.domain_max_fine_oracle_abs_error <= 0.0 or self.domain_error_safety_factor < 1.0:
+            raise ValueError(
+                "domain error calibration and safety factor must be positive/conservative"
+            )
         if self.numerical_half_width < max(
-            self.fine_oracle_abs_error, self.coarse_oracle_abs_error
+            self.fine_oracle_abs_error,
+            self.coarse_oracle_abs_error,
+            self.domain_error_safety_factor * self.domain_max_fine_oracle_abs_error,
         ):
             raise ValueError(
-                "numerical half-width must cover both baseline analytical-oracle errors"
+                "numerical half-width must cover baseline and domain analytical errors"
             )
         if not self.oracle_identity:
             raise ValueError("oracle_identity must be non-empty")
@@ -161,6 +174,7 @@ class UQCalibration:
             self.baseline_model_hash,
             self.payoff_hash,
             self.oracle_hash,
+            self.domain_error_grid_hash,
         ):
             if not _is_lower_sha256(value):
                 raise ValueError("calibration hashes must be lowercase SHA-256 hex strings")

@@ -20,8 +20,6 @@ from .cases import (
     canonical_study_input,
     canonical_uq_input_hash,
     evaluate_response,
-    numpy_direct_sample,
-    summarize_prices,
 )
 from .contracts import (
     COMPONENT_NAMES,
@@ -37,6 +35,7 @@ from .openturns_adapter import (
     saltelli_indices,
     sample_normalized,
 )
+from .sampling import numpy_direct_sample, summarize_prices
 
 DECISION_POLICY = (
     "Retain OpenTURNS only as an optional uncertainty adapter when real FEM propagation, "
@@ -285,6 +284,7 @@ def _all_source_hashes_present(components: tuple[Any, ...], calibration: Any) ->
             calibration.baseline_model_hash,
             calibration.payoff_hash,
             calibration.oracle_hash,
+            calibration.domain_error_grid_hash,
         ]
     )
     return all(_is_lower_sha256_string(value) for value in hashes)

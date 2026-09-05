@@ -21,7 +21,6 @@ from finite_element_options.examples.regime_switching_quanto.monte_carlo import 
 from ..evidence_io import canonical_json_sha256
 from .contracts import (
     COMPONENT_NAMES,
-    QUANTILE_LEVELS,
     UQCalibration,
     UQPilotConfig,
     UncertaintyComponent,
@@ -58,13 +57,13 @@ MC_CALIBRATION_SEED = 134_011
 MC_CALIBRATION_PATHS = 4096
 MC_CALIBRATION_STEPS_PER_YEAR = 32
 ANALYTICAL_ORACLE_IDENTITY = "core.EuropeanOptionBs fixed-FX one-regime quanto reduction"
+DOMAIN_ERROR_GRID = {"spot_levels": 11, "sigma_levels": 5, "correlation_weight_levels": 5}
+DOMAIN_ERROR_SAFETY_FACTOR = 1.10
 NUMERICAL_HALF_WIDTH_FORMULA = (
     "max(abs(fine_fem_price - analytical_oracle_price), "
     "abs(coarse_fem_price - analytical_oracle_price), "
-    "1.5 * abs(fine_fem_price - coarse_fem_price), 1e-12)"
-)
-NUMERICAL_RESPONSE_ERROR_FORMULA = (
-    "abs(fine_fem_price(input) - analytical_oracle_price(input)) * z_numerical"
+    "1.5 * abs(fine_fem_price - coarse_fem_price), "
+    "1.10 * max_domain_grid_fine_oracle_error, 1e-12)"
 )
 
 
@@ -147,8 +146,9 @@ def canonical_study_input(config: UQPilotConfig | None = None) -> dict[str, Any]
         },
         "numerical_calibration": {
             "oracle_identity": ANALYTICAL_ORACLE_IDENTITY,
-            "baseline_half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
-            "response_error_formula": NUMERICAL_RESPONSE_ERROR_FORMULA,
+            "half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
+            "domain_error_grid": DOMAIN_ERROR_GRID,
+            "domain_error_safety_factor": DOMAIN_ERROR_SAFETY_FACTOR,
         },
         "component_names": COMPONENT_NAMES,
         "predecessor_source": {
@@ -187,6 +187,46 @@ def analytical_price(*, spot: float, sigma: float, correlation_weight: float) ->
     )
     call = option.call_from_volatility(BASE_MATURITY, spot_value, float(sigma))
     return float(call) * BASELINE_FIXED_FX
+
+
+def domain_error_calibration() -> dict[str, Any]:
+    """Screen fine-FEM oracle error over the declared three-input tensor domain."""
+
+    grid = {
+        **DOMAIN_ERROR_GRID,
+        "spot_range": [95.0, 105.0],
+        "sigma_range": [0.17, 0.23],
+        "correlation_weight_range": [0.0, 1.0],
+    }
+    maximum = -1.0
+    maximum_input: dict[str, float] = {}
+    contract = baseline_contract()
+    points = 0
+    for spot in np.linspace(95.0, 105.0, DOMAIN_ERROR_GRID["spot_levels"]):
+        for sigma in np.linspace(0.17, 0.23, DOMAIN_ERROR_GRID["sigma_levels"]):
+            for weight in np.linspace(0.0, 1.0, DOMAIN_ERROR_GRID["correlation_weight_levels"]):
+                model = baseline_model(sigma=float(sigma), correlation_weight=float(weight))
+                result = regime_fem.price_contract_fem(
+                    model,
+                    contract,
+                    maturity=BASE_MATURITY,
+                    equity_spot=float(spot),
+                    fx_spot=BASELINE_FX_SPOT,
+                    grid=FINE_GRID,
+                )
+                oracle = analytical_price(
+                    spot=float(spot), sigma=float(sigma), correlation_weight=float(weight)
+                )
+                error = abs(float(result.mixture_price) - oracle)
+                points += 1
+                if error > maximum:
+                    maximum = error
+                    maximum_input = {
+                        "spot": float(spot),
+                        "sigma": float(sigma),
+                        "correlation_weight": float(weight),
+                    }
+    return {"grid": grid, "points": points, "max_error": maximum, "max_input": maximum_input}
 
 
 def calibrate_scales() -> UQCalibration:
@@ -228,7 +268,14 @@ def calibrate_scales() -> UQCalibration:
     discrepancy = abs(fine.mixture_price - coarse.mixture_price)
     fine_oracle_error = abs(fine.mixture_price - oracle_price)
     coarse_oracle_error = abs(coarse.mixture_price - oracle_price)
-    half_width = max(fine_oracle_error, coarse_oracle_error, 1.5 * discrepancy, 1.0e-12)
+    domain_error = domain_error_calibration()
+    half_width = max(
+        fine_oracle_error,
+        coarse_oracle_error,
+        1.5 * discrepancy,
+        DOMAIN_ERROR_SAFETY_FACTOR * float(domain_error["max_error"]),
+        1.0e-12,
+    )
     fine_identity = grid_identity(FINE_GRID)
     coarse_identity = grid_identity(COARSE_GRID)
     model_hash = canonical_json_sha256(model.to_dict())
@@ -251,6 +298,11 @@ def calibrate_scales() -> UQCalibration:
         fine_oracle_abs_error=float(fine_oracle_error),
         coarse_oracle_abs_error=float(coarse_oracle_error),
         oracle_identity=ANALYTICAL_ORACLE_IDENTITY,
+        domain_error_grid=dict(domain_error["grid"]),
+        domain_error_grid_hash=canonical_json_sha256(domain_error["grid"]),
+        domain_max_fine_oracle_abs_error=float(domain_error["max_error"]),
+        domain_max_error_input=dict(domain_error["max_input"]),
+        domain_error_safety_factor=DOMAIN_ERROR_SAFETY_FACTOR,
         numerical_half_width=float(half_width),
         numerical_formula=NUMERICAL_HALF_WIDTH_FORMULA,
         mc_price=float(mc.price),
@@ -321,17 +373,14 @@ def build_components(
         ),
         UncertaintyComponent(
             name="numerical",
-            distribution=(
-                "Uniform(-1, 1) normalized; additive error = "
-                "abs(fine_fem(input)-analytical_oracle(input))*z_numerical"
-            ),
+            distribution="Uniform(-1, 1) normalized; additive error = domain_half_width*z_numerical",
             scale_or_range={
-                "baseline_half_width": calibration.numerical_half_width,
-                "mode": "input_dependent_exact_oracle_absolute_error",
+                "domain_half_width": calibration.numerical_half_width,
+                "mode": "independent_domain_screened_oracle_envelope",
             },
             units="price currency units",
             role="additive_validation_estimator_error",
-            source_identity="input-local analytical oracle discrepancy plus baseline coarse/fine evidence",
+            source_identity="domain tensor-screened analytical-oracle error envelope",
             source_hash=canonical_json_sha256(
                 {
                     "fine_grid_hash": calibration.fine_grid_hash,
@@ -343,15 +392,20 @@ def build_components(
                     "coarse_oracle_abs_error": calibration.coarse_oracle_abs_error,
                     "oracle_identity": calibration.oracle_identity,
                     "oracle_hash": calibration.oracle_hash,
+                    "domain_error_grid_hash": calibration.domain_error_grid_hash,
+                    "domain_max_fine_oracle_abs_error": (
+                        calibration.domain_max_fine_oracle_abs_error
+                    ),
+                    "domain_max_error_input": calibration.domain_max_error_input,
+                    "domain_error_safety_factor": calibration.domain_error_safety_factor,
                     "numerical_half_width": calibration.numerical_half_width,
                     "formula": calibration.numerical_formula,
-                    "response_error_formula": NUMERICAL_RESPONSE_ERROR_FORMULA,
                 }
             ),
             perturbs_fem_model=False,
             additive_validation_estimator_error=True,
             description=(
-                "Input-dependent additive FEM discretization error; not included in parameter uncertainty."
+                "Independent domain-screened FEM error envelope; not included in parameter uncertainty."
             ),
         ),
         UncertaintyComponent(
@@ -399,20 +453,20 @@ def map_normalized_inputs(z: np.ndarray, calibration: UQCalibration) -> dict[str
     spot = BASELINE_SPOT * (1.0 + 0.05 * float(values[0]))
     sigma = BASELINE_SIGMA * (1.0 + 0.15 * float(values[1]))
     weight = 0.5 * (float(values[2]) + 1.0)
-    numerical_coordinate = float(values[3])
+    numerical_error = calibration.numerical_half_width * float(values[3])
     mc_error = calibration.mc_standard_error * float(values[4])
     return {
         "spot": spot,
         "sigma": sigma,
         "correlation_weight": weight,
         "correlation": BASELINE_FULL_CORRELATION * weight,
-        "numerical_coordinate": numerical_coordinate,
+        "numerical_error": numerical_error,
         "monte_carlo_error": mc_error,
     }
 
 
 def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
-    """Evaluate the FEM solver with input-dependent numerical and additive MC errors."""
+    """Evaluate the FEM solver plus independent additive validation errors."""
 
     mapped = map_normalized_inputs(z, calibration)
     model = baseline_model(sigma=mapped["sigma"], correlation_weight=mapped["correlation_weight"])
@@ -424,39 +478,4 @@ def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
         fx_spot=BASELINE_FX_SPOT,
         grid=FINE_GRID,
     )
-    oracle_price = analytical_price(
-        spot=mapped["spot"],
-        sigma=mapped["sigma"],
-        correlation_weight=mapped["correlation_weight"],
-    )
-    numerical_half_width = abs(float(result.mixture_price) - oracle_price)
-    numerical_error = numerical_half_width * mapped["numerical_coordinate"]
-    return float(result.mixture_price + numerical_error + mapped["monte_carlo_error"])
-
-
-def summarize_prices(values: np.ndarray) -> dict[str, Any]:
-    """Summarize finite propagated price samples."""
-
-    prices = np.asarray(values, dtype=float)
-    finite = prices[np.isfinite(prices)]
-    quantiles = np.quantile(finite, QUANTILE_LEVELS)
-    return {
-        "mean": float(np.mean(finite)),
-        "std": float(np.std(finite, ddof=1)),
-        "quantiles": {
-            str(level): float(value)
-            for level, value in zip(QUANTILE_LEVELS, quantiles, strict=True)
-        },
-        "min": float(np.min(finite)),
-        "max": float(np.max(finite)),
-    }
-
-
-def numpy_direct_sample(seed: int, size: int) -> np.ndarray:
-    """Draw the five independent marginals using NumPy for direct-reference parity."""
-
-    rng = np.random.default_rng(seed)
-    sample = np.empty((size, 5), dtype=float)
-    sample[:, :4] = rng.uniform(-1.0, 1.0, size=(size, 4))
-    sample[:, 4] = rng.standard_normal(size)
-    return sample
+    return float(result.mixture_price + mapped["numerical_error"] + mapped["monte_carlo_error"])
