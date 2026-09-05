@@ -6,11 +6,38 @@ import json
 from pathlib import Path
 
 from finite_element_options.validation.evidence.serialization import file_sha256
+from finite_element_options.validation.evidence.petsc_vi import adapter
 
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/petsc_vi_assessment_2026-09-05.json"
-EXPECTED_SHA256 = "b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35"
+EXPECTED_SHA256 = "f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368"
+
+
+def test_petsc_version_matching_rejects_mismatched_runtime() -> None:
+    assert adapter._petsc_versions_match("3.24.6", (3, 24, 6)) is True
+    assert adapter._petsc_versions_match("3.24.6", (3, 24, 7)) is False
+
+
+def test_petsc_runtime_pass_requires_version_match() -> None:
+    assert (
+        adapter._petsc_runtime_passed(
+            version_match=False,
+            ksp_converged=True,
+            vi_converged=True,
+            ts_converged=True,
+        )
+        is False
+    )
+    assert (
+        adapter._petsc_runtime_passed(
+            version_match=True,
+            ksp_converged=True,
+            vi_converged=True,
+            ts_converged=True,
+        )
+        is True
+    )
 
 
 def test_petsc_external_evidence_is_real_bounded_and_fail_closed() -> None:
@@ -23,6 +50,9 @@ def test_petsc_external_evidence_is_real_bounded_and_fail_closed() -> None:
     assert payload["trigger"]["triggered"] is True
     assert payload["trigger"]["capability_status"] == "validated"
     assert payload["runtime_doctor"]["passed"] is True
+    assert (
+        payload["runtime_doctor"]["petsc4py_version"] == payload["runtime_doctor"]["petsc_version"]
+    )
     assert payload["environment"]["finite_element_options_install_mode"] == "wheel"
     assert payload["runtime_doctor"]["ksp"]["converged"] is True
     assert payload["runtime_doctor"]["snes_vi"]["converged"] is True

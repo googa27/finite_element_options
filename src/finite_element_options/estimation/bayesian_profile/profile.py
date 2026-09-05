@@ -23,7 +23,7 @@ from .pymc_smoke import run_pymc_smoke
 
 
 PREDECESSOR_PATH = "docs/evidence/petsc_vi_assessment_2026-09-05.json"
-PREDECESSOR_SHA256 = "b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35"
+PREDECESSOR_SHA256 = "f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368"
 LOCK_PATH = "environments/bayesian-jax-py312/requirements.lock"
 LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
 LOCKED_VERSION_KEYS = (
@@ -98,6 +98,8 @@ def run_bayesian_jax_profile(
         "bayesian_extras_declared": bool(profile_split["bayesian_extras_declared"]),
         "pymc_posterior": bool(pymc["passed"]),
         "numpyro_posterior": bool(numpyro["passed"]),
+        "jax_cpu_backend": numpyro["jax_backend"] == "cpu",
+        "jax_device_count": numpyro["jax_device_count"] == 2,
         "cross_engine_mean": (
             cross_engine["posterior_mean_abs_difference"]
             <= selected.maximum_cross_engine_mean_difference

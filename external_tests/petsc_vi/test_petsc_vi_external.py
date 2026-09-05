@@ -73,6 +73,7 @@ def test_petsc_runtime_doctor_executes_ksp_snes_vi_and_ts() -> None:
 
     report = petsc_runtime_doctor()
     assert report["passed"] is True
+    assert report["version_match"] is True
     assert report["comm_size"] == 1
     assert report["ksp"]["converged"] is True
     assert report["snes_vi"]["converged"] is True

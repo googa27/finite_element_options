@@ -10,6 +10,7 @@ The trigger is real: `FEM-AMERICAN-LCP-REFERENCE` already solves a lower-obstacl
 |---|---:|---:|:---:|
 | Existing American-VI trigger | validated lower-obstacle route | present | PASS |
 | Runtime KSP / SNES-VI / TS | all converged | real execution | PASS |
+| PETSc / petsc4py ABI version | `3.24.6` / `3.24.6` | exact release match and part of runtime-doctor `passed` | PASS |
 | Package origin | installed wheel from clean `/tmp` venv | wheel, not editable checkout | PASS |
 | Grid max error vs projected SOR | `4.059721096e-7` | ≤ `5e-7` | PASS |
 | Price error | `7.60093746e-8` | ≤ `2e-7` | PASS |
@@ -26,7 +27,7 @@ This is **not** a capability-matrix upgrade, a distributed-assembly claim, a PET
 ## Evidence
 
 - Artifact: [`evidence/petsc_vi_assessment_2026-09-05.json`](evidence/petsc_vi_assessment_2026-09-05.json)
-- Artifact SHA-256: `b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35`
+- Artifact SHA-256: `f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368`
 - Predecessor pyMOR artifact SHA-256: `f30d712e054937ac7e17ea452fc2bcbc0a874087b1ec180caa5e63dc190ea4b7`
 - Runtime: CPython `3.12.3`, PETSc `3.24.6`, petsc4py `3.24.6`, NumPy `2.4.6`, SciPy `1.18.1`, scikit-fem `12.0.2`
 - Privacy: `public_synthetic`
@@ -87,7 +88,7 @@ Ownership remains deliberately split:
 
 The PETSc adapter uses `COMM_SELF` and converts each SciPy CSR time-step matrix into a PETSc AIJ matrix. It does not claim distributed mesh partitioning or distributed assembly.
 
-`ThetaScheme` now accepts the structural `LCPSolver` protocol. Existing callers remain on `ProjectedSORSolver`; PETSc is injected explicitly only by the external profile.
+`ThetaScheme` now accepts the structural `LCPSolver` protocol. Existing callers remain on `ProjectedSORSolver`; PETSc is injected explicitly only by the external profile. Every explicitly supplied solver is retained by identity—even if it defines falsey application semantics—and the default is constructed only when `lcp_solver is None`.
 
 ## Real runtime doctor
 

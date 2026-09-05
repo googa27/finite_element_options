@@ -8,8 +8,8 @@
 
 - Baseline evidence: [`REGIME_SWITCHING_QUANTO_RESEARCH.md`](REGIME_SWITCHING_QUANTO_RESEARCH.md)
 - Canonical adoption matrix: [`evidence/adoption_sequence_closeout_2026-09-05.json`](evidence/adoption_sequence_closeout_2026-09-05.json)
-- Matrix SHA-256: `37470a486e058144d17fe352f92cbc8bcd027cb012ade80313f684422ec0d911`
-- Visual SHA-256: `07b9246fbac85c10f0eb29b3bd1f91343df76cfd616dcda5b198953b6ba4d73e`
+- Matrix SHA-256: `6bd088cd664f2dd6c69fa7a6188d177da031548226c7412bae67156be7914ca0`
+- Visual SHA-256: `8d9b8d8ac59c1da3e8c51e4e78c0ad597ab02a08b989e11affb37d4cd902b360`
 - Regenerate: `uv run --python 3.11 --extra dev python scripts/generate_adoption_sequence_closeout.py`
 - Privacy: public-synthetic research evidence only
 
