@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -22,6 +23,27 @@ def canonical_json_sha256(payload: Any) -> str:
     """Return SHA-256 of :func:`canonical_json`."""
 
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def quantize_json_floats(payload: Any, *, significant_digits: int = 10) -> Any:
+    """Normalize finite JSON floats to stable cross-platform significant digits."""
+
+    if not 6 <= significant_digits <= 17:
+        raise ValueError("significant_digits must be within [6, 17]")
+    value = json_safe(payload)
+    if isinstance(value, dict):
+        return {
+            str(key): quantize_json_floats(item, significant_digits=significant_digits)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [quantize_json_floats(item, significant_digits=significant_digits) for item in value]
+    if isinstance(value, bool) or not isinstance(value, float):
+        return value
+    if not math.isfinite(value):
+        raise ValueError("quantized evidence floats must be finite")
+    normalized = float(format(value, f".{significant_digits}g"))
+    return 0.0 if normalized == 0.0 else normalized
 
 
 def file_sha256(path: str | Path) -> str:
@@ -62,5 +84,6 @@ __all__ = [
     "canonical_json",
     "canonical_json_sha256",
     "file_sha256",
+    "quantize_json_floats",
     "write_atomic_json",
 ]

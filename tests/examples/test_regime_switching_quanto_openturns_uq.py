@@ -20,15 +20,23 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "c7e90d2857b9d43da5ed65221c2b85969aecfb62a2be45966bade82cd336b6a3"
+EXPECTED_ARTIFACT_SHA256 = "07b3423bd7aa778bdd646186e906c88938627dc6dfd9515da26afea30703d8f7"
 _VALID_SHA = "0" * 64
 
 
 def _minimal_calibration():
+    from finite_element_options.examples.regime_switching_quanto.adoption.evidence_io import (
+        canonical_json_sha256,
+    )
     from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
         UQCalibration,
     )
 
+    domain_grid = {"points": 8}
+    fine_payload = {"name": "fine"}
+    coarse_payload = {"name": "coarse"}
+    fine_hash = canonical_json_sha256(fine_payload)
+    coarse_hash = canonical_json_sha256(coarse_payload)
     return UQCalibration(
         baseline_price_fine=1.0,
         baseline_price_coarse=0.9,
@@ -36,8 +44,8 @@ def _minimal_calibration():
         fine_oracle_abs_error=0.2,
         coarse_oracle_abs_error=0.1,
         oracle_identity="test analytical oracle",
-        domain_error_grid={"points": 8},
-        domain_error_grid_hash=_VALID_SHA,
+        domain_error_grid=domain_grid,
+        domain_error_grid_hash=canonical_json_sha256(domain_grid),
         domain_max_fine_oracle_abs_error=0.15,
         domain_max_error_input={"spot": 100.0, "sigma": 0.2, "correlation_weight": 0.5},
         domain_error_safety_factor=1.1,
@@ -49,10 +57,10 @@ def _minimal_calibration():
         mc_paths=8,
         mc_steps=8,
         mc_steps_per_year=8,
-        fine_grid={},
-        coarse_grid={},
-        fine_grid_hash=_VALID_SHA,
-        coarse_grid_hash=_VALID_SHA,
+        fine_grid={**fine_payload, "hash": fine_hash},
+        coarse_grid={**coarse_payload, "hash": coarse_hash},
+        fine_grid_hash=fine_hash,
+        coarse_grid_hash=coarse_hash,
         baseline_model_hash=_VALID_SHA,
         payoff_hash=_VALID_SHA,
         oracle_hash=_VALID_SHA,
@@ -123,6 +131,28 @@ def test_hash_bound_public_metadata_is_deeply_immutable(pilot_result: Any) -> No
     serialized["calibration"]["domain_error_grid"]["spot_range"][0] = 0.0
     assert pilot_result.decision["status"] == "retain_optional_adapter"
     assert pilot_result.calibration.domain_error_grid["spot_range"][0] == 95.0
+
+    from finite_element_options.examples.regime_switching_quanto._types import FrozenMapping
+
+    left = FrozenMapping({"a": 1, "b": [2, 3]})
+    right = FrozenMapping({"b": [2, 3], "a": 1})
+    assert left == right
+    assert hash(left) == hash(right)
+    assert isinstance(hash(pilot_result), int)
+
+
+def test_float_evidence_normalization_is_cross_platform_stable() -> None:
+    """Harmless solver-stack drift rounds to identical ten-digit JSON evidence."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.evidence_io import (
+        quantize_json_floats,
+    )
+
+    first = quantize_json_floats({"price": 5679.906373622954})
+    second = quantize_json_floats({"price": 5679.906373622943})
+    assert first == second == {"price": 5679.906374}
+    with pytest.raises(ValueError, match="significant_digits"):
+        quantize_json_floats(first, significant_digits=5)
 
 
 def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
@@ -338,6 +368,16 @@ def test_calibration_hashes_require_lowercase_sha256_hex() -> None:
     undercovered["numerical_half_width"] = 0.19
     with pytest.raises(ValueError, match="must cover baseline and domain analytical errors"):
         UQCalibration(**undercovered)
+
+    from dataclasses import replace
+
+    calibration = _minimal_calibration()
+    with pytest.raises(ValueError, match="domain error grid payload does not match"):
+        replace(calibration, domain_error_grid={"points": 999})
+    tampered_fine = dict(calibration.fine_grid)
+    tampered_fine["name"] = "tampered"
+    with pytest.raises(ValueError, match="fine grid payload does not match"):
+        replace(calibration, fine_grid=tampered_fine)
 
 
 def test_sobol_raw_estimates_are_not_clipped_and_validation_reports_envelope() -> None:

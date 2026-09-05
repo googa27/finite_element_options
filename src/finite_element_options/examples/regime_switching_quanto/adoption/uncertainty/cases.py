@@ -18,7 +18,7 @@ from finite_element_options.examples.regime_switching_quanto.monte_carlo import 
     price_contract_monte_carlo,
 )
 
-from ..evidence_io import canonical_json_sha256
+from ..evidence_io import canonical_json_sha256, quantize_json_floats
 from .contracts import (
     COMPONENT_NAMES,
     UQCalibration,
@@ -65,6 +65,12 @@ NUMERICAL_HALF_WIDTH_FORMULA = (
     "1.5 * abs(fine_fem_price - coarse_fem_price), "
     "1.10 * max_domain_grid_fine_oracle_error, 1e-12)"
 )
+
+
+def _evidence_hash(payload: Any) -> str:
+    """Hash numerical evidence after ten-significant-digit normalization."""
+
+    return canonical_json_sha256(quantize_json_floats(payload, significant_digits=10))
 
 
 def baseline_model(
@@ -317,7 +323,7 @@ def calibrate_scales() -> UQCalibration:
         coarse_grid_hash=str(coarse_identity["hash"]),
         baseline_model_hash=model_hash,
         payoff_hash=payoff_hash,
-        oracle_hash=canonical_json_sha256(oracle_payload),
+        oracle_hash=_evidence_hash(oracle_payload),
     )
 
 
@@ -381,7 +387,7 @@ def build_components(
             units="price currency units",
             role="additive_validation_estimator_error",
             source_identity="domain tensor-screened analytical-oracle error envelope",
-            source_hash=canonical_json_sha256(
+            source_hash=_evidence_hash(
                 {
                     "fine_grid_hash": calibration.fine_grid_hash,
                     "coarse_grid_hash": calibration.coarse_grid_hash,
@@ -415,7 +421,7 @@ def build_components(
             units="price currency units",
             role="additive_validation_estimator_error",
             source_identity="seeded direct MC validation estimator standard error",
-            source_hash=canonical_json_sha256(
+            source_hash=_evidence_hash(
                 {
                     "seed": calibration.mc_seed,
                     "paths": calibration.mc_paths,

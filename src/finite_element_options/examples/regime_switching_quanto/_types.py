@@ -43,6 +43,11 @@ class FrozenMapping(Mapping[Any, Any]):
 
         return len(self._items)
 
+    def __hash__(self) -> int:
+        """Return an order-independent content hash consistent with mapping equality."""
+
+        return hash(frozenset(self._items))
+
     def __setattr__(self, name: str, value: Any) -> None:
         """Reject attribute mutation after construction."""
 

@@ -8,6 +8,10 @@ from typing import Any, Literal
 
 import numpy as np
 
+from finite_element_options.examples.regime_switching_quanto.adoption.evidence_io import (
+    canonical_json_sha256,
+    quantize_json_floats,
+)
 from finite_element_options.examples.regime_switching_quanto._types import (
     deep_freeze,
     json_safe,
@@ -39,6 +43,15 @@ def _freeze_fields(instance: Any, *names: str) -> None:
 
     for name in names:
         object.__setattr__(instance, name, deep_freeze(getattr(instance, name)))
+
+
+def _quantized_dict(value: Any) -> dict[str, Any]:
+    """Return ten-significant-digit JSON evidence for cross-platform replay."""
+
+    payload = quantize_json_floats(json_safe(value), significant_digits=10)
+    if not isinstance(payload, dict):
+        raise TypeError("evidence payload must serialize to a dictionary")
+    return payload
 
 
 @dataclass(frozen=True)
@@ -81,7 +94,7 @@ class UncertaintyComponent:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe component data with no OpenTURNS objects."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -111,7 +124,7 @@ class UQPilotConfig:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe controls."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -197,11 +210,21 @@ class UQCalibration:
         ):
             if not _is_lower_sha256(value):
                 raise ValueError("calibration hashes must be lowercase SHA-256 hex strings")
+        for label, grid, digest in (
+            ("fine", self.fine_grid, self.fine_grid_hash),
+            ("coarse", self.coarse_grid, self.coarse_grid_hash),
+        ):
+            payload = dict(grid)
+            embedded = payload.pop("hash", None)
+            if embedded != digest or canonical_json_sha256(payload) != digest:
+                raise ValueError(f"{label} grid payload does not match its digest")
+        if canonical_json_sha256(self.domain_error_grid) != self.domain_error_grid_hash:
+            raise ValueError("domain error grid payload does not match its digest")
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe calibration data."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -238,7 +261,7 @@ class UQPropagationResult:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe propagation data."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -261,7 +284,7 @@ class UQParityResult:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe parity data."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -286,7 +309,7 @@ class AdditiveSobolRecovery:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe recovery data."""
 
-        return json_safe(asdict(self))
+        return _quantized_dict(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -322,7 +345,7 @@ class UQPilotResult:
 
         payload = asdict(self)
         payload["components"] = [component.to_dict() for component in self.components]
-        return json_safe(payload)
+        return _quantized_dict(payload)
 
 
 __all__ = [

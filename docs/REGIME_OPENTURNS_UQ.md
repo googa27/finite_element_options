@@ -26,13 +26,15 @@ OpenTURNS RNG is process-global, so `uncertainty.openturns_adapter` wraps seeded
 ## Canonical artifact
 
 - Artifact: `docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json`
-- Artifact SHA-256: `c7e90d2857b9d43da5ed65221c2b85969aecfb62a2be45966bade82cd336b6a3`
+- Artifact SHA-256: `07b3423bd7aa778bdd646186e906c88938627dc6dfd9515da26afea30703d8f7`
 - Canonical input hash: `e6a668c45eba43618c21451febd775cffb1d351c08c544826acce705e2160ecb`
 - CLI: `python scripts/run_openturns_uq_pilot.py --output docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json --verify`
 
 The CLI verifies predecessor evidence before execution. The baseline model/payoff conventions derive from `docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json` SHA `ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056` (`quanto_positive_correlation`). The iminuit predecessor artifact SHA `6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b` is verified as a sequencing prerequisite but is not used as a parameter source.
 
 The installed-wheel API does not require repository-only `docs/evidence/` resources: `run_openturns_uq_pilot()` with no `root` executes the FEM/UQ study, records predecessor provenance as `declared_digest_only`, and fails the retention decision closed because those files were not independently verified. Canonical evidence generation passes an explicit checkout root, records `file_sha256`, and requires both predecessor digests to match.
+
+Before source or artifact hashing, platform-sensitive floating-point evidence is normalized to **10 significant digits**; discrete provenance and identifiers remain exact. This suppresses harmless Python/NumPy/SciPy/BLAS last-bit drift while retaining substantially tighter precision than any scientific gate in this pilot.
 
 ## Scientific design
 
@@ -74,19 +76,19 @@ Coarse grid identity: same domain/element, `nx=21`, `ny=5`, `time_steps=10`.
 
 Calibration values:
 
-- baseline fine FEM price: `5711.946360858297`;
-- baseline coarse FEM price: `5679.906373622954`;
-- exact one-regime analytical-oracle price at the midpoint correlation: `5615.51290798328`;
-- fine/coarse absolute oracle errors: `96.43345287501779 / 64.3934656396741`;
+- baseline fine FEM price: `5711.946361`;
+- baseline coarse FEM price: `5679.906374`;
+- exact one-regime analytical-oracle price at the midpoint correlation: `5615.512908`;
+- fine/coarse absolute oracle errors: `96.43345288 / 64.39346564`;
 - domain screen: `11 x 5 x 5 = 275` tensor points over spot `[95,105]`, sigma `[0.17,0.23]`, and correlation weight `[0,1]`;
-- maximum screened fine-FEM/oracle error: `123.19714346893579` at spot `100`, sigma `0.17`, correlation weight `0`;
+- maximum screened fine-FEM/oracle error: `123.1971435` at spot `100`, sigma `0.17`, correlation weight `0`;
 - domain-screen grid hash: `486f1ca0ffa9f29949c34d263a4742f0f50c049f571507f3824d98abc6b71d32`;
 - numerical half-width formula: `max(abs(fine - oracle), abs(coarse - oracle), 1.5*abs(fine - coarse), 1.10*max_domain_grid_error, 1e-12)`;
-- fixed independent numerical half-width: `135.51685781582938`;
-- analytical-oracle source hash: `c09a86ec3e9f83f522c73dc5bd798fd2c7cab5f55ceab6d24e68219303228b21`;
+- fixed independent numerical half-width: `135.5168578`;
+- analytical-oracle source hash: `447acf13d03969fe0b96a590d989fcf849ea1ce8c0891b36beaa4b12ae29f5a7`;
 - MC calibration: seed `134011`, paths `4096`, steps/year `32`, realized steps `41`;
-- MC calibration price: `5507.523029993026`;
-- MC standard error: `166.43859006226404`.
+- MC calibration price: `5507.52303`;
+- MC standard error: `166.4385901`.
 
 ## Propagation results
 
@@ -96,23 +98,23 @@ Price summary:
 
 | Statistic | Value |
 |---|---:|
-| mean | `5567.332938195312` |
-| std | `1265.7503663828593` |
-| q01 | `3213.4421186874547` |
-| q05 | `3712.1224328663984` |
-| median | `5492.149141747067` |
-| q95 | `7704.743763785033` |
-| q99 | `7969.336693611863` |
+| mean | `5567.332938` |
+| std | `1265.750366` |
+| q01 | `3213.442119` |
+| q05 | `3712.122433` |
+| median | `5492.149142` |
+| q95 | `7704.743764` |
+| q99 | `7969.336694` |
 
 OpenTURNS/Saltelli results below are **raw finite-sample estimators**, not constrained physical Sobol values. Small negative values and confidence intervals that cross zero are accepted sampling noise in this pilot when finite and when point estimates remain inside the family-specific sanity envelopes.
 
 | Component | Raw first | First 95% CI | Raw total | Total 95% CI | Standalone variance |
 |---|---:|---:|---:|---:|---:|
-| `data` | `0.6380523643168031` | `[0.4375495546575634, 0.8385551739760428]` | `0.7470347598004511` | `[0.5895140419771316, 0.9045554776237705]` | `1083790.755181209` |
-| `parameter` | `0.21912162636033178` | `[0.05355207054511796, 0.3846911821755456]` | `0.2638696927854309` | `[0.16106031202567242, 0.36667907354518936]` | `396464.8514628893` |
-| `model_form` | `-0.02420195040569668` | `[-0.18565115137673008, 0.13724725056533674]` | `0.029441674542451855` | `[0.008623319875681792, 0.050260029209221915]` | `15962.866796680411` |
-| `numerical` | `-0.023414191571266504` | `[-0.19137769769391816, 0.14454931455138514]` | `0.003104526074151346` | `[-0.012777644323068668, 0.01898669647137136]` | `5273.7642821064` |
-| `monte_carlo` | `-0.029629947462902727` | `[-0.19703909871364456, 0.1377792037878391]` | `-0.0002476570902998604` | `[-0.03171516253764713, 0.03121984835704741]` | `22639.199033575667` |
+| `data` | `0.6380523643` | `[0.4375495547, 0.838555174]` | `0.7470347598` | `[0.589514042, 0.9045554776]` | `1083790.755` |
+| `parameter` | `0.2191216264` | `[0.05355207055, 0.3846911822]` | `0.2638696928` | `[0.161060312, 0.3666790735]` | `396464.8515` |
+| `model_form` | `-0.02420195041` | `[-0.1856511514, 0.1372472506]` | `0.02944167454` | `[0.008623319876, 0.05026002921]` | `15962.8668` |
+| `numerical` | `-0.02341419157` | `[-0.1913776977, 0.1445493146]` | `0.003104526074` | `[-0.01277764432, 0.01898669647]` | `5273.764282` |
+| `monte_carlo` | `-0.02962994746` | `[-0.1970390987, 0.1377792038]` | `-0.0002476570903` | `[-0.03171516254, 0.03121984836]` | `22639.19903` |
 
 Sobol validation gate:
 
@@ -133,23 +135,23 @@ Tolerances are statistical rather than bitwise because OpenTURNS and NumPy gener
 
 Parity differences all passed:
 
-- mean difference `216.24785932520717` <= tolerance `638.6544718805808`;
-- std difference `126.29755935412345` <= tolerance `455.16689948727344`;
-- q01 difference `215.11178477208705` <= tolerance `1052.9584210388837`;
-- q05 difference `263.5832184299261` <= tolerance `1065.9547184867517`;
-- median difference `456.6200887164814` <= tolerance `997.7314513958579`;
-- q95 difference `9.447411720895616` <= tolerance `1144.1865519394996`;
-- q99 difference `122.27674939428562` <= tolerance `909.9598862061035`.
+- mean difference `216.2478593` <= tolerance `638.6544719`;
+- std difference `126.2975594` <= tolerance `455.1668995`;
+- q01 difference `215.1117848` <= tolerance `1052.958421`;
+- q05 difference `263.5832184` <= tolerance `1065.954718`;
+- median difference `456.6200887` <= tolerance `997.7314514`;
+- q95 difference `9.447411721` <= tolerance `1144.186552`;
+- q99 difference `122.2767494` <= tolerance `909.9598862`.
 
 ## Additive Sobol recovery
 
 Cheap synthetic additive model coefficients `[2.0, 1.0, 0.5, 0.0, 1.5]` over the same marginals have known variance shares:
 
-- expected: `data=0.3333333333333333`, `parameter=0.08333333333333333`, `model_form=0.020833333333333332`, `numerical=0.0`, `monte_carlo=0.5625`;
-- estimated first: `data=0.3133217438575161`, `parameter=0.09774296682873383`, `model_form=0.01653721956850784`, `numerical=-0.004215718653051791`, `monte_carlo=0.5943025974033155`;
-- estimated total: `data=0.3260133928962037`, `parameter=0.07650008228450561`, `model_form=0.018182041449111855`, `numerical=-1.3350837932513583e-07`, `monte_carlo=0.5839978282444354`;
-- max first-order error: `0.03180259740331548`;
-- max total-order error: `0.021497828244435357`;
+- expected: `data=0.3333333333`, `parameter=0.08333333333`, `model_form=0.02083333333`, `numerical=0.0`, `monte_carlo=0.5625`;
+- estimated first: `data=0.3133217439`, `parameter=0.09774296683`, `model_form=0.01653721957`, `numerical=-0.004215718653`, `monte_carlo=0.5943025974`;
+- estimated total: `data=0.3260133929`, `parameter=0.07650008228`, `model_form=0.01818204145`, `numerical=-1.335083793e-07`, `monte_carlo=0.5839978282`;
+- max first-order error: `0.0318025974`;
+- max total-order error: `0.02149782824`;
 - tolerance: `0.08`;
 - gate: pass.
 
