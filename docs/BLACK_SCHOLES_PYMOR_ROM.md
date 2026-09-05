@@ -12,8 +12,8 @@ The canonical public-synthetic run passed every promotion gate:
 | Maximum ROM/FOM price error | ≤ `1e-7` | `2.637945418e-11` | PASS |
 | Maximum ROM/FOM Delta error | ≤ `1e-6` | `1.005010972e-7` | PASS |
 | Maximum ROM/FOM Gamma error | ≤ `1e-5` | `5.579224235e-6` | PASS |
-| Median online speedup | ≥ `10x` | `29.04957055x` | PASS |
-| Queries to amortize offline cost at `10x` | ≤ `1000` | `359` | PASS |
+| Median online speedup | ≥ `10x` | `29.38726099x` | PASS |
+| Queries to amortize offline cost at `10x` | ≤ `1000` | `368` | PASS |
 | Out-of-envelope behavior | refuse and name FOM fallback | both sides refused | PASS |
 | Predecessor continuity | issue #134 artifact hash verified | exact SHA-256 match | PASS |
 
@@ -22,9 +22,9 @@ This does **not** promote reduced-order modeling as a general solver capability.
 ## Reproducible evidence
 
 - Artifact: [`evidence/black_scholes_pymor_rom_2026-09-05.json`](evidence/black_scholes_pymor_rom_2026-09-05.json)
-- Artifact SHA-256: `75598e75ad587b1ef85f98b3208d0dc7b5c81cf598afa4b30ad103ecbf7d3bd1`
+- Artifact SHA-256: `3de04c89a854b9b8751c9a24be38581c2b7a56ba5a882a212428857fb6de1f55`
 - Study-input SHA-256: `5360959855b4e573914e5e18ead47c3b55cfbc2f419cf62f6939445f29ab17be`
-- Affine-decomposition SHA-256: `0ee472acab83e1683c723947c454af7d3ea906e4af670ad33f823f0f87e52cad`
+- Affine-decomposition SHA-256: `c490ffbb04eaf20d24bfe4192a14c9ab591eee03a2ab32cb05dddd98d61ddb6d`
 - Predecessor artifact SHA-256: `d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f`
 - Environment: CPython `3.11.15`, pyMOR `2026.1.0`, NumPy `2.4.6`, SciPy `1.17.1`, scikit-fem `12.0.2`
 - Privacy class: `public_synthetic`
@@ -97,21 +97,21 @@ The analytical Black–Scholes comparison validates that the FOM reference itsel
 
 ## Timing and amortization
 
-Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002830396406 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
+Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002961883554 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
 
 | Metric | FOM | ROM |
 |---|---:|---:|
-| Median | `0.1072467517 s` | `0.003691853257 s` |
-| MAD | `0.001526039327 s` | `0.0001362184994 s` |
-| 5th percentile | `0.1055050979 s` | `0.003483512672 s` |
-| 95th percentile | `0.1206497179 s` | `0.00410842686 s` |
+| Median | `0.109507231 s` | `0.003726350376 s` |
+| MAD | `0.001814300893 s` | `0.0001362378243 s` |
+| 5th percentile | `0.1068775215 s` | `0.003562393016 s` |
+| 95th percentile | `0.1229440019 s` | `0.004427555366 s` |
 
-Offline total: `2.521178083 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
+Offline total: `2.657323357 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
 
-- Raw median online speedup: `29.04957055x`.
-- Ordinary break-even: 25 solves.
-- First solve count reaching an amortized `10x`: 359 solves.
-- Amortized speedup at the declared 1,000-query horizon: `17.26158228x`.
+- Raw median online speedup: `29.38726099x`.
+- Ordinary break-even: 26 solves.
+- First solve count reaching an amortized `10x`: 368 solves.
+- Amortized speedup at the declared 1,000-query horizon: `17.15426502x`.
 
 ## Memory evidence
 

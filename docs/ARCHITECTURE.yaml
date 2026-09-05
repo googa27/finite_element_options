@@ -274,7 +274,7 @@
           "RBniCSx",
           "Neural surrogate model"
         ],
-        "evidence": "Issue #135 adds an exact variance-affine Black-Scholes/P2 FEM decomposition, mass-product POD, affine Galerkin projection, disjoint holdout price/Delta/Gamma checks, robust repeated timing, memory/amortization accounting, fail-closed envelope tests, and public-synthetic artifact docs/evidence/black_scholes_pymor_rom_2026-09-05.json (sha256 75598e75ad587b1ef85f98b3208d0dc7b5c81cf598afa4b30ad103ecbf7d3bd1).",
+        "evidence": "Issue #135 adds an exact variance-affine Black-Scholes/P2 FEM decomposition, mass-product POD, affine Galerkin projection, disjoint holdout price/Delta/Gamma checks, robust repeated timing, memory/amortization accounting, fail-closed envelope tests, and public-synthetic artifact docs/evidence/black_scholes_pymor_rom_2026-09-05.json (sha256 3de04c89a854b9b8751c9a24be38581c2b7a56ba5a882a212428857fb6de1f55).",
         "adapter_boundary": "finite_element_options.validation.evidence.reduced_order.pymor_adapter imports pyMOR only inside build_pod_projection; validation.evidence.reduced_order public contracts and online solves retain NumPy/SciPy arrays only, so the base wheel imports without pyMOR.",
         "custom_code_reason": "Repository code owns the Black-Scholes affine decomposition K(eta)=K_constant+eta*K_variance, implicit-Euler FOM/ROM stepping, output functionals, envelope policy, timing/amortization gates, and evidence schema; pyMOR owns mass-product POD and operator projection.",
         "maintenance_evidence": "https://github.com/pymor/pymor/releases/tag/2026.1.0 and https://pypi.org/project/pymor/",

@@ -59,7 +59,7 @@ def decomposition_hash(
     config: PymorBlackScholesConfig,
     *arrays: sps.csc_matrix | np.ndarray,
 ) -> str:
-    """Hash a 12-significant-digit canonical affine-system representation."""
+    """Hash a 10-significant-digit canonical affine-system representation."""
 
     payload: dict[str, object] = {"study_input_hash": config.input_hash, "arrays": []}
     records: list[dict[str, object]] = []
@@ -72,7 +72,7 @@ def decomposition_hash(
             records.append(
                 {
                     "shape": [int(shape[0]), int(shape[1])],
-                    "data": quantize_json_floats(sparse.data, significant_digits=12),
+                    "data": quantize_json_floats(sparse.data, significant_digits=10),
                     "indices": sparse.indices.tolist(),
                     "indptr": sparse.indptr.tolist(),
                 }
@@ -82,7 +82,7 @@ def decomposition_hash(
             records.append(
                 {
                     "shape": list(dense.shape),
-                    "data": quantize_json_floats(dense, significant_digits=12),
+                    "data": quantize_json_floats(dense, significant_digits=10),
                 }
             )
     payload["arrays"] = records

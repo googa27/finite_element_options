@@ -15,7 +15,7 @@ from finite_element_options.validation.evidence.serialization import (
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs" / "evidence" / "black_scholes_pymor_rom_2026-09-05.json"
-EXPECTED_SHA256 = "75598e75ad587b1ef85f98b3208d0dc7b5c81cf598afa4b30ad103ecbf7d3bd1"
+EXPECTED_SHA256 = "3de04c89a854b9b8751c9a24be38581c2b7a56ba5a882a212428857fb6de1f55"
 EXPECTED_INPUT_SHA256 = "5360959855b4e573914e5e18ead47c3b55cfbc2f419cf62f6939445f29ab17be"
 
 
