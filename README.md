@@ -6,6 +6,10 @@ Python support: at least 3.11 and below 3.13.
 
 ## Validation evidence snapshot
 
+[Adoption sequence 1–8 closeout and decision matrix](docs/ADOPTION_SEQUENCE_CLOSEOUT.md)
+
+![Evidence-gated adoption sequence 1 through 8: seven bounded non-rejections, one rejection, and zero base-wheel leaks](docs/images/adoption_sequence_closeout_2026-09-05.png)
+
 ![Black-Scholes FEM validation convergence: analytical reference in cyan, numerical error in magenta, pass tolerance in green](docs/images/fem_black_scholes_validation_convergence.png)
 
 ![Pinares FEM fixed-price proxy convergence: public-synthetic Q-star proxy only, full deal routes fail closed](docs/images/fem_pinares_proxy_validation_convergence.png)

@@ -1,0 +1,38 @@
+{
+  "schema_version": "dependency-boundaries/v1",
+  "privacy_class": "public_synthetic",
+  "issue": 130,
+  "pull_request": 139,
+  "merge_commit": "9cd99ac8df5bc3ccf40450b0f7b4d1289b636b9c",
+  "source_manifest": {
+    "path": "pyproject.toml",
+    "git_object": "9cd99ac8df5bc3ccf40450b0f7b4d1289b636b9c:pyproject.toml",
+    "sha256": "a124f60443669b841042b226cbfc8a0b91cae83dc0ba6907208d48ad585dff6a"
+  },
+  "base_dependencies": [
+    "numpy",
+    "pydantic",
+    "scikit-fem",
+    "scipy",
+    "sympy"
+  ],
+  "isolated_profiles": {
+    "volatility": "arch",
+    "changepoints": "ruptures",
+    "quantlib": "QuantLib",
+    "identifiability": "iminuit"
+  },
+  "checks": {
+    "base_optional_stack_leaks": 0,
+    "installed_wheel_import": true,
+    "purpose_specific_extras": true,
+    "python_311": true,
+    "python_312": true
+  },
+  "decision": {
+    "status": "adopt_isolated_optional_boundaries",
+    "accepted": true,
+    "base_wheel_change": false,
+    "capability_matrix_upgrade": false
+  }
+}
