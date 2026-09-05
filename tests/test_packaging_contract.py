@@ -198,6 +198,10 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     )
     provides_extras = metadata.metadata("finite-element-options").get_all("Provides-Extra") or []
     assert "petsc" not in {extra.lower() for extra in provides_extras}
+    prd = (ROOT / "docs/PRD.md").read_text(encoding="utf-8")
+    assert "| `bayesian` |" in prd
+    assert "| `bayesian-jax` |" in prd
+    assert "| `bayes` |" not in prd
 
 
 def test_bayesian_split_has_breaking_version_and_migration_evidence() -> None:
