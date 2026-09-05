@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
+import subprocess
+import sys
+import textwrap
 
 import pytest
 
@@ -49,6 +53,38 @@ def test_bayesian_engines_have_separate_adapter_modules() -> None:
     assert "numpyro" not in pymc_imports
     assert "numpyro" in numpyro_imports
     assert "pymc" not in numpyro_imports
+
+
+def test_profile_facade_does_not_traverse_numpy_scipy_or_fem() -> None:
+    """Importing capability metadata must not initialize numerical backends."""
+
+    code = textwrap.dedent(
+        """
+        import importlib.abc
+        import sys
+
+        blocked = {"numpy", "scipy", "skfem"}
+
+        class Blocker(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname.split(".", 1)[0] in blocked:
+                    raise ModuleNotFoundError(f"blocked profile-facade import: {fullname}")
+                return None
+
+        sys.meta_path.insert(0, Blocker())
+        import finite_element_options.estimation.bayesian_profile
+        assert not blocked.intersection(sys.modules)
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ROOT,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_bayesian_profile_runtime_guard_rejects_python_311(

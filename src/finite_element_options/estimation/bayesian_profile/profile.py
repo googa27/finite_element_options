@@ -9,7 +9,7 @@ import platform
 import sys
 from typing import Any
 
-from finite_element_options.validation.evidence.serialization import (
+from finite_element_options.contracts.evidence_serialization import (
     canonical_json_sha256,
     distribution_install_mode,
     file_sha256,

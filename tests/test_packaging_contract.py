@@ -200,6 +200,29 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     assert "petsc" not in {extra.lower() for extra in provides_extras}
 
 
+def test_calibration_preserves_python_311_pymc_compatibility_only() -> None:
+    """The 3.12 split must not silently break the supported 3.11 workflow."""
+
+    requirements = [Requirement(item) for item in _requires_dist()]
+    for dependency in ("arviz", "pymc"):
+        expected = canonicalize_name(dependency)
+        candidates = [
+            requirement
+            for requirement in requirements
+            if canonicalize_name(requirement.name) == expected and requirement.marker is not None
+        ]
+        assert any(
+            item.marker is not None
+            and item.marker.evaluate({"extra": "calibration", "python_version": "3.11"})
+            for item in candidates
+        )
+        assert not any(
+            item.marker is not None
+            and item.marker.evaluate({"extra": "calibration", "python_version": "3.12"})
+            for item in candidates
+        )
+
+
 def test_bayesian_extras_are_bounded_to_python_312() -> None:
     """Bayesian/JAX extras must fail closed outside the evidenced Python minor."""
 

@@ -330,12 +330,12 @@
           "unisolated all-dependencies development environment"
         ],
         "evidence": "Issue #137 installs a clean wheel after hash-verified Python 3.12 PyMC-only or combined locks, runs native PyMC and JAX-native NumPyro NUTS over an identifiable exact-posterior synthetic model, gates finite log density, R-hat, ESS, divergences, posterior and predictive mean/SD agreement, cross-engine parity, seeds, lock identity, Python markers, and fail-closed FEM differentiation in docs/evidence/bayesian_jax_profile_2026-09-05.json (sha256 31d98b20a7352d12dffacbe445ccea6e525fa0c23ed112bfdb51189581831190).",
-        "adapter_boundary": "finite_element_options.estimation.bayesian_profile lazily imports PyMC, ArviZ, JAX, and NumPyro; the JAX-native NumPyro adapter is a separate module with an AST gate forbidding NumPy, SciPy, scikit-fem, and FEM-layer imports; external tests live outside default collection and selected CI profiles fail rather than skip.",
+        "adapter_boundary": "finite_element_options.estimation.bayesian_profile uses dependency-light contracts.evidence_serialization provenance, imports no NumPy/SciPy/scikit-fem through its facade, and lazily imports PyMC, ArviZ, JAX, and NumPyro only inside smoke execution; the JAX-native NumPyro adapter has an AST gate forbidding NumPy, SciPy, scikit-fem, and FEM-layer imports; external tests live outside default collection and selected CI profiles fail rather than skip.",
         "custom_code_reason": "Repository code owns literal synthetic data, exact conjugate oracle, thresholds, posterior/predictive summaries, lock lineage, and unsupported FEM-gradient policy; maintained PPLs own NUTS and ArviZ owns diagnostics.",
         "maintenance_evidence": "https://github.com/pymc-devs/pymc/releases and https://github.com/pyro-ppl/numpyro/releases",
         "api_stability_evidence": "https://www.pymc.io/projects/docs/en/stable/ and https://num.pyro.ai/en/stable/",
         "license_evidence": "PyMC and ArviZ Apache-2.0; JAX and NumPyro Apache-2.0",
-        "rollback_or_defer_policy": "Keep calibration deterministic/statsmodels-only and reject the Bayesian profiles if Python 3.12 markers, clean lock-first wheel installation, exact lock hashes, finite log density, R-hat/ESS, posterior/predictive mean/SD, cross-engine, or fail-closed JAX/FEM gates fail.",
+        "rollback_or_defer_policy": "On Python 3.12 keep calibration deterministic/statsmodels-only; preserve temporary Python 3.11 PyMC/ArviZ compatibility until that interpreter retires; reject the isolated Bayesian profiles if Python 3.12 markers, clean lock-first wheel installation, exact lock hashes, finite log density, R-hat/ESS, posterior/predictive mean/SD, cross-engine, or fail-closed JAX/FEM gates fail.",
         "oracle_or_reference_tests": [
           "external_tests/bayesian_profile/test_pymc_profile.py",
           "external_tests/bayesian_profile/test_numpyro_profile.py",

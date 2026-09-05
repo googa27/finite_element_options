@@ -5,8 +5,6 @@ from __future__ import annotations
 from time import perf_counter
 from typing import Any
 
-import numpy as np
-
 from .contracts import BayesianSmokeConfig, require_supported_python
 from .oracle import build_diagnostic_summary
 
@@ -21,6 +19,7 @@ def run_pymc_smoke(config: BayesianSmokeConfig | None = None) -> dict[str, Any]:
     selected = config or BayesianSmokeConfig()
     try:
         import arviz as az
+        import numpy as np
         import pymc as pm
     except ImportError as exc:  # pragma: no cover - isolated profile test
         raise ModuleNotFoundError(PYMC_HINT) from exc

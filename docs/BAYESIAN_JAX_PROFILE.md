@@ -41,9 +41,9 @@ This is an environment and diagnostic capability only. It is not market calibrat
 | `jax` | existing narrow JAX Greek experiments | JAX |
 | `bayesian-jax` | JAX-native probabilistic inference | PyMC, ArviZ, JAX, NumPyro |
 
-PyMC/ArviZ are no longer installed by the `calibration` extra. Both Bayesian extras carry `>=3.12,<3.13` dependency markers and their runners fail closed outside Python 3.12. `bayesian-jax` is intentionally distinct from the existing narrow `jax` extra and from scikit-fem/SciPy runtime arrays.
+On Python 3.12, PyMC/ArviZ are no longer installed by the `calibration` extra. Temporary `<3.12` compatibility markers preserve the existing Python 3.11 calibration workflow; removal follows the Python 3.11 support retirement rather than silently breaking it. Both Bayesian extras carry `>=3.12,<3.13` dependency markers and their runners fail closed outside Python 3.12. `bayesian-jax` is intentionally distinct from the existing narrow `jax` extra and from scikit-fem/SciPy runtime arrays.
 
-The root `PyMCCalibrator` and `sample_pymc_calibration` names remain as legacy compatibility APIs; they load PyMC lazily and now report the explicit `finite-element-options[bayesian]` remedy when that extra is absent. New evidence code lives only under `estimation.bayesian_profile`.
+The root `PyMCCalibrator` and `sample_pymc_calibration` names remain as legacy compatibility APIs; they load PyMC lazily and report the supported remedy for Python 3.11 (`[calibration]`) or Python 3.12 (`[bayesian]`) when it is absent.
 
 ## Recreate from a clean location
 
@@ -138,7 +138,7 @@ This is deliberately a bounded smoke, not proof that all future hierarchical/PDE
 
 ## JAX-native boundary
 
-NumPyro owns the JAX-native NUTS route. `numpyro_smoke.py` is separate from `pymc_smoke.py`; an AST architecture test forbids NumPy, SciPy, scikit-fem, and FEM-layer imports in the JAX-native adapter.
+NumPyro owns the JAX-native NUTS route. `numpyro_smoke.py` is separate from `pymc_smoke.py`; an AST architecture test forbids NumPy, SciPy, scikit-fem, and FEM-layer imports in the JAX-native adapter. The profile facade uses dependency-light provenance contracts and is subprocess-tested against any NumPy/SciPy/scikit-fem import traversal.
 
 Automatic FEM differentiation remains fail-closed:
 

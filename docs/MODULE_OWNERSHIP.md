@@ -24,7 +24,7 @@ This module ownership inventory treats the repository as a finite-element numeri
 | Path | Class | Target owner / treatment | Public surface | Extra / dependency profile | Removal or stabilization target |
 |---|---|---|---|---|---|
 | `__init__.py` | core | Lightweight package marker; no broad re-exports | Base import only | core | Keep narrow |
-| `contracts/` | core | Immutable native FEM/portfolio compatibility contracts, formula bundles and capability records | Stable public contracts | core | Stabilize under #48/#49 |
+| `contracts/` | core | Immutable native FEM/portfolio compatibility contracts, formula bundles, capability records, and dependency-light evidence serialization/provenance | Stable public contracts | core | Stabilize under #48/#49 |
 | `core/` | core | Market/model coefficient helpers and analytical references used by FEM tests | Public but FEM-owned | core | Consolidate with typed contracts under #48 |
 | `space/` | core | Domain specs, meshes, finite-element spaces, weak forms, named BCs, solvers and adaptivity | Public FEM mechanics | core | Stabilize under #48; domain/boundary metadata under #39 |
 | `time_integration/` | core | Theta stepping and time-policy mechanics | Public FEM mechanics | core | Stabilize under #48 |

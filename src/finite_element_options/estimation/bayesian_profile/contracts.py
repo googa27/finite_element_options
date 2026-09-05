@@ -7,7 +7,7 @@ from math import isfinite
 import sys
 from typing import Any, Final
 
-from finite_element_options.validation.evidence.serialization import canonical_json_sha256
+from finite_element_options.contracts.evidence_serialization import canonical_json_sha256
 
 
 SCHEMA_VERSION: Final = "bayesian-jax-profile/v1"
