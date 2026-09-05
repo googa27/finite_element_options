@@ -96,6 +96,7 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
         "matplotlib",
         "pandas",
         "pymc",
+        "pymor",
         "quantlib",
         "ruptures",
         "statsmodels",
@@ -142,6 +143,8 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
         "changepoints": "ruptures",
         "quantlib": "QuantLib",
         "identifiability": "iminuit",
+        "uncertainty": "openturns",
+        "reduction": "pymor",
     }
     for extra, dependency in expected.items():
         assert _has_extra_dependency(requires_dist, extra, dependency), (
@@ -213,7 +216,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         import pathlib
         import sys
 
-        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns"}
+        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns", "pymor"}
         checkout = pathlib.Path({str(ROOT)!r}).resolve()
 
         preloaded = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
@@ -235,6 +238,8 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             'finite_element_options.examples.regime_switching_quanto.adoption',
             'finite_element_options.examples.regime_switching_quanto.adoption.optional',
             'finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state',
+            'finite_element_options.validation.evidence.reduced_order',
+            'finite_element_options.validation.evidence.reduced_order.pymor_adapter',
         ):
             module = importlib.import_module(module_name)
             module_file = pathlib.Path(module.__file__).resolve()

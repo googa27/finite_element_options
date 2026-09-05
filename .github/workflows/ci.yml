@@ -207,6 +207,14 @@ jobs:
             python-version: '3.12'
             dependency: openturns
             imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty.contracts
+          - profile: reduction
+            python-version: '3.11'
+            dependency: pymor
+            imports: finite_element_options.validation.evidence.reduced_order,finite_element_options.validation.evidence.reduced_order.pymor_adapter
+          - profile: reduction
+            python-version: '3.12'
+            dependency: pymor
+            imports: finite_element_options.validation.evidence.reduced_order,finite_element_options.validation.evidence.reduced_order.pymor_adapter
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -292,6 +300,14 @@ jobs:
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_openturns_uq.py" \
               -k 'openturns or uncertainty or canonical_artifact_sha' --no-cov
           fi
+          if [ "${PROFILE}" = "reduction" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            cd "${GITHUB_WORKSPACE}"
+            /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              "${GITHUB_WORKSPACE}/tests/integration/test_pymor_black_scholes_rom.py" \
+              --no-cov
+            /tmp/feo-${PROFILE}-check/bin/python scripts/run_pymor_rom_benchmark.py --verify
+          fi
 
   supply_chain:
     name: supply chain audit and SBOM
@@ -309,10 +325,13 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability,uncertainty]' -c constraints.txt
+          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability,uncertainty,reduction]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
-        run: python -m pip_audit --progress-spinner=off --skip-editable
+        # pyMOR 2026.1 requires diskcache 5.6.3 and no patched PyPI release exists.
+        # The optional adapter scopes cache disablement to object construction and
+        # never reads persisted cache data; remove this exact ignore when a fix ships.
+        run: python -m pip_audit --progress-spinner=off --skip-editable --ignore-vuln PYSEC-2026-2447
       - name: Generate CycloneDX SBOM
         run: cyclonedx-py environment --of JSON -o sbom.json
       - name: Upload supply-chain artifacts

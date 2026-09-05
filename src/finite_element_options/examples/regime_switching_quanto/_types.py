@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
+
+from finite_element_options.validation.evidence.serialization import json_safe
 
 
 class FrozenMapping(Mapping[Any, Any]):
@@ -161,30 +162,3 @@ class MarkovSwitchingDiffusionResult:
         """Return a JSON-safe representation with no NumPy or pandas objects."""
 
         return json_safe(self)
-
-
-def json_safe(value: Any) -> Any:
-    """Convert dataclasses, arrays, NumPy scalars and timestamps to JSON values."""
-
-    from dataclasses import asdict, is_dataclass
-
-    if is_dataclass(value):
-        return json_safe(asdict(cast(Any, value)))
-    if isinstance(value, Mapping):
-        return {str(key): json_safe(val) for key, val in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [json_safe(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return json_safe(value.tolist())
-    if isinstance(value, np.integer):
-        return int(value)
-    if isinstance(value, (np.floating, float)):
-        number = float(value)
-        return number if np.isfinite(number) else None
-    if isinstance(value, np.datetime64):
-        return str(value.astype("datetime64[D]"))
-    if isinstance(value, (datetime, date)):
-        if type(value).__name__ == "NaTType":
-            return None
-        return value.date().isoformat() if isinstance(value, datetime) else value.isoformat()
-    return value

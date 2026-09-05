@@ -265,6 +265,35 @@
         "maturity": "experimental"
       },
       {
+        "capability": "optional reduced-order modeling boundary",
+        "selected": [
+          "pyMOR ==2026.1.*"
+        ],
+        "alternatives": [
+          "SciPy-only hand-written POD/Galerkin",
+          "RBniCSx",
+          "Neural surrogate model"
+        ],
+        "evidence": "Issue #135 adds an exact variance-affine Black-Scholes/P2 FEM decomposition, mass-product POD, affine Galerkin projection, disjoint holdout price/Delta/Gamma and linear-residual checks, robust repeated timing, memory/amortization accounting, fail-closed envelope tests, and public-synthetic artifact docs/evidence/black_scholes_pymor_rom_2026-09-05.json (sha256 f30d712e054937ac7e17ea452fc2bcbc0a874087b1ec180caa5e63dc190ea4b7).",
+        "adapter_boundary": "finite_element_options.validation.evidence.reduced_order.pymor_adapter imports pyMOR only inside build_pod_projection; validation.evidence.reduced_order public contracts and online solves retain NumPy/SciPy arrays only, so the base wheel imports without pyMOR.",
+        "custom_code_reason": "Repository code owns the Black-Scholes affine decomposition K(eta)=K_constant+eta*K_variance, implicit-Euler FOM/ROM stepping, output functionals, envelope policy, timing/amortization gates, and evidence schema; pyMOR owns mass-product POD and operator projection.",
+        "maintenance_evidence": "https://github.com/pymor/pymor/releases/tag/2026.1.0 and https://pypi.org/project/pymor/",
+        "api_stability_evidence": "https://docs.pymor.org/2026-1-0/ documents pymor.algorithms.pod.pod, pymor.algorithms.projection.project, NumpyVectorSpace, NumpyMatrixOperator, and to_matrix; those public APIs are confined to the adapter.",
+        "license_evidence": "https://github.com/pymor/pymor/blob/2026.1.0/LICENSE.txt (BSD-2-Clause AND BSD-3-Clause)",
+        "security_exception": "pyMOR 2026.1 requires diskcache 5.6.3, affected by PYSEC-2026-2447/CVE-2025-69872 with no patched PyPI release as of 2026-09-05.",
+        "security_mitigation": "The adapter accepts no cache paths or persisted cache objects, serializes construction with a process-local RLock, scopes pymor.core.cache.disable_caching() to that call, and restores the prior environment and process-wide cache state in finally; CI carries one exact advisory ignore while all other audit findings remain blocking.",
+        "security_repayment_trigger": "Remove the pip-audit ignore and re-lock immediately when patched DiskCache is published or pyMOR removes the dependency.",
+        "api_license_evidence": "https://github.com/pymor/pymor/blob/2026.1.0/LICENSE.txt",
+        "rollback_or_defer_policy": "Keep pyMOR optional and the full-order FEM route authoritative; reject or remove promotion if exact affine reconstruction, holdout tolerances, out-of-envelope refusal, >=10x median online speedup, or <=1000-query 10x amortization fails on replay.",
+        "oracle_or_reference_tests": [
+          "tests/integration/test_pymor_black_scholes_rom.py",
+          "tests/validation/test_pymor_rom_evidence.py",
+          "scripts/run_pymor_rom_benchmark.py --verify",
+          ".github/workflows/ci.yml optional_imports reduction profiles for Python 3.11 and 3.12"
+        ],
+        "maturity": "experimental"
+      },
+      {
         "capability": "FEM verification evidence",
         "selected": [
           "SymPy >=1.12,<2",
