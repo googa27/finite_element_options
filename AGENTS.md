@@ -210,6 +210,7 @@ CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel pac
 - Run focused #117 evidence: `pytest -q tests/validation/test_manufactured_solutions.py tests/validation/test_black_scholes_convergence.py`.
 - Emit the deterministic FEM evidence bundle: `fem-options validation run-benchmark fem-bs-001 --out /tmp/fem-bs-001-evidence.json`; omit `--out` for JSON stdout.
 - Replay the optional pyMOR promotion gates: `uv run --extra reduction python scripts/run_pymor_rom_benchmark.py --verify`; timing bytes are noisy, so verification compares stable identities and current accuracy/speed/amortization/fallback gates.
+- Replay PETSc only in the matched external environment documented by `docs/PETSC_VI_ASSESSMENT.md`: `PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python scripts/run_petsc_vi_assessment.py --verify`. A skipped petsc4py import is not support evidence.
 - Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 
 ## 15. Evidence by change type

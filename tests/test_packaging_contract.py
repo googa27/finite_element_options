@@ -97,6 +97,7 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
         "pandas",
         "pymc",
         "pymor",
+        "petsc4py",
         "quantlib",
         "ruptures",
         "statsmodels",
@@ -151,6 +152,11 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
             f"The {extra!r} extra must install {dependency!r}; requires-dist was:\n"
             + "\n".join(requires_dist)
         )
+    assert not _has_extra_dependency(requires_dist, "petsc", "petsc4py"), (
+        "PETSc must remain an explicit matched external environment, not a portable extra"
+    )
+    provides_extras = metadata.metadata("finite-element-options").get_all("Provides-Extra") or []
+    assert "petsc" not in {extra.lower() for extra in provides_extras}
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(
@@ -216,7 +222,7 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         import pathlib
         import sys
 
-        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns", "pymor"}
+        blocked = {"arch", "ruptures", "QuantLib", "iminuit", "openturns", "pymor", "petsc4py"}
         checkout = pathlib.Path({str(ROOT)!r}).resolve()
 
         preloaded = sorted(name for name in sys.modules if name.split('.')[0] in blocked)
@@ -240,6 +246,8 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
             'finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state',
             'finite_element_options.validation.evidence.reduced_order',
             'finite_element_options.validation.evidence.reduced_order.pymor_adapter',
+            'finite_element_options.validation.evidence.petsc_vi',
+            'finite_element_options.validation.evidence.petsc_vi.adapter',
         ):
             module = importlib.import_module(module_name)
             module_file = pathlib.Path(module.__file__).resolve()

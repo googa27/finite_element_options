@@ -63,6 +63,14 @@ class _AmericanTwoNodeSpace:
         return A, b
 
 
+def test_theta_scheme_rejects_ambiguous_lcp_solver_configuration() -> None:
+    with pytest.raises(ValueError, match="not both"):
+        ThetaScheme(
+            lcp_solver=ProjectedSORSolver(),
+            lcp_solver_settings=ProjectedSORSolverSettings(),
+        )
+
+
 def test_projected_sor_solves_coupled_lcp_instead_of_post_step_clipping() -> None:
     matrix = sps.csr_matrix([[2.0, -1.0], [-1.0, 2.0]])
     rhs = np.array([0.0, 0.0])

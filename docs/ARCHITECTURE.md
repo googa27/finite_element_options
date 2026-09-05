@@ -149,6 +149,8 @@ Issue #130 adds an adoption-only boundary package at `finite_element_options.exa
 
 Issue #135 adds `validation.evidence.reduced_order` with a lazy local `pymor_adapter` boundary. The benchmark reuses the existing scikit-fem full-order assembly, proves the volatility dependence is affine in variance on fixed grids with a volatility-independent asymptotic boundary, delegates mass-product POD and Galerkin projection to pyMOR, and keeps online arrays NumPy/SciPy-only. Promotion is narrowly experimental: disjoint holdout price/Delta/Gamma tolerances, repeated timing, offline amortization, memory accounting, predecessor lineage, and hard out-of-envelope fallback all remain executable gates in `BLACK_SCHOLES_PYMOR_ROM.md`. Generic canonical evidence serialization now lives under `validation.evidence.serialization`; the former regime adoption helper is a compatibility re-export.
 
+Issue #136 adds `validation.evidence.petsc_vi` and a structural `LCPSolver` injection point. The already-validated American lower-obstacle route supplies the PETSc trigger. scikit-fem/SciPy continue to own mesh/operator assembly and the base-wheel projected-SOR reference; the lazy external adapter converts canonical CSR LCPs to single-rank PETSc AIJ and delegates only each solve to SNES `vinewtonrsls` with nested KSP `preonly`/PC `lu`. A matched external Python 3.12 environment executes real KSP, SNES-VI, and TS doctors plus full American-put parity, residual, timing, memory, iteration, and typed-failure gates. SciPy remains canonical, and neither distributed assembly nor a capability-matrix upgrade is claimed.
+
 ## 6. Dependency direction
 
 ```text
@@ -315,7 +317,7 @@ American exercise uses the discrete lower-obstacle LCP convention
 \[
 u\ge g,\qquad Au-b\ge0,\qquad (u-g)\odot(Au-b)=0.
 \]
-`ThetaScheme.solve(..., is_american=True)` sends each boundary-enforced theta system to the reference projected-SOR solver instead of solving then clipping. Each step records primal violation, dual violation, complementarity residual, projected residual, iteration count, relaxation, exercise-set mask and solve time in `last_lcp_diagnostics`; nonconvergence raises `LCPConvergenceError` with the failed diagnostics rather than returning a marked-success last iterate. PETSc/SNES variational inequalities and external American-option oracle suites remain separate capabilities.
+`ThetaScheme.solve(..., is_american=True)` sends each boundary-enforced theta system to its injected structural `LCPSolver`; the default remains the reference projected-SOR solver, so existing callers never acquire an optional dependency. Each step records primal violation, dual violation, complementarity residual, projected residual, iteration count, solver/backend reason, nested linear iterations, relaxation, exercise-set mask and solve time in `last_lcp_diagnostics`; nonconvergence raises `LCPConvergenceError` with the failed diagnostics rather than returning a marked-success last iterate. The PETSc/SNES-VI route is a separately evidenced single-rank external adapter, not a distributed assembly or broad American-option capability.
 
 ## 13. Linear solver architecture
 

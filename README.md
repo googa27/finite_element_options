@@ -84,6 +84,8 @@ Adoption-only optional libraries for this example are isolated behind the lazy `
 
 The separate [`reduction`](docs/BLACK_SCHOLES_PYMOR_ROM.md) profile provides an experimental pyMOR `==2026.1.*` POD/Galerkin adapter for a narrowly validated variance-affine 1D Black–Scholes benchmark. Its canonical run achieved a `28.604x` median online speedup, met disjoint holdout price/Delta/Gamma tolerances, and amortized the offline cost to `10x` after 367 queries. It refuses volatility outside `[0.10, 0.35]` and names full-order FEM as fallback. This optional promotion does **not** add a capability-matrix row or establish a general ROM solver. Because pyMOR currently requires unpatched `diskcache 5.6.3` (`PYSEC-2026-2447`), the adapter serializes construction with a process-local `RLock`, scopes pyMOR cache disablement to that call, and restores the prior environment and process-wide cache state; the single exact audit exception and removal trigger are documented in the report.
 
+The [`PETSc external VI assessment`](docs/PETSC_VI_ASSESSMENT.md) is separately triggered by the existing American lower-obstacle route. A matched PETSc/petsc4py `3.24.6` Python 3.12 environment ran real KSP, SNES-VI, and TS doctors plus an 80-step equal-discretization American-put comparison. The single-rank adapter passed residual and price/Delta/Gamma gates and was `46.77x` faster than the Python projected-SOR reference, but SciPy remains canonical; there is no package extra, distributed-assembly claim, or capability-matrix upgrade.
+
 ## Installation
 
 The core wheel keeps optional stacks out of the base install. Use a local wheel-style install for consumers and an editable install constrained by `constraints.txt` for development gates. Optional profiles are published as extras: `fd`, `jax`, `calibration`, `volatility`, `changepoints`, `quantlib`, `identifiability`, `uncertainty`, `reduction`, `io`, `viz`, `ui`, `validation`, `build`, and `dev`.
@@ -167,9 +169,11 @@ uv run --with matplotlib==3.10.3 --with pillow==11.3.0 python scripts/generate_r
 uv run --extra quantlib python scripts/run_quantlib_oracle_matrix.py --output docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json --verify
 uv run --extra identifiability python scripts/run_iminuit_identifiability.py --output docs/evidence/regime_switching_quanto_iminuit_identifiability_2026-09-04.json --verify
 uv run --extra reduction python scripts/run_pymor_rom_benchmark.py --verify
+PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python scripts/run_petsc_vi_assessment.py --verify
 uv run --extra quantlib pytest -q tests/examples/test_regime_switching_quanto_quantlib_oracle.py tests/examples/test_regime_switching_quanto_adoption_boundaries.py --no-cov
 uv run --extra identifiability --extra validation pytest -q tests/examples/test_regime_switching_quanto_iminuit_identifiability.py tests/examples/test_regime_switching_quanto_adoption_boundaries.py --no-cov
 uv run --extra reduction pytest -q tests/integration/test_pymor_black_scholes_rom.py tests/validation/test_pymor_rom_evidence.py --no-cov
+PETSC_DIR="$(brew --prefix petsc)" /tmp/feo-petsc-wheel/bin/python -m pytest -q external_tests/petsc_vi/test_petsc_vi_external.py --no-cov
 pytest -q tests/architecture --no-cov
 pytest -q tests/test_packaging_contract.py --no-cov
 pytest -q tests/test_benchmark_black_scholes.py tests/test_pinares_fem_proxy.py tests/test_capability_matrix_docs.py --no-cov
