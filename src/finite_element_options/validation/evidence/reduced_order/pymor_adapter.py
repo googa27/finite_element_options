@@ -36,10 +36,15 @@ def build_pod_projection(
         from pymor.algorithms.pod import pod
         from pymor.algorithms.projection import project
         from pymor.algorithms.to_matrix import to_matrix
+        from pymor.core.cache import disable_caching
         from pymor.operators.numpy import NumpyMatrixOperator
         from pymor.vectorarrays.numpy import NumpyVectorSpace
     except ImportError as exc:  # pragma: no cover - tested in isolated wheel probe
         raise ModuleNotFoundError(INSTALL_HINT) from exc
+
+    # pyMOR 2026.1 requires vulnerable diskcache 5.6.3. This adapter never accepts
+    # persisted caches and disables all pyMOR caching before touching its objects.
+    disable_caching()
 
     snapshot_matrix = np.asarray(snapshots, dtype=float)
     if snapshot_matrix.ndim != 2 or snapshot_matrix.shape[1] < 2:

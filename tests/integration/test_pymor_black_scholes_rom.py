@@ -104,10 +104,24 @@ def test_boundary_outputs_and_cached_fom_match_cold_reference() -> None:
     assert cached.final_interior == pytest.approx(cold.final_interior)
 
 
-def test_pymor_pod_galerkin_matches_full_order_price_and_greeks() -> None:
+def test_pymor_pod_galerkin_matches_full_order_price_and_greeks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pymor.core.cache as pymor_cache
+
+    cache_disabled = False
+    original_disable = pymor_cache.disable_caching
+
+    def record_disable() -> None:
+        nonlocal cache_disabled
+        cache_disabled = True
+        original_disable()
+
+    monkeypatch.setattr(pymor_cache, "disable_caching", record_disable)
     config = smoke_config()
     system = build_affine_black_scholes_system(config)
     trained = train_pymor_rom(system, config)
+    assert cache_disabled
     assert trained.library == "pymor"
     assert trained.basis_size <= config.max_basis_size
     assert trained.basis_size > 0

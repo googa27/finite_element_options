@@ -12,8 +12,8 @@ The canonical public-synthetic run passed every promotion gate:
 | Maximum ROM/FOM price error | ≤ `1e-7` | `2.637945418e-11` | PASS |
 | Maximum ROM/FOM Delta error | ≤ `1e-6` | `1.005010972e-7` | PASS |
 | Maximum ROM/FOM Gamma error | ≤ `1e-5` | `5.579224235e-6` | PASS |
-| Median online speedup | ≥ `10x` | `28.74946425x` | PASS |
-| Queries to amortize offline cost at `10x` | ≤ `1000` | `360` | PASS |
+| Median online speedup | ≥ `10x` | `29.04957055x` | PASS |
+| Queries to amortize offline cost at `10x` | ≤ `1000` | `359` | PASS |
 | Out-of-envelope behavior | refuse and name FOM fallback | both sides refused | PASS |
 | Predecessor continuity | issue #134 artifact hash verified | exact SHA-256 match | PASS |
 
@@ -22,7 +22,7 @@ This does **not** promote reduced-order modeling as a general solver capability.
 ## Reproducible evidence
 
 - Artifact: [`evidence/black_scholes_pymor_rom_2026-09-05.json`](evidence/black_scholes_pymor_rom_2026-09-05.json)
-- Artifact SHA-256: `3107c113dec7aff34bb13fffe243340d49e83849059da2150437b0a0b5ec4675`
+- Artifact SHA-256: `75598e75ad587b1ef85f98b3208d0dc7b5c81cf598afa4b30ad103ecbf7d3bd1`
 - Study-input SHA-256: `5360959855b4e573914e5e18ead47c3b55cfbc2f419cf62f6939445f29ab17be`
 - Affine-decomposition SHA-256: `0ee472acab83e1683c723947c454af7d3ea906e4af670ad33f823f0f87e52cad`
 - Predecessor artifact SHA-256: `d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f`
@@ -97,21 +97,21 @@ The analytical Black–Scholes comparison validates that the FOM reference itsel
 
 ## Timing and amortization
 
-Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002912619617 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
+Timing uses `time.perf_counter`, 3 warmups per holdout, and 11 measured repetitions per holdout: 66 FOM and 66 ROM samples. The primary FOM comparator is deliberately strict: each holdout's parameter-specific sparse operator is assembled and factorized once, then the benchmark times cached repeated full-order marches. The six untimed parameter-setup samples had median `0.002830396406 s`. Execution order alternates, and cyclic GC is disabled during each sample and collected immediately afterward.
 
 | Metric | FOM | ROM |
 |---|---:|---:|
-| Median | `0.1086970766 s` | `0.003780838335 s` |
-| MAD | `0.001945190364 s` | `0.0001064634416 s` |
-| 5th percentile | `0.1061914652 s` | `0.003581584198 s` |
-| 95th percentile | `0.1187487927 s` | `0.004093530355 s` |
+| Median | `0.1072467517 s` | `0.003691853257 s` |
+| MAD | `0.001526039327 s` | `0.0001362184994 s` |
+| 5th percentile | `0.1055050979 s` | `0.003483512672 s` |
+| 95th percentile | `0.1206497179 s` | `0.00410842686 s` |
 
-Offline total: `2.547711798 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
+Offline total: `2.521178083 s`, including system construction, direct affine validation, 9 training FOM solves, lazy pyMOR import/vector-space setup, snapshot conversion, POD, and projection.
 
-- Raw median online speedup: `28.74946425x`.
+- Raw median online speedup: `29.04957055x`.
 - Ordinary break-even: 25 solves.
-- First solve count reaching an amortized `10x`: 360 solves.
-- Amortized speedup at the declared 1,000-query horizon: `17.17566809x`.
+- First solve count reaching an amortized `10x`: 359 solves.
+- Amortized speedup at the declared 1,000-query horizon: `17.26158228x`.
 
 ## Memory evidence
 
@@ -135,6 +135,12 @@ fallback = full_order_fem
 ```
 
 There is no extrapolation flag and no silent clipping.
+
+## Transitive security exception
+
+pyMOR `2026.1.0` declares `diskcache` as a mandatory dependency. PyPI currently provides only `diskcache 5.6.3`, affected by `PYSEC-2026-2447` / `CVE-2025-69872`: unsafe pickle deserialization if an attacker can write a cache directory later read by the process. No patched PyPI release exists.
+
+This adapter does not accept cache paths or persisted cache objects and calls pyMOR's public `disable_caching()` before constructing any pyMOR object. The reduction CI jobs execute that path, and the supply-chain audit carries one exact, commented `--ignore-vuln PYSEC-2026-2447`; all other findings remain blocking. Remove the ignore as soon as a patched DiskCache release is available or pyMOR removes the dependency. The global cache disablement is a deliberate security side effect of invoking this experimental adapter.
 
 ## Limitations and next evidence
 

@@ -10,7 +10,7 @@ from finite_element_options.validation.evidence.serialization import file_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs" / "evidence" / "black_scholes_pymor_rom_2026-09-05.json"
-EXPECTED_SHA256 = "3107c113dec7aff34bb13fffe243340d49e83849059da2150437b0a0b5ec4675"
+EXPECTED_SHA256 = "75598e75ad587b1ef85f98b3208d0dc7b5c81cf598afa4b30ad103ecbf7d3bd1"
 EXPECTED_INPUT_SHA256 = "5360959855b4e573914e5e18ead47c3b55cfbc2f419cf62f6939445f29ab17be"
 
 
@@ -33,6 +33,7 @@ def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
     assert len(payload["timing"]["reduced_order"]["samples_seconds"]) == 66
     assert payload["timing"]["full_order_policy"].startswith("parameter-specific")
     assert payload["memory"]["online_rom_numerical_payload_bytes"] > 0
+    assert payload["environment"]["pymor_cache_policy"].startswith("disabled")
     assert all(row["passed"] for row in payload["holdouts"])
     assert all(row["passed"] for row in payload["envelope_refusals"])
     capability_matrix = (ROOT / "docs" / "CAPABILITY_MATRIX.md").read_text(encoding="utf-8")

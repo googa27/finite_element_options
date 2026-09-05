@@ -47,6 +47,7 @@ REQUIRED_SNIPPETS = {
     "FEniCSx contract job": "fenicsx_contract",
     "FEniCSx backend contract tests": "tests/test_fenics_solver.py",
     "pip audit": "python -m pip_audit",
+    "bounded diskcache advisory exception": "--ignore-vuln PYSEC-2026-2447",
     "cyclonedx sbom": "cyclonedx-py environment",
     "optional fd profile": "profile: fd",
     "optional jax profile": "profile: jax",

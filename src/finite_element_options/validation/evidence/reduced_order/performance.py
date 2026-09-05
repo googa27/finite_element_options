@@ -155,6 +155,7 @@ def environment_evidence(trained: TrainedPymorROM) -> dict[str, Any]:
         "scikit_fem": version("scikit-fem"),
         "pymor": trained.projection.library_version,
         "pymor_license": "BSD-2-Clause AND BSD-3-Clause",
+        "pymor_cache_policy": "disabled before adapter object construction; no persisted cache read",
         "thread_environment": {
             key: os.environ.get(key)
             for key in (
