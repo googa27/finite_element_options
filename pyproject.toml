@@ -50,6 +50,7 @@ volatility = ["arch>=8,<9"]
 changepoints = ["ruptures>=1.1.10,<2"]
 quantlib = ["QuantLib>=1.43,<2"]
 identifiability = ["iminuit>=2.32,<3"]
+uncertainty = ["openturns>=1.27,<2"]
 io = [
     "pandas>=2,<3",
     "pyarrow>=23,<24",
@@ -123,6 +124,7 @@ markers = [
     "validation: validation/reproducibility checks",
     "quantlib: optional QuantLib oracle checks",
     "identifiability: optional iminuit profile-likelihood checks",
+    "uncertainty: optional OpenTURNS uncertainty-decomposition checks",
 ]
 testpaths = ["tests"]
 

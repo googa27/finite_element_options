@@ -50,6 +50,13 @@ OPTIONAL_DEPENDENCIES: tuple[OptionalDependency, ...] = (
         install_hint="finite-element-options[identifiability]",
         maturity="experimental",
     ),
+    OptionalDependency(
+        module_name="openturns",
+        extra="uncertainty",
+        dependency="openturns>=1.27,<2",
+        install_hint="finite-element-options[uncertainty]",
+        maturity="experimental",
+    ),
 )
 
 _REGISTRY_BY_MODULE = {item.module_name: item for item in OPTIONAL_DEPENDENCIES}

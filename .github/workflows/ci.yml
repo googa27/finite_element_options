@@ -186,11 +186,11 @@ jobs:
           - profile: quantlib
             python-version: '3.11'
             dependency: QuantLib
-            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state
           - profile: quantlib
             python-version: '3.12'
             dependency: QuantLib
-            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state
           - profile: identifiability
             python-version: '3.11'
             dependency: iminuit
@@ -199,6 +199,14 @@ jobs:
             python-version: '3.12'
             dependency: iminuit
             imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.identifiability,finite_element_options.examples.regime_switching_quanto.adoption.identifiability.contracts
+          - profile: uncertainty
+            python-version: '3.11'
+            dependency: openturns
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty.contracts
+          - profile: uncertainty
+            python-version: '3.12'
+            dependency: openturns
+            imports: finite_element_options.examples.regime_switching_quanto.adoption,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty,finite_element_options.examples.regime_switching_quanto.adoption.uncertainty.contracts
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -237,7 +245,7 @@ jobs:
               print('optional import OK:', module.__name__)
 
           if os.environ['PROFILE'] == 'quantlib':
-              from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_state import (
+              from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle.state import (
                   quantlib_evaluation_date,
               )
 
@@ -276,6 +284,14 @@ jobs:
               "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_iminuit_identifiability.py" \
               -k 'identifiability or iminuit' --no-cov
           fi
+          if [ "${PROFILE}" = "uncertainty" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            cd "${GITHUB_WORKSPACE}"
+            /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_adoption_boundaries.py" \
+              "${GITHUB_WORKSPACE}/tests/examples/test_regime_switching_quanto_openturns_uq.py" \
+              -k 'openturns or uncertainty or canonical_artifact_sha' --no-cov
+          fi
 
   supply_chain:
     name: supply chain audit and SBOM
@@ -293,7 +309,7 @@ jobs:
       - name: Install audited environment
         run: |
           python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability]' -c constraints.txt
+          python -m pip install -e '.[dev,volatility,changepoints,quantlib,identifiability,uncertainty]' -c constraints.txt
           python -m pip install pip-audit cyclonedx-bom -c constraints.txt
       - name: Vulnerability audit
         run: python -m pip_audit --progress-spinner=off --skip-editable

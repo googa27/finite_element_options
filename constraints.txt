@@ -6,3 +6,5 @@ arviz>=0.23,<1
 ruff>=0.8,<0.13
 # Issue #133 profile-likelihood adapter is exercised through the optional extra.
 iminuit>=2.32,<3
+# Issue #134 OpenTURNS adapter is exercised through the optional uncertainty extra.
+openturns>=1.27,<2

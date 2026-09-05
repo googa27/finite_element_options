@@ -57,11 +57,13 @@ REQUIRED_SNIPPETS = {
     "optional changepoints profile": "profile: changepoints",
     "optional quantlib profile": "profile: quantlib",
     "optional identifiability profile": "profile: identifiability",
+    "optional uncertainty profile": "profile: uncertainty",
     "optional dependency matrix field": "DEPENDENCY: ${{ matrix.dependency }}",
     "optional dependency import proof": "importlib.import_module(dependency)",
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
     "QuantLib failure restoration proof": "forced QuantLib failure",
     "iminuit focused installed-wheel tests": "test_regime_switching_quanto_iminuit_identifiability.py",
+    "OpenTURNS focused installed-wheel tests": "test_regime_switching_quanto_openturns_uq.py",
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {
@@ -74,6 +76,7 @@ OPTIONAL_PROFILE_DEPENDENCIES = {
     "changepoints": "ruptures",
     "quantlib": "QuantLib",
     "identifiability": "iminuit",
+    "uncertainty": "openturns",
 }
 
 NEW_OPTIONAL_PROFILES = {
@@ -81,6 +84,7 @@ NEW_OPTIONAL_PROFILES = {
     "changepoints",
     "quantlib",
     "identifiability",
+    "uncertainty",
 }
 
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
@@ -89,6 +93,7 @@ SUPPLY_CHAIN_AUDITED_EXTRAS = (
     "changepoints",
     "quantlib",
     "identifiability",
+    "uncertainty",
 )
 PROJECT_EXTRA_INSTALL = re.compile(r"python -m pip install\b[^\n]*(?:-e\s+)?['\"]?\.\[([^\]\s]+)\]")
 
