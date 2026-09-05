@@ -10,7 +10,7 @@ Decision: **retain OpenTURNS as an optional, experimental UQ adapter** (`finite-
 - direct NumPy reference parity passed with declared pooled-null sampling tolerances;
 - a cheap additive model recovered known Sobol variance shares using OpenTURNS/Saltelli;
 - raw real-FEM Saltelli point estimates and confidence intervals passed finite-sample sanity checks;
-- every component, grid, model, payoff, and calibration source is hash-bound;
+- every component, grid, model, payoff, and calibration source is hash-bound; nested public evidence metadata is recursively immutable and `to_dict()` emits fresh JSON-safe copies;
 - OpenTURNS global RNG state is restored for success, failure, and concurrent calls that coordinate through the shared public `openturns_seeded(...)` context; uncoordinated direct same-process calls are outside this guarantee.
 
 The lightweight NumPy route remains the direct-reference baseline because it samples the same five normalized marginals and evaluates the same FEM response without an optional dependency. OpenTURNS uniquely adds maintained distribution composition, Sobol design generation, raw Saltelli first/total finite-sample estimators, and confidence-interval diagnostics. The maturity remains `experimental_optional_non_production`; no base/core dependency and no capability-matrix maturity change.

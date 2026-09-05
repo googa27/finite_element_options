@@ -178,7 +178,7 @@ def run_openturns_uq_pilot(
         decision=decision,
         study_input_hash=canonical_uq_input_hash(controls),
         component_names=COMPONENT_NAMES,
-        components=list(components),
+        components=components,
         calibration=calibration,
         propagation=propagation,
         direct_reference=direct,

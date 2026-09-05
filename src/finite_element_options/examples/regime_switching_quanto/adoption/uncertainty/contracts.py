@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
 import numpy as np
 
-from finite_element_options.examples.regime_switching_quanto._types import json_safe
+from finite_element_options.examples.regime_switching_quanto._types import (
+    deep_freeze,
+    json_safe,
+)
 
 ComponentName = Literal["data", "parameter", "model_form", "numerical", "monte_carlo"]
 ComponentRole = Literal["fem_perturbation", "additive_validation_estimator_error"]
@@ -30,13 +34,20 @@ def _is_lower_sha256(value: object) -> bool:
     )
 
 
+def _freeze_fields(instance: Any, *names: str) -> None:
+    """Recursively freeze named public evidence fields on a frozen dataclass."""
+
+    for name in names:
+        object.__setattr__(instance, name, deep_freeze(getattr(instance, name)))
+
+
 @dataclass(frozen=True)
 class UncertaintyComponent:
     """One immutable named uncertainty component in normalized coordinates."""
 
     name: ComponentName
     distribution: str
-    scale_or_range: dict[str, float | str]
+    scale_or_range: Mapping[str, float | str]
     units: str
     role: ComponentRole
     source_identity: str
@@ -48,6 +59,7 @@ class UncertaintyComponent:
     def __post_init__(self) -> None:
         """Validate component names, finite ranges, and hash-bound provenance."""
 
+        _freeze_fields(self, "scale_or_range")
         if self.name not in COMPONENT_NAMES:
             raise ValueError(f"unexpected component name: {self.name}")
         if not _is_lower_sha256(self.source_hash):
@@ -112,10 +124,10 @@ class UQCalibration:
     fine_oracle_abs_error: float
     coarse_oracle_abs_error: float
     oracle_identity: str
-    domain_error_grid: dict[str, Any]
+    domain_error_grid: Mapping[str, Any]
     domain_error_grid_hash: str
     domain_max_fine_oracle_abs_error: float
-    domain_max_error_input: dict[str, float]
+    domain_max_error_input: Mapping[str, float]
     domain_error_safety_factor: float
     numerical_half_width: float
     numerical_formula: str
@@ -125,8 +137,8 @@ class UQCalibration:
     mc_paths: int
     mc_steps: int
     mc_steps_per_year: int
-    fine_grid: dict[str, Any]
-    coarse_grid: dict[str, Any]
+    fine_grid: Mapping[str, Any]
+    coarse_grid: Mapping[str, Any]
     fine_grid_hash: str
     coarse_grid_hash: str
     baseline_model_hash: str
@@ -136,6 +148,13 @@ class UQCalibration:
     def __post_init__(self) -> None:
         """Require finite, separated numerical and Monte Carlo scale records."""
 
+        _freeze_fields(
+            self,
+            "domain_error_grid",
+            "domain_max_error_input",
+            "fine_grid",
+            "coarse_grid",
+        )
         finite_values = (
             self.baseline_price_fine,
             self.baseline_price_coarse,
@@ -189,12 +208,12 @@ class UQCalibration:
 class UQPropagationResult:
     """JSON-safe OpenTURNS propagation and sensitivity result."""
 
-    prices: dict[str, Any]
-    first_order_sobol: dict[ComponentName, float]
-    total_order_sobol: dict[ComponentName, float]
-    sobol_intervals: dict[str, dict[ComponentName, dict[str, float]]]
-    sobol_validation: dict[str, Any]
-    component_variance: dict[ComponentName, dict[str, float | int]]
+    prices: Mapping[str, Any]
+    first_order_sobol: Mapping[ComponentName, float]
+    total_order_sobol: Mapping[ComponentName, float]
+    sobol_intervals: Mapping[str, Mapping[ComponentName, Mapping[str, float]]]
+    sobol_validation: Mapping[str, Any]
+    component_variance: Mapping[ComponentName, Mapping[str, float | int]]
     finite_count: int
     sample_seed: int
     sample_size: int
@@ -202,6 +221,19 @@ class UQPropagationResult:
     sobol_base_size: int
     openturns_version: str
     distribution_constructor: str
+
+    def __post_init__(self) -> None:
+        """Freeze all nested propagation evidence after construction."""
+
+        _freeze_fields(
+            self,
+            "prices",
+            "first_order_sobol",
+            "total_order_sobol",
+            "sobol_intervals",
+            "sobol_validation",
+            "component_variance",
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe propagation data."""
@@ -215,11 +247,16 @@ class UQParityResult:
 
     direct_seed: int
     direct_size: int
-    direct_prices: dict[str, Any]
-    differences: dict[str, float]
-    tolerances: dict[str, float]
+    direct_prices: Mapping[str, Any]
+    differences: Mapping[str, float]
+    tolerances: Mapping[str, float]
     passed: bool
     tolerance_formula: str
+
+    def __post_init__(self) -> None:
+        """Freeze parity summaries and thresholds."""
+
+        _freeze_fields(self, "direct_prices", "differences", "tolerances")
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe parity data."""
@@ -231,15 +268,20 @@ class UQParityResult:
 class AdditiveSobolRecovery:
     """Known-variance synthetic Sobol recovery gate."""
 
-    expected_first: dict[ComponentName, float]
-    estimated_first: dict[ComponentName, float]
-    estimated_total: dict[ComponentName, float]
+    expected_first: Mapping[ComponentName, float]
+    estimated_first: Mapping[ComponentName, float]
+    estimated_total: Mapping[ComponentName, float]
     max_abs_error_first: float
     max_abs_error_total: float
     tolerance: float
     passed: bool
     seed: int
     base_size: int
+
+    def __post_init__(self) -> None:
+        """Freeze reference and estimated Sobol mappings."""
+
+        _freeze_fields(self, "expected_first", "estimated_first", "estimated_total")
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe recovery data."""
@@ -254,20 +296,21 @@ class UQPilotResult:
     schema_version: str
     issue: str
     scope: str
-    decision: dict[str, Any]
+    decision: Mapping[str, Any]
     study_input_hash: str
     component_names: tuple[ComponentName, ...]
-    components: list[UncertaintyComponent]
+    components: tuple[UncertaintyComponent, ...]
     calibration: UQCalibration
     propagation: UQPropagationResult
     direct_reference: UQParityResult
     additive_sobol_recovery: AdditiveSobolRecovery
-    attribution_table: dict[ComponentName, dict[str, Any]]
-    provenance: dict[str, Any]
+    attribution_table: Mapping[ComponentName, Mapping[str, Any]]
+    provenance: Mapping[str, Any]
 
     def __post_init__(self) -> None:
         """Enforce exactly the five named components and no model-risk bucket."""
 
+        _freeze_fields(self, "decision", "components", "attribution_table", "provenance")
         names = tuple(component.name for component in self.components)
         if names != COMPONENT_NAMES or self.component_names != COMPONENT_NAMES:
             raise ValueError(f"pilot must expose exactly {COMPONENT_NAMES}, got {names}")

@@ -106,6 +106,25 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
     assert "domain_half_width" in numerical["distribution"]
 
 
+def test_hash_bound_public_metadata_is_deeply_immutable(pilot_result: Any) -> None:
+    """Frozen public contracts cannot serialize nested mutations under unchanged hashes."""
+
+    with pytest.raises(TypeError):
+        pilot_result.decision["status"] = "tampered"
+    with pytest.raises(TypeError):
+        pilot_result.components[3].scale_or_range["domain_half_width"] = 0.0
+    with pytest.raises(TypeError):
+        pilot_result.propagation.sobol_validation["passed"] = False
+    with pytest.raises(TypeError):
+        pilot_result.calibration.domain_error_grid["spot_range"][0] = 0.0
+
+    serialized = pilot_result.to_dict()
+    serialized["decision"]["status"] = "tampered-copy"
+    serialized["calibration"]["domain_error_grid"]["spot_range"][0] = 0.0
+    assert pilot_result.decision["status"] == "retain_optional_adapter"
+    assert pilot_result.calibration.domain_error_grid["spot_range"][0] == 95.0
+
+
 def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
     """Non-default controls must propagate into study-input-sourced component hashes."""
 

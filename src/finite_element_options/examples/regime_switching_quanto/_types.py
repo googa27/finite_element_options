@@ -2,11 +2,68 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, cast
 
 import numpy as np
+
+
+class FrozenMapping(Mapping[Any, Any]):
+    """Recursively immutable mapping used by hash-bound public evidence contracts."""
+
+    __slots__ = ("_items",)
+    _items: tuple[tuple[Any, Any], ...]
+
+    def __init__(self, value: Mapping[Any, Any]) -> None:
+        """Freeze a mapping and all nested values."""
+
+        object.__setattr__(
+            self,
+            "_items",
+            tuple((key, deep_freeze(item)) for key, item in value.items()),
+        )
+
+    def __getitem__(self, key: Any) -> Any:
+        """Return the immutable value stored for ``key``."""
+
+        for candidate, value in self._items:
+            if candidate == key:
+                return value
+        raise KeyError(key)
+
+    def __iter__(self) -> Iterator[Any]:
+        """Iterate over keys in source insertion order."""
+
+        return (key for key, _ in self._items)
+
+    def __len__(self) -> int:
+        """Return the number of stored key-value pairs."""
+
+        return len(self._items)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Reject attribute mutation after construction."""
+
+        raise TypeError("FrozenMapping is immutable")
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> FrozenMapping:
+        """Return self because the complete object graph is immutable."""
+
+        return self
+
+
+def deep_freeze(value: Any) -> Any:
+    """Return recursively immutable mappings/tuples without changing scalar values."""
+
+    if isinstance(value, Mapping):
+        return FrozenMapping(value)
+    if isinstance(value, np.ndarray):
+        return deep_freeze(value.tolist())
+    if isinstance(value, (list, tuple)):
+        return tuple(deep_freeze(item) for item in value)
+    return value
 
 
 @dataclass(frozen=True)
@@ -108,7 +165,7 @@ def json_safe(value: Any) -> Any:
 
     if is_dataclass(value):
         return json_safe(asdict(cast(Any, value)))
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return {str(key): json_safe(val) for key, val in value.items()}
     if isinstance(value, (list, tuple)):
         return [json_safe(item) for item in value]
