@@ -26,7 +26,16 @@ PREDECESSOR_PATH = "docs/evidence/petsc_vi_assessment_2026-09-05.json"
 PREDECESSOR_SHA256 = "b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35"
 LOCK_PATH = "environments/bayesian-jax-py312/requirements.lock"
 LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
-LOCKED_VERSION_KEYS = ("arviz", "jax", "jaxlib", "numpy", "numpyro", "pymc", "scipy")
+LOCKED_VERSION_KEYS = (
+    "arviz",
+    "finite_element_options",
+    "jax",
+    "jaxlib",
+    "numpy",
+    "numpyro",
+    "pymc",
+    "scipy",
+)
 
 
 def _python_minor(version: object) -> tuple[int, int] | None:
@@ -131,6 +140,7 @@ def run_bayesian_jax_profile(
             "implementation": platform.python_implementation(),
             "platform": platform.platform(),
             "finite_element_options_install_mode": install_mode,
+            "finite_element_options": version("finite-element-options"),
             "numpy": version("numpy"),
             "scipy": version("scipy"),
             "pymc": version("pymc"),

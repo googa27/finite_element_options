@@ -21,7 +21,7 @@ This is an environment and diagnostic capability only. It is not market calibrat
 ## Evidence
 
 - Artifact: [`evidence/bayesian_jax_profile_2026-09-05.json`](evidence/bayesian_jax_profile_2026-09-05.json)
-- Artifact SHA-256: `31d98b20a7352d12dffacbe445ccea6e525fa0c23ed112bfdb51189581831190`
+- Artifact SHA-256: `6b553154011591823db58bfbb5a816fe4ab8c55e53fd2b66e2b02fac2bb8b0d5`
 - Study-input SHA-256: `4271c962f2bc9ab0d4844ac9d27557868e0dcc6eb62a8f4539198352c5d6b6bf`
 - Synthetic-data SHA-256: `1f5474034d123b0ee9fd7e67f3ae9c0e37e7ea8babe61e5090f56e6f83c364b3`
 - Combined lock: [`../environments/bayesian-jax-py312/requirements.lock`](../environments/bayesian-jax-py312/requirements.lock)
@@ -82,6 +82,7 @@ The verified wheel resolved:
 | ArviZ | `0.23.4` |
 | JAX / jaxlib | `0.9.2` / `0.9.2` |
 | NumPyro | `0.21.0` |
+| finite-element-options | `0.2.0` |
 | NumPy | `2.5.1` |
 | SciPy | `1.18.0` |
 
@@ -155,7 +156,7 @@ reason = scikit-fem/SciPy assembly and sparse solves are not a pure JAX trace
 
 - `bayesian` installed-wheel profile: Python 3.12, installs its PyMC-only hash lock before the no-dependencies wheel, imports PyMC/ArviZ, and executes the native posterior smoke.
 - `bayesian-jax` installed-wheel profile: Python 3.12, installs the combined hash lock before the no-dependencies wheel, imports PyMC/ArviZ/JAX/NumPyro, executes NumPyro smoke, and replays the semantic profile gate.
-- A separate Python 3.12 supply-chain job audits the combined lock and emits a CycloneDX SBOM; the Python 3.11 supply-chain job audits every published non-Bayesian extra, including calibration, IO, visualization, UI, and JAX.
+- A separate Python 3.12 supply-chain job installs the combined lock and then the no-dependencies `0.2.0` release wheel before audit/SBOM generation, so the CycloneDX document includes the project and its declared relationships; the Python 3.11 supply-chain job audits every published non-Bayesian extra, including calibration, IO, visualization, UI, and JAX.
 - External tests live outside default `tests/` collection and raise on missing dependencies; selected profiles never pass through skips.
 - Base-wheel subprocess tests block pandas, statsmodels, PyMC, ArviZ, JAX, and NumPyro imports while importing the profile facade.
 - The source-distribution contract includes both locks, profile docs/evidence, replay script, and external/static tests.

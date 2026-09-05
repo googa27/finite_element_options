@@ -102,6 +102,7 @@ def test_supply_chain_and_artifact_gates_are_present() -> None:
         "mypy --ignore-missing-imports",
         "python -m pip_audit",
         "cyclonedx-py environment",
+        "python -m pip install --no-deps dist/finite_element_options-*.whl",
         "python -m twine check dist/*",
         "--benchmark-json=benchmark.json",
         "coverage.xml",

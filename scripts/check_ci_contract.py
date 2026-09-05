@@ -77,6 +77,9 @@ REQUIRED_SNIPPETS = {
     "Bayesian hash-pinned lock install": "environments/bayesian-py312/requirements.lock",
     "Bayesian/JAX require hashes": "--require-hashes",
     "Bayesian/JAX supply-chain artifact": "supply-chain-bayesian-jax-evidence",
+    "Bayesian/JAX audited release wheel": (
+        "python -m pip install --no-deps dist/finite_element_options-*.whl"
+    ),
 }
 
 OPTIONAL_PROFILE_DEPENDENCIES = {
@@ -268,6 +271,10 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
         errors.append("supply_chain_bayesian must install the Bayesian/JAX lock")
     if "--require-hashes" not in bayesian:
         errors.append("supply_chain_bayesian must enforce lock hashes")
+    if "python -m build --wheel --outdir dist" not in bayesian:
+        errors.append("supply_chain_bayesian must build the release wheel")
+    if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in bayesian:
+        errors.append("supply_chain_bayesian must install the release wheel before its SBOM")
     if "python -m pip_audit" not in bayesian or "cyclonedx-py environment" not in bayesian:
         errors.append("supply_chain_bayesian must run vulnerability and SBOM gates")
     return errors

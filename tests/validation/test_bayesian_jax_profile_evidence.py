@@ -15,7 +15,7 @@ from finite_element_options.validation.evidence.serialization import (
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/bayesian_jax_profile_2026-09-05.json"
 LOCK = ROOT / "environments/bayesian-jax-py312/requirements.lock"
-EXPECTED_SHA256 = "31d98b20a7352d12dffacbe445ccea6e525fa0c23ed112bfdb51189581831190"
+EXPECTED_SHA256 = "6b553154011591823db58bfbb5a816fe4ab8c55e53fd2b66e2b02fac2bb8b0d5"
 EXPECTED_LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
 
 
@@ -34,6 +34,7 @@ def test_bayesian_jax_profile_artifact_is_hash_bound_and_passed() -> None:
     assert payload["profile_split"]["base_dependency_expansion"] is False
     assert payload["profile_split"]["calibration_is_lightweight"] is True
     assert payload["profile_split"]["bayesian_extras_declared"] is True
+    assert payload["environment"]["finite_element_options"] == "0.2.0"
     assert payload["pymc"]["passed"] is True
     assert payload["numpyro"]["passed"] is True
     assert payload["pymc"]["finite_log_density"] is True
@@ -61,6 +62,7 @@ def test_semantic_replay_ignores_host_and_python_patch_provenance() -> None:
         "implementation": "CPython",
         "platform": "Linux-host-a",
         "arviz": "0.23.4",
+        "finite_element_options": "0.2.0",
         "jax": "0.9.2",
         "jaxlib": "0.9.2",
         "numpy": "2.5.1",
@@ -73,3 +75,6 @@ def test_semantic_replay_ignores_host_and_python_patch_provenance() -> None:
 
     observed["python"] = "3.13.0"
     assert stable_environment_checks(observed, expected)["python_minor"] is False
+
+    observed = {**expected, "finite_element_options": "0.3.0"}
+    assert stable_environment_checks(observed, expected)["locked_package_versions"] is False
