@@ -162,7 +162,7 @@ def environment_evidence(trained: TrainedPymorROM) -> dict[str, Any]:
         "pymor": trained.projection.library_version,
         "pymor_license": "BSD-2-Clause AND BSD-3-Clause",
         "pymor_cache_policy": (
-            "scoped disable during adapter construction; prior environment and process-wide policy restored; "
+            "scoped and RLock-serialized disable during adapter construction; prior environment and process-wide policy restored; "
             "no persisted cache read"
         ),
         "thread_environment": {

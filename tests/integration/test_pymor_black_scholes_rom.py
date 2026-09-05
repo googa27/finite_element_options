@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from threading import Lock
+from time import sleep
 
 import numpy as np
 import pytest
@@ -16,6 +19,9 @@ from finite_element_options.validation.evidence.reduced_order import (  # noqa: 
     ROMEnvelopeError,
     build_affine_black_scholes_system,
     train_pymor_rom,
+)
+from finite_element_options.validation.evidence.reduced_order import (  # noqa: E402
+    pymor_adapter,
 )
 from finite_element_options.validation.evidence.reduced_order.assembly import (  # noqa: E402
     space_solver,
@@ -191,6 +197,30 @@ def test_pymor_adapter_preserves_preexisting_disabled_cache_state(
         assert getattr(pymor_cache, "_caching_disabled") is True
     finally:
         pymor_cache.enable_caching()
+
+
+def test_pymor_cache_scope_serializes_concurrent_calls() -> None:
+    """Concurrent adapter calls must not interleave process-global cache state."""
+
+    state_lock = Lock()
+    active = 0
+    maximum_active = 0
+
+    @pymor_adapter._without_persisted_pymor_cache  # type: ignore[attr-defined]
+    def guarded_probe() -> None:
+        nonlocal active, maximum_active
+        with state_lock:
+            active += 1
+            maximum_active = max(maximum_active, active)
+        sleep(0.02)
+        with state_lock:
+            active -= 1
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(guarded_probe) for _ in range(2)]
+        for future in futures:
+            future.result()
+    assert maximum_active == 1
 
 
 def test_rom_refuses_outside_envelope_and_names_full_order_fallback() -> None:

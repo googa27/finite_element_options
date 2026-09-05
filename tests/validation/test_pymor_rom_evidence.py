@@ -20,7 +20,7 @@ from finite_element_options.validation.evidence.serialization import (
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs" / "evidence" / "black_scholes_pymor_rom_2026-09-05.json"
-EXPECTED_SHA256 = "2b249444ddab29c7bf7de8af642340c48b387f8e4c9c797b3867f3dbafed5791"
+EXPECTED_SHA256 = "f30d712e054937ac7e17ea452fc2bcbc0a874087b1ec180caa5e63dc190ea4b7"
 EXPECTED_INPUT_SHA256 = "d56805683c07bd8ef5bd7a54b39c3faca3bcd48fd01366ef0de3f7e7a97a0044"
 
 
@@ -45,7 +45,7 @@ def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
     assert payload["timing"]["full_order_policy"].startswith("parameter-specific")
     assert payload["timing"]["full_order_factorization_reuses_per_holdout"] == 13
     assert payload["memory"]["online_rom_numerical_payload_bytes"] > 0
-    assert payload["environment"]["pymor_cache_policy"].startswith("scoped disable")
+    assert payload["environment"]["pymor_cache_policy"].startswith("scoped and RLock-serialized")
     assert all(row["passed"] for row in payload["holdouts"])
     assert (
         max(row["solver_diagnostics"]["full_order_residual_linf"] for row in payload["holdouts"])

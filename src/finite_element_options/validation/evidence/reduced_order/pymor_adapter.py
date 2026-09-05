@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import wraps
 from importlib.metadata import version
 import os
+from threading import RLock
 from time import perf_counter
 from typing import Any, Callable
 
@@ -16,30 +17,32 @@ from .contracts import PODProjection
 
 
 INSTALL_HINT = "install finite-element-options[reduction] to use the pyMOR adapter"
+_PYMOR_CACHE_LOCK = RLock()
 
 
 def _without_persisted_pymor_cache(function: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(function)
     def wrapped(*args: Any, **kwargs: Any) -> Any:
-        try:
-            from pymor.core import cache as pymor_cache
-        except ImportError as exc:  # pragma: no cover - isolated wheel probe
-            raise ModuleNotFoundError(INSTALL_HINT) from exc
-        previous = os.environ.get("PYMOR_CACHE_DISABLE")
-        was_disabled = bool(getattr(pymor_cache, "_caching_disabled", previous == "1"))
-        os.environ["PYMOR_CACHE_DISABLE"] = "1"
-        pymor_cache.disable_caching()
-        try:
-            return function(*args, **kwargs)
-        finally:
-            if previous is None:
-                os.environ.pop("PYMOR_CACHE_DISABLE", None)
-            else:
-                os.environ["PYMOR_CACHE_DISABLE"] = previous
-            if was_disabled:
-                pymor_cache.disable_caching()
-            else:
-                pymor_cache.enable_caching()
+        with _PYMOR_CACHE_LOCK:
+            try:
+                from pymor.core import cache as pymor_cache
+            except ImportError as exc:  # pragma: no cover - isolated wheel probe
+                raise ModuleNotFoundError(INSTALL_HINT) from exc
+            previous = os.environ.get("PYMOR_CACHE_DISABLE")
+            was_disabled = bool(getattr(pymor_cache, "_caching_disabled", previous == "1"))
+            os.environ["PYMOR_CACHE_DISABLE"] = "1"
+            pymor_cache.disable_caching()
+            try:
+                return function(*args, **kwargs)
+            finally:
+                if previous is None:
+                    os.environ.pop("PYMOR_CACHE_DISABLE", None)
+                else:
+                    os.environ["PYMOR_CACHE_DISABLE"] = previous
+                if was_disabled:
+                    pymor_cache.disable_caching()
+                else:
+                    pymor_cache.enable_caching()
 
     return wrapped
 
