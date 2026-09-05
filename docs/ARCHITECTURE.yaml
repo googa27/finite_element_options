@@ -303,9 +303,9 @@
           "custom semismooth Newton",
           "FEniCSx PETSc assembly"
         ],
-        "evidence": "Issue #136 triggers on FEM-AMERICAN-LCP-REFERENCE and records real KSP, SNES VI, TS, equal-discretization American-put parity, residual, runtime, memory, iteration, and typed-failure evidence in docs/evidence/petsc_vi_assessment_2026-09-05.json (sha256 b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35).",
+        "evidence": "Issue #136 triggers on FEM-AMERICAN-LCP-REFERENCE and records exact PETSc/petsc4py release matching, real KSP, SNES VI, TS, equal-discretization American-put parity, residual, runtime, memory, iteration, and typed-failure evidence in docs/evidence/petsc_vi_assessment_2026-09-05.json (sha256 b0ebd55b748c2c36382854ad6624f3f983b8a1ee25cdb1e34419df7fa9da5b35).",
         "adapter_boundary": "finite_element_options.validation.evidence.petsc_vi imports petsc4py only inside calls; no package extra claims portable installation, and docs/PETSC_VI_ASSESSMENT.md defines the matched external Python 3.12 build.",
-        "custom_code_reason": "Repository code owns scikit-fem/SciPy assembly, canonical LCP diagnostics, ThetaScheme time stepping, parity gates, and evidence; PETSc owns SNESVINEWTONRSLS and nested KSP/PC solves.",
+        "custom_code_reason": "Repository code owns scikit-fem/SciPy assembly, canonical LCP diagnostics, ThetaScheme time stepping with identity-preserving explicit solver injection, parity gates, and evidence; PETSc owns SNESVINEWTONRSLS and nested KSP/PC solves.",
         "maintenance_evidence": "https://petsc.org/release/ and https://pypi.org/project/petsc4py/",
         "api_stability_evidence": "https://petsc.org/release/petsc4py/reference/petsc4py.PETSc.SNES.html and https://petsc.org/release/manual/snes/",
         "license_evidence": "https://petsc.org/release/install/license/ (BSD-2-Clause)",

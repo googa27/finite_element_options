@@ -10,6 +10,7 @@ The trigger is real: `FEM-AMERICAN-LCP-REFERENCE` already solves a lower-obstacl
 |---|---:|---:|:---:|
 | Existing American-VI trigger | validated lower-obstacle route | present | PASS |
 | Runtime KSP / SNES-VI / TS | all converged | real execution | PASS |
+| PETSc / petsc4py ABI version | `3.24.6` / `3.24.6` | exact release match and part of runtime-doctor `passed` | PASS |
 | Package origin | installed wheel from clean `/tmp` venv | wheel, not editable checkout | PASS |
 | Grid max error vs projected SOR | `4.059721096e-7` | ≤ `5e-7` | PASS |
 | Price error | `7.60093746e-8` | ≤ `2e-7` | PASS |
@@ -87,7 +88,7 @@ Ownership remains deliberately split:
 
 The PETSc adapter uses `COMM_SELF` and converts each SciPy CSR time-step matrix into a PETSc AIJ matrix. It does not claim distributed mesh partitioning or distributed assembly.
 
-`ThetaScheme` now accepts the structural `LCPSolver` protocol. Existing callers remain on `ProjectedSORSolver`; PETSc is injected explicitly only by the external profile.
+`ThetaScheme` now accepts the structural `LCPSolver` protocol. Existing callers remain on `ProjectedSORSolver`; PETSc is injected explicitly only by the external profile. Every explicitly supplied solver is retained by identity—even if it defines falsey application semantics—and the default is constructed only when `lcp_solver is None`.
 
 ## Real runtime doctor
 

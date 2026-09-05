@@ -183,6 +183,24 @@ class PetscVISolver:
                 obj.destroy()
 
 
+def _petsc_versions_match(petsc4py_version: str, petsc_version: tuple[int, ...]) -> bool:
+    """Return whether petsc4py and PETSc report the same release version."""
+
+    return petsc4py_version == ".".join(str(item) for item in petsc_version)
+
+
+def _petsc_runtime_passed(
+    *,
+    version_match: bool,
+    ksp_converged: bool,
+    vi_converged: bool,
+    ts_converged: bool,
+) -> bool:
+    """Combine every fail-closed PETSc runtime doctor condition."""
+
+    return version_match and ksp_converged and vi_converged and ts_converged
+
+
 def petsc_runtime_doctor() -> dict[str, object]:
     """Execute real KSP, SNES-VI, and TS functionality on ``COMM_SELF``."""
 
@@ -192,6 +210,10 @@ def petsc_runtime_doctor() -> dict[str, object]:
     except ImportError as exc:  # pragma: no cover - external profile test
         raise ModuleNotFoundError(EXTERNAL_PROFILE_HINT) from exc
 
+    petsc4py_version = str(petsc4py.__version__)
+    petsc_version_tuple = tuple(int(item) for item in PETSc.Sys.getVersion())
+    petsc_version = ".".join(str(item) for item in petsc_version_tuple)
+    version_match = _petsc_versions_match(petsc4py_version, petsc_version_tuple)
     ksp = _ksp_doctor(PETSc)
     vi_problem = DiscreteLCP(
         matrix=np.array([[2.0, -1.0], [-1.0, 2.0]]),
@@ -202,8 +224,9 @@ def petsc_runtime_doctor() -> dict[str, object]:
     vi_result = vi_solver.solve(vi_problem)
     ts = _ts_doctor(PETSc)
     return {
-        "petsc4py_version": petsc4py.__version__,
-        "petsc_version": ".".join(str(item) for item in PETSc.Sys.getVersion()),
+        "petsc4py_version": petsc4py_version,
+        "petsc_version": petsc_version,
+        "version_match": version_match,
         "comm_size": int(PETSc.COMM_WORLD.getSize()),
         "scalar_type": np.dtype(PETSc.ScalarType).name,
         "ksp": ksp,
@@ -213,7 +236,12 @@ def petsc_runtime_doctor() -> dict[str, object]:
             "projected_residual_max": vi_result.diagnostics.projected_residual_max,
         },
         "ts": ts,
-        "passed": bool(ksp["converged"] and vi_result.success and ts["converged"]),
+        "passed": _petsc_runtime_passed(
+            version_match=version_match,
+            ksp_converged=bool(ksp["converged"]),
+            vi_converged=vi_result.success,
+            ts_converged=bool(ts["converged"]),
+        ),
     }
 
 

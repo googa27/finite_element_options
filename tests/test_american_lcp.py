@@ -63,12 +63,30 @@ class _AmericanTwoNodeSpace:
         return A, b
 
 
+class _FalseyLCPSolver:
+    """Valid structural solver whose application-level truth value is false."""
+
+    def __bool__(self) -> bool:
+        return False
+
+    def solve(self, *args, **kwargs):
+        raise AssertionError("constructor identity test must not execute the solver")
+
+
 def test_theta_scheme_rejects_ambiguous_lcp_solver_configuration() -> None:
     with pytest.raises(ValueError, match="not both"):
         ThetaScheme(
             lcp_solver=ProjectedSORSolver(),
             lcp_solver_settings=ProjectedSORSolverSettings(),
         )
+
+
+def test_theta_scheme_preserves_explicit_falsey_lcp_solver() -> None:
+    solver = _FalseyLCPSolver()
+
+    scheme = ThetaScheme(lcp_solver=solver)
+
+    assert scheme.lcp_solver is solver
 
 
 def test_projected_sor_solves_coupled_lcp_instead_of_post_step_clipping() -> None:

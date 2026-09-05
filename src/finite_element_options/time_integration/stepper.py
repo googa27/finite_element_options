@@ -125,7 +125,9 @@ class ThetaScheme(TimeStepper):
         self.reuse_factorization = reuse_factorization
         if lcp_solver is not None and lcp_solver_settings is not None:
             raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
-        self.lcp_solver = lcp_solver or ProjectedSORSolver(lcp_solver_settings)
+        self.lcp_solver = (
+            ProjectedSORSolver(lcp_solver_settings) if lcp_solver is None else lcp_solver
+        )
         self.last_lcp_diagnostics: list[LCPDiagnostics] = []
         self.last_solve_diagnostics = LinearSolveDiagnostics(
             linear_solver=linear_solver,
