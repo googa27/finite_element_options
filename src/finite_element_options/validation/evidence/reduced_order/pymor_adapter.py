@@ -26,6 +26,7 @@ def _without_persisted_pymor_cache(function: Callable[..., Any]) -> Callable[...
         except ImportError as exc:  # pragma: no cover - isolated wheel probe
             raise ModuleNotFoundError(INSTALL_HINT) from exc
         previous = os.environ.get("PYMOR_CACHE_DISABLE")
+        was_disabled = bool(getattr(pymor_cache, "_caching_disabled", previous == "1"))
         os.environ["PYMOR_CACHE_DISABLE"] = "1"
         pymor_cache.disable_caching()
         try:
@@ -35,7 +36,10 @@ def _without_persisted_pymor_cache(function: Callable[..., Any]) -> Callable[...
                 os.environ.pop("PYMOR_CACHE_DISABLE", None)
             else:
                 os.environ["PYMOR_CACHE_DISABLE"] = previous
-            pymor_cache.enable_caching()
+            if was_disabled:
+                pymor_cache.disable_caching()
+            else:
+                pymor_cache.enable_caching()
 
     return wrapped
 

@@ -176,6 +176,23 @@ def test_pymor_pod_galerkin_matches_full_order_price_and_greeks(
         assert abs(rom.outputs.gamma - fom.outputs.gamma) <= config.gamma_abs_tolerance
 
 
+def test_pymor_adapter_preserves_preexisting_disabled_cache_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Security scoping must not re-enable a caller-disabled pyMOR cache."""
+
+    import pymor.core.cache as pymor_cache
+
+    monkeypatch.delenv("PYMOR_CACHE_DISABLE", raising=False)
+    pymor_cache.disable_caching()
+    try:
+        config = smoke_config()
+        train_pymor_rom(build_affine_black_scholes_system(config), config)
+        assert getattr(pymor_cache, "_caching_disabled") is True
+    finally:
+        pymor_cache.enable_caching()
+
+
 def test_rom_refuses_outside_envelope_and_names_full_order_fallback() -> None:
     config = smoke_config()
     trained = train_pymor_rom(build_affine_black_scholes_system(config), config)
