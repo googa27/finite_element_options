@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from threading import RLock
 from types import ModuleType
@@ -25,15 +25,15 @@ _OPENTURNS_LOCK = RLock()
 
 
 @contextmanager
-def openturns_seeded(seed: int) -> Any:
-    """Serialize and restore process-global RNG state, trading thread parallelism for safety."""
+def openturns_seeded(seed: int) -> Iterator[None]:
+    """Coordinate same-process OpenTURNS callers through the shared seeded RNG lock."""
 
     with _OPENTURNS_LOCK:
         openturns = require_optional("openturns")
         state = openturns.RandomGenerator.GetState()
         try:
             openturns.RandomGenerator.SetSeed(int(seed))
-            yield openturns
+            yield
         finally:
             openturns.RandomGenerator.SetState(state)
 
@@ -56,7 +56,8 @@ def _as_numpy(sample: Any) -> np.ndarray:
 def sample_normalized(seed: int, size: int) -> np.ndarray:
     """Draw a seeded OpenTURNS sample from the five independent marginals."""
 
-    with openturns_seeded(seed) as openturns:
+    with openturns_seeded(seed):
+        openturns = require_optional("openturns")
         distribution, _constructor_name = _distribution(openturns)
         return _as_numpy(distribution.getSample(int(size)))
 
@@ -72,7 +73,8 @@ def saltelli_indices(
 ]:
     """Compute raw first and total Saltelli finite-sample estimators and CIs."""
 
-    with openturns_seeded(seed) as openturns:
+    with openturns_seeded(seed):
+        openturns = require_optional("openturns")
         distribution, constructor_name = _distribution(openturns)
         experiment = openturns.SobolIndicesExperiment(distribution, int(base_size), False)
         design = experiment.generate()

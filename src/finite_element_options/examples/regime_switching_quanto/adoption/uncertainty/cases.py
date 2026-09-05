@@ -63,6 +63,9 @@ NUMERICAL_HALF_WIDTH_FORMULA = (
     "abs(coarse_fem_price - analytical_oracle_price), "
     "1.5 * abs(fine_fem_price - coarse_fem_price), 1e-12)"
 )
+NUMERICAL_RESPONSE_ERROR_FORMULA = (
+    "abs(fine_fem_price(input) - analytical_oracle_price(input)) * z_numerical"
+)
 
 
 def baseline_model(
@@ -144,7 +147,8 @@ def canonical_study_input(config: UQPilotConfig | None = None) -> dict[str, Any]
         },
         "numerical_calibration": {
             "oracle_identity": ANALYTICAL_ORACLE_IDENTITY,
-            "half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
+            "baseline_half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
+            "response_error_formula": NUMERICAL_RESPONSE_ERROR_FORMULA,
         },
         "component_names": COMPONENT_NAMES,
         "predecessor_source": {
@@ -162,22 +166,26 @@ def canonical_uq_input_hash(config: UQPilotConfig | None = None) -> str:
     return canonical_json_sha256(canonical_study_input(config))
 
 
-def baseline_analytical_price() -> float:
-    """Return the exact one-regime fixed-FX quanto reduction at the baseline midpoint."""
+def analytical_price(*, spot: float, sigma: float, correlation_weight: float) -> float:
+    """Return the exact one-regime fixed-FX quanto reduction at supplied inputs."""
 
-    correlation = 0.5 * BASELINE_FULL_CORRELATION
+    model = baseline_model(sigma=sigma, correlation_weight=correlation_weight)
+    spot_value = float(spot)
+    if not np.isfinite(spot_value) or spot_value <= 0.0:
+        raise ValueError("spot must be finite and positive")
+    correlation = float(model.correlation[0])
     q_eff = (
         BASELINE_DIVIDEND
         + BASELINE_DOMESTIC_RATE
         - BASELINE_FOREIGN_RATE
-        + correlation * BASELINE_SIGMA * BASELINE_FX_VOL
+        + correlation * float(sigma) * BASELINE_FX_VOL
     )
     option = EuropeanOptionBs(
         k=BASELINE_STRIKE,
         q=q_eff,
         mkt=Market(r=BASELINE_DOMESTIC_RATE),
     )
-    call = option.call_from_volatility(BASE_MATURITY, BASELINE_SPOT, BASELINE_SIGMA)
+    call = option.call_from_volatility(BASE_MATURITY, spot_value, float(sigma))
     return float(call) * BASELINE_FIXED_FX
 
 
@@ -212,7 +220,11 @@ def calibrate_scales() -> UQCalibration:
         seed=MC_CALIBRATION_SEED,
         steps_per_year=MC_CALIBRATION_STEPS_PER_YEAR,
     )
-    oracle_price = baseline_analytical_price()
+    oracle_price = analytical_price(
+        spot=BASELINE_SPOT,
+        sigma=BASELINE_SIGMA,
+        correlation_weight=0.5,
+    )
     discrepancy = abs(fine.mixture_price - coarse.mixture_price)
     fine_oracle_error = abs(fine.mixture_price - oracle_price)
     coarse_oracle_error = abs(coarse.mixture_price - oracle_price)
@@ -309,11 +321,17 @@ def build_components(
         ),
         UncertaintyComponent(
             name="numerical",
-            distribution="Uniform(-1, 1) normalized; additive error = half_width*z_numerical",
-            scale_or_range={"half_width": calibration.numerical_half_width},
+            distribution=(
+                "Uniform(-1, 1) normalized; additive error = "
+                "abs(fine_fem(input)-analytical_oracle(input))*z_numerical"
+            ),
+            scale_or_range={
+                "baseline_half_width": calibration.numerical_half_width,
+                "mode": "input_dependent_exact_oracle_absolute_error",
+            },
             units="price currency units",
             role="additive_validation_estimator_error",
-            source_identity="baseline analytical one-regime oracle plus coarse/fine FEM errors",
+            source_identity="input-local analytical oracle discrepancy plus baseline coarse/fine evidence",
             source_hash=canonical_json_sha256(
                 {
                     "fine_grid_hash": calibration.fine_grid_hash,
@@ -327,12 +345,13 @@ def build_components(
                     "oracle_hash": calibration.oracle_hash,
                     "numerical_half_width": calibration.numerical_half_width,
                     "formula": calibration.numerical_formula,
+                    "response_error_formula": NUMERICAL_RESPONSE_ERROR_FORMULA,
                 }
             ),
             perturbs_fem_model=False,
             additive_validation_estimator_error=True,
             description=(
-                "Independent additive discretization-error half-width; not included in parameter uncertainty."
+                "Input-dependent additive FEM discretization error; not included in parameter uncertainty."
             ),
         ),
         UncertaintyComponent(
@@ -367,7 +386,7 @@ def build_components(
 
 
 def map_normalized_inputs(z: np.ndarray, calibration: UQCalibration) -> dict[str, float]:
-    """Map five lawful normalized coordinates to FEM inputs and additive errors."""
+    """Map five lawful normalized coordinates to FEM inputs and error coordinates."""
 
     values = np.asarray(z, dtype=float)
     if values.shape != (5,):
@@ -380,20 +399,20 @@ def map_normalized_inputs(z: np.ndarray, calibration: UQCalibration) -> dict[str
     spot = BASELINE_SPOT * (1.0 + 0.05 * float(values[0]))
     sigma = BASELINE_SIGMA * (1.0 + 0.15 * float(values[1]))
     weight = 0.5 * (float(values[2]) + 1.0)
-    numerical = calibration.numerical_half_width * float(values[3])
+    numerical_coordinate = float(values[3])
     mc_error = calibration.mc_standard_error * float(values[4])
     return {
         "spot": spot,
         "sigma": sigma,
         "correlation_weight": weight,
         "correlation": BASELINE_FULL_CORRELATION * weight,
-        "numerical_error": numerical,
+        "numerical_coordinate": numerical_coordinate,
         "monte_carlo_error": mc_error,
     }
 
 
 def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
-    """Evaluate the existing FEM solver plus independent additive validation errors."""
+    """Evaluate the FEM solver with input-dependent numerical and additive MC errors."""
 
     mapped = map_normalized_inputs(z, calibration)
     model = baseline_model(sigma=mapped["sigma"], correlation_weight=mapped["correlation_weight"])
@@ -405,7 +424,14 @@ def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
         fx_spot=BASELINE_FX_SPOT,
         grid=FINE_GRID,
     )
-    return float(result.mixture_price + mapped["numerical_error"] + mapped["monte_carlo_error"])
+    oracle_price = analytical_price(
+        spot=mapped["spot"],
+        sigma=mapped["sigma"],
+        correlation_weight=mapped["correlation_weight"],
+    )
+    numerical_half_width = abs(float(result.mixture_price) - oracle_price)
+    numerical_error = numerical_half_width * mapped["numerical_coordinate"]
+    return float(result.mixture_price + numerical_error + mapped["monte_carlo_error"])
 
 
 def summarize_prices(values: np.ndarray) -> dict[str, Any]:

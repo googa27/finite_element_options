@@ -41,7 +41,7 @@ from .openturns_adapter import (
 DECISION_POLICY = (
     "Retain OpenTURNS only as an optional uncertainty adapter when real FEM propagation, "
     "direct NumPy parity, additive Sobol recovery, raw Sobol finite-sample validation, "
-    "component provenance, and RNG isolation pass; "
+    "component provenance, and adapter-coordinated RNG restoration pass; "
     "never promote to core/base or production maturity in this pilot."
 )
 SOBOL_SANITY_ENVELOPES = {

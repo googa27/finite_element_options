@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
 ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "d6064d39f2a276ccae8f11f4cbe3f08685d644fa7c4a91f081018b58eaf81c31"
+EXPECTED_ARTIFACT_SHA256 = "0806dd9dcef4663207b101a6c9f8c463598a0907f1cbc42dfeaf70c96d4b2fe3"
 _VALID_SHA = "0" * 64
 
 
@@ -96,6 +96,9 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
         for value in component["scale_or_range"].values():
             if isinstance(value, (int, float)):
                 assert np.isfinite(value)
+    numerical = next(item for item in artifact["components"] if item["name"] == "numerical")
+    assert numerical["scale_or_range"]["mode"] == "input_dependent_exact_oracle_absolute_error"
+    assert "fine_fem(input)" in numerical["distribution"]
 
 
 def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
@@ -220,6 +223,27 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     assert calibration.oracle_hash != calibration.fine_grid_hash
 
 
+def test_numerical_error_scale_is_input_dependent_across_supported_domain() -> None:
+    """Off-baseline FEM errors use the exact oracle at that input, not the baseline scalar."""
+
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import cases
+
+    calibration = cases.calibrate_scales()
+    zero_numerical = np.asarray([0.0, -1.0, -1.0, 0.0, 0.0])
+    positive_numerical = np.asarray([0.0, -1.0, -1.0, 1.0, 0.0])
+    fem_price = cases.evaluate_response(zero_numerical, calibration)
+    perturbed_price = cases.evaluate_response(positive_numerical, calibration)
+    oracle_price = cases.analytical_price(
+        spot=100.0,
+        sigma=0.17,
+        correlation_weight=0.0,
+    )
+    off_baseline_error = abs(fem_price - oracle_price)
+
+    assert off_baseline_error > calibration.numerical_half_width
+    assert perturbed_price - fem_price == pytest.approx(off_baseline_error)
+
+
 def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
     """Normalized coordinates and mapped model parameters reject unlawful values."""
 
@@ -233,7 +257,7 @@ def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
     assert mapped["spot"] == 105.0
     assert mapped["sigma"] == pytest.approx(0.17)
     assert mapped["correlation_weight"] == 0.5
-    assert mapped["numerical_error"] == pytest.approx(0.2)
+    assert mapped["numerical_coordinate"] == pytest.approx(1.0)
     assert mapped["monte_carlo_error"] == pytest.approx(2.4)
 
     bad_inputs = (
@@ -396,13 +420,11 @@ def test_numerical_absent_from_parameter_and_mc_is_estimator_only(pilot_result: 
     assert "not intrinsic fair-value uncertainty" in components["monte_carlo"].description
 
 
-def test_openturns_rng_success_failure_and_concurrency_state_restoration() -> None:
-    """OpenTURNS global RNG state is restored after success, failure, and concurrent calls."""
+def test_openturns_rng_success_failure_and_coordinated_concurrency_restoration() -> None:
+    """Shared public context restores RNG state for success, failure, and coordinated calls."""
 
     openturns = pytest.importorskip("openturns")
-    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty.openturns_adapter import (
-        openturns_seeded,
-    )
+    from finite_element_options.examples.regime_switching_quanto.adoption import openturns_seeded
 
     def next_draw_after_seed(seed: int) -> list[list[float]]:
         openturns.RandomGenerator.SetSeed(seed)
@@ -488,6 +510,9 @@ def test_missing_extra_hint_and_base_facade_contract_imports_with_openturns_bloc
             {UNCERTAINTY + ".contracts"!r},
         ):
             importlib.import_module(module_name)
+        assert 'openturns' not in sys.modules
+        from {ADOPTION} import openturns_seeded
+        assert callable(openturns_seeded)
         assert 'openturns' not in sys.modules
         from {UNCERTAINTY}.openturns_adapter import sample_normalized
         try:

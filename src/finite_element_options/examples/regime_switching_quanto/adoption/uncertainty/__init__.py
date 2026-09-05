@@ -30,6 +30,7 @@ _EXPORT_MODULES = {
     "canonical_uq_input_hash": "cases",
     "evaluate_response": "cases",
     "map_normalized_inputs": "cases",
+    "openturns_seeded": "openturns_adapter",
     "run_openturns_uq_pilot": "pilot",
     "verify_predecessor_hashes": "pilot",
 }
@@ -56,6 +57,7 @@ __all__ = [
     "canonical_uq_input_hash",
     "evaluate_response",
     "map_normalized_inputs",
+    "openturns_seeded",
     "run_openturns_uq_pilot",
     "verify_predecessor_hashes",
 ]
