@@ -58,14 +58,20 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
     required = {
         ".github/workflows/ci.yml",
         "MANIFEST.in",
+        "docs/ADOPTION_SEQUENCE_CLOSEOUT.md",
         "docs/BAYESIAN_JAX_PROFILE.md",
         "docs/architecture_contract.toml",
+        "docs/evidence/adoption_sequence_closeout_2026-09-05.json",
         "docs/evidence/bayesian_jax_profile_2026-09-05.json",
+        "docs/images/adoption_sequence_closeout_2026-09-05.png",
+        "docs/images/fem_capability_pipeline.svg",
         "environments/bayesian-py312/requirements.lock",
         "environments/bayesian-jax-py312/requirements.lock",
         "external_tests/bayesian_profile/test_pymc_profile.py",
         "external_tests/bayesian_profile/test_numpyro_profile.py",
+        "scripts/generate_adoption_sequence_closeout.py",
         "scripts/run_bayesian_jax_profile.py",
+        "tests/validation/test_adoption_sequence_closeout.py",
         "tests/validation/test_bayesian_jax_profile_evidence.py",
     }
     with tarfile.open(sdist, mode="r:gz") as archive:
