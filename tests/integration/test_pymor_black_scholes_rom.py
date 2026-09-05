@@ -50,6 +50,16 @@ def test_config_is_hash_bound_and_rejects_overlapping_or_invalid_domains() -> No
         )
     with pytest.raises(ValueError, match="inside the declared envelope"):
         PymorBlackScholesConfig(holdout_volatilities=(0.08, 0.20, 0.30))
+    with pytest.raises(ValueError, match="both declared envelope bounds"):
+        PymorBlackScholesConfig(training_volatilities=(0.12, 0.20, 0.30))
+    with pytest.raises(ValueError, match="positive benchmark controls"):
+        replace(config, fom_oracle_gamma_tolerance=float("inf"))
+    with pytest.raises(ValueError, match="rate must be finite"):
+        replace(config, rate=float("nan"))
+    with pytest.raises(ValueError, match="asymptotic call boundary"):
+        replace(config, domain_max=1.0, spot=0.5)
+    with pytest.raises(ValueError, match="asymptotic call boundary"):
+        replace(config, rate=-0.5, domain_max=1.2, spot=0.5)
 
 
 def test_affine_operator_reconstructs_direct_fem_assembly() -> None:
@@ -126,6 +136,8 @@ def test_pymor_pod_galerkin_matches_full_order_price_and_greeks(
     assert trained.basis_size <= config.max_basis_size
     assert trained.basis_size > 0
     assert trained.full_dofs > trained.basis_size
+    assert trained.projection.basis.shape == (system.interior_dofs, trained.basis_size)
+    assert trained.projection.singular_values.shape == (trained.basis_size,)
     assert not hasattr(trained, "system")
     for volatility in config.holdout_volatilities:
         fom = system.solve_full_order(volatility)

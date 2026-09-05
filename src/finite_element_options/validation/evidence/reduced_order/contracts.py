@@ -78,12 +78,26 @@ class PymorBlackScholesConfig:
             self.price_abs_tolerance,
             self.delta_abs_tolerance,
             self.gamma_abs_tolerance,
+            self.fom_oracle_price_tolerance,
+            self.fom_oracle_delta_tolerance,
+            self.fom_oracle_gamma_tolerance,
             self.minimum_online_speedup,
         )
         if any(not isfinite(value) or value <= 0.0 for value in positive):
             raise ValueError("positive benchmark controls must be finite and positive")
         if self.volatility_min >= self.volatility_max:
             raise ValueError("volatility_min must be below volatility_max")
+        if not isfinite(self.rate):
+            raise ValueError("rate must be finite")
+        maximum_discounted_strike = self.strike * max(
+            1.0,
+            float(np.exp(-self.rate * self.maturity)),
+        )
+        if self.domain_max <= maximum_discounted_strike:
+            raise ValueError(
+                "domain_max must keep the asymptotic call boundary positive "
+                "over the full time interval"
+            )
         if self.refinement_level < 1 or self.time_steps < 2:
             raise ValueError("refinement_level and time_steps must define a non-trivial FOM")
         if not 0.5 <= self.theta <= 1.0:
@@ -104,6 +118,8 @@ class PymorBlackScholesConfig:
             raise ValueError("training and holdout volatility values must be unique")
         if set(training) & set(holdout):
             raise ValueError("training and holdout volatility values must be disjoint")
+        if min(training) != self.volatility_min or max(training) != self.volatility_max:
+            raise ValueError("training values must include both declared envelope bounds")
         if any(
             not isfinite(value) or not self.volatility_min <= value <= self.volatility_max
             for value in training + holdout

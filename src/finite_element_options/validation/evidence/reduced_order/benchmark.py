@@ -10,6 +10,7 @@ from typing import Any
 import scipy.sparse.linalg as spla  # type: ignore[import-untyped]
 
 from finite_element_options.validation.evidence.serialization import (
+    canonical_json_sha256,
     file_sha256,
     quantize_json_floats,
 )
@@ -183,8 +184,13 @@ def verify_pymor_benchmark(
     """Verify semantic replay while treating timings as noisy measured evidence."""
 
     observed = fresh.to_dict()
+    reference_input = reference.get("study_input")
+    reference_input_hash = (
+        canonical_json_sha256(reference_input) if isinstance(reference_input, dict) else None
+    )
     exact = {
         "schema_version": observed["schema_version"] == reference.get("schema_version"),
+        "reference_study_input_hash": reference_input_hash == reference.get("study_input_hash"),
         "study_input_hash": observed["study_input_hash"] == reference.get("study_input_hash"),
         "decomposition_hash": observed["decomposition"]["hash"]
         == reference.get("decomposition", {}).get("hash"),

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 from pathlib import Path
 
-from finite_element_options.validation.evidence.serialization import file_sha256
+from finite_element_options.validation.evidence.reduced_order import verify_pymor_benchmark
+from finite_element_options.validation.evidence.serialization import (
+    canonical_json_sha256,
+    file_sha256,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +25,7 @@ def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
     assert file_sha256(ARTIFACT) == EXPECTED_SHA256
     payload = json.loads(ARTIFACT.read_text(encoding="utf-8"))
     assert payload["study_input_hash"] == EXPECTED_INPUT_SHA256
+    assert canonical_json_sha256(payload["study_input"]) == EXPECTED_INPUT_SHA256
     assert payload["privacy_class"] == "public_synthetic"
     assert payload["predecessor"]["verified"] is True
     assert payload["decomposition"]["passed"] is True
@@ -40,3 +46,19 @@ def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
     normalized_matrix = capability_matrix.lower()
     assert all(token not in normalized_matrix for token in ("pymor", "reduced-order", "rom-"))
     assert "/home/" not in ARTIFACT.read_text(encoding="utf-8")
+
+
+def test_semantic_verify_rejects_tampered_reference_input() -> None:
+    """The payload itself, not merely its copied digest field, is hash-bound."""
+
+    payload = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+    tampered = deepcopy(payload)
+    tampered["study_input"]["time_steps"] += 1
+
+    class ArtifactReport:
+        def to_dict(self) -> dict[str, object]:
+            return payload
+
+    result = verify_pymor_benchmark(tampered, ArtifactReport())  # type: ignore[arg-type]
+    assert result["exact"]["reference_study_input_hash"] is False
+    assert result["passed"] is False
