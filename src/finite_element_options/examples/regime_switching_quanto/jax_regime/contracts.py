@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import math
+from numbers import Integral, Real
 from pathlib import Path
 from typing import Any, Literal
 
@@ -198,6 +199,26 @@ class JaxRegimeStudyConfig:
             "pricing_paths": self.pricing_paths,
             "steps_per_year": self.steps_per_year,
         }
+        integers = {"seed": self.seed, **positive}
+        for integer_name, integer_value in integers.items():
+            if isinstance(integer_value, bool) or not isinstance(integer_value, Integral):
+                raise ValueError(f"{integer_name} must be an integer")
+        if not 0 <= self.seed <= 0xFFFF_FFFF:
+            raise ValueError("seed must lie in the uint32 range")
+        real_settings = {
+            "holdout_fraction": self.holdout_fraction,
+            "maturity_years": self.maturity_years,
+            "domestic_rate": self.domestic_rate,
+            "foreign_rate": self.foreign_rate,
+            "dividend_yield": self.dividend_yield,
+        }
+        for real_name, real_value in real_settings.items():
+            if (
+                isinstance(real_value, bool)
+                or not isinstance(real_value, Real)
+                or not math.isfinite(real_value)
+            ):
+                raise ValueError(f"{real_name} must be a finite real number")
         for name, value in positive.items():
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
@@ -221,7 +242,7 @@ class JaxRegimeStudyConfig:
             raise ValueError("num_states must be one of the evaluated candidates: 2, 3, or 4")
         if not 0.05 <= self.holdout_fraction <= 0.4:
             raise ValueError("holdout_fraction must lie in [0.05, 0.4]")
-        if not math.isfinite(self.maturity_years) or self.maturity_years <= 0.0:
+        if self.maturity_years <= 0.0:
             raise ValueError("maturity_years must be finite and positive")
         if self.steps_per_year != DAILY_STEPS_PER_YEAR:
             raise ValueError(
@@ -237,7 +258,11 @@ class JaxRegimeStudyConfig:
             raise ValueError(
                 f"maturity_years must not produce more than {MAX_PRICING_STEPS:,} pricing steps"
             )
-        if not self.research_only or self.market_calibrated or self.production_ready:
+        if (
+            self.research_only is not True
+            or self.market_calibrated is not False
+            or self.production_ready is not False
+        ):
             raise ValueError("JAX regime profile is research-only and not market calibrated")
 
     @property

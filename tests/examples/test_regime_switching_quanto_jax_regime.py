@@ -95,6 +95,8 @@ def test_research_claim_flags_cannot_be_weakened() -> None:
         JaxRegimeStudyConfig(research_only=False)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="research-only"):
         JaxRegimeStudyConfig(market_calibrated=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="research-only"):
+        JaxRegimeStudyConfig(research_only=1)  # type: ignore[arg-type]
 
 
 def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
@@ -104,12 +106,23 @@ def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
 
 def test_zero_variance_oracle_score_fails_closed_on_nonzero_error() -> None:
     assert _oracle_z_score(0.0, 0.0) == 0.0
-    assert _oracle_z_score(2.0, 0.0) == math.inf
-    assert _oracle_z_score(-2.0, 0.0) == -math.inf
+    assert _oracle_z_score(2.0, 0.0) is None
+    assert _oracle_z_score(-2.0, 0.0) is None
     assert _oracle_z_score(2.0, 0.5) == 4.0
+    assert json.dumps({"z_score": _oracle_z_score(2.0, 0.0)}, allow_nan=False) == (
+        '{"z_score": null}'
+    )
 
 
 def test_resource_limits_and_finite_observations_fail_closed() -> None:
+    with pytest.raises(ValueError, match="em_iters must be an integer"):
+        JaxRegimeStudyConfig(em_iters=1.5)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="seed must be an integer"):
+        JaxRegimeStudyConfig(seed=True)
+    with pytest.raises(ValueError, match="uint32 range"):
+        JaxRegimeStudyConfig(seed=-1)
+    with pytest.raises(ValueError, match="domestic_rate must be a finite real number"):
+        JaxRegimeStudyConfig(domestic_rate=float("nan"))
     with pytest.raises(ValueError, match="must not exceed"):
         JaxRegimeStudyConfig(pricing_paths=1_000_001)
     with pytest.raises(ValueError, match="pricing_paths must be at least 2"):
@@ -120,7 +133,7 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(steps_per_year=504)
     with pytest.raises(ValueError, match="at least one daily pricing step"):
         JaxRegimeStudyConfig(maturity_years=0.001)
-    with pytest.raises(ValueError, match="finite and positive"):
+    with pytest.raises(ValueError, match="maturity_years must be a finite real number"):
         JaxRegimeStudyConfig(maturity_years=float("nan"))
     with pytest.raises(ValueError, match="whole number of daily pricing steps"):
         JaxRegimeStudyConfig(maturity_years=0.01)

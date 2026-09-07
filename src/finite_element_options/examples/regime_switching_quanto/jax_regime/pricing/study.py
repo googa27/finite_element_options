@@ -21,14 +21,14 @@ _POSTERIOR_INTERVAL_PATHS = 131_072
 _POSTERIOR_INTERVAL_DRAWS_PER_CHAIN = 64
 
 
-def _oracle_z_score(error: float, standard_error: float) -> float:
+def _oracle_z_score(error: float, standard_error: float) -> float | None:
     """Return a fail-closed standardized error, including zero-variance samples."""
 
     if standard_error > 0.0:
         return error / standard_error
     if error == 0.0:
         return 0.0
-    return math.copysign(math.inf, error)
+    return None
 
 
 def _risk_neutral_coefficients(
@@ -121,7 +121,7 @@ def _one_state_oracles(
     equity_spot: float,
     fx_spot: float,
     config: JaxRegimeStudyConfig,
-) -> dict[str, dict[str, float | bool]]:
+) -> dict[str, dict[str, float | bool | None]]:
     _jax, jnp, _jr = _stack()
     regimes = jnp.zeros(increments.shape[:2], dtype=int)
     states = simulate_exact_terminal_states(
@@ -134,7 +134,7 @@ def _one_state_oracles(
         fx_spot=fx_spot,
         config=config,
     )
-    results: dict[str, dict[str, float | bool]] = {}
+    results: dict[str, dict[str, float | bool | None]] = {}
     for contract in contracts:
         terms = {key: value for key, value in contract.items() if key not in {"name", "kind"}}
         analytic = one_state_price(
@@ -159,7 +159,7 @@ def _one_state_oracles(
             "mc_price_clp": estimate["price_clp"],
             "mc_standard_error_clp": standard_error,
             "z_score": z_score,
-            "passed_5se": abs(z_score) <= 5.0,
+            "passed_5se": z_score is not None and abs(z_score) <= 5.0,
         }
     return results
 
@@ -333,7 +333,7 @@ def _matched_historical_oracle(
             current_result["standard_error_clp"],
             float(previous["mc_standard_error_clp"]),
         )
-        z_score = difference / combined_error if combined_error > 0.0 else 0.0
+        z_score = _oracle_z_score(difference, combined_error)
         comparisons[name] = {
             "jax_exact_step_clp": current_result["price_clp"],
             "jax_standard_error_clp": current_result["standard_error_clp"],
@@ -342,7 +342,7 @@ def _matched_historical_oracle(
             "difference_clp": difference,
             "combined_standard_error_clp": combined_error,
             "z_score": z_score,
-            "passed_5se": abs(z_score) <= 5.0,
+            "passed_5se": z_score is not None and abs(z_score) <= 5.0,
         }
     assumption_match = {
         "equity_spot": math.isclose(equity_spot, float(prior["spot"]["sp500"])),
