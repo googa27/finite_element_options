@@ -68,11 +68,11 @@ required_fragments = ["scripts/check_architecture_contract.py", "tests/architect
 
 [[import_rules]]
 source = "src/finite_element_options/core"
-forbidden_prefixes = ["streamlit", "matplotlib", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
+forbidden_prefixes = ["streamlit", "matplotlib", "plotly", "pandas", "pymc", "jax", "numpyro", "dynamax", "diffrax", "tensorflow_probability", "equinox", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
 
 [[import_rules]]
 source = "src/finite_element_options/space"
-forbidden_prefixes = ["streamlit", "plotly", "pandas", "pymc", "jax", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
+forbidden_prefixes = ["streamlit", "plotly", "pandas", "pymc", "jax", "numpyro", "dynamax", "diffrax", "tensorflow_probability", "equinox", "numba", "xarray", "pyarrow", "statsmodels", "findiff"]
 
 [[module_ownership]]
 path = "__init__.py"

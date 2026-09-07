@@ -347,6 +347,39 @@
         "maturity": "experimental-isolated"
       },
       {
+        "capability": "JAX-native bivariate regime inference and SDE pricing study",
+        "selected": [
+          "DYNAMAX 1.0.2 for Gaussian-HMM EM/filter/smoother",
+          "NumPyro 0.21.0 for NUTS over continuous HMM parameters with latent states marginalized",
+          "Diffrax 0.7.2 for regime-aligned Ito-Euler SDE execution",
+          "JAX/jaxlib 0.11.1 and fastprogress 1.0.3 in a hash-pinned Python 3.12 profile",
+          "statsmodels 0.14.6 for an independently maintained deterministic VAR(1) hold-out comparator"
+        ],
+        "alternatives": [
+          "custom EM/filter/smoother implementation",
+          "sampling discrete latent states in NUTS",
+          "PyMC/PyTensor wrapper around JAX",
+          "neural SDE",
+          "Diffrax adaptive stepping across regime jumps",
+          "floating latest fastprogress dependency"
+        ],
+        "evidence": "Issue #150 uses the immutable public PDP S&P 500/USDCLP export with serialized exclusion counts/reasons, chronological held-out scoring against one-state and statsmodels VAR(1) baselines, DYNAMAX/JAX marginalized-likelihood parity, synthetic recovery, fail-closed two-chain NumPyro diagnostics, pathwise Diffrax/exact-step parity, one-state analytical oracles, 128-draw chain-stratified posterior repricing with split-subsample stability, historical scikit-fem/NumPy MC comparison, and byte-reproducible hash-bound visuals in docs/evidence/jax_regime_study_2026-09-07.json.",
+        "adapter_boundary": "finite_element_options.examples.regime_switching_quanto.jax_regime exposes a stdlib-only lazy facade and contracts; JAX, DYNAMAX, NumPyro, Diffrax, and TensorFlow Probability imports remain behind the isolated jax-regime Python 3.12 extra and external profile tests. PDP data is consumed only as a caller-supplied content-addressed export; no PDP internals are imported.",
+        "custom_code_reason": "DYNAMAX owns EM/filter/smoother and Diffrax owns the SDE solve. Repository code owns domain-specific P-versus-Qd policy, a small JAX log-space forward recursion needed both as an independent DYNAMAX parity oracle and as NumPyro's marginalized likelihood, exact piecewise-constant simulation, payoff contracts, evidence gates, and serialization.",
+        "maintenance_evidence": "https://github.com/probml/dynamax/releases, https://github.com/pyro-ppl/numpyro/releases, https://github.com/patrick-kidger/diffrax/releases, and https://github.com/jax-ml/jax/releases",
+        "api_stability_evidence": "https://probml.github.io/dynamax/api.html, https://num.pyro.ai/en/stable/mcmc.html, and https://docs.kidger.site/diffrax/",
+        "license_evidence": "DYNAMAX MIT; JAX, NumPyro, Diffrax, and fastprogress Apache-2.0",
+        "rollback_or_defer_policy": "Keep the earlier statsmodels/scikit-fem plus exact-step NumPy oracle canonical. Reject or freeze the JAX regime profile if hash-first installation, DYNAMAX/JAX likelihood parity, synthetic recovery, NumPyro divergence/R-hat/ESS gates, Diffrax pathwise exactness, one-state analytical parity, privacy, or artifact hashes fail. Reassess before JAX upgrades because DYNAMAX 1.0.2 uses a frozen tfp-nightly build and currently emits TFP deprecation warnings on JAX 0.11.1.",
+        "oracle_or_reference_tests": [
+          "external_tests/jax_regime/test_profile.py",
+          "tests/architecture/test_jax_regime_boundary.py",
+          "tests/validation/test_jax_regime_study_evidence.py",
+          "scripts/run_jax_regime_study.py --synthetic --warmup 75 --samples 75 --chains 2 --pricing-paths 32 --verify",
+          "environments/jax-regime-visual-py312/requirements.lock + CI byte comparison"
+        ],
+        "maturity": "experimental-research-only"
+      },
+      {
         "capability": "FEM verification evidence",
         "selected": [
           "SymPy >=1.12,<2",

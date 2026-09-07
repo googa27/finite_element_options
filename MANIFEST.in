@@ -5,8 +5,8 @@ include constraints.txt
 include pyproject.toml
 include requirements.txt
 include .github/workflows/ci.yml
-recursive-include docs *.json *.md *.png *.svg *.toml *.yaml *.yml
-recursive-include environments *.lock *.md
+recursive-include docs *.json *.md *.pdf *.png *.sha256 *.svg *.toml *.yaml *.yml
+recursive-include environments *.in *.lock *.md
 recursive-include external_tests *.py
 recursive-include scripts *.py
 recursive-include tests *.md *.py

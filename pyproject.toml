@@ -54,6 +54,16 @@ bayesian-jax = [
     "numpyro==0.21.*; python_version >= '3.12' and python_version < '3.13'",
     "pymc==5.26.*; python_version >= '3.12' and python_version < '3.13'",
 ]
+jax-regime = [
+    "diffrax==0.7.2; python_version >= '3.12' and python_version < '3.13'",
+    "dynamax==1.0.2; python_version >= '3.12' and python_version < '3.13'",
+    "fastprogress==1.0.3; python_version >= '3.12' and python_version < '3.13'",
+    "jax==0.11.1; python_version >= '3.12' and python_version < '3.13'",
+    "jaxlib==0.11.1; python_version >= '3.12' and python_version < '3.13'",
+    "numpyro==0.21.0; python_version >= '3.12' and python_version < '3.13'",
+    "statsmodels==0.14.6; python_version >= '3.12' and python_version < '3.13'",
+    "tfp-nightly==0.26.0.dev20260907; python_version >= '3.12' and python_version < '3.13'",
+]
 volatility = ["arch>=8,<9"]
 changepoints = ["ruptures>=1.1.10,<2"]
 quantlib = ["QuantLib>=1.43,<2"]
@@ -115,6 +125,14 @@ reduction = [
 [project.urls]
 Repository = "https://github.com/googa27/finite_element_options"
 Issues = "https://github.com/googa27/finite_element_options/issues"
+
+[tool.uv]
+conflicts = [
+    [
+        { extra = "bayesian-jax" },
+        { extra = "jax-regime" },
+    ],
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

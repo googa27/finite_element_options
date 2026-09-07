@@ -26,6 +26,8 @@ REQUIRED_JOBS = {
     "optional_imports",
     "supply_chain",
     "supply_chain_bayesian",
+    "supply_chain_jax_regime",
+    "visual_reproducibility",
 }
 
 REQUIRED_SNIPPETS = {
@@ -63,6 +65,7 @@ REQUIRED_SNIPPETS = {
     "optional reduction profile": "profile: reduction",
     "optional bayesian profile": "profile: bayesian",
     "optional bayesian-jax profile": "profile: bayesian-jax",
+    "optional jax-regime profile": "profile: jax-regime",
     "optional dependency matrix field": "DEPENDENCY: ${{ matrix.dependency }}",
     "optional dependency import proof": "importlib.import_module(dependency)",
     "QuantLib evaluation-date restoration proof": "quantlib_evaluation_date",
@@ -77,7 +80,18 @@ REQUIRED_SNIPPETS = {
     "Bayesian hash-pinned lock install": "environments/bayesian-py312/requirements.lock",
     "Bayesian/JAX require hashes": "--require-hashes",
     "Bayesian/JAX supply-chain artifact": "supply-chain-bayesian-jax-evidence",
-    "Bayesian/JAX audited release wheel": (
+    "JAX regime focused installed-wheel tests": "external_tests/jax_regime/test_profile.py",
+    "JAX regime hash-pinned wheel profile": "environments/jax-regime-py312/requirements.lock",
+    "JAX regime synthetic CI verification": "--synthetic --warmup 75 --samples 75",
+    "JAX regime supply-chain artifact": "supply-chain-jax-regime-evidence",
+    "JAX regime visual hash-pinned lock": (
+        "environments/jax-regime-visual-py312/requirements.lock"
+    ),
+    "JAX regime visual layout QA": "--qa-layout",
+    "JAX regime visual exact byte comparison": (
+        'sha256sum -c "${GITHUB_WORKSPACE}/docs/images/jax_regime_study_2026-09-07.sha256"'
+    ),
+    "audited release wheel install": (
         "python -m pip install --no-deps dist/finite_element_options-*.whl"
     ),
 }
@@ -96,6 +110,7 @@ OPTIONAL_PROFILE_DEPENDENCIES = {
     "reduction": "pymor",
     "bayesian": "pymc",
     "bayesian-jax": "numpyro",
+    "jax-regime": "dynamax",
 }
 
 NEW_OPTIONAL_PROFILES = {
@@ -107,10 +122,11 @@ NEW_OPTIONAL_PROFILES = {
     "reduction",
     "bayesian",
     "bayesian-jax",
+    "jax-regime",
 }
 
 NEW_OPTIONAL_PROFILE_PYTHONS = {"3.11", "3.12"}
-PY312_ONLY_OPTIONAL_PROFILES = {"bayesian", "bayesian-jax"}
+PY312_ONLY_OPTIONAL_PROFILES = {"bayesian", "bayesian-jax", "jax-regime"}
 SUPPLY_CHAIN_AUDITED_EXTRAS = (
     "build",
     "calibration",
@@ -263,20 +279,32 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
     if missing:
         return [f"supply_chain audited install missing optional extras: {missing}"]
 
-    bayesian = blocks.get("supply_chain_bayesian", "")
     errors: list[str] = []
-    if "python-version: '3.12'" not in bayesian:
-        errors.append("supply_chain_bayesian must use Python 3.12")
-    if "environments/bayesian-jax-py312/requirements.lock" not in bayesian:
-        errors.append("supply_chain_bayesian must install the Bayesian/JAX lock")
-    if "--require-hashes" not in bayesian:
-        errors.append("supply_chain_bayesian must enforce lock hashes")
-    if "python -m build --wheel --outdir dist" not in bayesian:
-        errors.append("supply_chain_bayesian must build the release wheel")
-    if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in bayesian:
-        errors.append("supply_chain_bayesian must install the release wheel before its SBOM")
-    if "python -m pip_audit" not in bayesian or "cyclonedx-py environment" not in bayesian:
-        errors.append("supply_chain_bayesian must run vulnerability and SBOM gates")
+    for job_name, label, lock_path in (
+        (
+            "supply_chain_bayesian",
+            "supply_chain_bayesian",
+            "environments/bayesian-jax-py312/requirements.lock",
+        ),
+        (
+            "supply_chain_jax_regime",
+            "supply_chain_jax_regime",
+            "environments/jax-regime-py312/requirements.lock",
+        ),
+    ):
+        audited = blocks.get(job_name, "")
+        if "python-version: '3.12'" not in audited:
+            errors.append(f"{label} must use Python 3.12")
+        if lock_path not in audited:
+            errors.append(f"{label} must install its hash-pinned lock")
+        if "--require-hashes" not in audited:
+            errors.append(f"{label} must enforce lock hashes")
+        if "python -m build --wheel --outdir dist" not in audited:
+            errors.append(f"{label} must build the release wheel")
+        if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in audited:
+            errors.append(f"{label} must install the release wheel before its SBOM")
+        if "python -m pip_audit" not in audited or "cyclonedx-py environment" not in audited:
+            errors.append(f"{label} must run vulnerability and SBOM gates")
     return errors
 
 
