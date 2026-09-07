@@ -18,7 +18,7 @@ _EXPORTS = {
     "load_pdp_observations": ".data",
 }
 
-__all__ = tuple(_EXPORTS)
+__all__ = (*_EXPORTS,)
 
 
 def __getattr__(name: str) -> Any:
