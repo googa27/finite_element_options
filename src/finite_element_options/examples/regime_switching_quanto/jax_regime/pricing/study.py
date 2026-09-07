@@ -21,6 +21,16 @@ _POSTERIOR_INTERVAL_PATHS = 131_072
 _POSTERIOR_INTERVAL_DRAWS_PER_CHAIN = 64
 
 
+def _oracle_z_score(error: float, standard_error: float) -> float:
+    """Return a fail-closed standardized error, including zero-variance samples."""
+
+    if standard_error > 0.0:
+        return error / standard_error
+    if error == 0.0:
+        return 0.0
+    return math.copysign(math.inf, error)
+
+
 def _risk_neutral_coefficients(
     covariances_percent: Any, config: JaxRegimeStudyConfig
 ) -> tuple[Any, Any, Any, Any, Any]:
@@ -143,7 +153,7 @@ def _one_state_oracles(
         estimate = monte_carlo[contract["name"]]
         error = estimate["price_clp"] - analytic
         standard_error = estimate["standard_error_clp"]
-        z_score = error / standard_error if standard_error > 0.0 else 0.0
+        z_score = _oracle_z_score(error, standard_error)
         results[contract["name"]] = {
             "analytic_price_clp": analytic,
             "mc_price_clp": estimate["price_clp"],
@@ -177,7 +187,7 @@ def _posterior_price_intervals(
         )
     ]
     reduced_paths = max(_POSTERIOR_INTERVAL_PATHS, config.pricing_paths)
-    steps = round(config.maturity_years * config.steps_per_year)
+    steps = config.pricing_steps
     common_key = jr.key(config.seed + 200)
     collected: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
     collected_mc_se: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}

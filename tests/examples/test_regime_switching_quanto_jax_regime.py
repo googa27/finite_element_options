@@ -28,6 +28,9 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.nump
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.analytic import (
     one_state_price,
 )
+from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.study import (
+    _oracle_z_score,
+)
 
 
 def _fixture(path: Path) -> tuple[str, str]:
@@ -97,6 +100,13 @@ def test_research_claim_flags_cannot_be_weakened() -> None:
 def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
     with pytest.raises(RuntimeError, match="omitted required 'diverging'"):
         _required_divergence_count({})
+
+
+def test_zero_variance_oracle_score_fails_closed_on_nonzero_error() -> None:
+    assert _oracle_z_score(0.0, 0.0) == 0.0
+    assert _oracle_z_score(2.0, 0.0) == math.inf
+    assert _oracle_z_score(-2.0, 0.0) == -math.inf
+    assert _oracle_z_score(2.0, 0.5) == 4.0
 
 
 def test_resource_limits_and_finite_observations_fail_closed() -> None:
