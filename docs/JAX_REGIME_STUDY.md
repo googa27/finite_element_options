@@ -156,7 +156,7 @@ Values are CLP. The posterior column is a deterministic chain-stratified summary
 | Prior-sensitivity maximum relative price change | 3.65% |
 | Named promotion gates | All pass |
 
-The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process.
+The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process. The public config therefore enforces 252 steps per year; conditional Diffrax refinement may split diffusion increments within a fitted day, but it never reapplies the daily transition matrix at a subdaily frequency.
 
 ## Reproducibility and supply chain
 

@@ -14,6 +14,8 @@ PUBLICATION_MIN_CHAINS = 2
 PUBLICATION_MIN_DRAWS_PER_CHAIN = 200
 PUBLICATION_MAX_RHAT = 1.05
 PUBLICATION_MIN_ESS = 100.0
+DAILY_STEPS_PER_YEAR = 252
+MAX_PRICING_STEPS = 3_660
 
 
 @dataclass(frozen=True)
@@ -209,7 +211,6 @@ class JaxRegimeStudyConfig:
             "posterior_samples": 10_000,
             "chains": 8,
             "pricing_paths": 1_000_000,
-            "steps_per_year": 3_660,
         }
         for name, maximum in maxima.items():
             if positive[name] > maximum:
@@ -218,10 +219,27 @@ class JaxRegimeStudyConfig:
             raise ValueError("num_states must be one of the evaluated candidates: 2, 3, or 4")
         if not 0.05 <= self.holdout_fraction <= 0.4:
             raise ValueError("holdout_fraction must lie in [0.05, 0.4]")
-        if self.maturity_years <= 0.0:
-            raise ValueError("maturity_years must be positive")
+        if not math.isfinite(self.maturity_years) or self.maturity_years <= 0.0:
+            raise ValueError("maturity_years must be finite and positive")
+        if self.steps_per_year != DAILY_STEPS_PER_YEAR:
+            raise ValueError(
+                f"steps_per_year must be {DAILY_STEPS_PER_YEAR}; the fitted transition matrix is daily"
+            )
+        pricing_steps = self.pricing_steps
+        if pricing_steps < 1:
+            raise ValueError("maturity_years must produce at least one daily pricing step")
+        if pricing_steps > MAX_PRICING_STEPS:
+            raise ValueError(
+                f"maturity_years must not produce more than {MAX_PRICING_STEPS:,} pricing steps"
+            )
         if not self.research_only or self.market_calibrated or self.production_ready:
             raise ValueError("JAX regime profile is research-only and not market calibrated")
+
+    @property
+    def pricing_steps(self) -> int:
+        """Return the validated number of daily regime/diffusion intervals."""
+
+        return round(self.maturity_years * self.steps_per_year)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe representation."""

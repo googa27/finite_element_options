@@ -104,6 +104,14 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(pricing_paths=1_000_001)
     with pytest.raises(ValueError, match="at least 2"):
         JaxRegimeStudyConfig(chains=1)
+    with pytest.raises(ValueError, match="steps_per_year must be 252"):
+        JaxRegimeStudyConfig(steps_per_year=504)
+    with pytest.raises(ValueError, match="at least one daily pricing step"):
+        JaxRegimeStudyConfig(maturity_years=0.001)
+    with pytest.raises(ValueError, match="finite and positive"):
+        JaxRegimeStudyConfig(maturity_years=float("nan"))
+    with pytest.raises(ValueError, match="more than 3,660 pricing steps"):
+        JaxRegimeStudyConfig(maturity_years=15.0)
     kwargs = {
         "dates": ("2026-01-01",),
         "levels_sha256": "a" * 64,

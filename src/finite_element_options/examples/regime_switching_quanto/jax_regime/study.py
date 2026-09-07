@@ -94,7 +94,7 @@ def run_jax_regime_study(
     drift, diffusion, equity_vol, fx_vol, correlation = _risk_neutral_coefficients(
         posterior_mean["covariances"], config
     )
-    steps = round(config.maturity_years * config.steps_per_year)
+    steps = config.pricing_steps
     regimes, increments = draw_paths_and_increments(
         jr.key(config.seed + 600),
         current_probs,
