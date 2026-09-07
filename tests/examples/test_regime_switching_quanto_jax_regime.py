@@ -32,6 +32,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.study import (
     _bounded_pricing_paths,
+    _historical_prices,
     _matched_oracle_config,
     _oracle_z_score,
 )
@@ -48,9 +49,23 @@ def _fixture(path: Path) -> tuple[str, str]:
     provenance = json.dumps(
         {"requested_window": {"start": "2026-01-01", "end_exclusive": "2026-01-05"}}
     ).encode()
+    pricing = json.dumps(
+        {
+            "pricing": [
+                {
+                    "contract": "fixture",
+                    "fem_fine_clp": 1.0,
+                    "richardson_extrapolated_clp": 1.05,
+                    "mc_clp": 1.1,
+                    "mc_standard_error_clp": 0.1,
+                }
+            ]
+        }
+    ).encode()
     with ZipFile(path, "w", compression=ZIP_DEFLATED) as bundle:
         bundle.writestr(f"{_MEMBER_ROOT}pdp_joint_levels.csv", levels)
         bundle.writestr(f"{_MEMBER_ROOT}input_provenance.json", provenance)
+        bundle.writestr(f"{_MEMBER_ROOT}pricing_results.json", pricing)
     return sha256(path.read_bytes()).hexdigest(), sha256(levels).hexdigest()
 
 
@@ -81,6 +96,29 @@ def test_content_addressed_loader_quarantines_malformed_fx(tmp_path: Path) -> No
         "excluded_level_rows": 1,
     }
     assert "/home/" not in json.dumps(batch.to_dict())
+
+
+def test_loader_parses_the_exact_snapshot_that_passed_hash_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive = tmp_path / "fixture.zip"
+    archive_hash, levels_hash = _fixture(archive)
+    verified_snapshot = archive.read_bytes()
+    archive.write_bytes(b"atomically replaced after snapshot")
+
+    def _snapshot_read(path: Path) -> bytes:
+        assert path == archive.resolve()
+        return verified_snapshot
+
+    monkeypatch.setattr(Path, "read_bytes", _snapshot_read)
+    batch = load_pdp_observations(
+        archive,
+        expected_archive_sha256=archive_hash,
+        expected_levels_sha256=levels_hash,
+    )
+    assert batch.archive_sha256 == archive_hash
+    assert batch.row_count == 2
+    assert _historical_prices(verified_snapshot)[0]["contract"] == "fixture"
 
 
 def test_loader_fails_closed_on_archive_hash_mismatch(tmp_path: Path) -> None:

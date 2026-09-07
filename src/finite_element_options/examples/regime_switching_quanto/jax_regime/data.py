@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import csv
 from hashlib import sha256
-from io import StringIO
+from io import BytesIO, StringIO
 import json
 import math
 from pathlib import Path
@@ -24,12 +24,12 @@ def _digest(data: bytes) -> str:
     return sha256(data).hexdigest()
 
 
-def load_pdp_observations(
+def _load_pdp_snapshot(
     archive: str | Path,
     *,
     expected_archive_sha256: str = EXPECTED_ARCHIVE_SHA256,
     expected_levels_sha256: str = EXPECTED_LEVELS_SHA256,
-) -> PDPObservationBatch:
+) -> tuple[PDPObservationBatch, bytes]:
     """Load bivariate log returns after verifying content-addressed PDP inputs.
 
     The two historically malformed USDCLP levels (near 5 rather than near
@@ -45,7 +45,7 @@ def load_pdp_observations(
             f"evidence archive SHA-256 mismatch: expected {expected_archive_sha256}, "
             f"received {archive_hash}"
         )
-    with ZipFile(path) as bundle:
+    with ZipFile(BytesIO(raw_archive)) as bundle:
         levels_raw = bundle.read(f"{_MEMBER_ROOT}pdp_joint_levels.csv")
         provenance = json.loads(bundle.read(f"{_MEMBER_ROOT}input_provenance.json"))
     levels_hash = _digest(levels_raw)
@@ -100,14 +100,33 @@ def load_pdp_observations(
         invalid_fx_rows=invalid_fx,
         quarantined_rows=tuple(quarantined),
     )
-    return PDPObservationBatch(
-        dates=tuple(dates),
-        returns=tuple(returns),
-        levels_sha256=levels_hash,
-        archive_sha256=archive_hash,
-        requested_start=str(window["start"]),
-        requested_end_exclusive=str(window["end_exclusive"]),
-        equity_spot=levels[-1][1],
-        fx_spot=levels[-1][2],
-        preprocessing=preprocessing,
+    return (
+        PDPObservationBatch(
+            dates=tuple(dates),
+            returns=tuple(returns),
+            levels_sha256=levels_hash,
+            archive_sha256=archive_hash,
+            requested_start=str(window["start"]),
+            requested_end_exclusive=str(window["end_exclusive"]),
+            equity_spot=levels[-1][1],
+            fx_spot=levels[-1][2],
+            preprocessing=preprocessing,
+        ),
+        raw_archive,
     )
+
+
+def load_pdp_observations(
+    archive: str | Path,
+    *,
+    expected_archive_sha256: str = EXPECTED_ARCHIVE_SHA256,
+    expected_levels_sha256: str = EXPECTED_LEVELS_SHA256,
+) -> PDPObservationBatch:
+    """Return observations parsed from the exact archive bytes that passed SHA-256 validation."""
+
+    batch, _raw_archive = _load_pdp_snapshot(
+        archive,
+        expected_archive_sha256=expected_archive_sha256,
+        expected_levels_sha256=expected_levels_sha256,
+    )
+    return batch

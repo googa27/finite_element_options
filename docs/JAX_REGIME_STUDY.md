@@ -50,7 +50,7 @@ Primary API references: [DYNAMAX HMM API](https://probml.github.io/dynamax/api.h
 | Archive SHA-256 | `ca2debc4fcbf9bd6fb958a5cfcb986a3e8080c7923418c9d2367fcd2d9a99721` |
 | Levels SHA-256 | `aa7ab317266bf37463e27aba9a4e990fa349bb0a6e0aefb5741e93480e0f79f4` |
 
-The loader fails closed on archive/levels hash mismatches, non-finite constructed returns, and non-positive terminal spots. It audits and excludes missing, unparseable, or implausible joint-level rows. Returns are adjacent-valid-row log differences after exclusions, with no calendar-gap rescaling. The v2 evidence serializes the complete row-count partition, quarantine dates/reasons, and return-construction rule while publishing no raw observations or local home paths.
+The loader fails closed on archive/levels hash mismatches, non-finite constructed returns, and non-positive terminal spots. It audits and excludes missing, unparseable, or implausible joint-level rows. The loader and every later calibration/pricing-oracle member read share the same immutable in-memory byte snapshot that passed SHA-256 validation; the filesystem path is never reopened during the run. Returns are adjacent-valid-row log differences after exclusions, with no calendar-gap rescaling. The v2 evidence serializes the complete row-count partition, quarantine dates/reasons, and return-construction rule while publishing no raw observations or local home paths.
 
 ## Statistical formulation
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from io import BytesIO
 import json
 import math
-from pathlib import Path
 from typing import Any
 from zipfile import ZipFile
 
@@ -302,7 +302,7 @@ def _posterior_price_intervals(
 
 
 def _matched_historical_oracle(
-    archive: str | Path,
+    archive_snapshot: bytes,
     contracts: list[dict[str, Any]],
     *,
     equity_spot: float,
@@ -312,7 +312,7 @@ def _matched_historical_oracle(
     """Replay the archived three-state model through JAX exact-step Monte Carlo."""
 
     _jax, jnp, jr = _stack()
-    with ZipFile(Path(archive).expanduser()) as bundle:
+    with ZipFile(BytesIO(archive_snapshot)) as bundle:
         calibration = json.loads(bundle.read(f"{_MEMBER_ROOT}calibration.json"))
         prior = json.loads(bundle.read(f"{_MEMBER_ROOT}pricing_results.json"))
     prior_model = prior["model"]
@@ -396,8 +396,8 @@ def _matched_historical_oracle(
     }
 
 
-def _historical_prices(archive: str | Path) -> list[dict[str, Any]]:
-    with ZipFile(Path(archive).expanduser()) as bundle:
+def _historical_prices(archive_snapshot: bytes) -> list[dict[str, Any]]:
+    with ZipFile(BytesIO(archive_snapshot)) as bundle:
         prior = json.loads(bundle.read(f"{_MEMBER_ROOT}pricing_results.json"))
     return [
         {

@@ -17,7 +17,7 @@ from .contracts import (
     PromotionDecision,
     SCHEMA_VERSION,
 )
-from .data import load_pdp_observations
+from .data import _load_pdp_snapshot
 from .hmm.dynamax_adapter import dynamax_marginal_log_prob
 from .hmm.experiment import _candidate_comparison, _full_fit, _synthetic_recovery
 from .hmm.forward import gaussian_hmm_filter_probs, gaussian_hmm_log_prob
@@ -49,7 +49,7 @@ def run_jax_regime_study(
 
     config = config or JaxRegimeStudyConfig()
     _jax_module, jnp, jr = _stack()
-    batch = load_pdp_observations(archive)
+    batch, archive_snapshot = _load_pdp_snapshot(archive)
     observations = jnp.asarray(batch.returns) * 100.0
     train_count = int(len(observations) * (1.0 - config.holdout_fraction))
     candidates, _training_fit = _candidate_comparison(observations, train_count, config)
@@ -158,7 +158,7 @@ def run_jax_regime_study(
         config=config,
     )
     matched_historical = _matched_historical_oracle(
-        archive,
+        archive_snapshot,
         contracts,
         equity_spot=batch.equity_spot,
         fx_spot=batch.fx_spot,
@@ -373,7 +373,7 @@ def run_jax_regime_study(
             "brownian_bridge_refinement": refinement,
             "one_state_analytical_oracles": one_state,
             "matched_historical_three_state_jax_numpy_oracle": matched_historical,
-            "historical_scikit_fem_and_numpy_mc": _historical_prices(archive),
+            "historical_scikit_fem_and_numpy_mc": _historical_prices(archive_snapshot),
         },
         "verification": promotion.to_dict(),
     }
