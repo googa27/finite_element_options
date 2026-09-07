@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import numpy as np
 import pytest
 
 from finite_element_options.examples.regime_switching_quanto.jax_regime.contracts import (
@@ -23,12 +24,14 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.expe
     _select_converged_multistart,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.numpyro_model import (
+    _diagnostic_extrema,
     _required_divergence_count,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.analytic import (
     one_state_price,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.study import (
+    _bounded_pricing_paths,
     _oracle_z_score,
 )
 
@@ -104,6 +107,17 @@ def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
         _required_divergence_count({})
 
 
+def test_nonfinite_numpyro_diagnostics_are_json_safe_and_fail_closed() -> None:
+    diagnostics = _diagnostic_extrema(
+        {"theta": {"r_hat": np.array([float("nan")]), "n_eff": np.array([2.0])}}
+    )
+    assert diagnostics["maximum_rhat"] is None
+    assert diagnostics["minimum_ess"] is None
+    assert diagnostics["finite"] is False
+    assert diagnostics["weakly_identified_parameters"][0]["rhat"] is None
+    json.dumps(diagnostics, allow_nan=False)
+
+
 def test_zero_variance_oracle_score_fails_closed_on_nonzero_error() -> None:
     assert _oracle_z_score(0.0, 0.0) == 0.0
     assert _oracle_z_score(2.0, 0.0) is None
@@ -123,6 +137,8 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(seed=-1)
     with pytest.raises(ValueError, match="domestic_rate must be a finite real number"):
         JaxRegimeStudyConfig(domestic_rate=float("nan"))
+    with pytest.raises(ValueError, match="finite split-chain diagnostics"):
+        JaxRegimeStudyConfig(posterior_samples=1)
     with pytest.raises(ValueError, match="must not exceed"):
         JaxRegimeStudyConfig(pricing_paths=1_000_001)
     with pytest.raises(ValueError, match="pricing_paths must be at least 2"):
@@ -140,6 +156,10 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
     assert JaxRegimeStudyConfig(maturity_years=1.0 / 252.0).pricing_steps == 1
     with pytest.raises(ValueError, match="more than 3,660 pricing steps"):
         JaxRegimeStudyConfig(maturity_years=15.0)
+    with pytest.raises(ValueError, match="path-steps"):
+        JaxRegimeStudyConfig(maturity_years=14.0, pricing_paths=5_000)
+    long_horizon_paths = _bounded_pricing_paths(131_072, 2, 3_660)
+    assert long_horizon_paths * 3_660 <= 131_072 * 126
     kwargs = {
         "dates": ("2026-01-01",),
         "levels_sha256": "a" * 64,

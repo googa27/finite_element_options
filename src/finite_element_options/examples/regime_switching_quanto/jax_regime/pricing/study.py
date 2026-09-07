@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from zipfile import ZipFile
 
-from ..contracts import JaxRegimeStudyConfig, PriceEstimate
+from ..contracts import MAX_PRICING_PATH_STEPS, JaxRegimeStudyConfig, PriceEstimate
 from ..data import _MEMBER_ROOT
 from ..hmm.forward import gaussian_hmm_filter_probs
 from ..utils import stack as _stack
@@ -19,6 +19,17 @@ from .payoffs import discounted_summary, payoff_samples
 
 _POSTERIOR_INTERVAL_PATHS = 131_072
 _POSTERIOR_INTERVAL_DRAWS_PER_CHAIN = 64
+
+
+def _bounded_pricing_paths(preferred: int, requested: int, steps: int) -> int:
+    """Bound one simulation allocation by the validated path-step ceiling."""
+
+    if steps < 1:
+        raise ValueError("steps must be positive")
+    maximum_paths = MAX_PRICING_PATH_STEPS // steps
+    if maximum_paths < 2:
+        raise ValueError("path-step ceiling cannot support finite Monte Carlo diagnostics")
+    return min(max(preferred, requested), maximum_paths)
 
 
 def _oracle_z_score(error: float, standard_error: float) -> float | None:
@@ -186,8 +197,8 @@ def _posterior_price_intervals(
             int
         )
     ]
-    reduced_paths = max(_POSTERIOR_INTERVAL_PATHS, config.pricing_paths)
     steps = config.pricing_steps
+    reduced_paths = _bounded_pricing_paths(_POSTERIOR_INTERVAL_PATHS, config.pricing_paths, steps)
     common_key = jr.key(config.seed + 200)
     collected: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
     collected_mc_se: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
@@ -304,8 +315,8 @@ def _matched_historical_oracle(
         jnp.asarray(prior_model["fx_vol"]),
         jnp.asarray(prior_model["correlation"]),
     )
-    paths = max(16_384, config.pricing_paths * 4)
-    steps = round(matched_config.maturity_years * matched_config.steps_per_year)
+    steps = matched_config.pricing_steps
+    paths = _bounded_pricing_paths(16_384, config.pricing_paths * 4, steps)
     regimes, increments = draw_paths_and_increments(
         jr.key(config.seed + 1_200),
         current,

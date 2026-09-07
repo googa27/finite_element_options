@@ -65,8 +65,10 @@ def run_synthetic_verification(config: JaxRegimeStudyConfig) -> dict[str, Any]:
         "dynamax_jax_likelihood_parity": likelihood_error <= 1.0e-9,
         "numpyro_two_chains": config.chains >= 2,
         "numpyro_zero_divergence": posterior["divergences"] == 0,
-        "numpyro_smoke_rhat": posterior["maximum_rhat"] <= 1.15,
-        "numpyro_smoke_ess": posterior["minimum_ess"] >= 10.0,
+        "numpyro_smoke_rhat": posterior["maximum_rhat"] is not None
+        and posterior["maximum_rhat"] <= 1.15,
+        "numpyro_smoke_ess": posterior["minimum_ess"] is not None
+        and posterior["minimum_ess"] >= 10.0,
         "multi_seed_recovery": bool(recovery["passed"]),
         "ctmc_generator_laws": bool(ctmc["passed"]),
         "diffrax_exact_pathwise_parity": pathwise_error <= 1.0e-10,

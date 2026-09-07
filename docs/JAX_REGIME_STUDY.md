@@ -158,6 +158,8 @@ Values are CLP. The posterior column is a deterministic chain-stratified summary
 
 The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process. The public config therefore enforces 252 steps per year and maturities aligned to whole fitted trading-day intervals; conditional Diffrax refinement may split diffusion increments within a fitted day, but it never reapplies the daily transition matrix at a subdaily frequency.
 
+Accepted runs require at least four retained draws per chain for finite split-chain diagnostics. Every pricing route also obeys a 16,515,072 path-step allocation ceiling; internal posterior/prior/oracle path floors adapt downward for longer horizons rather than allocating unbounded arrays. Non-finite NumPyro diagnostics serialize as `null`, set `finite=false`, and fail promotion.
+
 ## Reproducibility and supply chain
 
 The isolated profile contains JAX/JAXLIB 0.11.1, NumPyro 0.21.0, DYNAMAX 1.0.2, Diffrax 0.7.2, statsmodels 0.14.6, fastprogress 1.0.3, and pinned `tfp-nightly` version `0.26.0.dev20260907`. DYNAMAX's TFP layer emits deprecation warnings under this JAX version; those warnings are retained as an upgrade/reassessment trigger.

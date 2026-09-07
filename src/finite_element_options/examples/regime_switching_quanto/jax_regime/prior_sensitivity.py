@@ -15,7 +15,11 @@ from .contracts import (
 from .hmm.forward import gaussian_hmm_filter_probs
 from .hmm.numpyro_model import run_numpyro_hmm
 from .pricing.exact import draw_paths_and_increments, simulate_exact_terminal_states
-from .pricing.study import _price_contracts, _risk_neutral_coefficients
+from .pricing.study import (
+    _bounded_pricing_paths,
+    _price_contracts,
+    _risk_neutral_coefficients,
+)
 from .utils import stack as _stack, to_python as _python
 
 
@@ -37,8 +41,8 @@ def _reprice_posterior_mean(
         mean["means"],
         mean["covariances"],
     )[-1]
-    paths = max(4_096, config.pricing_paths)
-    steps = round(config.maturity_years * config.steps_per_year)
+    steps = config.pricing_steps
+    paths = _bounded_pricing_paths(4_096, config.pricing_paths, steps)
     regimes, increments = draw_paths_and_increments(
         jr.key(config.seed + 1_700),
         current,
@@ -156,7 +160,9 @@ def run_prior_sensitivity(
         and samples >= PUBLICATION_MIN_DRAWS_PER_CHAIN
         and all(
             profiles[name]["diagnostics"]["divergences"] == 0
+            and profiles[name]["diagnostics"]["maximum_rhat"] is not None
             and profiles[name]["diagnostics"]["maximum_rhat"] <= PUBLICATION_MAX_RHAT
+            and profiles[name]["diagnostics"]["minimum_ess"] is not None
             and profiles[name]["diagnostics"]["minimum_ess"] >= PUBLICATION_MIN_ESS
             and profiles[name]["diagnostics"]["finite"]
             for name in ("reference", "weak", "strong")

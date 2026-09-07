@@ -240,8 +240,10 @@ def run_jax_regime_study(
         ),
         "numpyro_finite": bool(posterior["finite"]),
         "numpyro_zero_divergence": posterior["divergences"] == 0,
-        "numpyro_rhat": posterior["maximum_rhat"] <= PUBLICATION_MAX_RHAT,
-        "numpyro_ess": posterior["minimum_ess"] >= PUBLICATION_MIN_ESS,
+        "numpyro_rhat": posterior["maximum_rhat"] is not None
+        and posterior["maximum_rhat"] <= PUBLICATION_MAX_RHAT,
+        "numpyro_ess": posterior["minimum_ess"] is not None
+        and posterior["minimum_ess"] >= PUBLICATION_MIN_ESS,
         "one_state_analytic": all(bool(row["passed_5se"]) for row in one_state.values()),
         "synthetic_recovery": bool(synthetic["passed"]),
     }

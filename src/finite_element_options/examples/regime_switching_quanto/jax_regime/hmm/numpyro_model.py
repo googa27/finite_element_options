@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
+import math
 from typing import Any
 
 from ..contracts import NumPyroPriorConfig
@@ -91,23 +92,37 @@ def _diagnostic_extrema(report: dict[str, Any]) -> dict[str, Any]:
         flat_rhat = rhat.reshape(-1)
         flat_ess = ess.reshape(-1)
         for index in range(len(flat_rhat)):
+            raw_rhat = float(flat_rhat[index])
+            raw_ess = float(flat_ess[index])
             diagnostics.append(
                 {
                     "parameter": name,
                     "flat_index": index,
-                    "rhat": float(flat_rhat[index]),
-                    "ess": float(flat_ess[index]),
+                    "rhat": raw_rhat if math.isfinite(raw_rhat) else None,
+                    "ess": raw_ess if math.isfinite(raw_ess) else None,
                 }
             )
-    maximum_rhat = max((row["rhat"] for row in diagnostics), default=float("nan"))
-    minimum_ess = min((row["ess"] for row in diagnostics), default=float("nan"))
-    weak = [row for row in diagnostics if row["rhat"] > 1.05 or row["ess"] < 100.0]
+    finite = bool(diagnostics) and all(
+        row["rhat"] is not None and row["ess"] is not None for row in diagnostics
+    )
+    maximum_rhat = max((row["rhat"] for row in diagnostics), default=None) if finite else None
+    minimum_ess = min((row["ess"] for row in diagnostics), default=None) if finite else None
+    weak = [
+        row
+        for row in diagnostics
+        if row["rhat"] is None or row["ess"] is None or row["rhat"] > 1.05 or row["ess"] < 100.0
+    ]
     return {
         "maximum_rhat": maximum_rhat,
         "minimum_ess": minimum_ess,
-        "worst_rhat": max(diagnostics, key=lambda row: row["rhat"], default=None),
-        "worst_ess": min(diagnostics, key=lambda row: row["ess"], default=None),
+        "worst_rhat": (
+            max(diagnostics, key=lambda row: row["rhat"], default=None) if finite else None
+        ),
+        "worst_ess": (
+            min(diagnostics, key=lambda row: row["ess"], default=None) if finite else None
+        ),
         "weakly_identified_parameters": weak,
+        "finite": finite,
     }
 
 
@@ -174,7 +189,8 @@ def run_numpyro_hmm(
     divergences = _required_divergence_count(extra)
     flat = mcmc.get_samples(group_by_chain=False)
     posterior_mean = {name: jnp.mean(value, axis=0) for name, value in flat.items()}
-    finite = all(bool(jnp.all(jnp.isfinite(value))) for value in flat.values())
+    parameter_finite = all(bool(jnp.all(jnp.isfinite(value))) for value in flat.values())
+    finite = parameter_finite and bool(diagnostics["finite"])
     return {
         "chains": chains,
         "draws_per_chain": samples,

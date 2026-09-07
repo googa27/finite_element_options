@@ -16,7 +16,9 @@ PUBLICATION_MIN_DRAWS_PER_CHAIN = 200
 PUBLICATION_MAX_RHAT = 1.05
 PUBLICATION_MIN_ESS = 100.0
 DAILY_STEPS_PER_YEAR = 252
+MIN_DIAGNOSTIC_DRAWS_PER_CHAIN = 4
 MAX_PRICING_STEPS = 3_660
+MAX_PRICING_PATH_STEPS = 131_072 * 126
 
 
 @dataclass(frozen=True)
@@ -91,8 +93,8 @@ class PosteriorDiagnosticSummary:
     chains: int
     draws_per_chain: int
     divergences: int
-    maximum_rhat: float
-    minimum_ess: float
+    maximum_rhat: float | None
+    minimum_ess: float | None
     finite: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -224,6 +226,11 @@ class JaxRegimeStudyConfig:
                 raise ValueError(f"{name} must be positive")
         if self.pricing_paths < 2:
             raise ValueError("pricing_paths must be at least 2 for finite sample diagnostics")
+        if self.posterior_samples < MIN_DIAGNOSTIC_DRAWS_PER_CHAIN:
+            raise ValueError(
+                "posterior_samples must be at least "
+                f"{MIN_DIAGNOSTIC_DRAWS_PER_CHAIN} for finite split-chain diagnostics"
+            )
         if self.chains < PUBLICATION_MIN_CHAINS:
             raise ValueError(
                 f"chains must be at least {PUBLICATION_MIN_CHAINS} for between-chain diagnostics"
@@ -257,6 +264,12 @@ class JaxRegimeStudyConfig:
         if pricing_steps > MAX_PRICING_STEPS:
             raise ValueError(
                 f"maturity_years must not produce more than {MAX_PRICING_STEPS:,} pricing steps"
+            )
+        path_steps = self.pricing_paths * pricing_steps
+        if path_steps > MAX_PRICING_PATH_STEPS:
+            raise ValueError(
+                "pricing_paths * pricing_steps must not exceed "
+                f"{MAX_PRICING_PATH_STEPS:,} path-steps"
             )
         if (
             self.research_only is not True
