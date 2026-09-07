@@ -19,6 +19,9 @@ DAILY_STEPS_PER_YEAR = 252
 MIN_DIAGNOSTIC_DRAWS_PER_CHAIN = 4
 MAX_PRICING_STEPS = 3_660
 MAX_PRICING_PATH_STEPS = 131_072 * 126
+MAX_SEED_OFFSET = 1_701
+MAX_BASE_SEED = 0xFFFF_FFFF - MAX_SEED_OFFSET
+MAX_ABS_RATE = 1.0
 
 
 @dataclass(frozen=True)
@@ -205,8 +208,10 @@ class JaxRegimeStudyConfig:
         for integer_name, integer_value in integers.items():
             if isinstance(integer_value, bool) or not isinstance(integer_value, Integral):
                 raise ValueError(f"{integer_name} must be an integer")
-        if not 0 <= self.seed <= 0xFFFF_FFFF:
-            raise ValueError("seed must lie in the uint32 range")
+        if not 0 <= self.seed <= MAX_BASE_SEED:
+            raise ValueError(
+                f"seed must lie in [0, {MAX_BASE_SEED}] to reserve deterministic offsets"
+            )
         real_settings = {
             "holdout_fraction": self.holdout_fraction,
             "maturity_years": self.maturity_years,
@@ -221,6 +226,14 @@ class JaxRegimeStudyConfig:
                 or not math.isfinite(real_value)
             ):
                 raise ValueError(f"{real_name} must be a finite real number")
+        rate_settings = {
+            "domestic_rate": self.domestic_rate,
+            "foreign_rate": self.foreign_rate,
+            "dividend_yield": self.dividend_yield,
+        }
+        for rate_name, rate_value in rate_settings.items():
+            if abs(rate_value) > MAX_ABS_RATE:
+                raise ValueError(f"{rate_name} must lie in [-{MAX_ABS_RATE}, {MAX_ABS_RATE}]")
         for name, value in positive.items():
             if value <= 0:
                 raise ValueError(f"{name} must be positive")

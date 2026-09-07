@@ -32,6 +32,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.study import (
     _bounded_pricing_paths,
+    _matched_oracle_config,
     _oracle_z_score,
 )
 
@@ -133,10 +134,14 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(em_iters=1.5)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="seed must be an integer"):
         JaxRegimeStudyConfig(seed=True)
-    with pytest.raises(ValueError, match="uint32 range"):
+    with pytest.raises(ValueError, match="reserve deterministic offsets"):
         JaxRegimeStudyConfig(seed=-1)
+    with pytest.raises(ValueError, match="reserve deterministic offsets"):
+        JaxRegimeStudyConfig(seed=0xFFFF_FFFF)
     with pytest.raises(ValueError, match="domestic_rate must be a finite real number"):
         JaxRegimeStudyConfig(domestic_rate=float("nan"))
+    with pytest.raises(ValueError, match="domestic_rate must lie"):
+        JaxRegimeStudyConfig(domestic_rate=1.1)
     with pytest.raises(ValueError, match="finite split-chain diagnostics"):
         JaxRegimeStudyConfig(posterior_samples=1)
     with pytest.raises(ValueError, match="must not exceed"):
@@ -160,6 +165,16 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(maturity_years=14.0, pricing_paths=5_000)
     long_horizon_paths = _bounded_pricing_paths(131_072, 2, 3_660)
     assert long_horizon_paths * 3_660 <= 131_072 * 126
+    short_config = JaxRegimeStudyConfig(maturity_years=1.0 / 252.0, pricing_paths=200_000)
+    matched_config = _matched_oracle_config(
+        short_config,
+        maturity_years=0.5,
+        domestic_rate=0.045,
+        foreign_rate=0.0439,
+        dividend_yield=0.0,
+    )
+    assert matched_config.pricing_steps == 126
+    assert matched_config.pricing_paths == 131_072
     kwargs = {
         "dates": ("2026-01-01",),
         "levels_sha256": "a" * 64,

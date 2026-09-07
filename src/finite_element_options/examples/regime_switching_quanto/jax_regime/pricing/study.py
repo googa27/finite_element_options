@@ -32,6 +32,28 @@ def _bounded_pricing_paths(preferred: int, requested: int, steps: int) -> int:
     return min(max(preferred, requested), maximum_paths)
 
 
+def _matched_oracle_config(
+    config: JaxRegimeStudyConfig,
+    *,
+    maturity_years: float,
+    domestic_rate: float,
+    foreign_rate: float,
+    dividend_yield: float,
+) -> JaxRegimeStudyConfig:
+    """Return an archive-aligned config whose paths are capped before validation."""
+
+    steps = int(round(maturity_years * config.steps_per_year))
+    paths = _bounded_pricing_paths(16_384, config.pricing_paths * 4, steps)
+    return replace(
+        config,
+        maturity_years=maturity_years,
+        pricing_paths=paths,
+        domestic_rate=domestic_rate,
+        foreign_rate=foreign_rate,
+        dividend_yield=dividend_yield,
+    )
+
+
 def _oracle_z_score(error: float, standard_error: float) -> float | None:
     """Return a fail-closed standardized error, including zero-variance samples."""
 
@@ -294,7 +316,7 @@ def _matched_historical_oracle(
         calibration = json.loads(bundle.read(f"{_MEMBER_ROOT}calibration.json"))
         prior = json.loads(bundle.read(f"{_MEMBER_ROOT}pricing_results.json"))
     prior_model = prior["model"]
-    matched_config = replace(
+    matched_config = _matched_oracle_config(
         config,
         maturity_years=float(prior["maturity_years"]),
         domestic_rate=float(prior_model["domestic_rate"]),
@@ -316,7 +338,7 @@ def _matched_historical_oracle(
         jnp.asarray(prior_model["correlation"]),
     )
     steps = matched_config.pricing_steps
-    paths = _bounded_pricing_paths(16_384, config.pricing_paths * 4, steps)
+    paths = matched_config.pricing_paths
     regimes, increments = draw_paths_and_increments(
         jr.key(config.seed + 1_200),
         current,
