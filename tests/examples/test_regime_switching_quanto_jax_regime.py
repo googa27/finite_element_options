@@ -102,6 +102,8 @@ def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
 def test_resource_limits_and_finite_observations_fail_closed() -> None:
     with pytest.raises(ValueError, match="must not exceed"):
         JaxRegimeStudyConfig(pricing_paths=1_000_001)
+    with pytest.raises(ValueError, match="pricing_paths must be at least 2"):
+        JaxRegimeStudyConfig(pricing_paths=1)
     with pytest.raises(ValueError, match="at least 2"):
         JaxRegimeStudyConfig(chains=1)
     with pytest.raises(ValueError, match="steps_per_year must be 252"):
@@ -110,6 +112,9 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
         JaxRegimeStudyConfig(maturity_years=0.001)
     with pytest.raises(ValueError, match="finite and positive"):
         JaxRegimeStudyConfig(maturity_years=float("nan"))
+    with pytest.raises(ValueError, match="whole number of daily pricing steps"):
+        JaxRegimeStudyConfig(maturity_years=0.01)
+    assert JaxRegimeStudyConfig(maturity_years=1.0 / 252.0).pricing_steps == 1
     with pytest.raises(ValueError, match="more than 3,660 pricing steps"):
         JaxRegimeStudyConfig(maturity_years=15.0)
     kwargs = {

@@ -201,6 +201,8 @@ class JaxRegimeStudyConfig:
         for name, value in positive.items():
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
+        if self.pricing_paths < 2:
+            raise ValueError("pricing_paths must be at least 2 for finite sample diagnostics")
         if self.chains < PUBLICATION_MIN_CHAINS:
             raise ValueError(
                 f"chains must be at least {PUBLICATION_MIN_CHAINS} for between-chain diagnostics"
@@ -225,9 +227,12 @@ class JaxRegimeStudyConfig:
             raise ValueError(
                 f"steps_per_year must be {DAILY_STEPS_PER_YEAR}; the fitted transition matrix is daily"
             )
+        raw_pricing_steps = self.maturity_years * self.steps_per_year
         pricing_steps = self.pricing_steps
         if pricing_steps < 1:
             raise ValueError("maturity_years must produce at least one daily pricing step")
+        if not math.isclose(raw_pricing_steps, pricing_steps, rel_tol=0.0, abs_tol=1.0e-12):
+            raise ValueError("maturity_years must represent a whole number of daily pricing steps")
         if pricing_steps > MAX_PRICING_STEPS:
             raise ValueError(
                 f"maturity_years must not produce more than {MAX_PRICING_STEPS:,} pricing steps"
@@ -239,7 +244,7 @@ class JaxRegimeStudyConfig:
     def pricing_steps(self) -> int:
         """Return the validated number of daily regime/diffusion intervals."""
 
-        return round(self.maturity_years * self.steps_per_year)
+        return int(round(self.maturity_years * self.steps_per_year))
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe representation."""
