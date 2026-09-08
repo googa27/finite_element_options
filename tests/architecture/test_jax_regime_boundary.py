@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import ast
+import json
 import os
 from pathlib import Path
+import runpy
 import subprocess
 import sys
 import textwrap
@@ -177,6 +179,47 @@ def test_jax_regime_plot_rejects_non_png_output_before_rendering() -> None:
     )
     assert result.returncode == 2
     assert "--output must name a PNG path" in result.stderr
+
+
+def test_canonical_visual_publication_requires_bound_evidence(
+    tmp_path: Path,
+) -> None:
+    generator = ROOT / "scripts/generate_jax_regime_plot.py"
+    namespace = runpy.run_path(str(generator))
+    load_payload = namespace["_load_payload"]
+    validate_payload = namespace["_validate_canonical_payload"]
+    canonical = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
+
+    payload = load_payload(canonical, publish_canonical=True)
+    assert payload["status"] == "passed"
+
+    wrong_config = json.loads(json.dumps(payload))
+    wrong_config["config"]["seed"] += 1
+    with pytest.raises(ValueError, match="exact evidence configuration"):
+        validate_payload(wrong_config)
+
+    failed_gate = json.loads(json.dumps(payload))
+    failed_gate["verification"]["gates"]["synthetic_recovery"] = False
+    with pytest.raises(ValueError, match="passed evidence and named gates"):
+        validate_payload(failed_gate)
+
+    alternate = tmp_path / "alternate.json"
+    alternate.write_bytes(canonical.read_bytes())
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(generator),
+            "--input",
+            str(alternate),
+            "--publish-canonical",
+        ],
+        cwd=Path("/tmp"),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert "requires the canonical evidence path" in result.stderr
 
 
 def test_jax_regime_clis_reject_hard_links_to_every_canonical_artifact(

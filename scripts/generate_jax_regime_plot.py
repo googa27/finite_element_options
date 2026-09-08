@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,27 @@ EXPECTED_VISUAL_STACK = {
     "pillow": "12.3.0",
 }
 ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_INPUT = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
+CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(CANONICAL_INPUT.suffix + ".sha256")
+EXPECTED_EVIDENCE_SHA256 = "5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756"
+EXPECTED_CANONICAL_CONFIG = {
+    "chains": 2,
+    "dividend_yield": 0.0,
+    "domestic_rate": 0.045,
+    "em_iters": 250,
+    "foreign_rate": 0.0439,
+    "holdout_fraction": 0.15,
+    "market_calibrated": False,
+    "maturity_years": 0.5,
+    "num_states": 4,
+    "posterior_samples": 300,
+    "pricing_paths": 4_096,
+    "production_ready": False,
+    "research_only": True,
+    "seed": 20_260_907,
+    "steps_per_year": 252,
+    "warmup": 300,
+}
 CANONICAL_OUTPUT = ROOT / "docs/images/jax_regime_study_2026-09-07.png"
 CANONICAL_PDF = CANONICAL_OUTPUT.with_suffix(".pdf")
 DEFAULT_OUTPUT = Path("/tmp/jax_regime_study_2026-09-07.png")
@@ -40,6 +62,45 @@ def _temporary_sibling(target: Path) -> Path:
         prefix=f".{target.name}.", suffix=target.suffix, dir=target.parent, delete=False
     ) as stream:
         return Path(stream.name)
+
+
+def _validate_canonical_payload(payload: dict[str, Any]) -> None:
+    """Require the exact publication config and successful named gates."""
+
+    if payload.get("config") != EXPECTED_CANONICAL_CONFIG:
+        raise ValueError("canonical visual publication requires the exact evidence configuration")
+    verification = payload.get("verification")
+    gates = verification.get("gates") if isinstance(verification, dict) else None
+    if (
+        payload.get("status") != "passed"
+        or not isinstance(verification, dict)
+        or verification.get("diagnostics_passed") is not True
+        or not isinstance(gates, dict)
+        or not gates
+        or not all(value is True for value in gates.values())
+    ):
+        raise ValueError("canonical visual publication requires passed evidence and named gates")
+
+
+def _load_payload(path: Path, *, publish_canonical: bool) -> dict[str, Any]:
+    """Parse one immutable evidence snapshot and enforce canonical publication identity."""
+
+    expanded = path.expanduser()
+    raw = expanded.read_bytes()
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError("visual evidence input must be a JSON object")
+    if publish_canonical:
+        if expanded.resolve() != CANONICAL_INPUT.resolve():
+            raise ValueError("canonical visual publication requires the canonical evidence path")
+        digest = sha256(raw).hexdigest()
+        if digest != EXPECTED_EVIDENCE_SHA256:
+            raise ValueError("canonical visual publication requires the hash-bound evidence bytes")
+        expected_sidecar = f"{digest}  {CANONICAL_INPUT.name}\n"
+        if CANONICAL_INPUT_SIDECAR.read_text(encoding="utf-8") != expected_sidecar:
+            raise ValueError("canonical visual publication requires the matching evidence sidecar")
+        _validate_canonical_payload(payload)
+    return payload
 
 
 def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
@@ -130,7 +191,7 @@ def main() -> int:
     parser.add_argument(
         "--input",
         type=Path,
-        default=ROOT / "docs/evidence/jax_regime_study_2026-09-07.json",
+        default=CANONICAL_INPUT,
     )
     parser.add_argument(
         "--output",
@@ -155,6 +216,10 @@ def main() -> int:
         )
     except ValueError as error:
         parser.error(str(error))
+    try:
+        payload = _load_payload(args.input, publish_canonical=args.publish_canonical)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
 
     import matplotlib
     import matplotlib.pyplot as plt
@@ -172,7 +237,6 @@ def main() -> int:
             "install environments/jax-regime-visual-py312/requirements.lock"
         )
 
-    payload = json.loads(args.input.read_text(encoding="utf-8"))
     candidates = payload["hmm"]["candidate_comparison"]
     fit = payload["hmm"]["dynamax_full_fit"]
     posterior = payload["hmm"]["numpyro"]
