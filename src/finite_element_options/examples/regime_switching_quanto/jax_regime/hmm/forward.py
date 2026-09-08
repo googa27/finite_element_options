@@ -89,6 +89,13 @@ def gaussian_hmm_filter_probs(
     return jnp.concatenate([jnp.exp(initial_alpha)[None, :], rest], axis=0)
 
 
+def forecast_next_state_probs(filtered_probs: Any, transition_matrix: Any) -> Any:
+    """Advance a filtered end-of-sample law to the first future emission state."""
+
+    _jax_module, jnp, _logsumexp = _jax()
+    return jnp.asarray(filtered_probs) @ jnp.asarray(transition_matrix)
+
+
 def conditional_holdout_log_prob(
     observations: Any,
     train_count: int,

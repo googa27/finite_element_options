@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 from typing import Any
 
+import numpy as np
 import pytest
 
 pytestmark = pytest.mark.validation
@@ -20,17 +21,17 @@ CI_LOCK = ROOT / "environments/jax-regime-py312/ci-requirements.lock"
 VISUAL_LOCK = ROOT / "environments/jax-regime-visual-py312/requirements.lock"
 IMAGE_DIR = ROOT / "docs/images"
 ARTIFACT_MANIFEST = IMAGE_DIR / "jax_regime_study_2026-09-07.sha256"
-EXPECTED_EVIDENCE_SHA256 = "5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756"
+EXPECTED_EVIDENCE_SHA256 = "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
 EXPECTED_LOCK_SHA256 = "42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c"
 EXPECTED_TEST_LOCK_SHA256 = "ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0"
 EXPECTED_CI_LOCK_SHA256 = "5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b"
 EXPECTED_VISUAL_LOCK_SHA256 = "8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6"
 EXPECTED_ARTIFACT_HASHES = {
     "jax_regime_study_2026-09-07.png": (
-        "50f927f21b0134b494aa87e0bc87d1d806d1066b0cacefa757c589c051cfd3ef"
+        "46e3e795c5bf693d117550a0e1b57b5bc77c7e05792120d9e750ede56df1df24"
     ),
     "jax_regime_study_2026-09-07.pdf": (
-        "a73e912a850a7de0d473350d77ae48c90a3e2ca8af274d543fa2db65b2f3c026"
+        "06d0e5d298e00cdbd3aee83248baec0f53c8ca4c4ca8882dc7a16a7d66585646"
     ),
 }
 
@@ -104,6 +105,22 @@ def test_jax_regime_evidence_is_hash_bound_and_promotably_honest() -> None:
         if row["engine"] == "dynamax"
     )
     assert f"{em_iterations}-iteration starts" in payload["hmm"]["selection"]["rule"]
+    posterior_filtered = np.asarray(
+        payload["hmm"]["numpyro"]["posterior_end_sample_filtered_probs"]
+    )
+    posterior_transition = np.asarray(payload["hmm"]["numpyro"]["posterior_mean_transition_matrix"])
+    posterior_forecast = np.asarray(
+        payload["hmm"]["numpyro"]["posterior_first_interval_forecast_probs"]
+    )
+    forecast = np.asarray(payload["pricing"]["diffrax"]["first_interval_regime_probs"])
+    np.testing.assert_allclose(
+        posterior_forecast,
+        posterior_filtered @ posterior_transition,
+        rtol=0.0,
+        atol=1.0e-14,
+    )
+    np.testing.assert_allclose(forecast, posterior_forecast, rtol=0.0, atol=1.0e-14)
+    np.testing.assert_allclose(np.sum(forecast), 1.0, rtol=0.0, atol=1.0e-14)
     assert payload["claims"] == {
         "diffrax_scope": (
             "Diffrax Euler is a tested SDE abstraction, not an accuracy upgrade; the aligned "

@@ -16,6 +16,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.dyna
     fit_dynamax_hmm,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.forward import (
+    forecast_next_state_probs,
     gaussian_hmm_log_prob,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.hmm.generator_check import (
@@ -29,6 +30,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.exact import (
     simulate_exact_terminal_states,
+    simulate_regime_paths,
 )
 from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.validation import (
     martingale_checks,
@@ -50,6 +52,14 @@ def _fixture() -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
         ]
     )
     return initial, transition, means, covariances
+
+
+def test_first_forecast_interval_advances_the_filtered_hmm_law() -> None:
+    transition = jnp.array([[0.0, 1.0], [1.0, 0.0]])
+    forecast = forecast_next_state_probs(jnp.array([1.0, 0.0]), transition)
+    np.testing.assert_array_equal(forecast, jnp.array([0.0, 1.0]))
+    paths = simulate_regime_paths(jr.key(99), forecast, transition, paths=32, steps=1)
+    np.testing.assert_array_equal(paths, jnp.ones((32, 1), dtype=paths.dtype))
 
 
 def test_forward_likelihood_matches_dynamax() -> None:

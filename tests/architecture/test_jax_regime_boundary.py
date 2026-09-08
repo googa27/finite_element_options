@@ -190,8 +190,12 @@ def test_canonical_visual_publication_requires_bound_evidence(
     validate_payload = namespace["_validate_canonical_payload"]
     regime_labels = namespace["_regime_labels"]
     format_diagnostic = namespace["_format_optional_diagnostic"]
+    historical_markers_match = namespace["_historical_markers_match"]
+    horizon_label = namespace["_horizon_label"]
     canonical = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
 
+    assert horizon_label(0.5) == "Six-month"
+    assert horizon_label(1.0) == "1-year"
     assert format_diagnostic(None, ".3f") == "N/A"
     assert format_diagnostic(1.0044, ".3f") == "1.004"
     assert format_diagnostic(237.6, ".0f") == "238"
@@ -203,6 +207,17 @@ def test_canonical_visual_publication_requires_bound_evidence(
 
     payload = load_payload(canonical, publish_canonical=True)
     assert payload["status"] == "passed"
+    assert historical_markers_match(payload) is True
+    unmatched = json.loads(json.dumps(payload))
+    unmatched["pricing"]["matched_historical_three_state_jax_numpy_oracle"]["assumption_match"][
+        "maturity"
+    ] = False
+    assert historical_markers_match(unmatched) is False
+    empty_assumptions = json.loads(json.dumps(payload))
+    empty_assumptions["pricing"]["matched_historical_three_state_jax_numpy_oracle"][
+        "assumption_match"
+    ] = {}
+    assert historical_markers_match(empty_assumptions) is False
 
     wrong_config = json.loads(json.dumps(payload))
     wrong_config["config"]["seed"] += 1

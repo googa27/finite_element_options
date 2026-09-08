@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -19,7 +20,7 @@ EXPECTED_VISUAL_STACK = {
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_INPUT = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
 CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(CANONICAL_INPUT.suffix + ".sha256")
-EXPECTED_EVIDENCE_SHA256 = "5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756"
+EXPECTED_EVIDENCE_SHA256 = "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
 EXPECTED_CANONICAL_CONFIG = {
     "chains": 2,
     "dividend_yield": 0.0,
@@ -37,6 +38,14 @@ EXPECTED_CANONICAL_CONFIG = {
     "seed": 20_260_907,
     "steps_per_year": 252,
     "warmup": 300,
+}
+EXPECTED_ASSUMPTION_MATCH_KEYS = {
+    "dividend_yield",
+    "domestic_rate",
+    "equity_spot",
+    "foreign_rate",
+    "fx_spot",
+    "maturity",
 }
 CANONICAL_OUTPUT = ROOT / "docs/images/jax_regime_study_2026-09-07.png"
 CANONICAL_PDF = CANONICAL_OUTPUT.with_suffix(".pdf")
@@ -68,6 +77,24 @@ def _format_optional_diagnostic(value: Any, format_spec: str) -> str:
     """Format a finite diagnostic or render an explicit missing-value placeholder."""
 
     return "N/A" if value is None else format(float(value), format_spec)
+
+
+def _historical_markers_match(payload: dict[str, Any]) -> bool:
+    """Return whether archived markers share every recorded pricing assumption."""
+
+    matched = payload["pricing"]["matched_historical_three_state_jax_numpy_oracle"]
+    assumptions = matched.get("assumption_match")
+    return (
+        isinstance(assumptions, dict)
+        and set(assumptions) == EXPECTED_ASSUMPTION_MATCH_KEYS
+        and all(value is True for value in assumptions.values())
+    )
+
+
+def _horizon_label(maturity_years: float) -> str:
+    """Return a concise horizon label while preserving the canonical wording."""
+
+    return "Six-month" if math.isclose(maturity_years, 0.5) else f"{maturity_years:g}-year"
 
 
 def _regime_labels(state_count: int) -> list[str]:
@@ -262,6 +289,7 @@ def main() -> int:
     posterior = payload["hmm"]["numpyro"]
     prices = payload["pricing"]["diffrax"]["point_prices"]
     intervals = payload["pricing"]["posterior_parameter_price_intervals"]
+    show_historical = _historical_markers_match(payload)
     historical = {
         row["contract"]: row for row in payload["pricing"]["historical_scikit_fem_and_numpy_mc"]
     }
@@ -368,8 +396,16 @@ def main() -> int:
         np.asarray([intervals[name]["posterior_parameter_median_clp"] for name in names]) / 1_000.0
     )
     q95 = np.asarray([intervals[name]["posterior_parameter_q95_clp"] for name in names]) / 1_000.0
-    old_mc = np.asarray([historical[name]["numpy_exact_step_mc_clp"] for name in names]) / 1_000.0
-    old_fem = np.asarray([historical[name]["fine_fem_clp"] for name in names]) / 1_000.0
+    old_mc = (
+        np.asarray([historical[name]["numpy_exact_step_mc_clp"] for name in names]) / 1_000.0
+        if show_historical
+        else np.asarray([])
+    )
+    old_fem = (
+        np.asarray([historical[name]["fine_fem_clp"] for name in names]) / 1_000.0
+        if show_historical
+        else np.asarray([])
+    )
     price_axis.errorbar(
         positions,
         posterior_median,
@@ -392,23 +428,25 @@ def main() -> int:
         lw=1,
         label="Diffrax posterior-mean price ±2 MC SE",
     )
-    price_axis.scatter(
-        positions - 0.12,
-        old_mc,
-        color=green,
-        marker="D",
-        s=45,
-        label="Prior 3-state NumPy exact-step MC",
-    )
-    price_axis.scatter(
-        positions + 0.12,
-        old_fem,
-        color=violet,
-        marker="s",
-        s=45,
-        label="Prior 3-state fine scikit-fem",
-    )
-    price_axis.set_title("Six-month constrained Qd research prices")
+    if show_historical:
+        price_axis.scatter(
+            positions - 0.12,
+            old_mc,
+            color=green,
+            marker="D",
+            s=45,
+            label="Prior 3-state NumPy exact-step MC",
+        )
+        price_axis.scatter(
+            positions + 0.12,
+            old_fem,
+            color=violet,
+            marker="s",
+            s=45,
+            label="Prior 3-state fine scikit-fem",
+        )
+    horizon_label = _horizon_label(float(payload["config"]["maturity_years"]))
+    price_axis.set_title(f"{horizon_label} constrained Qd research prices")
     price_axis.set_ylabel("Price (thousand CLP)")
     display_labels = {
         "ATM composite call": "Composite call",
@@ -421,12 +459,13 @@ def main() -> int:
         positions,
         [display_labels[name] for name in names],
     )
-    maximum_visible_price = max(
+    visible_maxima = [
         float(np.max(q95)),
         float(np.max(point + 2.0 * point_se)),
-        float(np.max(old_mc)),
-        float(np.max(old_fem)),
-    )
+    ]
+    if show_historical:
+        visible_maxima.extend((float(np.max(old_mc)), float(np.max(old_fem))))
+    maximum_visible_price = max(visible_maxima)
     price_axis.set_ylim(0.0, maximum_visible_price * 1.25)
     price_axis.grid(axis="y", color="#334155", alpha=0.45, lw=0.7)
     price_axis.legend(loc="upper right", frameon=False, ncols=2, fontsize=9)
@@ -462,10 +501,15 @@ def main() -> int:
         fontweight="bold",
         ha="right",
     )
+    footer = (
+        "Research-only • P transition reused under constrained Qd • prior 3-state markers are context, not same-model parity"
+        if show_historical
+        else "Research-only • P transition reused under constrained Qd • archived markers hidden: pricing assumptions differ"
+    )
     figure.text(
         0.04,
         0.012,
-        "Research-only • P transition reused under constrained Qd • prior 3-state markers are context, not same-model parity",
+        footer,
         color=amber,
         fontsize=10,
         ha="left",
@@ -515,6 +559,7 @@ def main() -> int:
                 "pdf": str(pdf),
                 "stack": actual_stack,
                 "layout_qa": layout_qa,
+                "historical_markers_shown": show_historical,
             }
         )
     )

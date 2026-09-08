@@ -12,7 +12,7 @@ from .contracts import (
     PUBLICATION_MIN_DRAWS_PER_CHAIN,
     PUBLICATION_MIN_ESS,
 )
-from .hmm.forward import gaussian_hmm_filter_probs
+from .hmm.forward import forecast_next_state_probs, gaussian_hmm_filter_probs
 from .hmm.numpyro_model import run_numpyro_hmm
 from .pricing.exact import draw_paths_and_increments, simulate_exact_terminal_states
 from .pricing.study import (
@@ -34,13 +34,14 @@ def _reprice_posterior_mean(
 ) -> dict[str, Any]:
     _jax, _jnp, jr = _stack()
     mean = posterior["posterior_mean"]
-    current = gaussian_hmm_filter_probs(
+    filtered = gaussian_hmm_filter_probs(
         observations,
         mean["initial_probs"],
         mean["transition_matrix"],
         mean["means"],
         mean["covariances"],
     )[-1]
+    current = forecast_next_state_probs(filtered, mean["transition_matrix"])
     steps = config.pricing_steps
     paths = _publication_or_requested_paths(config, 4_096, steps)
     regimes, increments = draw_paths_and_increments(

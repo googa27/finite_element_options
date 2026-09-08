@@ -16,7 +16,7 @@ from ..contracts import (
     PriceEstimate,
 )
 from ..data import _MEMBER_ROOT
-from ..hmm.forward import gaussian_hmm_filter_probs
+from ..hmm.forward import forecast_next_state_probs, gaussian_hmm_filter_probs
 from ..utils import stack as _stack
 from .analytic import one_state_price
 from .exact import correlated_diffusion, draw_paths_and_increments, simulate_exact_terminal_states
@@ -256,13 +256,14 @@ def _posterior_price_intervals(
         transition = grouped["transition_matrix"][chain, draw]
         initial_draw = grouped["initial_probs"][chain, draw]
         covariances = grouped["covariances"][chain, draw]
-        current = gaussian_hmm_filter_probs(
+        filtered = gaussian_hmm_filter_probs(
             observations,
             initial_draw,
             transition,
             grouped["means"][chain, draw],
             covariances,
         )[-1]
+        current = forecast_next_state_probs(filtered, transition)
         regimes, increments = draw_paths_and_increments(
             common_key,
             current,
@@ -415,6 +416,10 @@ def _matched_historical_oracle(
     }
     return {
         "purpose": "numerical parity only; this reuses the archived three-state parameters and is distinct from the selected four-state model",
+        "regime_boundary_policy": (
+            "legacy replay: archived current probabilities seed the first interval directly; "
+            "current JAX study pricing advances filtered probabilities by one daily transition"
+        ),
         "paths": paths,
         "seed": config.seed + 1_200,
         "assumption_match": assumption_match,

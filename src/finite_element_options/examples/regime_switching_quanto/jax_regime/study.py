@@ -20,7 +20,11 @@ from .contracts import (
 from .data import _load_pdp_snapshot
 from .hmm.dynamax_adapter import dynamax_marginal_log_prob
 from .hmm.experiment import _candidate_comparison, _full_fit, _synthetic_recovery
-from .hmm.forward import gaussian_hmm_filter_probs, gaussian_hmm_log_prob
+from .hmm.forward import (
+    forecast_next_state_probs,
+    gaussian_hmm_filter_probs,
+    gaussian_hmm_log_prob,
+)
 from .hmm.generator_check import check_ctmc_generator
 from .hmm.numpyro_model import run_numpyro_hmm
 from .hmm.statsmodels_baseline import fit_statsmodels_var_baseline
@@ -100,7 +104,10 @@ def run_jax_regime_study(
         posterior_mean["means"],
         posterior_mean["covariances"],
     )
-    current_probs = filtered[-1]
+    end_sample_filtered_probs = filtered[-1]
+    current_probs = forecast_next_state_probs(
+        end_sample_filtered_probs, posterior_mean["transition_matrix"]
+    )
     drift, diffusion, equity_vol, fx_vol, correlation = _risk_neutral_coefficients(
         posterior_mean["covariances"], config
     )
@@ -352,7 +359,8 @@ def run_jax_regime_study(
                 "posterior_mean_covariances_percent_squared_daily": _python(
                     posterior_mean["covariances"]
                 ),
-                "posterior_current_filtered_probs": _python(current_probs),
+                "posterior_end_sample_filtered_probs": _python(end_sample_filtered_probs),
+                "posterior_first_interval_forecast_probs": _python(current_probs),
             },
             "synthetic_recovery": synthetic,
             "prior_sensitivity": prior_sensitivity,
@@ -370,6 +378,7 @@ def run_jax_regime_study(
                 "stepsize_controller": "StepTo at every regime boundary",
                 "paths": config.pricing_paths,
                 "steps": steps,
+                "first_interval_regime_probs": _python(current_probs),
                 "maximum_pathwise_error_vs_exact_jax": pathwise_error,
                 "point_prices": point_prices,
             },

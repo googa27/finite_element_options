@@ -2,12 +2,12 @@
 
 **Status:** passed research evidence — not market calibrated and not production ready<br>
 **Executed:** 2026-09-07<br>
-**Evidence SHA-256:** `5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756`<br>
+**Evidence SHA-256:** `2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854`<br>
 **Python 3.12 lock SHA-256:** `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`<br>
 **Python 3.12 test-tool lock SHA-256:** `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`<br>
 **Python 3.12 CI-tool lock SHA-256:** `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`<br>
 **Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
-**PNG/PDF SHA-256:** `50f927f21b0134b494aa87e0bc87d1d806d1066b0cacefa757c589c051cfd3ef` / `a73e912a850a7de0d473350d77ae48c90a3e2ca8af274d543fa2db65b2f3c026`
+**PNG/PDF SHA-256:** `46e3e795c5bf693d117550a0e1b57b5bc77c7e05792120d9e750ede56df1df24` / `06d0e5d298e00cdbd3aee83248baec0f53c8ca4c4ca8882dc7a16a7d66585646`
 
 <p align="center">
   <img src="images/jax_regime_study_2026-09-07.png" alt="Four-state DYNAMAX, NumPyro, and Diffrax regime study results" width="100%" />
@@ -88,12 +88,12 @@ The four-state gain over three states is `0.024284` mean log score per holdout o
 
 States are canonicalized by composite equity-plus-FX volatility.
 
-| State | Annualized composite volatility | Smoothed occupancy | End-sample filtered probability |
-|---:|---:|---:|---:|
-| 1 | 11.27% | 31.79% | 76.15% |
-| 2 | 19.96% | 33.36% | 18.95% |
-| 3 | 23.74% | 23.05% | 4.77% |
-| 4 | 44.11% | 11.80% | 0.13% |
+| State | Annualized composite volatility | Smoothed occupancy | DYNAMAX end-sample filtered probability | NumPyro posterior-mean first pricing-interval forecast |
+|---:|---:|---:|---:|---:|
+| 1 | 11.27% | 31.79% | 76.15% | 71.74% |
+| 2 | 19.96% | 33.36% | 18.95% | 19.76% |
+| 3 | 23.74% | 23.05% | 4.77% | 7.87% |
+| 4 | 44.11% | 11.80% | 0.13% | 0.63% |
 
 ## Empirical-Bayes NumPyro evidence
 
@@ -107,7 +107,7 @@ All profiles use the same 4,184 observations, 300 warmup steps, 300 retained dra
 | Reference | 1.0074 | 466.7 | 0 | Yes | Pass |
 | Strong | 1.0054 | 481.6 | 0 | Yes | Pass |
 
-Publication thresholds are maximum R-hat `1.05`, minimum ESS `100`, zero divergences, finite draws, at least 200 draws per chain, and at least two chains. The reference posterior's worst R-hat coordinate is `transition_matrix[9]`; its lowest-ESS coordinate is `log_scales[7]`. No coordinate is hidden as weakly identified. The largest weak/strong posterior-mean price change relative to the reference profile is 3.65% under common pricing random numbers.
+Publication thresholds are maximum R-hat `1.05`, minimum ESS `100`, zero divergences, finite draws, at least 200 draws per chain, and at least two chains. The reference posterior's worst R-hat coordinate is `transition_matrix[9]`; its lowest-ESS coordinate is `log_scales[7]`. No coordinate is hidden as weakly identified. The largest weak/strong posterior-mean price change relative to the reference profile is 3.70% under common pricing random numbers.
 
 ## Pricing experiment
 
@@ -134,11 +134,11 @@ Values are CLP. The posterior column is a deterministic chain-stratified summary
 
 | Contract | Diffrax posterior-mean price ± 2 MC SE | Empirical-Bayes 90% interval | Conservative computational 90% interval | MC SE / posterior half-width | Split-quantile delta / half-width |
 |---|---:|---:|---:|---:|---:|
-| ATM composite call | 537,503.86 ± 25,132.65 | [509,617.20, 564,208.19] | [505,959.23, 567,866.15] | 0.081 | 0.165 |
-| ATM composite put | 376,252.50 ± 18,027.19 | [349,586.35, 401,884.56] | [347,021.60, 404,449.31] | 0.060 | 0.153 |
-| ATM fixed-FX quanto call | 410,223.39 ± 18,368.52 | [385,173.02, 435,886.80] | [382,471.50, 438,588.32] | 0.065 | 0.188 |
-| Composite digital | 513,701.33 ± 15,259.52 | [511,378.40, 520,658.58] | [509,160.68, 522,876.29] | **0.291** | 0.083 |
-| Dual-trigger protection | 27,212.80 ± 5,026.60 | [26,363.89, 35,977.15] | [25,576.32, 36,764.72] | 0.100 | 0.057 |
+| ATM composite call | 538,627.91 ± 25,201.96 | [510,592.91, 565,591.75] | [506,925.37, 569,259.29] | 0.081 | 0.168 |
+| ATM composite put | 377,942.42 ± 18,094.23 | [350,533.34, 403,249.27] | [347,962.20, 405,820.42] | 0.059 | 0.157 |
+| ATM fixed-FX quanto call | 411,540.36 ± 18,441.13 | [385,960.51, 437,002.90] | [383,250.98, 439,712.43] | 0.065 | 0.194 |
+| Composite digital | 513,940.04 ± 15,259.13 | [511,118.43, 520,337.44] | [508,900.66, 522,555.20] | **0.292** | 0.091 |
+| Dual-trigger protection | 27,212.80 ± 5,026.60 | [26,621.25, 36,287.84] | [25,831.31, 37,077.78] | 0.099 | 0.037 |
 
 ## Independent verification
 
@@ -148,17 +148,17 @@ Values are CLP. The posterior column is a deterministic chain-stratified summary
 | Diffrax/exact maximum pathwise error | `4.44e-16` |
 | Brownian-bridge exact/Diffrax errors | `1.11e-16` / `3.89e-16` |
 | CTMC diagnostic reconstruction residual | `1.42e-15` |
-| Foreign-FX discounted-martingale z-score | `0.198` |
-| Domestic-value foreign-equity martingale z-score | `−0.020` |
+| Foreign-FX discounted-martingale z-score | `0.144` |
+| Domestic-value foreign-equity martingale z-score | `−0.051` |
 | Worst one-state analytical-oracle absolute z-score | `0.672` |
 | Worst archived NumPy exact-step parity absolute z-score | `1.173` |
 | Three-seed minimum state-decoding accuracy | 92.28% |
 | Three-seed maximum transition RMSE | 0.00797 |
 | Three-seed maximum relative volatility error | 6.51% |
-| Prior-sensitivity maximum relative price change | 3.65% |
+| Prior-sensitivity maximum relative price change | 3.70% |
 | Named promotion gates | All pass |
 
-The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process. The public config therefore enforces 252 steps per year and maturities aligned to whole fitted trading-day intervals; conditional Diffrax refinement may split diffusion increments within a fitted day, but it never reapplies the daily transition matrix at a subdaily frequency.
+The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process. The filtered end-of-sample law is advanced once, so the first pricing interval uses the forecast distribution $p_{T+1}=p_TP$ rather than reusing the final historical state. The public config therefore enforces 252 steps per year and maturities aligned to whole fitted trading-day intervals; conditional Diffrax refinement may split diffusion increments within a fitted day, but it never reapplies the daily transition matrix at a subdaily frequency. The archived three-state oracle keeps its legacy first-interval timing solely to reproduce historical NumPy/FEM context and labels that distinction in evidence. The dashboard derives its horizon from the active config and displays archived NumPy/FEM markers only when every recorded spot, maturity, rate, and dividend assumption matches; otherwise those markers are suppressed.
 
 Accepted runs require at least four retained draws per chain for finite split-chain diagnostics. Every pricing route obeys a 16,515,072 per-draw path-step ceiling, and posterior repricing additionally obeys a 2,113,929,216 total path-step ceiling equal to the executed canonical allocation. Only the exact canonical publication config applies the documented high-precision path floors (131,072 posterior-interval, 4,096 prior-sensitivity, and 16,384 archived-oracle paths); noncanonical runs treat `pricing_paths` as a true upper bound and may adapt it downward for total-work safety. Non-finite NumPyro diagnostics serialize as `null`, render as `N/A`, set `finite=false`, and fail promotion.
 
