@@ -189,8 +189,12 @@ def test_canonical_visual_publication_requires_bound_evidence(
     load_payload = namespace["_load_payload"]
     validate_payload = namespace["_validate_canonical_payload"]
     regime_labels = namespace["_regime_labels"]
+    format_diagnostic = namespace["_format_optional_diagnostic"]
     canonical = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
 
+    assert format_diagnostic(None, ".3f") == "N/A"
+    assert format_diagnostic(1.0044, ".3f") == "1.004"
+    assert format_diagnostic(237.6, ".0f") == "238"
     assert regime_labels(2) == ["Low", "High"]
     assert len(regime_labels(3)) == 3
     assert len(regime_labels(4)) == 4

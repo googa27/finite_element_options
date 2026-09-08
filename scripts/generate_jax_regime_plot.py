@@ -64,6 +64,12 @@ def _temporary_sibling(target: Path) -> Path:
         return Path(stream.name)
 
 
+def _format_optional_diagnostic(value: Any, format_spec: str) -> str:
+    """Format a finite diagnostic or render an explicit missing-value placeholder."""
+
+    return "N/A" if value is None else format(float(value), format_spec)
+
+
 def _regime_labels(state_count: int) -> list[str]:
     """Return volatility-order labels for every supported state count."""
 
@@ -447,8 +453,8 @@ def main() -> int:
         0.885,
         (
             f"GATES {'PASS' if all(diagnostics.values()) else 'FAIL'}   "
-            f"R̂ {posterior['maximum_rhat']:.3f}   "
-            f"ESS {posterior['minimum_ess']:.0f}   "
+            f"R̂ {_format_optional_diagnostic(posterior['maximum_rhat'], '.3f')}   "
+            f"ESS {_format_optional_diagnostic(posterior['minimum_ess'], '.0f')}   "
             f"div {posterior['divergences']}"
         ),
         color=gate_color,
