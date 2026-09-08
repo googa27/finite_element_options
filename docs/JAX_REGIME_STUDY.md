@@ -4,6 +4,7 @@
 **Executed:** 2026-09-07<br>
 **Evidence SHA-256:** `5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756`<br>
 **Python 3.12 lock SHA-256:** `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`<br>
+**Python 3.12 test-tool lock SHA-256:** `062f68ff7c10603d88449fb8dae0a24fb110050987c3386d3e0be895bcfb0d55`<br>
 **Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
 **PNG/PDF SHA-256:** `50f927f21b0134b494aa87e0bc87d1d806d1066b0cacefa757c589c051cfd3ef` / `a73e912a850a7de0d473350d77ae48c90a3e2ca8af274d543fa2db65b2f3c026`
 
@@ -168,6 +169,8 @@ The isolated profile contains JAX/JAXLIB 0.11.1, NumPyro 0.21.0, DYNAMAX 1.0.2, 
 uv venv --python 3.12 /tmp/feo-jax-regime
 uv pip install --python /tmp/feo-jax-regime/bin/python --require-hashes \
   -r environments/jax-regime-py312/requirements.lock
+uv pip install --python /tmp/feo-jax-regime/bin/python --require-hashes \
+  -r environments/jax-regime-py312/test-requirements.lock
 python -m build --wheel --outdir dist
 uv pip install --python /tmp/feo-jax-regime/bin/python --no-deps \
   dist/finite_element_options-*.whl
@@ -195,7 +198,7 @@ MPLCONFIGDIR=/tmp/feo-mpl-cache \
   --publish-canonical
 ```
 
-`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift. Visuals use a separate 11-package hash lock, fixed versions and metadata, and a CI byte-comparison gate.
+`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift. Runtime science, test tooling, and visuals use separate hash locks; fixed visual versions/metadata have a CI byte-comparison gate.
 
 ## Scope and non-claims
 

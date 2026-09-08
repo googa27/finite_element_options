@@ -350,7 +350,8 @@ jobs:
               /tmp/feo-${PROFILE}-check/bin/python scripts/run_bayesian_jax_profile.py --verify
           fi
           if [ "${PROFILE}" = "jax-regime" ]; then
-            /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/jax-regime-py312/test-requirements.lock"
             cd "${GITHUB_WORKSPACE}"
             JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
               /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
@@ -480,6 +481,8 @@ jobs:
           python -m pip install build pip-audit cyclonedx-bom -c constraints.txt
           python -m pip install --require-hashes \
             -r environments/jax-regime-py312/requirements.lock
+          python -m pip install --require-hashes \
+            -r environments/jax-regime-py312/test-requirements.lock
       - name: Install release wheel into audited environment
         run: |
           python -m build --wheel --outdir dist

@@ -256,6 +256,17 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
     if not name_is_matrixed:
         errors.append("optional_imports job name must include matrix.python-version")
 
+    jax_marker = 'if [ "${PROFILE}" = "jax-regime" ]; then'
+    if jax_marker not in steps_block:
+        errors.append("optional_imports must define the jax-regime verification branch")
+    else:
+        jax_branch = steps_block.rsplit(jax_marker, 1)[1].split("\n          fi", 1)[0]
+        test_lock = "environments/jax-regime-py312/test-requirements.lock"
+        if test_lock not in jax_branch or "--require-hashes" not in jax_branch:
+            errors.append("jax-regime tests must install their hash-pinned test-tool lock")
+        if "pip install pytest" in jax_branch:
+            errors.append("jax-regime tests must not install unpinned pytest tooling")
+
     return errors
 
 
@@ -297,6 +308,11 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
             errors.append(f"{label} must use Python 3.12")
         if lock_path not in audited:
             errors.append(f"{label} must install its hash-pinned lock")
+        if (
+            job_name == "supply_chain_jax_regime"
+            and "environments/jax-regime-py312/test-requirements.lock" not in audited
+        ):
+            errors.append(f"{label} must audit its hash-pinned test-tool lock")
         if "--require-hashes" not in audited:
             errors.append(f"{label} must enforce lock hashes")
         if "python -m build --wheel --outdir dist" not in audited:
