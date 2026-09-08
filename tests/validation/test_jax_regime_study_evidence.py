@@ -5,6 +5,7 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 import pytest
@@ -21,8 +22,8 @@ IMAGE_DIR = ROOT / "docs/images"
 ARTIFACT_MANIFEST = IMAGE_DIR / "jax_regime_study_2026-09-07.sha256"
 EXPECTED_EVIDENCE_SHA256 = "5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756"
 EXPECTED_LOCK_SHA256 = "42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c"
-EXPECTED_TEST_LOCK_SHA256 = "062f68ff7c10603d88449fb8dae0a24fb110050987c3386d3e0be895bcfb0d55"
-EXPECTED_CI_LOCK_SHA256 = "e9f14b2045e67425c98a67f76b27df439e0cacaa490afdfaeff531ebc93115fe"
+EXPECTED_TEST_LOCK_SHA256 = "ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0"
+EXPECTED_CI_LOCK_SHA256 = "5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b"
 EXPECTED_VISUAL_LOCK_SHA256 = "8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6"
 EXPECTED_ARTIFACT_HASHES = {
     "jax_regime_study_2026-09-07.png": (
@@ -36,6 +37,23 @@ EXPECTED_ARTIFACT_HASHES = {
 
 def _digest(path: Path) -> str:
     return sha256(path.read_bytes()).hexdigest()
+
+
+def _locked_versions(path: Path) -> dict[str, str]:
+    pattern = re.compile(r"^([a-z0-9-]+)==([^ ;\\]+)")
+    return {
+        match.group(1): match.group(2)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if (match := pattern.match(line)) is not None
+    }
+
+
+def test_jax_regime_locks_agree_on_every_shared_distribution() -> None:
+    locks = [_locked_versions(path) for path in (LOCK, TEST_LOCK, CI_LOCK)]
+    for left_index, left in enumerate(locks):
+        for right in locks[left_index + 1 :]:
+            shared = set(left) & set(right)
+            assert {name: left[name] for name in shared} == {name: right[name] for name in shared}
 
 
 def _strings(value: Any) -> list[str]:

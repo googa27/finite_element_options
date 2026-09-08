@@ -4,8 +4,8 @@
 **Executed:** 2026-09-07<br>
 **Evidence SHA-256:** `5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756`<br>
 **Python 3.12 lock SHA-256:** `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`<br>
-**Python 3.12 test-tool lock SHA-256:** `062f68ff7c10603d88449fb8dae0a24fb110050987c3386d3e0be895bcfb0d55`<br>
-**Python 3.12 CI-tool lock SHA-256:** `e9f14b2045e67425c98a67f76b27df439e0cacaa490afdfaeff531ebc93115fe`<br>
+**Python 3.12 test-tool lock SHA-256:** `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`<br>
+**Python 3.12 CI-tool lock SHA-256:** `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`<br>
 **Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
 **PNG/PDF SHA-256:** `50f927f21b0134b494aa87e0bc87d1d806d1066b0cacefa757c589c051cfd3ef` / `a73e912a850a7de0d473350d77ae48c90a3e2ca8af274d543fa2db65b2f3c026`
 

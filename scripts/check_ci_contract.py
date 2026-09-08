@@ -257,9 +257,21 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
         errors.append("optional_imports job name must include matrix.python-version")
 
     jax_marker = 'if [ "${PROFILE}" = "jax-regime" ]; then'
-    if jax_marker not in steps_block:
-        errors.append("optional_imports must define the jax-regime verification branch")
+    install_marker = 'elif [ "${PROFILE}" = "jax-regime" ]; then'
+    ci_lock = "environments/jax-regime-py312/ci-requirements.lock"
+    if jax_marker not in steps_block or install_marker not in steps_block:
+        errors.append("optional_imports must define all jax-regime build/install/test branches")
     else:
+        build_branch = steps_block.split(jax_marker, 1)[1].split("\n          else", 1)[0]
+        if (
+            ci_lock not in build_branch
+            or "--require-hashes" not in build_branch
+            or "python -m build --wheel --no-isolation" not in build_branch
+        ):
+            errors.append("jax-regime wheel build must use its hash-pinned CI-tool lock")
+        install_branch = steps_block.split(install_marker, 1)[1].split("\n          else", 1)[0]
+        if ci_lock not in install_branch or "--require-hashes" not in install_branch:
+            errors.append("jax-regime venv must install its hash-pinned CI-tool lock")
         jax_branch = steps_block.rsplit(jax_marker, 1)[1].split("\n          fi", 1)[0]
         test_lock = "environments/jax-regime-py312/test-requirements.lock"
         if test_lock not in jax_branch or "--require-hashes" not in jax_branch:

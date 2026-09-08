@@ -237,10 +237,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build wheel
+        env:
+          PROFILE: ${{ matrix.profile }}
         run: |
-          python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install build -c constraints.txt
-          python -m build --wheel
+          if [ "${PROFILE}" = "jax-regime" ]; then
+            python -m pip install --require-hashes \
+              -r environments/jax-regime-py312/ci-requirements.lock
+            python -m build --wheel --no-isolation
+          else
+            python -m pip install --upgrade pip 'setuptools>=83'
+            python -m pip install build -c constraints.txt
+            python -m build --wheel
+          fi
       - name: Install optional profile and import advertised modules
         env:
           PROFILE: ${{ matrix.profile }}
@@ -259,6 +267,8 @@ jobs:
               -r "${GITHUB_WORKSPACE}/environments/bayesian-jax-py312/requirements.lock"
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
           elif [ "${PROFILE}" = "jax-regime" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/jax-regime-py312/ci-requirements.lock"
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
               -r "${GITHUB_WORKSPACE}/environments/jax-regime-py312/requirements.lock"
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
