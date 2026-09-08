@@ -188,7 +188,14 @@ def test_canonical_visual_publication_requires_bound_evidence(
     namespace = runpy.run_path(str(generator))
     load_payload = namespace["_load_payload"]
     validate_payload = namespace["_validate_canonical_payload"]
+    regime_labels = namespace["_regime_labels"]
     canonical = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
+
+    assert regime_labels(2) == ["Low", "High"]
+    assert len(regime_labels(3)) == 3
+    assert len(regime_labels(4)) == 4
+    with pytest.raises(ValueError, match="unsupported visual state count"):
+        regime_labels(5)
 
     payload = load_payload(canonical, publish_canonical=True)
     assert payload["status"] == "passed"

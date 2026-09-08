@@ -37,15 +37,23 @@ def _bounded_pricing_paths(preferred: int, requested: int, steps: int) -> int:
     return min(max(preferred, requested), maximum_paths)
 
 
+def _publication_or_requested_paths(
+    config: JaxRegimeStudyConfig, canonical_floor: int, steps: int
+) -> int:
+    """Use a publication floor only for exact canonical config; otherwise honor the request."""
+
+    preferred = canonical_floor if config == JaxRegimeStudyConfig() else config.pricing_paths
+    return _bounded_pricing_paths(preferred, config.pricing_paths, steps)
+
+
 def _posterior_pricing_paths(config: JaxRegimeStudyConfig, posterior_draws: int) -> int:
     """Bound both per-draw memory and total posterior repricing work."""
 
     if posterior_draws < 1:
         raise ValueError("posterior_draws must be positive")
-    preferred = (
-        _POSTERIOR_INTERVAL_PATHS if config == JaxRegimeStudyConfig() else config.pricing_paths
+    per_draw = _publication_or_requested_paths(
+        config, _POSTERIOR_INTERVAL_PATHS, config.pricing_steps
     )
-    per_draw = _bounded_pricing_paths(preferred, config.pricing_paths, config.pricing_steps)
     total_cap = MAX_POSTERIOR_PRICING_PATH_STEPS // (posterior_draws * config.pricing_steps)
     if total_cap < 2:
         raise ValueError("total posterior path-step ceiling cannot support finite diagnostics")
@@ -63,7 +71,7 @@ def _matched_oracle_config(
     """Return an archive-aligned config whose paths are capped before validation."""
 
     steps = int(round(maturity_years * config.steps_per_year))
-    paths = _bounded_pricing_paths(16_384, config.pricing_paths * 4, steps)
+    paths = _publication_or_requested_paths(config, 16_384, steps)
     return replace(
         config,
         maturity_years=maturity_years,

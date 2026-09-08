@@ -37,6 +37,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
     _matched_oracle_config,
     _oracle_z_score,
     _posterior_pricing_paths,
+    _publication_or_requested_paths,
 )
 
 
@@ -231,6 +232,15 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
 
     low_path_config = JaxRegimeStudyConfig(pricing_paths=2)
     assert _posterior_pricing_paths(low_path_config, 128) == 2
+    assert _publication_or_requested_paths(low_path_config, 4_096, 126) == 2
+    low_path_oracle = _matched_oracle_config(
+        low_path_config,
+        maturity_years=0.5,
+        domestic_rate=0.045,
+        foreign_rate=0.0439,
+        dividend_yield=0.0,
+    )
+    assert low_path_oracle.pricing_paths == 2
     canonical_config = JaxRegimeStudyConfig()
     canonical_paths = _posterior_pricing_paths(canonical_config, 128)
     assert canonical_paths == 131_072

@@ -64,6 +64,20 @@ def _temporary_sibling(target: Path) -> Path:
         return Path(stream.name)
 
 
+def _regime_labels(state_count: int) -> list[str]:
+    """Return volatility-order labels for every supported state count."""
+
+    labels = {
+        2: ["Low", "High"],
+        3: ["Low", "Middle", "High"],
+        4: ["Low", "Middle-low", "Middle-high", "High"],
+    }
+    try:
+        return labels[state_count]
+    except KeyError as error:
+        raise ValueError(f"unsupported visual state count: {state_count}") from error
+
+
 def _validate_canonical_payload(payload: dict[str, Any]) -> None:
     """Require the exact publication config and successful named gates."""
 
@@ -323,13 +337,10 @@ def main() -> int:
     occupancy = np.asarray(fit["occupancy"])
     x = np.arange(len(volatilities))
     regime_colors = [green, cyan, violet, red][: len(volatilities)]
-    regime_labels = (
-        ["Low", "Middle", "High"]
-        if len(volatilities) == 3
-        else ["Low", "Middle-low", "Middle-high", "High"]
-    )
+    regime_labels = _regime_labels(len(volatilities))
     regime_axis.bar(x, volatilities, color=regime_colors, width=0.62)
-    regime_axis.set_title("Four volatility-ordered DYNAMAX HMM states")
+    count_name = {2: "Two", 3: "Three", 4: "Four"}[len(volatilities)]
+    regime_axis.set_title(f"{count_name} volatility-ordered DYNAMAX HMM states")
     regime_axis.set_ylabel("Annualized composite volatility (%)")
     regime_axis.set_xticks(x, regime_labels)
     for index, (volatility, weight) in enumerate(zip(volatilities, occupancy, strict=True)):

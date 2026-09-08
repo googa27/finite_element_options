@@ -16,8 +16,8 @@ from .hmm.forward import gaussian_hmm_filter_probs
 from .hmm.numpyro_model import run_numpyro_hmm
 from .pricing.exact import draw_paths_and_increments, simulate_exact_terminal_states
 from .pricing.study import (
-    _bounded_pricing_paths,
     _price_contracts,
+    _publication_or_requested_paths,
     _risk_neutral_coefficients,
 )
 from .utils import stack as _stack, to_python as _python
@@ -42,7 +42,7 @@ def _reprice_posterior_mean(
         mean["covariances"],
     )[-1]
     steps = config.pricing_steps
-    paths = _bounded_pricing_paths(4_096, config.pricing_paths, steps)
+    paths = _publication_or_requested_paths(config, 4_096, steps)
     regimes, increments = draw_paths_and_increments(
         jr.key(config.seed + 1_700),
         current,
