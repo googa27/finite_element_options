@@ -201,7 +201,7 @@ MPLCONFIGDIR=/tmp/feo-mpl-cache \
   --publish-canonical
 ```
 
-`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical JSON/sidecar and PNG/PDF writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift. Runtime science, test tooling, CI build/audit/SBOM tooling, and visuals use separate hash locks; fixed visual versions/metadata have a CI byte-comparison gate.
+`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical JSON/sidecar and PNG/PDF writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift; existing pathname or inode aliases of canonical artifacts are rejected, and generated files are installed through atomic sibling replacement. Runtime science, test tooling, CI build/audit/SBOM tooling, and visuals use separate hash locks; fixed visual versions/metadata have a CI byte-comparison gate.
 
 ## Scope and non-claims
 

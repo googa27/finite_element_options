@@ -256,7 +256,12 @@ jobs:
           DEPENDENCY: ${{ matrix.dependency }}
         run: |
           python -m venv /tmp/feo-${PROFILE}-check
-          /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
+          if [ "${PROFILE}" = "jax-regime" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/jax-regime-py312/ci-requirements.lock"
+          else
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
+          fi
           WHEEL=$(ls dist/finite_element_options-*.whl)
           if [ "${PROFILE}" = "bayesian" ]; then
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \

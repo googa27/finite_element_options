@@ -269,6 +269,16 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
             or "python -m build --wheel --no-isolation" not in build_branch
         ):
             errors.append("jax-regime wheel build must use its hash-pinned CI-tool lock")
+        venv_section = steps_block.split("python -m venv /tmp/feo-${PROFILE}-check", 1)[1].split(
+            "WHEEL=", 1
+        )[0]
+        bootstrap_branch = venv_section.split(jax_marker, 1)[1].split("\n          else", 1)[0]
+        if (
+            ci_lock not in bootstrap_branch
+            or "--require-hashes" not in bootstrap_branch
+            or "pip install --upgrade" in bootstrap_branch
+        ):
+            errors.append("jax-regime venv bootstrap must install locked CI tools first")
         install_branch = steps_block.split(install_marker, 1)[1].split("\n          else", 1)[0]
         if ci_lock not in install_branch or "--require-hashes" not in install_branch:
             errors.append("jax-regime venv must install its hash-pinned CI-tool lock")

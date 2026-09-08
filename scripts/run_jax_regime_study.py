@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from finite_element_options.examples.regime_switching_quanto.jax_regime.contracts import (
     EvidenceHash,
@@ -24,6 +26,37 @@ DEFAULT_SYNTHETIC_OUTPUT = Path("/tmp/feo_jax_regime_synthetic_smoke.json")
 FAILED_PUBLICATION_OUTPUT = Path("/tmp/feo_jax_regime_failed_publication.json")
 
 
+def _aliases_existing_protected_file(target: Path, protected: Path) -> bool:
+    """Return whether two existing paths identify the same inode, failing closed on IO errors."""
+
+    if not target.exists() or not protected.exists():
+        return False
+    try:
+        return target.samefile(protected)
+    except OSError as error:
+        raise ValueError(f"cannot validate output identity: {error}") from error
+
+
+def _atomic_write_bytes(path: Path, content: bytes) -> None:
+    """Replace one path atomically so a post-check hard-link swap cannot mutate its peer."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            mode="wb", prefix=f".{path.name}.", dir=path.parent, delete=False
+        ) as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+            temporary = Path(stream.name)
+        temporary.chmod(0o644)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
     """Return JSON/sidecar targets after protecting the complete canonical pair."""
 
@@ -31,7 +64,12 @@ def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[P
     sidecar = output.with_suffix(output.suffix + ".sha256")
     resolved_targets = {output.resolve(), sidecar.resolve()}
     canonical_targets = {CANONICAL_OUTPUT.resolve(), CANONICAL_SIDECAR.resolve()}
-    if resolved_targets & canonical_targets and not publish_canonical:
+    aliases_canonical = bool(resolved_targets & canonical_targets) or any(
+        _aliases_existing_protected_file(target, canonical)
+        for target in (output, sidecar)
+        for canonical in (CANONICAL_OUTPUT, CANONICAL_SIDECAR)
+    )
+    if aliases_canonical and not publish_canonical:
         raise ValueError("canonical evidence requires --publish-canonical")
     if publish_canonical and resolved_targets != canonical_targets:
         raise ValueError("--publish-canonical requires the canonical JSON/sidecar output paths")
@@ -126,10 +164,12 @@ def main() -> int:
             )
 
     serialized = _canonical(evidence)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_bytes(serialized)
+    _atomic_write_bytes(output, serialized)
     identity = EvidenceHash(digest=sha256(serialized).hexdigest(), filename=output.name)
-    sidecar.write_text(f"{identity.digest}  {identity.filename}\n", encoding="utf-8")
+    _atomic_write_bytes(
+        sidecar,
+        f"{identity.digest}  {identity.filename}\n".encode(),
+    )
     print(
         json.dumps(
             {

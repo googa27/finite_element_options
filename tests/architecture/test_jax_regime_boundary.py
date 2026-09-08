@@ -177,3 +177,51 @@ def test_jax_regime_plot_rejects_non_png_output_before_rendering() -> None:
     )
     assert result.returncode == 2
     assert "--output must name a PNG path" in result.stderr
+
+
+def test_jax_regime_clis_reject_hard_links_to_every_canonical_artifact(
+    tmp_path: Path,
+) -> None:
+    runner = ROOT / "scripts/run_jax_regime_study.py"
+    generator = ROOT / "scripts/generate_jax_regime_plot.py"
+    cases = (
+        (
+            ROOT / "docs/evidence/jax_regime_study_2026-09-07.json",
+            runner,
+            ".json",
+            ("--synthetic",),
+        ),
+        (
+            ROOT / "docs/evidence/jax_regime_study_2026-09-07.json.sha256",
+            runner,
+            ".json",
+            ("--synthetic",),
+        ),
+        (
+            ROOT / "docs/images/jax_regime_study_2026-09-07.png",
+            generator,
+            ".png",
+            (),
+        ),
+        (
+            ROOT / "docs/images/jax_regime_study_2026-09-07.pdf",
+            generator,
+            ".png",
+            (),
+        ),
+    )
+    for index, (canonical, script, suffix, prefix) in enumerate(cases):
+        before = canonical.read_bytes()
+        alias = tmp_path / f"alias-{index}{suffix}"
+        os.link(canonical, alias)
+        result = subprocess.run(
+            [sys.executable, str(script), *prefix, "--output", str(alias)],
+            cwd=Path("/tmp"),
+            env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 2
+        assert "requires --publish-canonical" in result.stderr
+        assert canonical.read_bytes() == before

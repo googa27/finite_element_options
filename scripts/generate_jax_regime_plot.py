@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 EXPECTED_VISUAL_STACK = {
@@ -19,6 +21,27 @@ CANONICAL_PDF = CANONICAL_OUTPUT.with_suffix(".pdf")
 DEFAULT_OUTPUT = Path("/tmp/jax_regime_study_2026-09-07.png")
 
 
+def _aliases_existing_protected_file(target: Path, protected: Path) -> bool:
+    """Return whether two existing paths identify the same inode, failing closed on IO errors."""
+
+    if not target.exists() or not protected.exists():
+        return False
+    try:
+        return target.samefile(protected)
+    except OSError as error:
+        raise ValueError(f"cannot validate output identity: {error}") from error
+
+
+def _temporary_sibling(target: Path) -> Path:
+    """Create a closed temporary sibling suitable for atomic replacement."""
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(
+        prefix=f".{target.name}.", suffix=target.suffix, dir=target.parent, delete=False
+    ) as stream:
+        return Path(stream.name)
+
+
 def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
     """Return PNG/PDF targets after protecting the complete canonical pair."""
 
@@ -26,7 +49,12 @@ def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[P
     pdf = output.with_suffix(".pdf")
     resolved_targets = {output.resolve(), pdf.resolve()}
     canonical_targets = {CANONICAL_OUTPUT.resolve(), CANONICAL_PDF.resolve()}
-    if resolved_targets & canonical_targets and not publish_canonical:
+    aliases_canonical = bool(resolved_targets & canonical_targets) or any(
+        _aliases_existing_protected_file(target, canonical)
+        for target in (output, pdf)
+        for canonical in (CANONICAL_OUTPUT, CANONICAL_PDF)
+    )
+    if aliases_canonical and not publish_canonical:
         raise ValueError("canonical visual output requires --publish-canonical")
     if publish_canonical and resolved_targets != canonical_targets:
         raise ValueError("--publish-canonical requires the canonical PNG/PDF output paths")
@@ -366,24 +394,39 @@ def main() -> int:
     if layout_qa:
         _validate_layout(figure, (score_axis, regime_axis, price_axis))
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
-        args.output,
-        dpi=300,
-        facecolor=background,
-        metadata={"Software": "finite_element_options deterministic JAX regime visual"},
-    )
-    figure.savefig(
-        pdf,
-        facecolor=background,
-        metadata={
-            "Creator": "finite_element_options deterministic JAX regime visual",
-            "Producer": "Matplotlib 3.10.3",
-            "CreationDate": None,
-            "ModDate": None,
-        },
-    )
-    plt.close(figure)
+    png_temporary: Path | None = None
+    pdf_temporary: Path | None = None
+    try:
+        png_temporary = _temporary_sibling(args.output)
+        pdf_temporary = _temporary_sibling(pdf)
+        figure.savefig(
+            png_temporary,
+            format="png",
+            dpi=300,
+            facecolor=background,
+            metadata={"Software": "finite_element_options deterministic JAX regime visual"},
+        )
+        figure.savefig(
+            pdf_temporary,
+            format="pdf",
+            facecolor=background,
+            metadata={
+                "Creator": "finite_element_options deterministic JAX regime visual",
+                "Producer": "Matplotlib 3.10.3",
+                "CreationDate": None,
+                "ModDate": None,
+            },
+        )
+        png_temporary.chmod(0o644)
+        pdf_temporary.chmod(0o644)
+        os.replace(png_temporary, args.output)
+        os.replace(pdf_temporary, pdf)
+    finally:
+        plt.close(figure)
+        if png_temporary is not None:
+            png_temporary.unlink(missing_ok=True)
+        if pdf_temporary is not None:
+            pdf_temporary.unlink(missing_ok=True)
     print(
         json.dumps(
             {
