@@ -1,0 +1,5 @@
+# Exact test tooling for the isolated Python 3.12 JAX-regime wheel profile.
+# Runtime/scientific dependencies remain in requirements.lock.
+packaging==26.2
+pytest==9.0.3
+pytest-cov==7.0.0

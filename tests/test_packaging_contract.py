@@ -64,16 +64,36 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
         "docs/evidence/adoption_sequence_closeout_2026-09-05.json",
         "docs/evidence/dependency_boundaries_2026-09-04.json",
         "docs/evidence/bayesian_jax_profile_2026-09-05.json",
+        "docs/JAX_REGIME_STUDY.md",
+        "docs/evidence/jax_regime_study_2026-09-07.json",
+        "docs/evidence/jax_regime_study_2026-09-07.json.sha256",
+        "docs/images/jax_regime_study_2026-09-07.png",
+        "docs/images/jax_regime_study_2026-09-07.pdf",
+        "docs/images/jax_regime_study_2026-09-07.sha256",
         "docs/images/adoption_sequence_closeout_2026-09-05.png",
         "docs/images/fem_capability_pipeline.svg",
         "environments/bayesian-py312/requirements.lock",
         "environments/bayesian-jax-py312/requirements.lock",
+        "environments/jax-regime-py312/ci-requirements.in",
+        "environments/jax-regime-py312/ci-requirements.lock",
+        "environments/jax-regime-py312/requirements.in",
+        "environments/jax-regime-py312/requirements.lock",
+        "environments/jax-regime-py312/test-requirements.in",
+        "environments/jax-regime-py312/test-requirements.lock",
+        "environments/jax-regime-py312/README.md",
+        "environments/jax-regime-visual-py312/requirements.in",
+        "environments/jax-regime-visual-py312/requirements.lock",
+        "environments/jax-regime-visual-py312/README.md",
+        "external_tests/jax_regime/test_profile.py",
         "external_tests/bayesian_profile/test_pymc_profile.py",
         "external_tests/bayesian_profile/test_numpyro_profile.py",
         "scripts/generate_adoption_sequence_closeout.py",
         "scripts/run_bayesian_jax_profile.py",
+        "scripts/run_jax_regime_study.py",
+        "scripts/generate_jax_regime_plot.py",
         "tests/validation/test_adoption_sequence_closeout.py",
         "tests/validation/test_bayesian_jax_profile_evidence.py",
+        "tests/validation/test_jax_regime_study_evidence.py",
     }
     with tarfile.open(sdist, mode="r:gz") as archive:
         members = {name.split("/", 1)[1] for name in archive.getnames() if "/" in name}
@@ -189,6 +209,7 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
         "calibration": "statsmodels",
         "bayesian": "pymc",
         "bayesian-jax": "numpyro",
+        "jax-regime": "dynamax",
     }
     for extra, dependency in expected.items():
         assert _has_extra_dependency(requires_dist, extra, dependency), (
@@ -200,6 +221,18 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     assert _has_extra_dependency(requires_dist, "bayesian", "arviz")
     for dependency in ("arviz", "jax", "pymc", "numpyro"):
         assert _has_extra_dependency(requires_dist, "bayesian-jax", dependency)
+    for dependency in (
+        "diffrax",
+        "dynamax",
+        "fastprogress",
+        "jax",
+        "jaxlib",
+        "numpyro",
+        "statsmodels",
+        "tfp-nightly",
+    ):
+        assert _has_extra_dependency(requires_dist, "jax-regime", dependency)
+    assert not _has_extra_dependency(requires_dist, "jax-regime", "pymc")
     assert not _has_extra_dependency(requires_dist, "petsc", "petsc4py"), (
         "PETSc must remain an explicit matched external environment, not a portable extra"
     )
@@ -208,7 +241,31 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     prd = (ROOT / "docs/PRD.md").read_text(encoding="utf-8")
     assert "| `bayesian` |" in prd
     assert "| `bayesian-jax` |" in prd
+    assert "| `jax-regime` |" in prd
     assert "| `bayes` |" not in prd
+
+
+def test_jax_regime_extra_uses_the_exact_evidenced_stack() -> None:
+    expected = {
+        "diffrax": "0.7.2",
+        "dynamax": "1.0.2",
+        "fastprogress": "1.0.3",
+        "jax": "0.11.1",
+        "jaxlib": "0.11.1",
+        "numpyro": "0.21.0",
+        "statsmodels": "0.14.6",
+        "tfp-nightly": "0.26.0.dev20260907",
+    }
+    selected = {
+        canonicalize_name(requirement.name): str(requirement.specifier)
+        for requirement in map(Requirement, _requires_dist())
+        if requirement.marker is not None
+        and requirement.marker.evaluate({"extra": "jax-regime", "python_version": "3.12"})
+    }
+    normalized_expected = {
+        canonicalize_name(name): f"=={version}" for name, version in expected.items()
+    }
+    assert {name: selected[name] for name in normalized_expected} == normalized_expected
 
 
 def test_bayesian_split_has_breaking_version_and_migration_evidence() -> None:

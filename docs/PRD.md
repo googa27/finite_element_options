@@ -212,7 +212,7 @@ Issue #51 repairs the remaining benchmark-oracle role for `fdsolver.py`: it is n
 
 ### FR-FEM-013 — Optional research and application profiles
 
-JAX, Numba, PyMC, Statsmodels, pandas/xarray/Arrow, plotting, Streamlit, FEniCSx, PETSc and mesh-I/O capabilities are optional profiles. Each has explicit import boundaries, maturity and CI policy.
+JAX, NumPyro, DYNAMAX, Diffrax, Numba, PyMC, Statsmodels, pandas/xarray/Arrow, plotting, Streamlit, FEniCSx, PETSc and mesh-I/O capabilities are optional profiles. Each has explicit import boundaries, maturity and CI policy.
 
 Examples and apps import the installed public package and cannot become alternate canonical APIs.
 
@@ -269,6 +269,7 @@ The current single `requirements.txt` combines core, FD, UI, calibration, datafr
 | `calibration` | Deterministic statistical calibration | pandas/xarray/Statsmodels as required |
 | `bayesian` | Python 3.12 Bayesian research workflow | PyMC and ArviZ |
 | `bayesian-jax` | Python 3.12 JAX-native Bayesian research workflow | PyMC, ArviZ, JAX and NumPyro |
+| `jax-regime` | Python 3.12 bivariate HMM/SDE research workflow | Hash-pinned JAX, DYNAMAX, NumPyro and Diffrax; content-addressed PDP input |
 | `columnar` | Arrow/Parquet experiment exchange | PyArrow and optional dataframe packages |
 | `fenicsx` | Optional FEniCSx backend | FEniCSx-compatible environment; contract tests run in CI even without runtime |
 | `petsc` | PETSc/petsc4py solver policy | Platform-specific HPC environment; KSP convergence diagnostics fail closed |

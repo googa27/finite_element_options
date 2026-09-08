@@ -9,6 +9,13 @@
   `sample_pymc_calibration` imports remain as lazy compatibility names and require
   both `[calibration,bayesian]` because their Heston data path also uses pandas.
 
+- Added the exact-pinned Python 3.12 `[jax-regime]` research profile: DYNAMAX
+  full-covariance HMM calibration, analytically marginalized NumPyro NUTS,
+  daily-boundary Diffrax pricing, chronological held-out selection, audited
+  content-addressed PDP inputs, hash-bound evidence and byte-reproducible visuals.
+  Canonical writes now require explicit exact-config publication; all outputs
+  remain research-only, not market calibrated, and not production ready.
+
 - Added bounded, weighted pricing calibration primitives with explicit quote
   units, bid-ask/vega/explicit weighting, robust-loss metadata, deterministic
   multi-start diagnostics, holdout RMSE, fail-closed pricing-engine checks, and

@@ -1,0 +1,14 @@
+# Direct requirements for the isolated Python 3.12 JAX regime profile.
+# The canonical hash lock is exported from pyproject.toml/uv.lock:
+#   uv lock --python 3.12
+#   uv export --frozen --extra jax-regime --no-dev --no-emit-project \
+#     --format requirements-txt \
+#     --output-file environments/jax-regime-py312/requirements.lock
+jax==0.11.1
+jaxlib==0.11.1
+numpyro==0.21.0
+dynamax==1.0.2
+diffrax==0.7.2
+fastprogress==1.0.3
+statsmodels==0.14.6
+tfp-nightly==0.26.0.dev20260907

@@ -1,0 +1,4 @@
+# Deterministic renderer only; keep separate from the lean JAX inference profile.
+matplotlib==3.10.3
+numpy==2.4.6
+pillow==12.3.0
