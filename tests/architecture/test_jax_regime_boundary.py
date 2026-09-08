@@ -116,6 +116,19 @@ def test_jax_regime_cli_requires_explicit_input_and_canonical_publication() -> N
             "canonical evidence requires --publish-canonical",
         ),
         (
+            (
+                "--input",
+                "/tmp/unread.zip",
+                "--output",
+                str(ROOT / "docs/evidence/jax_regime_study_2026-09-07.json.sha256"),
+            ),
+            "canonical evidence requires --publish-canonical",
+        ),
+        (
+            ("--synthetic", "--output", "/tmp/not-json.sha256"),
+            "--output must name a JSON path",
+        ),
+        (
             ("--input", "/tmp/unread.zip", "--publish-canonical", "--samples", "299"),
             "exact canonical configuration",
         ),

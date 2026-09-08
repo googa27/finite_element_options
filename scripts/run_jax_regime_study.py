@@ -16,10 +16,28 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.study im
     run_jax_regime_study,
 )
 
-CANONICAL_OUTPUT = Path("docs/evidence/jax_regime_study_2026-09-07.json")
+ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_OUTPUT = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
+CANONICAL_SIDECAR = CANONICAL_OUTPUT.with_suffix(CANONICAL_OUTPUT.suffix + ".sha256")
 DEFAULT_REPLAY_OUTPUT = Path("/tmp/feo_jax_regime_study.json")
 DEFAULT_SYNTHETIC_OUTPUT = Path("/tmp/feo_jax_regime_synthetic_smoke.json")
 FAILED_PUBLICATION_OUTPUT = Path("/tmp/feo_jax_regime_failed_publication.json")
+
+
+def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
+    """Return JSON/sidecar targets after protecting the complete canonical pair."""
+
+    output = output.expanduser()
+    sidecar = output.with_suffix(output.suffix + ".sha256")
+    resolved_targets = {output.resolve(), sidecar.resolve()}
+    canonical_targets = {CANONICAL_OUTPUT.resolve(), CANONICAL_SIDECAR.resolve()}
+    if resolved_targets & canonical_targets and not publish_canonical:
+        raise ValueError("canonical evidence requires --publish-canonical")
+    if publish_canonical and resolved_targets != canonical_targets:
+        raise ValueError("--publish-canonical requires the canonical JSON/sidecar output paths")
+    if output.suffix.lower() != ".json":
+        raise ValueError("--output must name a JSON path; the SHA-256 sidecar path is derived")
+    return output, sidecar
 
 
 def _canonical(payload: dict[str, object]) -> bytes:
@@ -74,7 +92,11 @@ def main() -> int:
             parser.error("--input is not accepted with --synthetic")
         if args.publish_canonical:
             parser.error("synthetic runs cannot publish canonical evidence")
-        output = args.output or DEFAULT_SYNTHETIC_OUTPUT
+        requested_output = args.output or DEFAULT_SYNTHETIC_OUTPUT
+        try:
+            output, sidecar = _validated_output_paths(requested_output, publish_canonical=False)
+        except ValueError as error:
+            parser.error(str(error))
         from finite_element_options.examples.regime_switching_quanto.jax_regime.synthetic import (
             run_synthetic_verification,
         )
@@ -87,26 +109,27 @@ def main() -> int:
         requested_output = args.output or (
             CANONICAL_OUTPUT if args.publish_canonical else DEFAULT_REPLAY_OUTPUT
         )
-        if requested_output.resolve() == CANONICAL_OUTPUT.resolve() and not args.publish_canonical:
-            parser.error("canonical evidence requires --publish-canonical")
+        try:
+            output, sidecar = _validated_output_paths(
+                requested_output, publish_canonical=args.publish_canonical
+            )
+        except ValueError as error:
+            parser.error(str(error))
         if args.publish_canonical:
-            if requested_output.resolve() != CANONICAL_OUTPUT.resolve():
-                parser.error("--publish-canonical requires the canonical output path")
             if config != JaxRegimeStudyConfig():
                 parser.error("--publish-canonical requires the exact canonical configuration")
-        output = requested_output
         evidence = run_jax_regime_study(args.input, config=config)
         diagnostics_passed = bool(evidence["verification"]["diagnostics_passed"])
         if args.publish_canonical and not diagnostics_passed:
-            output = FAILED_PUBLICATION_OUTPUT
+            output, sidecar = _validated_output_paths(
+                FAILED_PUBLICATION_OUTPUT, publish_canonical=False
+            )
 
     serialized = _canonical(evidence)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(serialized)
     identity = EvidenceHash(digest=sha256(serialized).hexdigest(), filename=output.name)
-    output.with_suffix(output.suffix + ".sha256").write_text(
-        f"{identity.digest}  {identity.filename}\n", encoding="utf-8"
-    )
+    sidecar.write_text(f"{identity.digest}  {identity.filename}\n", encoding="utf-8")
     print(
         json.dumps(
             {
