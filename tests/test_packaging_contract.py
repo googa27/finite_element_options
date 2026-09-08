@@ -74,6 +74,8 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
         "docs/images/fem_capability_pipeline.svg",
         "environments/bayesian-py312/requirements.lock",
         "environments/bayesian-jax-py312/requirements.lock",
+        "environments/jax-regime-py312/ci-requirements.in",
+        "environments/jax-regime-py312/ci-requirements.lock",
         "environments/jax-regime-py312/requirements.in",
         "environments/jax-regime-py312/requirements.lock",
         "environments/jax-regime-py312/test-requirements.in",

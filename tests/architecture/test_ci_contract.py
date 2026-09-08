@@ -154,14 +154,20 @@ def test_ci_contract_rejects_supply_chain_audit_missing_new_optional_extra(
     assert any("supply_chain" in error and removed_extra in error for error in errors)
 
 
-def test_ci_contract_rejects_unpinned_jax_regime_test_tooling(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize(
+    "lock",
+    (
+        "environments/jax-regime-py312/test-requirements.lock",
+        "environments/jax-regime-py312/ci-requirements.lock",
+    ),
+)
+def test_ci_contract_rejects_unpinned_jax_regime_tooling(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, lock: str
 ) -> None:
-    """The JAX-regime replay must fail policy if its test-tool lock is removed."""
+    """The JAX-regime replay must fail policy if either tool lock is removed."""
 
     text = WORKFLOW.read_text(encoding="utf-8")
-    lock = "environments/jax-regime-py312/test-requirements.lock"
-    mutated = text.replace(lock, "environments/jax-regime-py312/missing-test.lock")
+    mutated = text.replace(lock, "environments/jax-regime-py312/missing-tool.lock")
     assert mutated != text
     workflow = tmp_path / "ci.yml"
     workflow.write_text(mutated, encoding="utf-8")
@@ -169,7 +175,7 @@ def test_ci_contract_rejects_unpinned_jax_regime_test_tooling(
 
     errors = check_ci_contract()
 
-    assert any("test-tool lock" in error for error in errors)
+    assert any("jax-regime" in error or "jax_regime" in error for error in errors)
 
 
 def test_static_analysis_toolchain_is_bounded_for_reproducible_ci() -> None:

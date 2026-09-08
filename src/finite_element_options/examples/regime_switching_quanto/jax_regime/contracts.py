@@ -19,6 +19,7 @@ DAILY_STEPS_PER_YEAR = 252
 MIN_DIAGNOSTIC_DRAWS_PER_CHAIN = 4
 MAX_PRICING_STEPS = 3_660
 MAX_PRICING_PATH_STEPS = 131_072 * 126
+MAX_POSTERIOR_PRICING_PATH_STEPS = MAX_PRICING_PATH_STEPS * 128
 MAX_SEED_OFFSET = 1_701
 MAX_BASE_SEED = 0xFFFF_FFFF - MAX_SEED_OFFSET
 MAX_ABS_RATE = 1.0
@@ -208,6 +209,7 @@ class JaxRegimeStudyConfig:
         for integer_name, integer_value in integers.items():
             if isinstance(integer_value, bool) or not isinstance(integer_value, Integral):
                 raise ValueError(f"{integer_name} must be an integer")
+            object.__setattr__(self, integer_name, int(integer_value))
         if not 0 <= self.seed <= MAX_BASE_SEED:
             raise ValueError(
                 f"seed must lie in [0, {MAX_BASE_SEED}] to reserve deterministic offsets"
@@ -226,6 +228,7 @@ class JaxRegimeStudyConfig:
                 or not math.isfinite(real_value)
             ):
                 raise ValueError(f"{real_name} must be a finite real number")
+            object.__setattr__(self, real_name, float(real_value))
         rate_settings = {
             "domestic_rate": self.domestic_rate,
             "foreign_rate": self.foreign_rate,

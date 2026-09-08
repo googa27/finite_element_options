@@ -15,12 +15,14 @@ EVIDENCE = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
 SIDECAR = EVIDENCE.with_suffix(EVIDENCE.suffix + ".sha256")
 LOCK = ROOT / "environments/jax-regime-py312/requirements.lock"
 TEST_LOCK = ROOT / "environments/jax-regime-py312/test-requirements.lock"
+CI_LOCK = ROOT / "environments/jax-regime-py312/ci-requirements.lock"
 VISUAL_LOCK = ROOT / "environments/jax-regime-visual-py312/requirements.lock"
 IMAGE_DIR = ROOT / "docs/images"
 ARTIFACT_MANIFEST = IMAGE_DIR / "jax_regime_study_2026-09-07.sha256"
 EXPECTED_EVIDENCE_SHA256 = "5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756"
 EXPECTED_LOCK_SHA256 = "42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c"
 EXPECTED_TEST_LOCK_SHA256 = "062f68ff7c10603d88449fb8dae0a24fb110050987c3386d3e0be895bcfb0d55"
+EXPECTED_CI_LOCK_SHA256 = "e9f14b2045e67425c98a67f76b27df439e0cacaa490afdfaeff531ebc93115fe"
 EXPECTED_VISUAL_LOCK_SHA256 = "8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6"
 EXPECTED_ARTIFACT_HASHES = {
     "jax_regime_study_2026-09-07.png": (
@@ -49,6 +51,7 @@ def test_jax_regime_evidence_is_hash_bound_and_promotably_honest() -> None:
     assert SIDECAR.read_text(encoding="utf-8").split()[0] == EXPECTED_EVIDENCE_SHA256
     assert _digest(LOCK) == EXPECTED_LOCK_SHA256
     assert _digest(TEST_LOCK) == EXPECTED_TEST_LOCK_SHA256
+    assert _digest(CI_LOCK) == EXPECTED_CI_LOCK_SHA256
     payload = json.loads(EVIDENCE.read_text(encoding="utf-8"))
 
     assert payload["schema_version"] == "feo-jax-regime-study-v2"

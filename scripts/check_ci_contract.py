@@ -308,15 +308,28 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
             errors.append(f"{label} must use Python 3.12")
         if lock_path not in audited:
             errors.append(f"{label} must install its hash-pinned lock")
-        if (
-            job_name == "supply_chain_jax_regime"
-            and "environments/jax-regime-py312/test-requirements.lock" not in audited
-        ):
-            errors.append(f"{label} must audit its hash-pinned test-tool lock")
+        if job_name == "supply_chain_jax_regime":
+            for tool_lock in (
+                "environments/jax-regime-py312/test-requirements.lock",
+                "environments/jax-regime-py312/ci-requirements.lock",
+            ):
+                if tool_lock not in audited:
+                    errors.append(f"{label} must audit {tool_lock}")
+            for floating_install in (
+                "pip install --upgrade pip",
+                "pip install build pip-audit cyclonedx-bom",
+            ):
+                if floating_install in audited:
+                    errors.append(
+                        f"{label} must not use floating tool install {floating_install!r}"
+                    )
+            build_command = "python -m build --wheel --no-isolation --outdir dist"
+        else:
+            build_command = "python -m build --wheel --outdir dist"
         if "--require-hashes" not in audited:
             errors.append(f"{label} must enforce lock hashes")
-        if "python -m build --wheel --outdir dist" not in audited:
-            errors.append(f"{label} must build the release wheel")
+        if build_command not in audited:
+            errors.append(f"{label} must build the release wheel reproducibly")
         if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in audited:
             errors.append(f"{label} must install the release wheel before its SBOM")
         if "python -m pip_audit" not in audited or "cyclonedx-py environment" not in audited:

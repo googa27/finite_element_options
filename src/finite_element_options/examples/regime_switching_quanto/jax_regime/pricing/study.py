@@ -9,7 +9,12 @@ import math
 from typing import Any
 from zipfile import ZipFile
 
-from ..contracts import MAX_PRICING_PATH_STEPS, JaxRegimeStudyConfig, PriceEstimate
+from ..contracts import (
+    MAX_POSTERIOR_PRICING_PATH_STEPS,
+    MAX_PRICING_PATH_STEPS,
+    JaxRegimeStudyConfig,
+    PriceEstimate,
+)
 from ..data import _MEMBER_ROOT
 from ..hmm.forward import gaussian_hmm_filter_probs
 from ..utils import stack as _stack
@@ -30,6 +35,21 @@ def _bounded_pricing_paths(preferred: int, requested: int, steps: int) -> int:
     if maximum_paths < 2:
         raise ValueError("path-step ceiling cannot support finite Monte Carlo diagnostics")
     return min(max(preferred, requested), maximum_paths)
+
+
+def _posterior_pricing_paths(config: JaxRegimeStudyConfig, posterior_draws: int) -> int:
+    """Bound both per-draw memory and total posterior repricing work."""
+
+    if posterior_draws < 1:
+        raise ValueError("posterior_draws must be positive")
+    preferred = (
+        _POSTERIOR_INTERVAL_PATHS if config == JaxRegimeStudyConfig() else config.pricing_paths
+    )
+    per_draw = _bounded_pricing_paths(preferred, config.pricing_paths, config.pricing_steps)
+    total_cap = MAX_POSTERIOR_PRICING_PATH_STEPS // (posterior_draws * config.pricing_steps)
+    if total_cap < 2:
+        raise ValueError("total posterior path-step ceiling cannot support finite diagnostics")
+    return min(per_draw, total_cap)
 
 
 def _matched_oracle_config(
@@ -220,7 +240,7 @@ def _posterior_price_intervals(
         )
     ]
     steps = config.pricing_steps
-    reduced_paths = _bounded_pricing_paths(_POSTERIOR_INTERVAL_PATHS, config.pricing_paths, steps)
+    reduced_paths = _posterior_pricing_paths(config, len(draw_pairs))
     common_key = jr.key(config.seed + 200)
     collected: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
     collected_mc_se: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}

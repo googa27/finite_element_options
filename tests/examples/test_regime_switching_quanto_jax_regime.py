@@ -13,6 +13,7 @@ import pytest
 
 from finite_element_options.examples.regime_switching_quanto.jax_regime.contracts import (
     JaxRegimeStudyConfig,
+    MAX_POSTERIOR_PRICING_PATH_STEPS,
     PDPObservationBatch,
     PDPPreprocessingAudit,
 )
@@ -35,6 +36,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
     _historical_prices,
     _matched_oracle_config,
     _oracle_z_score,
+    _posterior_pricing_paths,
 )
 
 
@@ -141,6 +143,19 @@ def test_research_claim_flags_cannot_be_weakened() -> None:
         JaxRegimeStudyConfig(research_only=1)  # type: ignore[arg-type]
 
 
+def test_numpy_scalar_config_values_normalize_to_strict_json_primitives() -> None:
+    config = JaxRegimeStudyConfig(
+        seed=np.int64(20_260_907),  # type: ignore[arg-type]
+        posterior_samples=np.int32(300),  # type: ignore[arg-type]
+        maturity_years=np.float32(0.5),  # type: ignore[arg-type]
+    )
+    payload = config.to_dict()
+    json.dumps(payload, allow_nan=False)
+    assert type(payload["seed"]) is int
+    assert type(payload["posterior_samples"]) is int
+    assert type(payload["maturity_years"]) is float
+
+
 def test_missing_numpyro_divergence_telemetry_fails_closed() -> None:
     with pytest.raises(RuntimeError, match="omitted required 'diverging'"):
         _required_divergence_count({})
@@ -213,6 +228,27 @@ def test_resource_limits_and_finite_observations_fail_closed() -> None:
     )
     assert matched_config.pricing_steps == 126
     assert matched_config.pricing_paths == 131_072
+
+    low_path_config = JaxRegimeStudyConfig(pricing_paths=2)
+    assert _posterior_pricing_paths(low_path_config, 128) == 2
+    canonical_config = JaxRegimeStudyConfig()
+    canonical_paths = _posterior_pricing_paths(canonical_config, 128)
+    assert canonical_paths == 131_072
+    assert (
+        canonical_paths * canonical_config.pricing_steps * 128 == MAX_POSTERIOR_PRICING_PATH_STEPS
+    )
+    heavy_config = JaxRegimeStudyConfig(
+        maturity_years=14.0,
+        pricing_paths=4_500,
+        posterior_samples=64,
+        chains=8,
+    )
+    heavy_draws = 512
+    bounded_paths = _posterior_pricing_paths(heavy_config, heavy_draws)
+    assert bounded_paths < heavy_config.pricing_paths
+    assert (
+        bounded_paths * heavy_config.pricing_steps * heavy_draws <= MAX_POSTERIOR_PRICING_PATH_STEPS
+    )
     kwargs = {
         "dates": ("2026-01-01",),
         "levels_sha256": "a" * 64,

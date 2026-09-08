@@ -5,6 +5,7 @@
 **Evidence SHA-256:** `5909572c546ca7ca3449e2b6180fc3fcb27aa78013c3f0b5ed4fc523a97ab756`<br>
 **Python 3.12 lock SHA-256:** `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`<br>
 **Python 3.12 test-tool lock SHA-256:** `062f68ff7c10603d88449fb8dae0a24fb110050987c3386d3e0be895bcfb0d55`<br>
+**Python 3.12 CI-tool lock SHA-256:** `e9f14b2045e67425c98a67f76b27df439e0cacaa490afdfaeff531ebc93115fe`<br>
 **Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
 **PNG/PDF SHA-256:** `50f927f21b0134b494aa87e0bc87d1d806d1066b0cacefa757c589c051cfd3ef` / `a73e912a850a7de0d473350d77ae48c90a3e2ca8af274d543fa2db65b2f3c026`
 
@@ -159,7 +160,7 @@ Values are CLP. The posterior column is a deterministic chain-stratified summary
 
 The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual pricing simulates the fitted **daily discrete HMM**, not a continuous-time regime process. The public config therefore enforces 252 steps per year and maturities aligned to whole fitted trading-day intervals; conditional Diffrax refinement may split diffusion increments within a fitted day, but it never reapplies the daily transition matrix at a subdaily frequency.
 
-Accepted runs require at least four retained draws per chain for finite split-chain diagnostics. Every pricing route also obeys a 16,515,072 path-step allocation ceiling; internal posterior/prior/oracle path floors adapt downward for longer horizons rather than allocating unbounded arrays. Non-finite NumPyro diagnostics serialize as `null`, set `finite=false`, and fail promotion.
+Accepted runs require at least four retained draws per chain for finite split-chain diagnostics. Every pricing route obeys a 16,515,072 per-draw path-step ceiling, and posterior repricing additionally obeys a 2,113,929,216 total path-step ceiling equal to the executed canonical allocation. Only the exact canonical publication config raises posterior repricing to 131,072 paths; noncanonical runs treat `pricing_paths` as a true upper bound and may adapt it downward for total-work safety. Non-finite NumPyro diagnostics serialize as `null`, set `finite=false`, and fail promotion.
 
 ## Reproducibility and supply chain
 
@@ -168,10 +169,12 @@ The isolated profile contains JAX/JAXLIB 0.11.1, NumPyro 0.21.0, DYNAMAX 1.0.2, 
 ```text
 uv venv --python 3.12 /tmp/feo-jax-regime
 uv pip install --python /tmp/feo-jax-regime/bin/python --require-hashes \
+  -r environments/jax-regime-py312/ci-requirements.lock
+uv pip install --python /tmp/feo-jax-regime/bin/python --require-hashes \
   -r environments/jax-regime-py312/requirements.lock
 uv pip install --python /tmp/feo-jax-regime/bin/python --require-hashes \
   -r environments/jax-regime-py312/test-requirements.lock
-python -m build --wheel --outdir dist
+/tmp/feo-jax-regime/bin/python -m build --wheel --no-isolation --outdir dist
 uv pip install --python /tmp/feo-jax-regime/bin/python --no-deps \
   dist/finite_element_options-*.whl
 
@@ -198,7 +201,7 @@ MPLCONFIGDIR=/tmp/feo-mpl-cache \
   --publish-canonical
 ```
 
-`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift. Runtime science, test tooling, and visuals use separate hash locks; fixed visual versions/metadata have a CI byte-comparison gate.
+`PDP_ARCHIVE` must name the caller-controlled content-addressed archive. Non-synthetic execution has no home-directory fallback; nonpublication output defaults to `/tmp`; and canonical writes require the exact configuration plus `--publish-canonical`. The evidence sidecar and validation test fail closed on drift. Runtime science, test tooling, CI build/audit/SBOM tooling, and visuals use separate hash locks; fixed visual versions/metadata have a CI byte-comparison gate.
 
 ## Scope and non-claims
 

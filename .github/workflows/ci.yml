@@ -477,15 +477,15 @@ jobs:
           python-version: '3.12'
       - name: Install hash-pinned JAX regime environment
         run: |
-          python -m pip install --upgrade pip 'setuptools>=83'
-          python -m pip install build pip-audit cyclonedx-bom -c constraints.txt
+          python -m pip install --require-hashes \
+            -r environments/jax-regime-py312/ci-requirements.lock
           python -m pip install --require-hashes \
             -r environments/jax-regime-py312/requirements.lock
           python -m pip install --require-hashes \
             -r environments/jax-regime-py312/test-requirements.lock
       - name: Install release wheel into audited environment
         run: |
-          python -m build --wheel --outdir dist
+          python -m build --wheel --no-isolation --outdir dist
           python -m pip install --no-deps dist/finite_element_options-*.whl
           cd /tmp
           python - <<'PY'
