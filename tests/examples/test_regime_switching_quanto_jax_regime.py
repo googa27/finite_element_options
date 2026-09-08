@@ -39,6 +39,7 @@ from finite_element_options.examples.regime_switching_quanto.jax_regime.pricing.
     _posterior_pricing_paths,
     _publication_or_requested_paths,
 )
+from finite_element_options.examples.regime_switching_quanto.jax_regime.study import _selection_rule
 
 
 def _fixture(path: Path) -> tuple[str, str]:
@@ -186,6 +187,11 @@ def test_zero_variance_oracle_score_fails_closed_on_nonzero_error() -> None:
 def test_resource_limits_and_finite_observations_fail_closed() -> None:
     with pytest.raises(ValueError, match="em_iters must be an integer"):
         JaxRegimeStudyConfig(em_iters=1.5)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="em_iters must be at least 250"):
+        JaxRegimeStudyConfig(em_iters=249)
+    high_iteration_config = JaxRegimeStudyConfig(em_iters=500)
+    assert high_iteration_config.em_iters == 500
+    assert "500-iteration starts" in _selection_rule(high_iteration_config)
     with pytest.raises(ValueError, match="seed must be an integer"):
         JaxRegimeStudyConfig(seed=True)
     with pytest.raises(ValueError, match="reserve deterministic offsets"):

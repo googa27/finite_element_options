@@ -40,6 +40,16 @@ from .prior_sensitivity import run_prior_sensitivity
 from .utils import stack as _stack, to_python as _python
 
 
+def _selection_rule(config: JaxRegimeStudyConfig) -> str:
+    """Describe model selection using the exact configured EM budget."""
+
+    return (
+        "highest chronological held-out mean log score after selecting the best finite "
+        f"converged fit from three deterministic {config.em_iters}-iteration starts; each HMM "
+        "candidate requires at least two converged starts"
+    )
+
+
 def run_jax_regime_study(
     archive: str | Path,
     *,
@@ -295,11 +305,7 @@ def run_jax_regime_study(
             "selection": {
                 "states": config.num_states,
                 "selected_by_heldout_score": selected_states,
-                "rule": (
-                    "highest chronological held-out mean log score after selecting the best finite "
-                    "converged fit from three deterministic 250-iteration starts; each HMM "
-                    "candidate requires at least two converged starts"
-                ),
+                "rule": _selection_rule(config),
                 "four_over_three_mean_log_score_gain": four_over_three_gain,
                 "three_state_practically_competitive_at_0_01": three_state_competitive,
                 "statsmodels_var_heldout_mean_log_score": statsmodels_baseline[
@@ -324,7 +330,7 @@ def run_jax_regime_study(
                 "multistart_converged": bool(full_fit["multistart_converged"]),
                 "all_starts_converged": bool(full_fit["all_starts_converged"]),
                 "start_diagnostics": full_fit["start_diagnostics"],
-                "em_iterations": max(config.em_iters, 250),
+                "em_iterations": config.em_iters,
                 "starts": 3,
             },
             "marginal_likelihood_parity_absolute_error": likelihood_parity_error,

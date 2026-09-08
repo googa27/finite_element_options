@@ -72,7 +72,7 @@ NumPyro does not sample the discrete path. A pure-JAX log-space forward recursio
 
 ### Chronological model selection
 
-Every HMM candidate receives three deterministic 250-iteration EM starts. Only finite converged starts are eligible; each candidate requires at least two. Selection uses the untouched chronological 15% holdout, never in-sample likelihood.
+Every HMM candidate receives three deterministic 250-iteration EM starts in the canonical run. Only finite converged starts are eligible; each candidate requires at least two. Selection uses the untouched chronological 15% holdout, never in-sample likelihood. The study contract accepts 250–1,000 EM iterations; for noncanonical runs the configured value is the exact executed and reported budget, with no hidden floor.
 
 | States | Converged starts | Held-out mean log score | Decision |
 |---:|---:|---:|---|

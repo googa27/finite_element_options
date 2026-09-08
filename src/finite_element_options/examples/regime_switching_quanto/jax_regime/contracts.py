@@ -16,6 +16,7 @@ PUBLICATION_MIN_DRAWS_PER_CHAIN = 200
 PUBLICATION_MAX_RHAT = 1.05
 PUBLICATION_MIN_ESS = 100.0
 DAILY_STEPS_PER_YEAR = 252
+MIN_STUDY_EM_ITERATIONS = 250
 MIN_DIAGNOSTIC_DRAWS_PER_CHAIN = 4
 MAX_PRICING_STEPS = 3_660
 MAX_PRICING_PATH_STEPS = 131_072 * 126
@@ -242,6 +243,10 @@ class JaxRegimeStudyConfig:
                 raise ValueError(f"{name} must be positive")
         if self.pricing_paths < 2:
             raise ValueError("pricing_paths must be at least 2 for finite sample diagnostics")
+        if self.em_iters < MIN_STUDY_EM_ITERATIONS:
+            raise ValueError(
+                f"em_iters must be at least {MIN_STUDY_EM_ITERATIONS} for study evidence"
+            )
         if self.posterior_samples < MIN_DIAGNOSTIC_DRAWS_PER_CHAIN:
             raise ValueError(
                 "posterior_samples must be at least "

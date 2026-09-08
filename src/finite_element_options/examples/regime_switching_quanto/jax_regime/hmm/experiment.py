@@ -77,7 +77,7 @@ def _candidate_comparison(
         }
     ]
     target_fit: dict[str, Any] | None = None
-    candidate_iterations = max(config.em_iters, 250)
+    candidate_iterations = config.em_iters
     for states in (2, 3, 4):
         seeds = [config.seed + 10 * states + start for start in range(3)]
         fits = [
@@ -141,7 +141,7 @@ def _full_fit(observations: Any, config: JaxRegimeStudyConfig) -> dict[str, Any]
             observations,
             num_states=config.num_states,
             seed=seed,
-            em_iters=max(config.em_iters, 250),
+            em_iters=config.em_iters,
         )
         for seed in seeds
     ]
@@ -211,7 +211,7 @@ def _single_synthetic_recovery(config: JaxRegimeStudyConfig, seed_offset: int) -
         emissions,
         num_states=3,
         seed=data_seed + 1,
-        em_iters=max(config.em_iters, 250),
+        em_iters=config.em_iters,
     )
     true_vol = jnp.sqrt(252.0 * jnp.einsum("d,kde,e->k", jnp.ones(2), covariances, jnp.ones(2)))
     permutation = _best_state_permutation(covariances, fit["parameters"]["covariances"])

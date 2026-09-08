@@ -96,6 +96,14 @@ def test_jax_regime_evidence_is_hash_bound_and_promotably_honest() -> None:
         "chains": 2,
         "pricing_paths": 4096,
     }
+    em_iterations = payload["config"]["em_iters"]
+    assert payload["hmm"]["dynamax_full_fit"]["em_iterations"] == em_iterations
+    assert all(
+        row["em_iterations"] == em_iterations
+        for row in payload["hmm"]["candidate_comparison"]
+        if row["engine"] == "dynamax"
+    )
+    assert f"{em_iterations}-iteration starts" in payload["hmm"]["selection"]["rule"]
     assert payload["claims"] == {
         "diffrax_scope": (
             "Diffrax Euler is a tested SDE abstraction, not an accuracy upgrade; the aligned "
