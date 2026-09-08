@@ -13,8 +13,26 @@ EXPECTED_VISUAL_STACK = {
     "numpy": "2.4.6",
     "pillow": "12.3.0",
 }
-CANONICAL_OUTPUT = Path("docs/images/jax_regime_study_2026-09-07.png")
+ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_OUTPUT = ROOT / "docs/images/jax_regime_study_2026-09-07.png"
+CANONICAL_PDF = CANONICAL_OUTPUT.with_suffix(".pdf")
 DEFAULT_OUTPUT = Path("/tmp/jax_regime_study_2026-09-07.png")
+
+
+def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
+    """Return PNG/PDF targets after protecting the complete canonical pair."""
+
+    output = output.expanduser()
+    pdf = output.with_suffix(".pdf")
+    resolved_targets = {output.resolve(), pdf.resolve()}
+    canonical_targets = {CANONICAL_OUTPUT.resolve(), CANONICAL_PDF.resolve()}
+    if resolved_targets & canonical_targets and not publish_canonical:
+        raise ValueError("canonical visual output requires --publish-canonical")
+    if publish_canonical and resolved_targets != canonical_targets:
+        raise ValueError("--publish-canonical requires the canonical PNG/PDF output paths")
+    if output.suffix.lower() != ".png":
+        raise ValueError("--output must name a PNG path; the PDF path is derived")
+    return output, pdf
 
 
 def _validate_layout(figure: Any, axes: tuple[Any, ...]) -> None:
@@ -84,7 +102,7 @@ def main() -> int:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("docs/evidence/jax_regime_study_2026-09-07.json"),
+        default=ROOT / "docs/evidence/jax_regime_study_2026-09-07.json",
     )
     parser.add_argument(
         "--output",
@@ -103,10 +121,12 @@ def main() -> int:
     )
     args = parser.parse_args()
     args.output = args.output or (CANONICAL_OUTPUT if args.publish_canonical else DEFAULT_OUTPUT)
-    if args.output.resolve() == CANONICAL_OUTPUT.resolve() and not args.publish_canonical:
-        parser.error("canonical visual output requires --publish-canonical")
-    if args.publish_canonical and args.output.resolve() != CANONICAL_OUTPUT.resolve():
-        parser.error("--publish-canonical requires the canonical output path")
+    try:
+        args.output, pdf = _validated_output_paths(
+            args.output, publish_canonical=args.publish_canonical
+        )
+    except ValueError as error:
+        parser.error(str(error))
 
     import matplotlib
     import matplotlib.pyplot as plt
@@ -353,7 +373,6 @@ def main() -> int:
         facecolor=background,
         metadata={"Software": "finite_element_options deterministic JAX regime visual"},
     )
-    pdf = args.output.with_suffix(".pdf")
     figure.savefig(
         pdf,
         facecolor=background,

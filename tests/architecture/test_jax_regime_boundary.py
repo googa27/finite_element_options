@@ -133,19 +133,34 @@ def test_jax_regime_cli_requires_explicit_input_and_canonical_publication() -> N
         assert message in result.stderr
 
 
-def test_jax_regime_plot_refuses_implicit_canonical_write() -> None:
+@pytest.mark.parametrize(
+    ("output", "cwd"),
+    (
+        ("docs/images/jax_regime_study_2026-09-07.png", ROOT),
+        (str(ROOT / "docs/images/jax_regime_study_2026-09-07.pdf"), Path("/tmp")),
+    ),
+)
+def test_jax_regime_plot_refuses_implicit_canonical_write(output: str, cwd: Path) -> None:
     generator = ROOT / "scripts/generate_jax_regime_plot.py"
     result = subprocess.run(
-        [
-            sys.executable,
-            str(generator),
-            "--output",
-            "docs/images/jax_regime_study_2026-09-07.png",
-        ],
-        cwd=ROOT,
+        [sys.executable, str(generator), "--output", output],
+        cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
     )
     assert result.returncode == 2
     assert "canonical visual output requires --publish-canonical" in result.stderr
+
+
+def test_jax_regime_plot_rejects_non_png_output_before_rendering() -> None:
+    generator = ROOT / "scripts/generate_jax_regime_plot.py"
+    result = subprocess.run(
+        [sys.executable, str(generator), "--output", "/tmp/not-a-png.pdf"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert "--output must name a PNG path" in result.stderr
