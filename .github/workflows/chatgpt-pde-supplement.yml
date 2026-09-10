@@ -51,7 +51,7 @@ jobs:
         run: |
           conda create -y -p "$RUNNER_TEMP/fenicsx-env" -c conda-forge python=3.12 fenics-dolfinx=0.11.0 conda-pack matplotlib 2>&1 | tee status.txt
           "$RUNNER_TEMP/fenicsx-env/bin/python" -c 'import dolfinx; print("dolfinx", dolfinx.__version__)' | tee -a status.txt
-          conda-pack -p "$RUNNER_TEMP/fenicsx-env" -o fenicsx-env.tar.gz
+          "$RUNNER_TEMP/fenicsx-env/bin/conda-pack" -p "$RUNNER_TEMP/fenicsx-env" -o fenicsx-env.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: fenicsx-conda-env
