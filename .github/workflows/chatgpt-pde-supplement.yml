@@ -1,0 +1,61 @@
+name: ChatGPT PDE Supplement
+
+on:
+  push:
+    branches: [chatgpt/pde-supp-20260910]
+
+permissions:
+  contents: read
+
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download native and visualization dependencies
+        run: |
+          mkdir -p wheelhouse
+          for spec in \
+            'meshio' \
+            'pyvista' \
+            'scooby' \
+            'mpi4py' \
+            'gmsh' \
+            'fenics-basix==0.11.0'; do
+              echo "=== ${spec} ===" | tee -a status.txt
+              python -m pip download --no-deps "${spec}" -d wheelhouse 2>&1 | tee -a status.txt || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pde-supplement-wheels-py313
+          path: |
+            wheelhouse
+            status.txt
+          if-no-files-found: error
+
+  fenicsx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: '3.13'
+          auto-activate-base: true
+          channels: conda-forge
+          channel-priority: strict
+      - name: Build relocatable FEniCSx conda environment
+        shell: bash -el {0}
+        run: |
+          conda create -y -p "$RUNNER_TEMP/fenicsx-env" -c conda-forge python=3.13 fenics-dolfinx=0.10.0.post5 conda-pack matplotlib 2>&1 | tee status.txt
+          "$RUNNER_TEMP/fenicsx-env/bin/python" -c 'import dolfinx; print("dolfinx", dolfinx.__version__)' | tee -a status.txt
+          conda-pack -p "$RUNNER_TEMP/fenicsx-env" -o fenicsx-env.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fenicsx-conda-env
+          path: |
+            fenicsx-env.tar.gz
+            status.txt
+          if-no-files-found: error
