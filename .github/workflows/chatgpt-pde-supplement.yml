@@ -42,14 +42,14 @@ jobs:
     steps:
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.13'
+          python-version: '3.12'
           auto-activate-base: true
           channels: conda-forge
           channel-priority: strict
       - name: Build relocatable FEniCSx conda environment
         shell: bash -el {0}
         run: |
-          conda create -y -p "$RUNNER_TEMP/fenicsx-env" -c conda-forge python=3.13 fenics-dolfinx=0.10.0.post5 conda-pack matplotlib 2>&1 | tee status.txt
+          conda create -y -p "$RUNNER_TEMP/fenicsx-env" -c conda-forge python=3.12 fenics-dolfinx=0.11.0 conda-pack matplotlib 2>&1 | tee status.txt
           "$RUNNER_TEMP/fenicsx-env/bin/python" -c 'import dolfinx; print("dolfinx", dolfinx.__version__)' | tee -a status.txt
           conda-pack -p "$RUNNER_TEMP/fenicsx-env" -o fenicsx-env.tar.gz
       - uses: actions/upload-artifact@v4
