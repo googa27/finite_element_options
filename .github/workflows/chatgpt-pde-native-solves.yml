@@ -1,0 +1,98 @@
+name: ChatGPT Native PDE Solves
+
+on:
+  push:
+    branches: [chatgpt/pde-native-solves-20260910]
+
+permissions:
+  contents: read
+
+jobs:
+  fenicsx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: '3.12'
+          channels: conda-forge
+          channel-priority: strict
+      - name: Install and solve Poisson with FEniCSx
+        shell: bash -el {0}
+        run: |
+          conda create -y -n fx -c conda-forge python=3.12 fenics-dolfinx=0.11.0 matplotlib
+          conda run -n fx python - <<'PY'
+          from mpi4py import MPI
+          from petsc4py import PETSc
+          import numpy as np
+          import matplotlib.pyplot as plt
+          import dolfinx, ufl
+          from dolfinx import mesh, fem
+          from dolfinx.fem.petsc import LinearProblem
+          domain = mesh.create_unit_square(MPI.COMM_WORLD, 24, 24)
+          V = fem.functionspace(domain, ('Lagrange', 1))
+          u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+          f = fem.Function(V)
+          f.interpolate(lambda x: 2*np.pi**2*np.sin(np.pi*x[0])*np.sin(np.pi*x[1]))
+          tdim = domain.topology.dim
+          fdim = tdim - 1
+          facets = mesh.locate_entities_boundary(domain, fdim, lambda x: np.full(x.shape[1], True, dtype=bool))
+          dofs = fem.locate_dofs_topological(V, fdim, facets)
+          bc = fem.dirichletbc(PETSc.ScalarType(0), dofs, V)
+          a = ufl.inner(ufl.grad(u), ufl.grad(v))*ufl.dx
+          L = f*v*ufl.dx
+          problem = LinearProblem(a, L, bcs=[bc], petsc_options_prefix='p_', petsc_options={'ksp_type':'preonly','pc_type':'lu'})
+          uh = problem.solve()
+          pts = V.tabulate_dof_coordinates()
+          exact = np.sin(np.pi*pts[:,0])*np.sin(np.pi*pts[:,1])
+          vals = uh.x.array[:len(exact)]
+          rms = float(np.sqrt(np.mean((vals-exact)**2)))
+          print('DOLFINx', dolfinx.__version__, 'RMS', rms)
+          np.savez('fenicsx_result.npz', x=pts[:,0], y=pts[:,1], u=vals, exact=exact, rms=rms)
+          plt.figure(figsize=(6,5)); plt.tricontourf(pts[:,0], pts[:,1], vals, levels=25); plt.colorbar(); plt.title(f'FEniCSx 0.11 Poisson, RMS={rms:.2e}'); plt.tight_layout(); plt.savefig('fenicsx_poisson.png', dpi=150)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fenicsx-solve
+          path: |
+            fenicsx_result.npz
+            fenicsx_poisson.png
+          if-no-files-found: error
+
+  dedalus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: '3.13'
+          channels: conda-forge
+          channel-priority: strict
+      - name: Install and solve heat equation with Dedalus
+        shell: bash -el {0}
+        run: |
+          conda create -y -n dd -c conda-forge python=3.13 dedalus=3.0.5 matplotlib
+          conda run -n dd python - <<'PY'
+          import numpy as np
+          import matplotlib.pyplot as plt
+          import dedalus, dedalus.public as d3
+          D,T,N=0.1,0.5,96
+          coords=d3.CartesianCoordinates('x'); dist=d3.Distributor(coords,dtype=np.float64)
+          xb=d3.RealFourier(coords['x'],size=N,bounds=(0,2*np.pi),dealias=3/2)
+          u=dist.Field(name='u',bases=xb); x=dist.local_grid(xb); u['g']=np.sin(x)
+          problem=d3.IVP([u],namespace=locals()); problem.add_equation('dt(u) - D*dx(dx(u)) = 0')
+          solver=problem.build_solver(d3.RK222); solver.stop_sim_time=T
+          while solver.proceed: solver.step(0.002)
+          xx=np.asarray(x).squeeze(); uu=np.asarray(u['g']).squeeze(); exact=np.exp(-D*T)*np.sin(xx)
+          rms=float(np.sqrt(np.mean((uu-exact)**2)))
+          print('Dedalus',dedalus.__version__,'RMS',rms)
+          np.savez('dedalus_result.npz',x=xx,u=uu,exact=exact,rms=rms)
+          o=np.argsort(xx); plt.figure(figsize=(7,4)); plt.plot(xx[o],exact[o],'--',label='exact'); plt.plot(xx[o],uu[o],label='Dedalus'); plt.legend(); plt.title(f'Dedalus heat equation, RMS={rms:.2e}'); plt.tight_layout(); plt.savefig('dedalus_heat.png',dpi=150)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dedalus-solve
+          path: |
+            dedalus_result.npz
+            dedalus_heat.png
+          if-no-files-found: error
