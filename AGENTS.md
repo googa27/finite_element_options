@@ -327,3 +327,22 @@ Repository posture: Consume FPF contracts; avoid PDP/UI runtime dependencies; em
 
 If a command is declared unavailable, the activation trigger and replacement command belong in `docs/ARCHITECTURE.yaml`; do not fabricate successful output.
 <!-- PORTFOLIO-CONSTITUTION:END -->
+
+
+### Time-grid unit invariance (issue 152)
+
+Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
+The existing roundoff-uniform policy uses relative tolerance 1e-12 with zero absolute
+tolerance; diagnostics use those same canonical widths. Finite node values alone
+are insufficient: interval widths and the complete horizon must be representable
+and finite before assembly. Unit-invariance scalar oracles, uniform factorization
+reuse and manufactured FEM convergence are verified by
+`tests/unit/test_time_grid_units.py`, `tests/test_time_stepper.py` and
+`tests/validation/test_manufactured_solutions.py`.
+NumPy documents the small-magnitude issue in
+[allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
+
+Startup subdivision must also remain representable: every generated internal
+width must be finite and positive, and each endpoint pair finite and strictly
+increasing. Refuse invalid subdivision before initial conditions or assembly;
+retain representable subnormal steps. Review follow-up: issue157.
