@@ -781,7 +781,8 @@
     "minimum_startup_substeps": 1,
     "normalization": "exact_native_integer",
     "issue": 154,
-    "validation_owner": "time_integration/time_grid.py"
+    "validation_owner": "time_integration/time_grid.py",
+    "dependency_direction": "stepper -> time_grid; pure validators never import numerical consumers"
   },
   "public_reference_resources": {
     "owner": "src/finite_element_options/validation/evidence/reference_artifacts.py",
