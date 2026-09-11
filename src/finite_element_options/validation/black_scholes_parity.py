@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
-import json
 from typing import Any
 
 import scipy.stats as spst  # type: ignore[import-untyped]
@@ -23,12 +22,22 @@ from ..core.vanilla_bs import EuropeanOptionBs
 from .evidence.black_scholes_surface import solve_black_scholes_surface
 from .evidence.public_fixture import (
     PUBLIC_NUMERIC_CANONICALIZATION,
+    _config_hash as _config_hash,
     black_scholes_summary_from_row,
     build_fixture_config_hash,
     canonicalize_black_scholes_row,
     finalize_public_result_payload,
     public_fixture_provenance_metadata,
     public_pde_convention_metadata,
+)
+
+from .evidence.reference_artifacts import (
+    FIXTURE_ROOT as FIXTURE_ROOT,
+    FEM_BS_001_PROBLEM_SPEC_PATH,
+    FEM_BS_001_RESULT_EXPORT_PATH,
+    export_destinations,
+    write_oracle_spec,
+    write_result_export,
 )
 
 
@@ -41,11 +50,6 @@ DEFAULT_TOLERANCE_ABSOLUTE = 2e-3
 DEFAULT_TOLERANCE_RELATIVE = 5e-4
 DEFAULT_DELTA_TOLERANCE_ABSOLUTE = 1e-3
 DEFAULT_GAMMA_TOLERANCE_ABSOLUTE = 2e-5
-
-
-FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "fem_bs_001"
-FEM_BS_001_PROBLEM_SPEC_PATH = FIXTURE_ROOT / "problem_spec.json"
-FEM_BS_001_RESULT_EXPORT_PATH = FIXTURE_ROOT / "result_export.json"
 
 
 @dataclass(frozen=True)
@@ -509,52 +513,29 @@ def _backend_capability_status() -> dict[str, str | bool | None]:
 
 
 def write_public_fem_bs_oracle_spec(
-    path: Path | str = FEM_BS_001_PROBLEM_SPEC_PATH,
+    path: Path | str | None = None,
     *,
     report: FEMParityReport | None = None,
     result_export_uri: str = "tests/fixtures/fem_bs_001/result_export.json",
 ) -> Path:
-    """Write the deterministic problem spec to a public JSON fixture file."""
-
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if report is None:
-        payload = build_public_fem_bs_oracle_problem_spec(
-            result_export_uri=result_export_uri
-        )
-    else:
-        payload = build_public_fem_bs_oracle_problem_spec(
-            refinement_levels=report.mesh_metadata.refinement_levels,
-            time_steps=report.time_metadata.time_steps,
-            result_export_uri=result_export_uri,
-        )
-    payload["contract_id"] = build_fixture_config_hash(payload)
-    target.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    """Write a deterministic spec to an explicit caller-owned filesystem path."""
+    return write_oracle_spec(
+        path, report=report, result_export_uri=result_export_uri,
+        build_spec=build_public_fem_bs_oracle_problem_spec,
     )
-    return target
 
 
 def write_public_fem_bs_result_export(
-    path: Path | str = FEM_BS_001_RESULT_EXPORT_PATH,
+    path: Path | str | None = None,
     *,
     refresh: bool = False,
     report: FEMParityReport | None = None,
 ) -> Path:
-    """Run and write the FEM result export in a stable public artifact shape."""
-
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if (not target.exists()) or refresh:
-        if report is None:
-            report = run_public_black_scholes_parity_fixture()
-        payload = report.export_payload()
-        payload["config_id"] = report.config_hash
-        payload = finalize_public_result_payload(payload)
-        target.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
-    return target
+    """Write a deterministic result to an explicit caller-owned filesystem path."""
+    return write_result_export(
+        path, refresh=refresh, report=report,
+        run_fixture=run_public_black_scholes_parity_fixture,
+    )
 
 
 def run_public_black_scholes_parity_fixture(
@@ -562,6 +543,7 @@ def run_public_black_scholes_parity_fixture(
     refinement_levels: tuple[int, ...] = (4, 5, 6),
     time_steps: int = 80,
     refresh_exports: bool = False,
+    export_directory: Path | str | None = None,
 ) -> FEMParityReport:
     """Run the public-synthetic Black-Scholes FEM parity fixture.
 
@@ -569,6 +551,10 @@ def run_public_black_scholes_parity_fixture(
     The fixture keeps spot=strike=1 in solver coordinates and scales the final value by
     strike=100 for the public fixture contract.
     """
+
+    destinations = export_destinations(export_directory) if refresh_exports else None
+    if export_directory is not None and not refresh_exports:
+        raise ValueError("export_directory requires refresh_exports=True")
 
     if not refinement_levels:
         raise ValueError("at least one refinement level is required")
@@ -685,44 +671,13 @@ def run_public_black_scholes_parity_fixture(
         }
     )
 
-    if refresh_exports:
+    if destinations is not None:
         write_public_fem_bs_oracle_spec(
-            path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report
+            path=destinations[0], report=report, result_export_uri="result_export.json"
         )
-        write_public_fem_bs_result_export(
-            path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
-        )
+        write_public_fem_bs_result_export(path=destinations[1], refresh=True, report=report)
 
     return report
-
-
-def _config_hash(report: FEMParityReport) -> str:
-    payload = {
-        "benchmark_id": report.benchmark_id,
-        "problem_id": report.problem_id,
-        "problem_hash": report.problem_hash,
-        "measure": report.measure,
-        "numeraire": report.numeraire,
-        "units": report.units,
-        "privacy_class": report.privacy_class,
-        "weak_form": report.weak_form.to_public_dict(),
-        "pde_convention": public_pde_convention_metadata(),
-        "mesh_metadata": report.mesh_metadata.to_public_dict(),
-        "refinement_levels": list(report.mesh_metadata.refinement_levels),
-        "time_metadata": report.time_metadata.to_public_dict(),
-        "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
-        "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
-        "comparison_policy": report.comparison_policy.to_public_dict(),
-        "provenance": public_fixture_provenance_metadata(),
-        "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
-        "tolerances": {
-            "absolute": report.tolerance_absolute,
-            "relative": report.tolerance_relative,
-            "delta": report.delta_tolerance_absolute,
-            "gamma": report.gamma_tolerance_absolute,
-        },
-    }
-    return build_fixture_config_hash(payload)
 
 
 def _public_weak_form_metadata() -> WeakFormMetadata:

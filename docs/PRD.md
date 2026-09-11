@@ -92,6 +92,8 @@ The project must use modern `pyproject.toml` metadata and a real import package 
 
 The literal package name `src`, checkout-relative imports and `sys.path` compensation are prohibited in the stable API. Owner: #44.
 
+Issue155 separates immutable packaged Black–Scholes reference resources from generated artifacts. Public resource reads must work from a wheel or zip importer; library writes require explicit caller-owned destinations and refuse package resources before numerical work. Only the explicit maintainer regeneration command mirrors canonical package and checkout snapshots. Reference bytes, hashes and mathematical contracts remain unchanged.
+
 ### FR-FEM-002 — Immutable numerical problem contracts
 
 Public native contracts must describe:
@@ -364,6 +366,19 @@ Startup subdivision must also remain representable: every generated internal
 width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
+
+
+### Relocatable public reference exports (issues 155 and 161)
+
+Packaged `fem-bs-001` references are read-only resources; library writers require
+explicit caller-owned destinations. A paired
+`run_public_black_scholes_parity_fixture(refresh_exports=True, export_directory=...)`
+exports the same report and uses `result_export_uri="result_export.json"` relative
+to its adjacent problem spec. Moving that directory preserves URI resolution.
+Standalone spec writers retain their historical repository-relative URI default
+and accept an explicit `result_export_uri` for other layouts. Canonical package
+and checkout snapshots retain their bytes and hashes; only deliberate maintainer
+`--publish-canonical` updates both. No numerical tolerance or capability changes.
 
 ### Bounded operator and factorization retention (issues153/159)
 

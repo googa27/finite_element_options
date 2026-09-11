@@ -635,6 +635,10 @@ The stepper owns count validation before any solve: `numbers.Integral` values ex
 
 [BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md) defines the two-entry default LRU policy shared through `core/operator_cache.py`. Exact endpoint and enforced-system keys are unchanged. Space invalidation refreshes both time operators and the separately retained initial stiffness; refinement also rebuilds mass and bases. Each theta solve owns its factor cache. Cache size zero disables retention. Resource tests check actual object release and full-history numerical equality; the benchmark separates retained sparse payloads from RSS and output storage. The matching policy is recorded in `ARCHITECTURE.yaml`.
 
+## Public reference and export ownership (issue155)
+
+`validation/evidence/reference_artifacts.py` owns standard-library resource access and explicit output validation/serialization. Existing `black_scholes_parity` wrappers and report classes retain their public module identities; no numerical kernel or canonical payload changes. The two `reference_data/fem_bs_001/*.json` files are explicit setuptools package-data with checkout mirrors protected by a fitness test. The library never selects a reference path for output. Only the maintainer script with `--publish-canonical` can deliberately refresh both mirrors. [Migration and commands](PUBLIC_REFERENCE_RESOURCES.md) explain Traversable reads, temporary `as_file` lifetime and required export destinations.
+
 ### Time-grid unit invariance (issue 152)
 
 Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
@@ -654,3 +658,10 @@ increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
 
 Pure theta/count/grid validation now belongs to `time_integration/time_grid.py`. The stepper retains its solver, internal schedule, diagnostics and public class identities, and imports the same exact private function names for compatibility. Four function bodies move unchanged; this keeps combined cache/grid/count work under the500-line runtime limit without increasing any exception.
+
+Issue161 keeps paired exports relocatable: the run wrapper explicitly names the
+adjacent `result_export.json`; standalone writer defaults and canonical references
+remain unchanged. The existing `evidence/public_fixture.py` serialization owner now
+also holds `_config_hash`, with its body unchanged and a private import alias at
+`black_scholes_parity._config_hash`. The helper imports the report class only under
+`TYPE_CHECKING`; public report classes retain their original module/pickle identity.
