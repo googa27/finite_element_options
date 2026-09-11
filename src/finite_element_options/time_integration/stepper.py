@@ -302,11 +302,21 @@ class ThetaScheme(TimeStepper):
                 theta = self.startup_theta
             substeps = self.startup_substeps if use_startup else 1
             dt = width / substeps
+            if not np.isfinite(dt) or dt <= 0.0:
+                raise ValueError("internal time steps must have finite positive widths")
             for substep in range(substeps):
                 fraction_start = substep / substeps
                 fraction_end = (substep + 1) / substeps
                 sub_start = start + fraction_start * (end - start)
                 sub_end = start + fraction_end * (end - start)
+                if (
+                    not np.isfinite(sub_start)
+                    or not np.isfinite(sub_end)
+                    or sub_end <= sub_start
+                ):
+                    raise ValueError(
+                        "internal time step endpoints must be finite and strictly increasing"
+                    )
                 steps.append(
                     _InternalThetaStep(
                         output_index=interval_index + 1,
@@ -349,7 +359,11 @@ def _validate_time_grid(t: Iterable[float]) -> tuple[float, ...]:
     arr = np.asarray(time_grid, dtype=float)
     if not np.all(np.isfinite(arr)):
         raise ValueError("time grid nodes must be finite")
-    steps = np.diff(arr)
+    with np.errstate(over="ignore"):
+        steps = np.diff(arr)
+        horizon = arr[-1] - arr[0]
+    if not np.isfinite(horizon) or not np.all(np.isfinite(steps)):
+        raise ValueError("time grid intervals and horizon must be finite")
     if not np.all(steps > 0.0):
         raise ValueError("time grid nodes must be strictly increasing")
     return time_grid
@@ -366,7 +380,9 @@ def _canonical_local_steps(time_grid: tuple[float, ...]) -> tuple[float, ...]:
 
     raw = np.diff(np.asarray(time_grid, dtype=float))
     representative = (time_grid[-1] - time_grid[0]) / (len(time_grid) - 1)
-    if np.allclose(raw, representative, rtol=1.0e-12, atol=1.0e-15):
+    # An absolute tolerance would replace genuinely unequal small intervals,
+    # changing the discretization when the same problem uses different time units.
+    if np.allclose(raw, representative, rtol=1.0e-12, atol=0.0):
         return tuple(float(representative) for _ in raw)
     return tuple(float(item) for item in raw)
 
@@ -382,7 +398,7 @@ def _time_grid_diagnostics(
     """Return public diagnostics for result-history time orientation."""
 
     local_steps = _canonical_local_steps(time_grid)
-    uniform = bool(np.allclose(local_steps, local_steps[0], rtol=1.0e-12, atol=1.0e-15))
+    uniform = all(width == local_steps[0] for width in local_steps)
     return {
         "time_grid": time_grid,
         "time_orientation": "increasing",

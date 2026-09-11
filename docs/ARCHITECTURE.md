@@ -630,3 +630,22 @@ Probable extensions must cross named ports/capability registries rather than add
 The stepper owns count validation before any solve: `numbers.Integral` values excluding booleans normalize to native integers, with minima0/1 for startup intervals/substeps. This preserves integral NumPy inputs while rejecting accidental real-valued schedule changes. The public theta/LCP algebra and cache keys are unchanged. Mirrored time-step tests include invalid-input refusal and an independently computed scalar theta product with exact NumPy counts.
 
 [Giles and Carter (2006), Convergence analysis of Crank–Nicolson and Rannacher time-marching](https://people.maths.ox.ac.uk/~gilesm/files/giles_carter.pdf) analyzes how backward-Euler startup affects convergence of values and derivatives for the studied Black–Scholes discretization. Its initial interval/subdivision choices are mathematical algorithm parameters, not numeric values to truncate. This count validation does not select a universal optimal startup or establish a new convergence theorem for every FEM problem.
+
+
+### Time-grid unit invariance (issue 152)
+
+Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
+The existing roundoff-uniform policy uses relative tolerance 1e-12 with zero absolute
+tolerance; diagnostics use those same canonical widths. Finite node values alone
+are insufficient: interval widths and the complete horizon must be representable
+and finite before assembly. Unit-invariance scalar oracles, uniform factorization
+reuse and manufactured FEM convergence are verified by
+`tests/unit/test_time_grid_units.py`, `tests/test_time_stepper.py` and
+`tests/validation/test_manufactured_solutions.py`.
+NumPy documents the small-magnitude issue in
+[allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
+
+Startup subdivision must also remain representable: every generated internal
+width must be finite and positive, and each endpoint pair finite and strictly
+increasing. Refuse invalid subdivision before initial conditions or assembly;
+retain representable subnormal steps. Review follow-up: issue157.

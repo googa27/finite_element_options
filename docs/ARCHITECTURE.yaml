@@ -25,7 +25,20 @@
       "capability registry",
       "haircut.solver_backends public protocol adapter",
       "adapters behind explicit protocols"
-    ]
+    ],
+    "time_grid_policy": {
+      "issue": "https://github.com/googa27/finite_element_options/issues/152",
+      "owner": "finite_element_options.time_integration.stepper",
+      "rule": "Finite strictly increasing time coordinates, finite intervals and horizon; canonicalize only with relative 1e-12 and zero absolute tolerance. Uniform diagnostics derive from the canonical steps. No tolerance in physical time units.",
+      "oracle": "Scalar forward-Euler time-unit invariance over 1e-300 through 1e300, uniform factorization reuse, and manufactured FEM spatial/time convergence",
+      "fitness_tests": [
+        "tests/unit/test_time_grid_units.py",
+        "tests/test_time_stepper.py",
+        "tests/validation/test_manufactured_solutions.py"
+      ],
+      "review_followup_issue": "https://github.com/googa27/finite_element_options/issues/157",
+      "internal_steps": "Validate finite positive generated widths and finite strictly increasing internal endpoints before all solver work; preserve representable subnormals."
+    }
   },
   "source_layout": {
     "python_rules_applicable": true,

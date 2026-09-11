@@ -345,3 +345,22 @@ Any change affecting strong/weak-form convention, mesh/space semantics, boundari
 ### Exact startup counts (issue154)
 
 Startup interval and subdivision controls are non-boolean integral counts. `startup_steps` must be at least zero and `startup_substeps` at least one; exact NumPy integer scalars are accepted and normalized to Python integers. Floats, fractional values, strings and missing/nonfinite values are rejected at construction without truncation. Existing defaults and valid integer schedules are unchanged.
+
+
+### Time-grid unit invariance (issue 152)
+
+Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
+The existing roundoff-uniform policy uses relative tolerance 1e-12 with zero absolute
+tolerance; diagnostics use those same canonical widths. Finite node values alone
+are insufficient: interval widths and the complete horizon must be representable
+and finite before assembly. Unit-invariance scalar oracles, uniform factorization
+reuse and manufactured FEM convergence are verified by
+`tests/unit/test_time_grid_units.py`, `tests/test_time_stepper.py` and
+`tests/validation/test_manufactured_solutions.py`.
+NumPy documents the small-magnitude issue in
+[allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
+
+Startup subdivision must also remain representable: every generated internal
+width must be finite and positive, and each endpoint pair finite and strictly
+increasing. Refuse invalid subdivision before initial conditions or assembly;
+retain representable subnormal steps. Review follow-up: issue157.
