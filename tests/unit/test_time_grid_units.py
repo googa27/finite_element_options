@@ -57,3 +57,33 @@ def test_nonrepresentable_interval_or_horizon_refuses_before_assembly(grid):
     with pytest.raises(ValueError, match="finite"):
         ThetaScheme().solve(grid, space)
     assert space.widths == []
+
+
+@pytest.mark.parametrize(
+    "grid",
+    [
+        [0.0, np.nextafter(0.0, 1.0), 3 * np.nextafter(0.0, 1.0)],
+        [1.0, np.nextafter(1.0, 2.0), 2.0],
+        [-1.0, np.nextafter(-1.0, 0.0), 0.0],
+    ],
+)
+def test_unrepresentable_startup_subdivision_refuses_before_initialization(
+    grid, monkeypatch
+):
+    space = ScalarGrowth(0)
+    monkeypatch.setattr(
+        space, "initial_condition", lambda: pytest.fail("initialized before refusal")
+    )
+    scheme = ThetaScheme(startup_theta=1.0, startup_steps=1, startup_substeps=2)
+    with pytest.raises(ValueError, match="internal.*step"):
+        scheme.solve(grid, space)
+    assert space.widths == []
+
+
+def test_representable_subnormal_startup_steps_remain_supported():
+    unit = np.nextafter(0.0, 1.0)
+    space = ScalarGrowth(0)
+    scheme = ThetaScheme(startup_theta=1.0, startup_steps=1, startup_substeps=2)
+    result = scheme.solve([0.0, 4 * unit, 12 * unit], space)
+    np.testing.assert_array_equal(space.widths, [2 * unit, 2 * unit, 8 * unit])
+    np.testing.assert_array_equal(result[:, 0], [1.0, 1.0, 1.0])

@@ -638,3 +638,8 @@ reuse and manufactured FEM convergence are verified by
 `tests/validation/test_manufactured_solutions.py`.
 NumPy documents the small-magnitude issue in
 [allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
+
+Startup subdivision must also remain representable: every generated internal
+width must be finite and positive, and each endpoint pair finite and strictly
+increasing. Refuse invalid subdivision before initial conditions or assembly;
+retain representable subnormal steps. Review follow-up: issue157.

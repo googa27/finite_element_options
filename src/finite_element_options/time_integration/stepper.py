@@ -13,7 +13,10 @@ import scipy.sparse as sps  # type: ignore[import-untyped]
 import scipy.sparse.linalg as spla  # type: ignore[import-untyped]
 import skfem as fem  # type: ignore[import-untyped]
 
-from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.core.interfaces import (
+    BoundaryCondition,
+    SpaceDiscretization,
+)
 from finite_element_options.time_integration.lcp import (
     DiscreteLCP,
     LCPConvergenceError,
@@ -113,7 +116,9 @@ class ThetaScheme(TimeStepper):
             raise ValueError(msg)
         self.theta = _validate_theta(theta, "theta")
         self.startup_theta = (
-            None if startup_theta is None else _validate_theta(startup_theta, "startup_theta")
+            None
+            if startup_theta is None
+            else _validate_theta(startup_theta, "startup_theta")
         )
         if startup_steps < 0:
             raise ValueError("startup_steps must be non-negative")
@@ -126,7 +131,9 @@ class ThetaScheme(TimeStepper):
         if lcp_solver is not None and lcp_solver_settings is not None:
             raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
         self.lcp_solver = (
-            ProjectedSORSolver(lcp_solver_settings) if lcp_solver is None else lcp_solver
+            ProjectedSORSolver(lcp_solver_settings)
+            if lcp_solver is None
+            else lcp_solver
         )
         self.last_lcp_diagnostics: list[LCPDiagnostics] = []
         self.last_solve_diagnostics = LinearSolveDiagnostics(
@@ -196,7 +203,9 @@ class ThetaScheme(TimeStepper):
             else:
                 A_enf, b_enf = A, b
 
-            cache_key = _theta_cache_key(space, A_enf, step.dt, step.theta, boundary_condition)
+            cache_key = _theta_cache_key(
+                space, A_enf, step.dt, step.theta, boundary_condition
+            )
             assembly_cache_keys.append(cache_key)
 
             if is_american:
@@ -232,7 +241,9 @@ class ThetaScheme(TimeStepper):
                         factorized_solvers[cache_key] = solver
                         factorization_time += perf_counter() - started
                         factorization_count += 1
-                        factorization_cache_keys.append(_matrix_cache_key(factorized_matrix))
+                        factorization_cache_keys.append(
+                            _matrix_cache_key(factorized_matrix)
+                        )
                     started = perf_counter()
                     next_values = solver(np.asarray(b_enf, dtype=float))
                     solve_time += perf_counter() - started
@@ -241,7 +252,9 @@ class ThetaScheme(TimeStepper):
                     next_values = fem.solve(A_enf, b_enf)
                     solve_time += perf_counter() - started
                     factorization_count += 1
-                    factorization_cache_keys.append(_matrix_cache_key(sps.csr_matrix(A_enf)))
+                    factorization_cache_keys.append(
+                        _matrix_cache_key(sps.csr_matrix(A_enf))
+                    )
 
                 current_values = np.asarray(next_values, dtype=float)
                 solve_count += 1
@@ -268,7 +281,9 @@ class ThetaScheme(TimeStepper):
         )
         return v_tsv
 
-    def _internal_steps(self, time_grid: tuple[float, ...]) -> tuple[_InternalThetaStep, ...]:
+    def _internal_steps(
+        self, time_grid: tuple[float, ...]
+    ) -> tuple[_InternalThetaStep, ...]:
         """Return internal steps after optional startup subdivision."""
 
         steps: list[_InternalThetaStep] = []
@@ -276,7 +291,9 @@ class ThetaScheme(TimeStepper):
         for interval_index, (start, end, width) in enumerate(
             zip(time_grid[:-1], time_grid[1:], local_steps)
         ):
-            use_startup = self.startup_theta is not None and interval_index < self.startup_steps
+            use_startup = (
+                self.startup_theta is not None and interval_index < self.startup_steps
+            )
             theta = self.theta
             if use_startup:
                 if self.startup_theta is None:  # pragma: no cover - guarded above
@@ -284,11 +301,21 @@ class ThetaScheme(TimeStepper):
                 theta = self.startup_theta
             substeps = self.startup_substeps if use_startup else 1
             dt = width / substeps
+            if not np.isfinite(dt) or dt <= 0.0:
+                raise ValueError("internal time steps must have finite positive widths")
             for substep in range(substeps):
                 fraction_start = substep / substeps
                 fraction_end = (substep + 1) / substeps
                 sub_start = start + fraction_start * (end - start)
                 sub_end = start + fraction_end * (end - start)
+                if (
+                    not np.isfinite(sub_start)
+                    or not np.isfinite(sub_end)
+                    or sub_end <= sub_start
+                ):
+                    raise ValueError(
+                        "internal time step endpoints must be finite and strictly increasing"
+                    )
                 steps.append(
                     _InternalThetaStep(
                         output_index=interval_index + 1,

@@ -35,7 +35,9 @@
         "tests/unit/test_time_grid_units.py",
         "tests/test_time_stepper.py",
         "tests/validation/test_manufactured_solutions.py"
-      ]
+      ],
+      "review_followup_issue": "https://github.com/googa27/finite_element_options/issues/157",
+      "internal_steps": "Validate finite positive generated widths and finite strictly increasing internal endpoints before all solver work; preserve representable subnormals."
     }
   },
   "source_layout": {
