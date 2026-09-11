@@ -363,8 +363,9 @@ retain representable subnormal steps. Review follow-up: issue157.
 
 ### Bounded operator and factorization retention (issues153/159)
 
-`SpaceSolver.operator_cache_size` and `ThetaScheme.factorization_cache_size`
-default to two resident entries. Both capacities are explicit nonnegative integer
+`SpaceSolver(..., operator_cache_size=2)` and
+`ThetaScheme(..., factorization_cache_size=2)` default to two resident entries.
+Both capacities are explicit nonnegative integer
 policies; zero retains no cached entries. Exact existing endpoint and enforced
 system keys determine reuse. Evicted entries are recomputed using the same
 numerical assembly and factorization paths, so finite capacity can increase work
@@ -379,7 +380,7 @@ no persistent factor reuse across solves. Arbitrary model callback failures are
 not transactional.
 
 Diagnostics report configured capacity, current/peak resident entries and
-evictions, alongside actual assembly/factorization/reuse counts. Retained sparse
+evictions, alongside actual factorization/reuse counts. Retained sparse
 array and factor-representation measurements exclude output histories, active
 work, mass/initial stiffness and scalar diagnostic histories; they do not measure
 process RSS or establish a whole-solver memory bound. Constant and repeated-system
