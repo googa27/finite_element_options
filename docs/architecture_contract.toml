@@ -92,7 +92,7 @@ public_surface = "stable public contracts"
 path = "core"
 layer = "core"
 owner = "finite_element_options"
-treatment = "market/model coefficient helpers and analytical references used by FEM tests"
+treatment = "market/model coefficient helpers, bounded operator reuse policy, and analytical references used by FEM tests"
 public_surface = "public FEM-owned helpers"
 
 [[module_ownership]]

@@ -26,6 +26,23 @@
       "haircut.solver_backends public protocol adapter",
       "adapters behind explicit protocols"
     ],
+    "operator_cache_policy": {
+      "owner": "finite_element_options.core.operator_cache",
+      "issue": "https://github.com/googa27/finite_element_options/issues/153",
+      "algorithm": "stdlib OrderedDict least-recently-used eviction; exact existing keys",
+      "operator_cache_default_entries": 2,
+      "factorization_cache_default_entries": 2,
+      "capacity_validation": "nonnegative built-in int; booleans and fractional values refused before assembly",
+      "zero_capacity": "retains no entries; recomputation uses unchanged numerical path",
+      "lifetime": "space operators until explicit invalidation/refinement/eviction; factors local to each solve",
+      "invalidation": "refresh initial stiffness and clear resident time operators; refinement first rebuilds bases and mass",
+      "limits": "entry counts bound retained objects, not RSS, active work, output history, or scalar time/hash diagnostics",
+      "fitness_tests": [
+        "tests/unit/test_operator_cache.py",
+        "tests/integration/test_bounded_solver_caches.py"
+      ],
+      "benchmark": "scripts/benchmark_bounded_caches.py"
+    },
     "time_grid_policy": {
       "issue": "https://github.com/googa27/finite_element_options/issues/152",
       "owner": "finite_element_options.time_integration.stepper",
@@ -464,6 +481,23 @@
           ".github/workflows/ai-hierarchy-policy.yml",
           "scripts/selftest_ai_hierarchy_policy.py"
         ]
+      },
+      {
+        "capability": "bounded exact-key reuse of FEM matrices and sparse LU factors",
+        "selected": [
+          "Python stdlib collections.OrderedDict",
+          "existing scipy.sparse.linalg.splu"
+        ],
+        "alternatives": [
+          "functools.lru_cache",
+          "cachetools",
+          "unbounded dict"
+        ],
+        "evidence": "docs/BOUNDED_OPERATOR_CACHES.md and scripts/benchmark_bounded_caches.py",
+        "maintenance_evidence": "https://docs.python.org/3/library/collections.html#ordereddict-objects",
+        "api_license_evidence": "Python standard-library PSF license; existing SciPy BSD-3-Clause dependency",
+        "adapter_boundary": "core/operator_cache.py stores caller-owned exact keys and operators; space/solver.py and time_integration/stepper.py own numerical identity and lifetime",
+        "custom_code_reason": "Small domain adapter provides explicit invalidation, zero retention and immutable event counts; OrderedDict supplies reordering/eviction and SciPy supplies LU. No new dependency or numerical algorithm."
       }
     ]
   },

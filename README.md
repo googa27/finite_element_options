@@ -191,6 +191,10 @@ pytest -q tests/test_packaging_contract.py --no-cov
 pytest -q tests/test_benchmark_black_scholes.py tests/test_pinares_fem_proxy.py tests/test_capability_matrix_docs.py --no-cov
 ```
 
+## Bounded numerical reuse
+
+`SpaceSolver(..., operator_cache_size=2)` and `ThetaScheme(..., factorization_cache_size=2)` bound resident operator and sparse LU entries with least-recently-used eviction. Zero disables retention. Constant and alternating two-width systems preserve reuse while resident; larger working sets may need a larger explicit capacity. Call `space.invalidate_operator_cache()` after changing coefficient inputs, or construct a new space. See [cache behavior, diagnostics and reproducible resource evidence](docs/BOUNDED_OPERATOR_CACHES.md).
+
 ## Project structure
 
 ```text
