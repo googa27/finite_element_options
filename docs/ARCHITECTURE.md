@@ -649,3 +649,5 @@ Startup subdivision must also remain representable: every generated internal
 width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
+
+Pure theta/count/grid validation now belongs to `time_integration/time_grid.py`. The stepper retains its solver, internal schedule, diagnostics and public class identities, and imports the same exact private function names for compatibility. Four function bodies move unchanged; this keeps combined cache/grid/count work under the500-line runtime limit without increasing any exception.

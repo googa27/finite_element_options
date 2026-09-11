@@ -37,7 +37,8 @@
         "tests/validation/test_manufactured_solutions.py"
       ],
       "review_followup_issue": "https://github.com/googa27/finite_element_options/issues/157",
-      "internal_steps": "Validate finite positive generated widths and finite strictly increasing internal endpoints before all solver work; preserve representable subnormals."
+      "internal_steps": "Validate finite positive generated widths and finite strictly increasing internal endpoints before all solver work; preserve representable subnormals.",
+      "validation_owner": "finite_element_options.time_integration.time_grid"
     }
   },
   "source_layout": {
@@ -742,6 +743,7 @@
     "minimum_startup_steps": 0,
     "minimum_startup_substeps": 1,
     "normalization": "exact_native_integer",
-    "issue": 154
+    "issue": 154,
+    "validation_owner": "time_integration/time_grid.py"
   }
 }
