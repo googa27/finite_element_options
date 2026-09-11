@@ -18,6 +18,12 @@ from finite_element_options.core.interfaces import (
     SpaceDiscretization,
 )
 from finite_element_options.core.operator_cache import OperatorCache
+from finite_element_options.time_integration.time_grid import (
+    _canonical_local_steps,
+    _validate_startup_count,
+    _validate_theta,
+    _validate_time_grid,
+)
 from finite_element_options.time_integration.lcp import (
     DiscreteLCP,
     LCPConvergenceError,
@@ -134,15 +140,17 @@ class ThetaScheme(TimeStepper):
             if startup_theta is None
             else _validate_theta(startup_theta, "startup_theta")
         )
-        if startup_steps < 0:
-            raise ValueError("startup_steps must be non-negative")
-        if startup_substeps < 1:
-            raise ValueError("startup_substeps must be at least one")
-        self.startup_steps = int(startup_steps)
-        self.startup_substeps = int(startup_substeps)
+        self.startup_steps = _validate_startup_count(
+            startup_steps, "startup_steps", minimum=0
+        )
+        self.startup_substeps = _validate_startup_count(
+            startup_substeps, "startup_substeps", minimum=1
+        )
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
-        self.factorization_cache_size = OperatorCache(factorization_cache_size).info().capacity
+        self.factorization_cache_size = (
+            OperatorCache(factorization_cache_size).info().capacity
+        )
         if lcp_solver is not None and lcp_solver_settings is not None:
             raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
         self.lcp_solver = (
@@ -161,7 +169,9 @@ class ThetaScheme(TimeStepper):
             assembly_cache_key="not_run",
             factorization_cache_key="not_run",
             stage_timings_sec={"factorization": 0.0, "solve": 0.0},
-            factorization_cache_capacity=(factorization_cache_size if reuse_factorization else 0),
+            factorization_cache_capacity=(
+                factorization_cache_size if reuse_factorization else 0
+            ),
         )
         self.last_domain_diagnostics: dict[str, object] = {}
         self.last_time_grid_diagnostics: dict[str, object] = {}
@@ -196,8 +206,10 @@ class ThetaScheme(TimeStepper):
         v_tsv[0] = current_values
         self.last_lcp_diagnostics = []
 
-        factorized_solvers: OperatorCache[str, Callable[[np.ndarray], np.ndarray]] = OperatorCache(
-            self.factorization_cache_size if self.reuse_factorization else 0
+        factorized_solvers: OperatorCache[str, Callable[[np.ndarray], np.ndarray]] = (
+            OperatorCache(
+                self.factorization_cache_size if self.reuse_factorization else 0
+            )
         )
         factorization_count = 0
         factorization_reuse_count = 0
@@ -350,54 +362,6 @@ class ThetaScheme(TimeStepper):
                     )
                 )
         return tuple(steps)
-
-
-def _validate_theta(value: float, name: str) -> float:
-    """Return a validated theta parameter."""
-
-    theta = float(value)
-    if not np.isfinite(theta):
-        raise ValueError(f"{name} must be finite")
-    if theta < 0.0 or theta > 1.0:
-        raise ValueError(f"{name} must lie in [0, 1]")
-    return theta
-
-
-def _validate_time_grid(t: Iterable[float]) -> tuple[float, ...]:
-    """Materialize and validate a strictly increasing finite time grid."""
-
-    time_grid = tuple(float(item) for item in t)
-    if len(time_grid) < 2:
-        raise ValueError("time grid must contain at least two nodes")
-    arr = np.asarray(time_grid, dtype=float)
-    if not np.all(np.isfinite(arr)):
-        raise ValueError("time grid nodes must be finite")
-    with np.errstate(over="ignore"):
-        steps = np.diff(arr)
-        horizon = arr[-1] - arr[0]
-    if not np.isfinite(horizon) or not np.all(np.isfinite(steps)):
-        raise ValueError("time grid intervals and horizon must be finite")
-    if not np.all(steps > 0.0):
-        raise ValueError("time grid nodes must be strictly increasing")
-    return time_grid
-
-
-def _canonical_local_steps(time_grid: tuple[float, ...]) -> tuple[float, ...]:
-    """Return local widths, canonicalizing roundoff-uniform grids.
-
-    ``np.linspace`` grids often differ by a few ulps between adjacent
-    intervals.  Treating those artifacts as distinct PDE steps defeats sparse
-    factorization reuse without adding mathematical information.  Genuinely
-    nonuniform grids keep their local widths exactly.
-    """
-
-    raw = np.diff(np.asarray(time_grid, dtype=float))
-    representative = (time_grid[-1] - time_grid[0]) / (len(time_grid) - 1)
-    # An absolute tolerance would replace genuinely unequal small intervals,
-    # changing the discretization when the same problem uses different time units.
-    if np.allclose(raw, representative, rtol=1.0e-12, atol=0.0):
-        return tuple(float(representative) for _ in raw)
-    return tuple(float(item) for item in raw)
 
 
 def _time_grid_diagnostics(

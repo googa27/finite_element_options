@@ -344,6 +344,10 @@ Any change affecting strong/weak-form convention, mesh/space semantics, boundari
 
 *End of canonical Finite Element Options PRD.*
 
+### Exact startup counts (issue154)
+
+Startup interval and subdivision controls are non-boolean integral counts. `startup_steps` must be at least zero and `startup_substeps` at least one; exact NumPy integer scalars are accepted and normalized to Python integers. Floats, fractional values, strings and missing/nonfinite values are rejected at construction without truncation. Existing defaults and valid integer schedules are unchanged.
+
 
 ### Time-grid unit invariance (issue 152)
 

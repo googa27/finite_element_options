@@ -112,7 +112,9 @@ def test_nonuniform_time_grid_uses_each_local_dt_once() -> None:
         ([0.0, np.nan], "finite"),
     ],
 )
-def test_time_grid_validation_rejects_ambiguous_or_invalid_nodes(grid, message: str) -> None:
+def test_time_grid_validation_rejects_ambiguous_or_invalid_nodes(
+    grid, message: str
+) -> None:
     stepper = ThetaScheme(theta=0.5)
 
     with pytest.raises(ValueError, match=message):
@@ -158,7 +160,9 @@ def test_roundoff_uniform_linspace_reuses_one_invariant_system() -> None:
 
 def test_rannacher_startup_subdivides_initial_intervals_with_backward_euler() -> None:
     space = _ScalarSpace(matrix_mode="growth")
-    stepper = ThetaScheme(theta=0.5, startup_theta=1.0, startup_steps=2, startup_substeps=2)
+    stepper = ThetaScheme(
+        theta=0.5, startup_theta=1.0, startup_steps=2, startup_substeps=2
+    )
 
     solution = stepper.solve([0.0, 0.2, 0.4, 0.8], space)
 
@@ -176,3 +180,36 @@ def test_rannacher_startup_subdivides_initial_intervals_with_backward_euler() ->
     assert stepper.last_time_grid_diagnostics["internal_time_steps"] == pytest.approx(
         (0.1, 0.1, 0.1, 0.1, 0.4)
     )
+
+
+@pytest.mark.parametrize("field", ["startup_steps", "startup_substeps"])
+@pytest.mark.parametrize(
+    "value", [True, False, np.bool_(True), 0.9, 1.9, 2.0, "2", None, np.nan, np.inf]
+)
+def test_startup_counts_refuse_nonintegers_without_silent_schedule_changes(
+    field, value
+):
+    with pytest.raises(ValueError, match=field):
+        ThetaScheme(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "field,value", [("startup_steps", -1), ("startup_substeps", 0)]
+)
+def test_startup_count_range_is_explicit(field, value):
+    with pytest.raises(ValueError, match=field):
+        ThetaScheme(**{field: value})
+
+
+def test_numpy_integer_startup_counts_preserve_the_requested_discrete_schedule():
+    space = _ScalarSpace(matrix_mode="growth")
+    scheme = ThetaScheme(
+        theta=0.5,
+        startup_theta=1.0,
+        startup_steps=np.int64(1),
+        startup_substeps=np.uint32(2),
+    )
+    result = scheme.solve([0.0, 0.25, 1.0], space)
+    assert space.matrix_calls == [(1.0, 0.125), (1.0, 0.125), (0.5, 0.75)]
+    np.testing.assert_array_equal(result[:, 0], [1.0, 1.125**2, 1.125**2 * 1.75])
+    assert type(scheme.startup_steps) is int and type(scheme.startup_substeps) is int

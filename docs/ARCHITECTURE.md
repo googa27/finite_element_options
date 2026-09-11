@@ -625,6 +625,12 @@ Source of truth: `docs/ARCHITECTURE.yaml`. Tracking: [Project #24](https://githu
 Probable extensions must cross named ports/capability registries rather than adding sibling modules indefinitely. Every exception is exact, risk-bearing, no-growth, and has a refactoring trigger. Generated/vendor/migration/resource paths are declared explicitly; they do not silently weaken runtime rules.
 <!-- PORTFOLIO-CONSTITUTION:END -->
 
+## Exact theta startup policy
+
+The stepper owns count validation before any solve: `numbers.Integral` values excluding booleans normalize to native integers, with minima0/1 for startup intervals/substeps. This preserves integral NumPy inputs while rejecting accidental real-valued schedule changes. The public theta/LCP algebra and cache keys are unchanged. Mirrored time-step tests include invalid-input refusal and an independently computed scalar theta product with exact NumPy counts.
+
+[Giles and Carter (2006), Convergence analysis of Crank–Nicolson and Rannacher time-marching](https://people.maths.ox.ac.uk/~gilesm/files/giles_carter.pdf) analyzes how backward-Euler startup affects convergence of values and derivatives for the studied Black–Scholes discretization. Its initial interval/subdivision choices are mathematical algorithm parameters, not numeric values to truncate. This count validation does not select a universal optimal startup or establish a new convergence theorem for every FEM problem.
+
 ## Bounded operator reuse (#153)
 
 [BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md) defines the two-entry default LRU policy shared through `core/operator_cache.py`. Exact endpoint and enforced-system keys are unchanged. Space invalidation refreshes both time operators and the separately retained initial stiffness; refinement also rebuilds mass and bases. Each theta solve owns its factor cache. Cache size zero disables retention. Resource tests check actual object release and full-history numerical equality; the benchmark separates retained sparse payloads from RSS and output storage. The matching policy is recorded in `ARCHITECTURE.yaml`.
@@ -651,6 +657,7 @@ width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
 
+Pure theta/count/grid validation now belongs to `time_integration/time_grid.py`. The stepper retains its solver, internal schedule, diagnostics and public class identities, and imports the same exact private function names for compatibility. Four function bodies move unchanged; this keeps combined cache/grid/count work under the500-line runtime limit without increasing any exception.
 
 Issue161 keeps paired exports relocatable: the run wrapper explicitly names the
 adjacent `result_export.json`; standalone writer defaults and canonical references

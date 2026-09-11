@@ -332,6 +332,8 @@ Repository posture: Consume FPF contracts; avoid PDP/UI runtime dependencies; em
 If a command is declared unavailable, the activation trigger and replacement command belong in `docs/ARCHITECTURE.yaml`; do not fabricate successful output.
 <!-- PORTFOLIO-CONSTITUTION:END -->
 
+- Startup controls are exact non-boolean integral counts; do not silently truncate real values or reinterpret truth values as a Rannacher schedule (issue154).
+
 
 ### Time-grid unit invariance (issue 152)
 
