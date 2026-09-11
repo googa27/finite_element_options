@@ -141,6 +141,7 @@ exclude = ["src*"]
 
 [tool.setuptools.package-data]
 finite_element_options = ["py.typed"]
+"finite_element_options.validation.evidence" = ["reference_data/fem_bs_001/*.json"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=finite_element_options --cov-report=term-missing"

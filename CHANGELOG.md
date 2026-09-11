@@ -52,3 +52,10 @@
 - Introduced an experimental `FenicsSolver` using FEniCSx/UFL with optional
   dependency and benchmarking scaffolding against scikit-fem.
 - Added a basic usage example script and documentation for running it.
+
+
+### Unreleased: public reference resources (issue155)
+
+- Package the unchanged `fem-bs-001` problem/result snapshots for installed consumers. The existing `*_PATH` names support Traversable reads; use `importlib.resources.as_file` within its context for Path-only APIs.
+- Omitted library export paths now raise `ValueError` before generation. Pass an explicit path; `refresh_exports=True` additionally requires `export_directory`. Reference/package destinations are refused.
+- Maintainers use `--publish-canonical` to refresh both canonical mirrors; `--output-dir` remains a caller-owned export. Numerical/reference schema/hash/class identities are unchanged.

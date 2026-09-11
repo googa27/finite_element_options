@@ -11,7 +11,10 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from math import isfinite
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
+
+if TYPE_CHECKING:
+    from ..black_scholes_parity import FEMParityReport
 
 PUBLIC_NUMERIC_CANONICALIZATION: dict[str, str | int] = {
     "policy_id": "public-synthetic-fem-bs-significant-digits-v1",
@@ -27,6 +30,35 @@ PUBLIC_NUMERIC_CANONICALIZATION: dict[str, str | int] = {
     ),
 }
 _SIGNIFICANT_DIGITS = int(PUBLIC_NUMERIC_CANONICALIZATION["significant_digits"])
+
+
+def _config_hash(report: FEMParityReport) -> str:
+    payload = {
+        "benchmark_id": report.benchmark_id,
+        "problem_id": report.problem_id,
+        "problem_hash": report.problem_hash,
+        "measure": report.measure,
+        "numeraire": report.numeraire,
+        "units": report.units,
+        "privacy_class": report.privacy_class,
+        "weak_form": report.weak_form.to_public_dict(),
+        "pde_convention": public_pde_convention_metadata(),
+        "mesh_metadata": report.mesh_metadata.to_public_dict(),
+        "refinement_levels": list(report.mesh_metadata.refinement_levels),
+        "time_metadata": report.time_metadata.to_public_dict(),
+        "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
+        "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
+        "comparison_policy": report.comparison_policy.to_public_dict(),
+        "provenance": public_fixture_provenance_metadata(),
+        "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
+        "tolerances": {
+            "absolute": report.tolerance_absolute,
+            "relative": report.tolerance_relative,
+            "delta": report.delta_tolerance_absolute,
+            "gamma": report.gamma_tolerance_absolute,
+        },
+    }
+    return build_fixture_config_hash(payload)
 
 
 def build_fixture_config_hash(payload: Mapping[str, Any]) -> str:

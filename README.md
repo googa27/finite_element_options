@@ -101,8 +101,10 @@ The core wheel keeps optional stacks out of the base install. Use a local wheel-
 ```text
 python -m pip install .
 python -m pip install -e '.[dev]' -c constraints.txt
-python scripts/export_arxiv_lab_black_scholes_fixture.py
+python scripts/export_arxiv_lab_black_scholes_fixture.py --publish-canonical
 ```
+
+Public benchmark references are packaged read-only resources. Library exports require an explicit caller-owned path; see [reference and export migration](docs/PUBLIC_REFERENCE_RESOURCES.md).
 
 `requirements.txt` is a legacy all-in developer mirror; prefer package metadata and `constraints.txt` for reproducible checks.
 

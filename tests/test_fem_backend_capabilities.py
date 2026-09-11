@@ -473,14 +473,12 @@ def test_config_hash_distinguishes_sparse_refinement_schedule() -> None:
     assert default_report.config_hash != sparse_report.config_hash
 
 
-def test_refresh_exports_serializes_current_non_default_report(tmp_path, monkeypatch) -> None:
+def test_refresh_exports_serializes_current_non_default_report(tmp_path) -> None:
     result_path = tmp_path / "result_export.json"
     spec_path = tmp_path / "problem_spec.json"
-    monkeypatch.setattr(parity_module, "FEM_BS_001_RESULT_EXPORT_PATH", result_path)
-    monkeypatch.setattr(parity_module, "FEM_BS_001_PROBLEM_SPEC_PATH", spec_path)
 
     report = parity_module.run_public_black_scholes_parity_fixture(
-        refinement_levels=(4, 5), time_steps=40, refresh_exports=True
+        refinement_levels=(4, 5), time_steps=40, refresh_exports=True, export_directory=tmp_path
     )
     payload = json.loads(result_path.read_text())
     spec_payload = json.loads(spec_path.read_text())
