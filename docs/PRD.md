@@ -364,3 +364,31 @@ Startup subdivision must also remain representable: every generated internal
 width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
+
+### Bounded operator and factorization retention (issues153/159)
+
+`SpaceSolver(..., operator_cache_size=2)` and
+`ThetaScheme(..., factorization_cache_size=2)` default to two resident entries.
+Both capacities are explicit nonnegative integer
+policies; zero retains no cached entries. Exact existing endpoint and enforced
+system keys determine reuse. Evicted entries are recomputed using the same
+numerical assembly and factorization paths, so finite capacity can increase work
+when a working set exceeds the configured capacity.
+
+Spatial operator caches persist across solves until eviction, explicit
+invalidation or refinement. External coefficient state must remain deterministic
+while cached; changes require `invalidate_operator_cache()` or a new space.
+Invalidation refreshes initial stiffness and clears endpoint operators;
+refinement also rebuilds bases and mass. Each solve owns its factor cache, with
+no persistent factor reuse across solves. Arbitrary model callback failures are
+not transactional.
+
+Diagnostics report configured capacity, current/peak resident entries and
+evictions, alongside actual factorization/reuse counts. Retained sparse
+array and factor-representation measurements exclude output histories, active
+work, mass/initial stiffness and scalar diagnostic histories; they do not measure
+process RSS or establish a whole-solver memory bound. Constant and repeated-system
+reuse is retained while exact keys remain resident. The acceptance evidence in
+[BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md) compares complete histories
+and residuals against the original solver and reports retention without a
+speedup claim.

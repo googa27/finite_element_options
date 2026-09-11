@@ -631,6 +631,9 @@ The stepper owns count validation before any solve: `numbers.Integral` values ex
 
 [Giles and Carter (2006), Convergence analysis of Crank–Nicolson and Rannacher time-marching](https://people.maths.ox.ac.uk/~gilesm/files/giles_carter.pdf) analyzes how backward-Euler startup affects convergence of values and derivatives for the studied Black–Scholes discretization. Its initial interval/subdivision choices are mathematical algorithm parameters, not numeric values to truncate. This count validation does not select a universal optimal startup or establish a new convergence theorem for every FEM problem.
 
+## Bounded operator reuse (#153)
+
+[BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md) defines the two-entry default LRU policy shared through `core/operator_cache.py`. Exact endpoint and enforced-system keys are unchanged. Space invalidation refreshes both time operators and the separately retained initial stiffness; refinement also rebuilds mass and bases. Each theta solve owns its factor cache. Cache size zero disables retention. Resource tests check actual object release and full-history numerical equality; the benchmark separates retained sparse payloads from RSS and output storage. The matching policy is recorded in `ARCHITECTURE.yaml`.
 
 ### Time-grid unit invariance (issue 152)
 
