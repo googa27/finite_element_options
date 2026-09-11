@@ -624,3 +624,17 @@ Source of truth: `docs/ARCHITECTURE.yaml`. Tracking: [Project #24](https://githu
 
 Probable extensions must cross named ports/capability registries rather than adding sibling modules indefinitely. Every exception is exact, risk-bearing, no-growth, and has a refactoring trigger. Generated/vendor/migration/resource paths are declared explicitly; they do not silently weaken runtime rules.
 <!-- PORTFOLIO-CONSTITUTION:END -->
+
+
+### Time-grid unit invariance (issue 152)
+
+Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
+The existing roundoff-uniform policy uses relative tolerance 1e-12 with zero absolute
+tolerance; diagnostics use those same canonical widths. Finite node values alone
+are insufficient: interval widths and the complete horizon must be representable
+and finite before assembly. Unit-invariance scalar oracles, uniform factorization
+reuse and manufactured FEM convergence are verified by
+`tests/unit/test_time_grid_units.py`, `tests/test_time_stepper.py` and
+`tests/validation/test_manufactured_solutions.py`.
+NumPy documents the small-magnitude issue in
+[allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
