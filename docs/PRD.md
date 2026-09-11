@@ -372,7 +372,7 @@ when a working set exceeds the configured capacity.
 
 Spatial operator caches persist across solves until eviction, explicit
 invalidation or refinement. External coefficient state must remain deterministic
-while cached; changes require `invalidate_operators()` or a new space.
+while cached; changes require `invalidate_operator_cache()` or a new space.
 Invalidation refreshes initial stiffness and clears endpoint operators;
 refinement also rebuilds bases and mass. Each solve owns its factor cache, with
 no persistent factor reuse across solves. Arbitrary model callback failures are
