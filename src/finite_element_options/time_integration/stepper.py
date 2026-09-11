@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
+from numbers import Integral
 from time import perf_counter
 from typing import Callable, Iterable
 
@@ -13,7 +14,10 @@ import scipy.sparse as sps  # type: ignore[import-untyped]
 import scipy.sparse.linalg as spla  # type: ignore[import-untyped]
 import skfem as fem  # type: ignore[import-untyped]
 
-from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.core.interfaces import (
+    BoundaryCondition,
+    SpaceDiscretization,
+)
 from finite_element_options.time_integration.lcp import (
     DiscreteLCP,
     LCPConvergenceError,
@@ -113,20 +117,24 @@ class ThetaScheme(TimeStepper):
             raise ValueError(msg)
         self.theta = _validate_theta(theta, "theta")
         self.startup_theta = (
-            None if startup_theta is None else _validate_theta(startup_theta, "startup_theta")
+            None
+            if startup_theta is None
+            else _validate_theta(startup_theta, "startup_theta")
         )
-        if startup_steps < 0:
-            raise ValueError("startup_steps must be non-negative")
-        if startup_substeps < 1:
-            raise ValueError("startup_substeps must be at least one")
-        self.startup_steps = int(startup_steps)
-        self.startup_substeps = int(startup_substeps)
+        self.startup_steps = _validate_startup_count(
+            startup_steps, "startup_steps", minimum=0
+        )
+        self.startup_substeps = _validate_startup_count(
+            startup_substeps, "startup_substeps", minimum=1
+        )
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
         if lcp_solver is not None and lcp_solver_settings is not None:
             raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
         self.lcp_solver = (
-            ProjectedSORSolver(lcp_solver_settings) if lcp_solver is None else lcp_solver
+            ProjectedSORSolver(lcp_solver_settings)
+            if lcp_solver is None
+            else lcp_solver
         )
         self.last_lcp_diagnostics: list[LCPDiagnostics] = []
         self.last_solve_diagnostics = LinearSolveDiagnostics(
@@ -196,7 +204,9 @@ class ThetaScheme(TimeStepper):
             else:
                 A_enf, b_enf = A, b
 
-            cache_key = _theta_cache_key(space, A_enf, step.dt, step.theta, boundary_condition)
+            cache_key = _theta_cache_key(
+                space, A_enf, step.dt, step.theta, boundary_condition
+            )
             assembly_cache_keys.append(cache_key)
 
             if is_american:
@@ -232,7 +242,9 @@ class ThetaScheme(TimeStepper):
                         factorized_solvers[cache_key] = solver
                         factorization_time += perf_counter() - started
                         factorization_count += 1
-                        factorization_cache_keys.append(_matrix_cache_key(factorized_matrix))
+                        factorization_cache_keys.append(
+                            _matrix_cache_key(factorized_matrix)
+                        )
                     started = perf_counter()
                     next_values = solver(np.asarray(b_enf, dtype=float))
                     solve_time += perf_counter() - started
@@ -241,7 +253,9 @@ class ThetaScheme(TimeStepper):
                     next_values = fem.solve(A_enf, b_enf)
                     solve_time += perf_counter() - started
                     factorization_count += 1
-                    factorization_cache_keys.append(_matrix_cache_key(sps.csr_matrix(A_enf)))
+                    factorization_cache_keys.append(
+                        _matrix_cache_key(sps.csr_matrix(A_enf))
+                    )
 
                 current_values = np.asarray(next_values, dtype=float)
                 solve_count += 1
@@ -268,7 +282,9 @@ class ThetaScheme(TimeStepper):
         )
         return v_tsv
 
-    def _internal_steps(self, time_grid: tuple[float, ...]) -> tuple[_InternalThetaStep, ...]:
+    def _internal_steps(
+        self, time_grid: tuple[float, ...]
+    ) -> tuple[_InternalThetaStep, ...]:
         """Return internal steps after optional startup subdivision."""
 
         steps: list[_InternalThetaStep] = []
@@ -276,7 +292,9 @@ class ThetaScheme(TimeStepper):
         for interval_index, (start, end, width) in enumerate(
             zip(time_grid[:-1], time_grid[1:], local_steps)
         ):
-            use_startup = self.startup_theta is not None and interval_index < self.startup_steps
+            use_startup = (
+                self.startup_theta is not None and interval_index < self.startup_steps
+            )
             theta = self.theta
             if use_startup:
                 if self.startup_theta is None:  # pragma: no cover - guarded above
@@ -310,6 +328,16 @@ def _validate_theta(value: float, name: str) -> float:
     if theta < 0.0 or theta > 1.0:
         raise ValueError(f"{name} must lie in [0, 1]")
     return theta
+
+
+def _validate_startup_count(value: int, name: str, *, minimum: int) -> int:
+    """Require an exact integral schedule count without boolean coercion."""
+
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise ValueError(f"{name} must be an integer count")
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    return int(value)
 
 
 def _validate_time_grid(t: Iterable[float]) -> tuple[float, ...]:

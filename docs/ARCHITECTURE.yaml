@@ -722,5 +722,13 @@
       "accepted_ceiling": 682,
       "refactoring_trigger": "The file may not grow; the next validation-gate change must extract another cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
     }
-  ]
+  ],
+  "theta_startup_counts": {
+    "owner": "time_integration/stepper.py",
+    "policy": "non_boolean_integral",
+    "minimum_startup_steps": 0,
+    "minimum_startup_substeps": 1,
+    "normalization": "exact_native_integer",
+    "issue": 154
+  }
 }

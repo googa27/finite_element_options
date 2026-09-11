@@ -624,3 +624,9 @@ Source of truth: `docs/ARCHITECTURE.yaml`. Tracking: [Project #24](https://githu
 
 Probable extensions must cross named ports/capability registries rather than adding sibling modules indefinitely. Every exception is exact, risk-bearing, no-growth, and has a refactoring trigger. Generated/vendor/migration/resource paths are declared explicitly; they do not silently weaken runtime rules.
 <!-- PORTFOLIO-CONSTITUTION:END -->
+
+## Exact theta startup policy
+
+The stepper owns count validation before any solve: `numbers.Integral` values excluding booleans normalize to native integers, with minima0/1 for startup intervals/substeps. This preserves integral NumPy inputs while rejecting accidental real-valued schedule changes. The public theta/LCP algebra and cache keys are unchanged. Mirrored time-step tests include invalid-input refusal and an independently computed scalar theta product with exact NumPy counts.
+
+[Giles and Carter (2006), Convergence analysis of Crank–Nicolson and Rannacher time-marching](https://people.maths.ox.ac.uk/~gilesm/files/giles_carter.pdf) analyzes how backward-Euler startup affects convergence of values and derivatives for the studied Black–Scholes discretization. Its initial interval/subdivision choices are mathematical algorithm parameters, not numeric values to truncate. This count validation does not select a universal optimal startup or establish a new convergence theorem for every FEM problem.
