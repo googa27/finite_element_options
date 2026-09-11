@@ -55,3 +55,7 @@ This inventory satisfies the #50 ownership requirement by making duplicate owner
 - architecture tests fail if a new package-root entry appears without a reviewed ownership mapping.
 
 Numerical behavior is intentionally unchanged by this inventory. It is a topology/ownership gate; convergence and production-readiness claims still require the repository-local validation fixtures and benchmark evidence.
+
+## Bounded operator reuse (#153)
+
+`core/operator_cache.py` owns only exact-key LRU retention and immutable event counts. `space/solver.py` owns endpoint identity, coefficient invalidation and basis lifecycle; `time_integration/stepper.py` owns enforced-matrix identity and per-solve factor lifetime. These share no product or optional-library dependency. See [BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md).
