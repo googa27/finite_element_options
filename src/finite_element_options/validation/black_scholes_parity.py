@@ -22,6 +22,7 @@ from ..core.vanilla_bs import EuropeanOptionBs
 from .evidence.black_scholes_surface import solve_black_scholes_surface
 from .evidence.public_fixture import (
     PUBLIC_NUMERIC_CANONICALIZATION,
+    _config_hash as _config_hash,
     black_scholes_summary_from_row,
     build_fixture_config_hash,
     canonicalize_black_scholes_row,
@@ -671,39 +672,12 @@ def run_public_black_scholes_parity_fixture(
     )
 
     if destinations is not None:
-        write_public_fem_bs_oracle_spec(path=destinations[0], report=report)
+        write_public_fem_bs_oracle_spec(
+            path=destinations[0], report=report, result_export_uri="result_export.json"
+        )
         write_public_fem_bs_result_export(path=destinations[1], refresh=True, report=report)
 
     return report
-
-
-def _config_hash(report: FEMParityReport) -> str:
-    payload = {
-        "benchmark_id": report.benchmark_id,
-        "problem_id": report.problem_id,
-        "problem_hash": report.problem_hash,
-        "measure": report.measure,
-        "numeraire": report.numeraire,
-        "units": report.units,
-        "privacy_class": report.privacy_class,
-        "weak_form": report.weak_form.to_public_dict(),
-        "pde_convention": public_pde_convention_metadata(),
-        "mesh_metadata": report.mesh_metadata.to_public_dict(),
-        "refinement_levels": list(report.mesh_metadata.refinement_levels),
-        "time_metadata": report.time_metadata.to_public_dict(),
-        "boundaries": [boundary.to_public_dict() for boundary in report.boundaries],
-        "sensitivity_reference_policy": report.sensitivity_reference_policy.to_public_dict(),
-        "comparison_policy": report.comparison_policy.to_public_dict(),
-        "provenance": public_fixture_provenance_metadata(),
-        "numerical_canonicalization": dict(PUBLIC_NUMERIC_CANONICALIZATION),
-        "tolerances": {
-            "absolute": report.tolerance_absolute,
-            "relative": report.tolerance_relative,
-            "delta": report.delta_tolerance_absolute,
-            "gamma": report.gamma_tolerance_absolute,
-        },
-    }
-    return build_fixture_config_hash(payload)
 
 
 def _public_weak_form_metadata() -> WeakFormMetadata:

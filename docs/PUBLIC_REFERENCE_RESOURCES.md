@@ -45,7 +45,9 @@ from finite_element_options.validation import (
 )
 
 report = run_public_black_scholes_parity_fixture()
-write_public_fem_bs_oracle_spec("artifacts/problem_spec.json", report=report)
+write_public_fem_bs_oracle_spec(
+    "artifacts/problem_spec.json", report=report, result_export_uri="result_export.json"
+)
 write_public_fem_bs_result_export("artifacts/result_export.json", report=report)
 
 # One run followed by explicit exports of that same report:
@@ -55,8 +57,12 @@ report = run_public_black_scholes_parity_fixture(
 ```
 
 `export_directory` is only valid with `refresh_exports=True`. Both destination
-files are validated before numerical work. The existing spec URI default,
-payload serialization and result `refresh=False` behavior remain unchanged:
+files are validated before numerical work. Paired exports set
+`result_export_uri="result_export.json"`, relative to the
+exported spec, so the two files remain usable after moving their directory.
+Standalone writers retain their historical spec URI default; set it explicitly
+when exporting adjacent files, as above. Payload serialization and result
+`refresh=False` behavior remain unchanged:
 an existing caller-owned result is retained unless refresh is explicit.
 For independently located files set `result_export_uri` deliberately, for
 example `"result_export.json"` for adjacent exported artifacts.

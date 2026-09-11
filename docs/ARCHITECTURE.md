@@ -647,3 +647,11 @@ Startup subdivision must also remain representable: every generated internal
 width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
+
+
+Issue161 keeps paired exports relocatable: the run wrapper explicitly names the
+adjacent `result_export.json`; standalone writer defaults and canonical references
+remain unchanged. The existing `evidence/public_fixture.py` serialization owner now
+also holds `_config_hash`, with its body unchanged and a private import alias at
+`black_scholes_parity._config_hash`. The helper imports the report class only under
+`TYPE_CHECKING`; public report classes retain their original module/pickle identity.

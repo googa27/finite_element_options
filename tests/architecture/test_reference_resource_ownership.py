@@ -20,6 +20,10 @@ def test_packaged_reference_snapshots_equal_checkout_mirrors() -> None:
     ownership = contract["public_reference_resources"]
     assert ownership["resource_directory"] == RESOURCE_DIRECTORY
     assert ownership["library_writes"] == "explicit_caller_owned_paths_only"
+    assert ownership["paired_result_export_uri"] == "result_export.json"
+    assert ownership["configuration_hash_owner"] == (
+        "src/finite_element_options/validation/evidence/public_fixture.py"
+    )
     for name in ("problem_spec.json", "result_export.json"):
         assert (ROOT / RESOURCE_DIRECTORY / name).read_bytes() == (
             ROOT / "tests/fixtures/fem_bs_001" / name

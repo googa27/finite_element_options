@@ -714,10 +714,10 @@
     {
       "rule": "python_module_max_lines",
       "path": "src/finite_element_options/validation/black_scholes_parity.py",
-      "reason": "Legacy public report/classes and numerical client remain above500 lines after155 extracts packaged reference access and caller-owned artifact I/O into validation/evidence/reference_artifacts.py; wrapper/class identities preserved.",
+      "reason": "Legacy public report/classes and numerical client remain above500 lines after155 extracts packaged reference access and caller-owned artifact I/O into validation/evidence/reference_artifacts.py; configuration hashing additionally owned by evidence/public_fixture.py after161; wrapper/class identities preserved.",
       "owner": "googa27 Portfolio Project #24",
       "risk": "Large context increases change blast radius, review cost, and AI/human navigation burden.",
-      "accepted_ceiling": 806,
+      "accepted_ceiling": 780,
       "refactoring_trigger": "The file may not grow; the next behavioral change must extract another cohesive responsibility behind compatibility tests or reduce the accepted ceiling."
     },
     {
@@ -748,6 +748,8 @@
     "maintainer_command": "python scripts/export_arxiv_lab_black_scholes_fixture.py --publish-canonical",
     "fitness_test": "tests/architecture/test_reference_resource_ownership.py",
     "issue": "https://github.com/googa27/finite_element_options/issues/155",
-    "scope": "Unchanged canonical public-synthetic bytes and numerical/hash/class identity; no additional solver support"
+    "scope": "Unchanged canonical public-synthetic bytes and numerical/hash/class identity; no additional solver support",
+    "paired_result_export_uri": "result_export.json",
+    "configuration_hash_owner": "src/finite_element_options/validation/evidence/public_fixture.py"
   }
 }

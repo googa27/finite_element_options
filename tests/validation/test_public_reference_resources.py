@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from importlib.resources import files
 import json
 import os
@@ -169,3 +170,30 @@ def test_unused_export_directory_is_not_silently_accepted(
     monkeypatch.setattr(parity, "_run_row", unexpected)
     with pytest.raises(ValueError, match="refresh_exports"):
         parity.run_public_black_scholes_parity_fixture(export_directory=tmp_path)
+
+
+@pytest.mark.parametrize("controls", [{}, {"refinement_levels": (4, 5), "time_steps": 40}])
+def test_paired_exports_resolve_current_result_after_relocation(
+    tmp_path: Path, controls: dict
+) -> None:
+    original = tmp_path / "generated"
+    report = parity.run_public_black_scholes_parity_fixture(
+        refresh_exports=True, export_directory=original, **controls
+    )
+    relocated = tmp_path / "relocated"
+    original.rename(relocated)
+    spec_path = relocated / "problem_spec.json"
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    result_path = spec_path.parent / spec["result_export_uri"]
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    assert result_path.resolve() == (relocated / "result_export.json").resolve()
+    assert result == report.export_payload()
+    contract_id = spec.pop("contract_id")
+    assert contract_id == sha256(
+        json.dumps(spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    assert spec == parity.build_public_fem_bs_oracle_problem_spec(
+        refinement_levels=report.mesh_metadata.refinement_levels,
+        time_steps=report.time_metadata.time_steps,
+        result_export_uri="result_export.json",
+    )
