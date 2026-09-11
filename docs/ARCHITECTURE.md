@@ -629,3 +629,21 @@ Probable extensions must cross named ports/capability registries rather than add
 ## Public reference and export ownership (issue155)
 
 `validation/evidence/reference_artifacts.py` owns standard-library resource access and explicit output validation/serialization. Existing `black_scholes_parity` wrappers and report classes retain their public module identities; no numerical kernel or canonical payload changes. The two `reference_data/fem_bs_001/*.json` files are explicit setuptools package-data with checkout mirrors protected by a fitness test. The library never selects a reference path for output. Only the maintainer script with `--publish-canonical` can deliberately refresh both mirrors. [Migration and commands](PUBLIC_REFERENCE_RESOURCES.md) explain Traversable reads, temporary `as_file` lifetime and required export destinations.
+
+### Time-grid unit invariance (issue 152)
+
+Theta stepping keeps genuinely nonuniform local widths at any supported time scale.
+The existing roundoff-uniform policy uses relative tolerance 1e-12 with zero absolute
+tolerance; diagnostics use those same canonical widths. Finite node values alone
+are insufficient: interval widths and the complete horizon must be representable
+and finite before assembly. Unit-invariance scalar oracles, uniform factorization
+reuse and manufactured FEM convergence are verified by
+`tests/unit/test_time_grid_units.py`, `tests/test_time_stepper.py` and
+`tests/validation/test_manufactured_solutions.py`.
+NumPy documents the small-magnitude issue in
+[allclose](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html).
+
+Startup subdivision must also remain representable: every generated internal
+width must be finite and positive, and each endpoint pair finite and strictly
+increasing. Refuse invalid subdivision before initial conditions or assembly;
+retain representable subnormal steps. Review follow-up: issue157.
