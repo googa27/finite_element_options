@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
-import json
 from typing import Any
 
 import scipy.stats as spst  # type: ignore[import-untyped]
@@ -31,6 +30,15 @@ from .evidence.public_fixture import (
     public_pde_convention_metadata,
 )
 
+from .evidence.reference_artifacts import (
+    FIXTURE_ROOT as FIXTURE_ROOT,
+    FEM_BS_001_PROBLEM_SPEC_PATH,
+    FEM_BS_001_RESULT_EXPORT_PATH,
+    export_destinations,
+    write_oracle_spec,
+    write_result_export,
+)
+
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
 PUBLIC_SYNTHETIC_PROBLEM_ID = "public-synthetic-vanilla-call-v0"
@@ -41,11 +49,6 @@ DEFAULT_TOLERANCE_ABSOLUTE = 2e-3
 DEFAULT_TOLERANCE_RELATIVE = 5e-4
 DEFAULT_DELTA_TOLERANCE_ABSOLUTE = 1e-3
 DEFAULT_GAMMA_TOLERANCE_ABSOLUTE = 2e-5
-
-
-FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "fem_bs_001"
-FEM_BS_001_PROBLEM_SPEC_PATH = FIXTURE_ROOT / "problem_spec.json"
-FEM_BS_001_RESULT_EXPORT_PATH = FIXTURE_ROOT / "result_export.json"
 
 
 @dataclass(frozen=True)
@@ -509,52 +512,29 @@ def _backend_capability_status() -> dict[str, str | bool | None]:
 
 
 def write_public_fem_bs_oracle_spec(
-    path: Path | str = FEM_BS_001_PROBLEM_SPEC_PATH,
+    path: Path | str | None = None,
     *,
     report: FEMParityReport | None = None,
     result_export_uri: str = "tests/fixtures/fem_bs_001/result_export.json",
 ) -> Path:
-    """Write the deterministic problem spec to a public JSON fixture file."""
-
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if report is None:
-        payload = build_public_fem_bs_oracle_problem_spec(
-            result_export_uri=result_export_uri
-        )
-    else:
-        payload = build_public_fem_bs_oracle_problem_spec(
-            refinement_levels=report.mesh_metadata.refinement_levels,
-            time_steps=report.time_metadata.time_steps,
-            result_export_uri=result_export_uri,
-        )
-    payload["contract_id"] = build_fixture_config_hash(payload)
-    target.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    """Write a deterministic spec to an explicit caller-owned filesystem path."""
+    return write_oracle_spec(
+        path, report=report, result_export_uri=result_export_uri,
+        build_spec=build_public_fem_bs_oracle_problem_spec,
     )
-    return target
 
 
 def write_public_fem_bs_result_export(
-    path: Path | str = FEM_BS_001_RESULT_EXPORT_PATH,
+    path: Path | str | None = None,
     *,
     refresh: bool = False,
     report: FEMParityReport | None = None,
 ) -> Path:
-    """Run and write the FEM result export in a stable public artifact shape."""
-
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if (not target.exists()) or refresh:
-        if report is None:
-            report = run_public_black_scholes_parity_fixture()
-        payload = report.export_payload()
-        payload["config_id"] = report.config_hash
-        payload = finalize_public_result_payload(payload)
-        target.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
-    return target
+    """Write a deterministic result to an explicit caller-owned filesystem path."""
+    return write_result_export(
+        path, refresh=refresh, report=report,
+        run_fixture=run_public_black_scholes_parity_fixture,
+    )
 
 
 def run_public_black_scholes_parity_fixture(
@@ -562,6 +542,7 @@ def run_public_black_scholes_parity_fixture(
     refinement_levels: tuple[int, ...] = (4, 5, 6),
     time_steps: int = 80,
     refresh_exports: bool = False,
+    export_directory: Path | str | None = None,
 ) -> FEMParityReport:
     """Run the public-synthetic Black-Scholes FEM parity fixture.
 
@@ -569,6 +550,10 @@ def run_public_black_scholes_parity_fixture(
     The fixture keeps spot=strike=1 in solver coordinates and scales the final value by
     strike=100 for the public fixture contract.
     """
+
+    destinations = export_destinations(export_directory) if refresh_exports else None
+    if export_directory is not None and not refresh_exports:
+        raise ValueError("export_directory requires refresh_exports=True")
 
     if not refinement_levels:
         raise ValueError("at least one refinement level is required")
@@ -685,13 +670,9 @@ def run_public_black_scholes_parity_fixture(
         }
     )
 
-    if refresh_exports:
-        write_public_fem_bs_oracle_spec(
-            path=FEM_BS_001_PROBLEM_SPEC_PATH, report=report
-        )
-        write_public_fem_bs_result_export(
-            path=FEM_BS_001_RESULT_EXPORT_PATH, refresh=True, report=report
-        )
+    if destinations is not None:
+        write_public_fem_bs_oracle_spec(path=destinations[0], report=report)
+        write_public_fem_bs_result_export(path=destinations[1], refresh=True, report=report)
 
     return report
 

@@ -92,6 +92,8 @@ The project must use modern `pyproject.toml` metadata and a real import package 
 
 The literal package name `src`, checkout-relative imports and `sys.path` compensation are prohibited in the stable API. Owner: #44.
 
+Issue155 separates immutable packaged Black–Scholes reference resources from generated artifacts. Public resource reads must work from a wheel or zip importer; library writes require explicit caller-owned destinations and refuse package resources before numerical work. Only the explicit maintainer regeneration command mirrors canonical package and checkout snapshots. Reference bytes, hashes and mathematical contracts remain unchanged.
+
 ### FR-FEM-002 — Immutable numerical problem contracts
 
 Public native contracts must describe:

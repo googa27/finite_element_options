@@ -1,0 +1,206 @@
+{
+  "backend_capability_status": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "cache_scope": "per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+    "factorization_reuse": true,
+    "linear_solver": "scipy_direct",
+    "linear_solver_status": "validated",
+    "manifest_status": "validated"
+  },
+  "benchmark_id": "fem-bs-001",
+  "boundaries": [
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "0",
+      "location": "S=0"
+    },
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "linear_growth",
+      "location": "S=S_max"
+    }
+  ],
+  "comparison_policy": {
+    "metric_tolerances": {
+      "delta_absolute": 0.001,
+      "gamma_absolute": 2e-05,
+      "price_absolute": 0.002,
+      "price_relative": 0.0005
+    },
+    "mode": "equal_error",
+    "note": "Meshes and time steps are compared at matching error budgets (default absolute policy tolerances).",
+    "policy_id": "equal-error-budget-v1",
+    "primary_metric": "price/Delta/Gamma absolute error",
+    "tolerance": 0.002
+  },
+  "config_hash": "579ca925217e083213936f3abdbace5efed9e1efa3d2c7fb1795236c91411f6d",
+  "config_id": "579ca925217e083213936f3abdbace5efed9e1efa3d2c7fb1795236c91411f6d",
+  "diagnostics": {
+    "boundary_conditions": "named_endpoint_dirichlet_projection; upper endpoint uses exact Black-Scholes value as far-field linear-growth proxy",
+    "boundary_nodes_enforced": 2,
+    "coordinate_transform": "identity",
+    "deterministic_seed": 1729,
+    "element_family": "lagrange_p2",
+    "greek_policy": "finite_difference_central_stencil_v1",
+    "linear_solver": "scikit_fem_scipy_direct",
+    "maturity": 1.0,
+    "mesh_family": "line_uniform",
+    "oracle_issue": "googa27/haircut-engine#108",
+    "rate": 0.05,
+    "source_issue": "googa27/finite_element_options#64",
+    "spot": 100.0,
+    "strike": 100.0,
+    "time_integrator": "theta_crank_nicolson",
+    "volatility": 0.2,
+    "weak_form_sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms"
+  },
+  "format_version": "fem-bs-oracle-result-v1",
+  "measure": "risk_neutral",
+  "mesh_metadata": {
+    "domain_max": 4.0,
+    "domain_min": 0.0,
+    "element_family": "lagrange_p2",
+    "max_refinement_level": 6,
+    "mesh_family": "line_uniform",
+    "min_refinement_level": 4,
+    "refinement_levels": [
+      4,
+      5,
+      6
+    ],
+    "solver_backing": "scikit-fem+sparse-direct",
+    "spatial_domain": "[0, 4.0] normalized spot"
+  },
+  "numeraire": "money_market_account",
+  "numerical_canonicalization": {
+    "policy_id": "public-synthetic-fem-bs-significant-digits-v1",
+    "rationale": "SciPy/SuperLU-supported environments can differ by a few ULPs while satisfying the same FEM oracle tolerances; canonical rows keep hashes stable without changing comparison tolerances.",
+    "scope": "published Black-Scholes fixture numerical rows and summaries before JSON hashing/serialization",
+    "significant_digits": 13
+  },
+  "pde_convention": {
+    "initial_condition_tau_zero": "u(S,0)=max(S-K,0)",
+    "lower_dirichlet_boundary": "u(0,tau)=0",
+    "operator_sign": "forward_tau_generator_minus_discount",
+    "source_term": "0",
+    "state_variable": "S; solver uses normalized spot S/K and public values are scaled by strike",
+    "strong_form": "d_tau u = 0.5*sigma^2*S^2*d_SS u + r*S*d_S u - r*u",
+    "terminal_condition_original_time": "V(S,T)=max(S-K,0)",
+    "time_orientation": "backward_pricing_time_transformed_to_forward_tau",
+    "upper_dirichlet_boundary": "u(S_max,tau)=Black-Scholes analytical value at finite S_max; documented as linear-growth far-field proxy",
+    "volatility_convention": "volatility sigma is annualized_decimal; diffusion coefficient uses sigma**2"
+  },
+  "privacy_class": "public_synthetic",
+  "problem_hash": "b026dd5aa275caca34d8346e30fae96b86178a81ff849315c95c1a5ed6ef3209",
+  "problem_id": "public-synthetic-vanilla-call-v0",
+  "provenance": {
+    "consumer": "arxiv-implementation-lab",
+    "export_script": "scripts/export_arxiv_lab_black_scholes_fixture.py",
+    "fixture_owner": "googa27/finite_element_options",
+    "generator": "finite_element_options.validation.black_scholes_parity.run_public_black_scholes_parity_fixture",
+    "oracle": "analytical Black-Scholes price/Delta/Gamma",
+    "parity_issue": "googa27/finite_element_options#64",
+    "privacy_class": "public_synthetic",
+    "source_issue": "googa27/finite_element_options#74",
+    "verification_issue": "googa27/finite_element_options#117"
+  },
+  "result_hash": "1bc81b7f21619aec08c8c2617646ddf76e17086e31568265f6f90b2e458a446b",
+  "rows": [
+    {
+      "absolute_error": 0.02119224975,
+      "degrees_of_freedom": 33,
+      "delta_absolute_error": 0.0116259934364,
+      "expected_delta": 0.6368306511756,
+      "expected_gamma": 0.01876201734585,
+      "expected_price": 10.45058357219,
+      "gamma_absolute_error": 0.00058287670786,
+      "observed_delta": 0.6252046577392,
+      "observed_gamma": 0.01817914063799,
+      "observed_price": 10.47177582194,
+      "refinement_level": 4,
+      "relative_error": 0.002027853239354,
+      "time_steps": 80
+    },
+    {
+      "absolute_error": 0.0007133389599989,
+      "degrees_of_freedom": 65,
+      "delta_absolute_error": 0.003286834738,
+      "expected_delta": 0.6368306511756,
+      "expected_gamma": 0.01876201734585,
+      "expected_price": 10.45058357219,
+      "gamma_absolute_error": 5.750807453e-05,
+      "observed_delta": 0.6335438164376,
+      "observed_gamma": 0.01870450927132,
+      "observed_price": 10.45129691115,
+      "refinement_level": 5,
+      "relative_error": 6.825828960377e-05,
+      "time_steps": 80
+    },
+    {
+      "absolute_error": 7.928195000062e-05,
+      "degrees_of_freedom": 129,
+      "delta_absolute_error": 0.0008363263838,
+      "expected_delta": 0.6368306511756,
+      "expected_gamma": 0.01876201734585,
+      "expected_price": 10.45058357219,
+      "gamma_absolute_error": 8.801591289999e-06,
+      "observed_delta": 0.6359943247918,
+      "observed_gamma": 0.01875321575456,
+      "observed_price": 10.45066285414,
+      "refinement_level": 6,
+      "relative_error": 7.586365818996e-06,
+      "time_steps": 80
+    }
+  ],
+  "sensitivity_reference_policy": {
+    "allowed_fallback": "explicit kink-aware boundary derivative remains separate evidence",
+    "delta_reference": "analytical Black-Scholes delta at valuation time, S=K",
+    "extraction_method": "central finite-difference in normalized strike space",
+    "gamma_reference": "analytical Black-Scholes gamma at valuation time, S=K",
+    "policy_id": "finite_difference_central_stencil_v1"
+  },
+  "status": "converged",
+  "summary": {
+    "delta_absolute_error": 0.0008363263838,
+    "delta_tolerance_absolute": 0.001,
+    "expected_delta": 0.6368306511756,
+    "expected_gamma": 0.01876201734585,
+    "expected_price": 10.45058357219,
+    "gamma_absolute_error": 8.801591289999e-06,
+    "gamma_tolerance_absolute": 2e-05,
+    "observed_delta": 0.6359943247918,
+    "observed_gamma": 0.01875321575456,
+    "observed_price": 10.45066285414,
+    "price_absolute_error": 7.928195000062e-05,
+    "price_relative_error": 7.586365818996e-06,
+    "price_tolerance_absolute": 0.002,
+    "price_tolerance_relative": 0.0005
+  },
+  "time_metadata": {
+    "end_time": 1.0,
+    "integrator": "theta_crank_nicolson",
+    "start_time": 0.0,
+    "theta": 0.5,
+    "time_domain": "[0, 1]",
+    "time_steps": 80
+  },
+  "units": {
+    "delta": "value_per_underlying",
+    "gamma": "value_per_underlying_squared",
+    "rate": "1/year",
+    "spot": "CLP",
+    "strike": "CLP",
+    "time": "year",
+    "underlying": "CLP",
+    "value": "CLP",
+    "volatility": "annualized_decimal"
+  },
+  "weak_form": {
+    "coordinate_transform": "identity",
+    "equation_id": "black_scholes_weak_form_transformed",
+    "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+    "time_transformation": "tau = T - t"
+  }
+}

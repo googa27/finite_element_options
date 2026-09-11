@@ -624,3 +624,8 @@ Source of truth: `docs/ARCHITECTURE.yaml`. Tracking: [Project #24](https://githu
 
 Probable extensions must cross named ports/capability registries rather than adding sibling modules indefinitely. Every exception is exact, risk-bearing, no-growth, and has a refactoring trigger. Generated/vendor/migration/resource paths are declared explicitly; they do not silently weaken runtime rules.
 <!-- PORTFOLIO-CONSTITUTION:END -->
+
+
+## Public reference and export ownership (issue155)
+
+`validation/evidence/reference_artifacts.py` owns standard-library resource access and explicit output validation/serialization. Existing `black_scholes_parity` wrappers and report classes retain their public module identities; no numerical kernel or canonical payload changes. The two `reference_data/fem_bs_001/*.json` files are explicit setuptools package-data with checkout mirrors protected by a fitness test. The library never selects a reference path for output. Only the maintainer script with `--publish-canonical` can deliberately refresh both mirrors. [Migration and commands](PUBLIC_REFERENCE_RESOURCES.md) explain Traversable reads, temporary `as_file` lifetime and required export destinations.

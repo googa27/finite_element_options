@@ -169,6 +169,8 @@ Packaging changes must:
 
 Evaluate a dependency by API stability, maintenance, platform support, transitive size, license, security history and measured value.
 
+Issue155: public Black–Scholes reference constants are read-only `importlib.resources` Traversables. Writers require explicit caller-owned paths; `refresh_exports=True` requires `export_directory`. Only the maintainer command `python scripts/export_arxiv_lab_black_scholes_fixture.py --publish-canonical` updates both packaged and checkout snapshots. `--output-dir` exports independently. See [resource ownership and migration](docs/PUBLIC_REFERENCE_RESOURCES.md); run `pytest -q tests/validation/test_public_reference_resources.py tests/architecture/test_reference_resource_ownership.py --no-cov`.
+
 ## 13. Performance
 
 Optimization order:

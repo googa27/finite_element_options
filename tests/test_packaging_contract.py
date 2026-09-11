@@ -47,6 +47,12 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert not any(name == "src/__init__.py" or name.startswith("src/") for name in names)
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
+    with zipfile.ZipFile(wheels[0]) as wheel:
+        for filename in ("problem_spec.json", "result_export.json"):
+            packaged = "finite_element_options/validation/evidence/reference_data/fem_bs_001/" + filename
+            assert wheel.read(packaged) == (
+                ROOT / "tests/fixtures/fem_bs_001" / filename
+            ).read_bytes()
 
 
 def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) -> None:
@@ -56,6 +62,11 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
     _run([sys.executable, "-m", "build", "--sdist", "--outdir", str(outdir)], cwd=ROOT)
     sdist = next(outdir.glob("finite_element_options-*.tar.gz"))
     required = {
+        "docs/PUBLIC_REFERENCE_RESOURCES.md",
+        "tests/fixtures/fem_bs_001/problem_spec.json",
+        "tests/fixtures/fem_bs_001/result_export.json",
+        "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/problem_spec.json",
+        "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/result_export.json",
         ".github/workflows/ci.yml",
         "MANIFEST.in",
         "docs/ADOPTION_SEQUENCE_CLOSEOUT.md",
