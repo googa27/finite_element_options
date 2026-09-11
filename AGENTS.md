@@ -116,6 +116,8 @@ Product classes and UI defaults are not substitutes for this specification.
 - Return or raise a typed failure with residual and context when convergence fails.
 - Record iterations, residual, factorization/preconditioner reuse and regularization.
 
+For #153, `SpaceSolver.operator_cache_size` and `ThetaScheme.factorization_cache_size` default to two resident entries. Preserve exact cache keys, zero-capacity behavior, per-solve LU lifetime and explicit spatial invalidation. See `docs/BOUNDED_OPERATOR_CACHES.md`; run `pytest -q tests/unit/test_operator_cache.py tests/integration/test_bounded_solver_caches.py --no-cov` and `python scripts/benchmark_bounded_caches.py --output /tmp/fem-cache-evidence`. Do not describe retained L/U representation bytes as RSS or change coefficient/timestep mathematics in a cache refactor.
+
 ## 9. Adaptivity and sensitivities
 
 Adaptive work identifies estimator or goal functional, norm, marking policy, mesh limits, transfer operator and stopping criterion. Evidence includes DOF growth, estimator behavior, transfer error and convergence. A visual demo alone is not validation.

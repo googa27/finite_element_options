@@ -17,6 +17,7 @@ from finite_element_options.core.interfaces import (
     BoundaryCondition,
     SpaceDiscretization,
 )
+from finite_element_options.core.operator_cache import OperatorCache
 from finite_element_options.time_integration.lcp import (
     DiscreteLCP,
     LCPConvergenceError,
@@ -40,6 +41,10 @@ class LinearSolveDiagnostics:
     assembly_cache_key: str
     factorization_cache_key: str
     stage_timings_sec: dict[str, float]
+    factorization_cache_capacity: int = 0
+    factorization_cache_peak_entries: int = 0
+    factorization_cache_entries_at_completion: int = 0
+    factorization_cache_eviction_count: int = 0
 
     def to_public_dict(self) -> dict[str, str | bool | int | float | dict[str, float]]:
         """Return JSON-safe public diagnostics."""
@@ -54,6 +59,10 @@ class LinearSolveDiagnostics:
             "assembly_cache_key": self.assembly_cache_key,
             "factorization_cache_key": self.factorization_cache_key,
             "stage_timings_sec": dict(self.stage_timings_sec),
+            "factorization_cache_capacity": self.factorization_cache_capacity,
+            "factorization_cache_peak_entries": self.factorization_cache_peak_entries,
+            "factorization_cache_entries_at_completion": self.factorization_cache_entries_at_completion,
+            "factorization_cache_eviction_count": self.factorization_cache_eviction_count,
         }
 
 
@@ -92,6 +101,7 @@ class ThetaScheme(TimeStepper):
         *,
         linear_solver: str = "scipy_direct",
         reuse_factorization: bool = True,
+        factorization_cache_size: int = 2,
         startup_theta: float | None = None,
         startup_steps: int = 0,
         startup_substeps: int = 1,
@@ -105,6 +115,10 @@ class ThetaScheme(TimeStepper):
         ``ThetaScheme(theta=0.5, startup_theta=1.0, startup_steps=2,
         startup_substeps=2)`` replaces the first two Crank-Nicolson intervals
         by four backward-Euler half-steps.
+
+        ``factorization_cache_size`` bounds resident sparse LU factors within
+        each solve. Zero disables retention while retaining the same LU path.
+        Reuse requires exact existing matrix, mesh, step and boundary keys.
         """
 
         if linear_solver != "scipy_direct":
@@ -128,6 +142,7 @@ class ThetaScheme(TimeStepper):
         self.startup_substeps = int(startup_substeps)
         self.linear_solver = linear_solver
         self.reuse_factorization = reuse_factorization
+        self.factorization_cache_size = OperatorCache(factorization_cache_size).info().capacity
         if lcp_solver is not None and lcp_solver_settings is not None:
             raise ValueError("pass lcp_solver or lcp_solver_settings, not both")
         self.lcp_solver = (
@@ -146,6 +161,7 @@ class ThetaScheme(TimeStepper):
             assembly_cache_key="not_run",
             factorization_cache_key="not_run",
             stage_timings_sec={"factorization": 0.0, "solve": 0.0},
+            factorization_cache_capacity=(factorization_cache_size if reuse_factorization else 0),
         )
         self.last_domain_diagnostics: dict[str, object] = {}
         self.last_time_grid_diagnostics: dict[str, object] = {}
@@ -180,7 +196,9 @@ class ThetaScheme(TimeStepper):
         v_tsv[0] = current_values
         self.last_lcp_diagnostics = []
 
-        factorized_solvers: dict[str, Callable[[np.ndarray], np.ndarray]] = {}
+        factorized_solvers: OperatorCache[str, Callable[[np.ndarray], np.ndarray]] = OperatorCache(
+            self.factorization_cache_size if self.reuse_factorization else 0
+        )
         factorization_count = 0
         factorization_reuse_count = 0
         solve_count = 0
@@ -230,10 +248,9 @@ class ThetaScheme(TimeStepper):
                 current_values = np.asarray(lcp_result.values, dtype=float)
             else:
                 if self.reuse_factorization:
-                    if cache_key in factorized_solvers:
-                        factorization_reuse_count += 1
+                    try:
                         solver = factorized_solvers[cache_key]
-                    else:
+                    except KeyError:
                         started = perf_counter()
                         factorized_matrix = sps.csc_matrix(A_enf)
                         lu = spla.splu(factorized_matrix)
@@ -244,6 +261,8 @@ class ThetaScheme(TimeStepper):
                         factorization_cache_keys.append(
                             _matrix_cache_key(factorized_matrix)
                         )
+                    else:
+                        factorization_reuse_count += 1
                     started = perf_counter()
                     next_values = solver(np.asarray(b_enf, dtype=float))
                     solve_time += perf_counter() - started
@@ -265,6 +284,7 @@ class ThetaScheme(TimeStepper):
             if np.isclose(step.end, time_grid[step.output_index]):
                 v_tsv[step.output_index] = current_values
 
+        cache_info = factorized_solvers.info()
         self.last_solve_diagnostics = LinearSolveDiagnostics(
             linear_solver=self.linear_solver,
             factorization_reuse_enabled=self.reuse_factorization,
@@ -278,6 +298,10 @@ class ThetaScheme(TimeStepper):
                 "factorization": factorization_time,
                 "solve": solve_time,
             },
+            factorization_cache_capacity=cache_info.capacity,
+            factorization_cache_peak_entries=cache_info.peak_entries,
+            factorization_cache_entries_at_completion=cache_info.entries,
+            factorization_cache_eviction_count=cache_info.evictions,
         )
         return v_tsv
 

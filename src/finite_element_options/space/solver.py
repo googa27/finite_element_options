@@ -11,6 +11,7 @@ from .adaptive import AdaptiveDiagnostics, AdaptiveMesh, AdaptiveResult
 from finite_element_options.space.domain import DomainSpec
 from finite_element_options.transform import CoordinateTransform
 from finite_element_options.core.config import Config
+from finite_element_options.core.operator_cache import OperatorCache, OperatorCacheInfo
 
 
 class SpaceSolver:
@@ -27,6 +28,7 @@ class SpaceSolver:
         forms: Forms | None = None,
         adaptive_criterion: str | None = None,
         config: Config | None = None,
+        operator_cache_size: int = 2,
     ):
         """Initialize the spatial solver and assemble static operators.
 
@@ -48,7 +50,12 @@ class SpaceSolver:
             Name of adaptive refinement criterion.
         config:
             Numerical configuration specifying finite element type.
+        operator_cache_size:
+            Maximum resident time operators; zero disables retention.
         """
+        self._operator_matrix_cache: OperatorCache[float, object] = OperatorCache(
+            operator_cache_size
+        )
         self.mesh = mesh
         self.dynamics = dynamics
         self.payoff = payoff
@@ -72,7 +79,6 @@ class SpaceSolver:
             transform=self.transform,
         )
         self.mass = self.forms.id_bil().assemble(self.Vh)
-        self._operator_matrix_cache: dict[float, object] = {}
         self.matrix_time_calls: list[tuple[float, float]] = []
         self.last_coefficient_diagnostics: dict[str, str] = {}
         self.stiffness = self.operator_matrix(0.0)
@@ -160,13 +166,29 @@ class SpaceSolver:
         time_key = float(np.asarray(th, dtype=float))
         if not np.isfinite(time_key):
             raise ValueError("operator assembly time must be finite")
-        if time_key not in self._operator_matrix_cache:
+        try:
+            return self._operator_matrix_cache[time_key]
+        except KeyError:
             th_phys = float(np.asarray(self.transform.untransform_time(time_key)))
             matrix = self.forms.operator_form(th_phys).assemble(self.Vh, th=th_phys)
             self._operator_matrix_cache[time_key] = matrix
             diagnostics = getattr(self.forms, "coefficient_diagnostics", {})
             self.last_coefficient_diagnostics = dict(diagnostics)
-        return self._operator_matrix_cache[time_key]
+            return matrix
+
+    def operator_cache_info(self) -> OperatorCacheInfo:
+        """Return immutable lifetime statistics for resident time operators."""
+        return self._operator_matrix_cache.info()
+
+    def invalidate_operator_cache(self) -> None:
+        """Discard time operators and refresh the separately retained stiffness.
+
+        Call after changing coefficient forms or their model inputs. In-place
+        mutation is not detected automatically. Mesh/basis changes must use the
+        refinement API, which also rebuilds the mass matrix before invalidation.
+        """
+        self._operator_matrix_cache.clear()
+        self.stiffness = self.operator_matrix(0.0)
 
     def matrices(
         self,
@@ -262,8 +284,7 @@ class SpaceSolver:
         self.Vh = fem.CellBasis(self.mesh, self.config.elem)
         self.dVh = fem.FacetBasis(self.mesh, self.config.elem)
         self.mass = self.forms.id_bil().assemble(self.Vh)
-        self._operator_matrix_cache.clear()
-        self.stiffness = self.operator_matrix(0.0)
+        self.invalidate_operator_cache()
         self.last_adaptive_diagnostics = result.diagnostics
         return result
 

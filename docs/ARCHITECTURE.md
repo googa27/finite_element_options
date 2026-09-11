@@ -625,6 +625,9 @@ Source of truth: `docs/ARCHITECTURE.yaml`. Tracking: [Project #24](https://githu
 Probable extensions must cross named ports/capability registries rather than adding sibling modules indefinitely. Every exception is exact, risk-bearing, no-growth, and has a refactoring trigger. Generated/vendor/migration/resource paths are declared explicitly; they do not silently weaken runtime rules.
 <!-- PORTFOLIO-CONSTITUTION:END -->
 
+## Bounded operator reuse (#153)
+
+[BOUNDED_OPERATOR_CACHES.md](BOUNDED_OPERATOR_CACHES.md) defines the two-entry default LRU policy shared through `core/operator_cache.py`. Exact endpoint and enforced-system keys are unchanged. Space invalidation refreshes both time operators and the separately retained initial stiffness; refinement also rebuilds mass and bases. Each theta solve owns its factor cache. Cache size zero disables retention. Resource tests check actual object release and full-history numerical equality; the benchmark separates retained sparse payloads from RSS and output storage. The matching policy is recorded in `ARCHITECTURE.yaml`.
 
 ### Time-grid unit invariance (issue 152)
 
