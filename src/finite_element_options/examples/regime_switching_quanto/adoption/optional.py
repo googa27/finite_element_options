@@ -86,7 +86,9 @@ def require_optional(module_name: str) -> ModuleType:
     descriptor = _REGISTRY_BY_MODULE.get(module_name)
     if descriptor is None:
         available = ", ".join(sorted(_REGISTRY_BY_MODULE))
-        raise KeyError(f"unknown optional dependency {module_name!r}; available: {available}")
+        raise KeyError(
+            f"unknown optional dependency {module_name!r}; available: {available}"
+        )
     try:
         return import_module(descriptor.module_name)
     except ModuleNotFoundError as exc:

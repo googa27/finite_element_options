@@ -17,7 +17,10 @@ from typing import Any
 
 import numpy as np
 
-from finite_element_options.contracts.capability_matrix import CapabilityRecord, CapabilityStatus
+from finite_element_options.contracts.capability_matrix import (
+    CapabilityRecord,
+    CapabilityStatus,
+)
 from finite_element_options.time_integration import LCPDiagnostics
 from finite_element_options.validation.evidence.benchmark_registry import (
     DEFAULT_VALIDATION_BENCHMARK_ID as DEFAULT_VALIDATION_BENCHMARK_ID,
@@ -25,6 +28,11 @@ from finite_element_options.validation.evidence.benchmark_registry import (
     BenchmarkSpec as BenchmarkSpec,
     ValidationGateError as ValidationGateError,
     default_benchmark_registry as default_benchmark_registry,
+)
+
+from .evidence.american_lcp import (
+    _has_exercise_front as _has_exercise_front,
+    american_lcp_gate_values,
 )
 
 
@@ -44,14 +52,19 @@ class BenchmarkCoverageAudit:
         return {
             "accepted": self.accepted,
             "missing_benchmark_ids": list(self.missing_benchmark_ids),
-            "production_without_benchmark_ids": list(self.production_without_benchmark_ids),
-            "validated_without_benchmark_ids": list(self.validated_without_benchmark_ids),
+            "production_without_benchmark_ids": list(
+                self.production_without_benchmark_ids
+            ),
+            "validated_without_benchmark_ids": list(
+                self.validated_without_benchmark_ids
+            ),
             "validated_records": list(self.validated_records),
         }
 
 
 def audit_capability_benchmark_coverage(
-    records: Sequence[CapabilityRecord], registry: Mapping[str, BenchmarkSpec] | None = None
+    records: Sequence[CapabilityRecord],
+    registry: Mapping[str, BenchmarkSpec] | None = None,
 ) -> BenchmarkCoverageAudit:
     """Check that capability records cite committed benchmark specs."""
 
@@ -110,7 +123,9 @@ class ManufacturedSolutionCase:
             return u_tau - diffusion * u_xx - forcing
         if self.operator_family == "convection_diffusion":
             if len(point) != 2:
-                raise ValidationGateError(f"convection-diffusion point must be (x, tau): {point}")
+                raise ValidationGateError(
+                    f"convection-diffusion point must be (x, tau): {point}"
+                )
             x, tau = point
             value = float(np.cos(np.pi * x / 2.0) * np.exp(-0.5 * tau))
             u_tau = -0.5 * value
@@ -122,14 +137,20 @@ class ManufacturedSolutionCase:
             return u_tau - drift * u_x - diffusion * u_xx - forcing
         if self.operator_family == "mixed_derivative":
             if len(point) != 3:
-                raise ValidationGateError(f"mixed-derivative point must be (x, y, tau): {point}")
+                raise ValidationGateError(
+                    f"mixed-derivative point must be (x, y, tau): {point}"
+                )
             x, y, tau = point
             value = float(np.sin(np.pi * x) * np.cos(np.pi * y / 2.0) * np.exp(-tau))
             u_tau = -value
             u_xx = -(np.pi**2) * value
             u_yy = -((np.pi / 2.0) ** 2) * value
             u_xy = float(
-                -np.pi * (np.pi / 2.0) * np.cos(np.pi * x) * np.sin(np.pi * y / 2.0) * np.exp(-tau)
+                -np.pi
+                * (np.pi / 2.0)
+                * np.cos(np.pi * x)
+                * np.sin(np.pi * y / 2.0)
+                * np.exp(-tau)
             )
             forcing = u_tau - 0.2 * u_xx - 0.05 * u_xy - 0.15 * u_yy
             return u_tau - 0.2 * u_xx - 0.05 * u_xy - 0.15 * u_yy - forcing
@@ -206,7 +227,9 @@ class ConvergenceRow:
         if not isfinite(self.step) or self.step <= 0.0:
             raise ValidationGateError("convergence step must be positive and finite")
         if not isfinite(self.error) or self.error < 0.0:
-            raise ValidationGateError("convergence error must be non-negative and finite")
+            raise ValidationGateError(
+                "convergence error must be non-negative and finite"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -286,7 +309,9 @@ class ConvergenceStudy:
                     f"{self.benchmark_id}:{self.dimension} invalid tolerance "
                     f"component {component!r}"
                 )
-        error_budget = float(sum(float(value) for value in self.tolerance_components.values()))
+        error_budget = float(
+            sum(float(value) for value in self.tolerance_components.values())
+        )
         row_payloads: list[dict[str, float | int | None]] = []
         observed_orders: list[float] = []
         previous: ConvergenceRow | None = None
@@ -321,7 +346,10 @@ class ConvergenceStudy:
                     f"observed {self.dimension} order {representative_order} below "
                     f"threshold {threshold:.6g}"
                 )
-        elif any(later.error > earlier.error for earlier, later in zip(self.rows, self.rows[1:])):
+        elif any(
+            later.error > earlier.error
+            for earlier, later in zip(self.rows, self.rows[1:])
+        ):
             failures.append(f"{self.dimension} errors are not monotone non-increasing")
         return ConvergenceReport(
             benchmark_id=self.benchmark_id,
@@ -374,7 +402,9 @@ class OptionSurfacePoint:
         if not all(isfinite(value) for value in values):
             raise ValidationGateError("option surface point contains non-finite values")
         if self.spot <= 0.0 or self.strike <= 0.0 or self.maturity < 0.0:
-            raise ValidationGateError("option surface point has invalid economic coordinates")
+            raise ValidationGateError(
+                "option surface point has invalid economic coordinates"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,7 +418,11 @@ class ArbitrageReport:
     def to_public_dict(self) -> dict[str, Any]:
         """Return a JSON-safe arbitrage report."""
 
-        return {"accepted": self.accepted, "failures": list(self.failures), "rows": list(self.rows)}
+        return {
+            "accepted": self.accepted,
+            "failures": list(self.failures),
+            "rows": list(self.rows),
+        }
 
 
 def evaluate_call_arbitrage(
@@ -449,9 +483,13 @@ def evaluate_call_arbitrage(
             }
         )
         previous = point
-    report = ArbitrageReport(accepted=not failures, failures=tuple(failures), rows=tuple(rows))
+    report = ArbitrageReport(
+        accepted=not failures, failures=tuple(failures), rows=tuple(rows)
+    )
     if fail_on_error and not report.accepted:
-        raise ValidationGateError(f"arbitrage gate failed: {report.failures}; rows={report.rows}")
+        raise ValidationGateError(
+            f"arbitrage gate failed: {report.failures}; rows={report.rows}"
+        )
     return report
 
 
@@ -592,17 +630,6 @@ class AmericanLCPGateReport:
         }
 
 
-def _has_exercise_front(exercise_set: Sequence[bool]) -> bool:
-    """Return true only when exercise and continuation regions meet."""
-
-    if not exercise_set:
-        return False
-    has_exercise = any(exercise_set)
-    has_continuation = not all(exercise_set)
-    has_transition = any(left != right for left, right in zip(exercise_set, exercise_set[1:]))
-    return has_exercise and has_continuation and has_transition
-
-
 def evaluate_american_lcp_gate(
     benchmark_id: str,
     diagnostics: Sequence[LCPDiagnostics],
@@ -611,71 +638,8 @@ def evaluate_american_lcp_gate(
 ) -> AmericanLCPGateReport:
     """Require converged complementarity and exercise-front evidence."""
 
-    if not diagnostics:
-        raise ValidationGateError("American LCP gate requires at least one diagnostic row")
-    failures: list[str] = []
-    rows: list[dict[str, Any]] = []
-    exercise_front_observed = False
-    max_complementarity = 0.0
-    max_projected_residual = 0.0
-    for index, item in enumerate(diagnostics):
-        tolerance = item.tolerance
-        diagnostic_values = {
-            "tolerance": tolerance,
-            "relaxation": item.relaxation,
-            "primal_violation_max": item.primal_violation_max,
-            "dual_violation_max": item.dual_violation_max,
-            "complementarity_max": item.complementarity_max,
-            "projected_residual_max": item.projected_residual_max,
-            "max_update": item.max_update,
-            "solve_time_sec": item.solve_time_sec,
-        }
-        nonfinite_fields = tuple(
-            field for field, value in diagnostic_values.items() if not isfinite(float(value))
-        )
-        if nonfinite_fields:
-            failures.append(f"row {index} has non-finite diagnostics {nonfinite_fields}")
-        if isfinite(float(tolerance)) and tolerance <= 0.0:
-            failures.append(f"row {index} tolerance must be positive")
-        if item.iterations < 0 or item.exercise_count < 0:
-            failures.append(f"row {index} has invalid iteration/exercise counts")
-        max_complementarity = max(max_complementarity, item.complementarity_max)
-        max_projected_residual = max(max_projected_residual, item.projected_residual_max)
-        row_has_front = _has_exercise_front(item.exercise_set)
-        exercise_front_observed = exercise_front_observed or row_has_front
-        if not item.success:
-            failures.append(f"row {index} did not converge: {item.message}")
-        if item.primal_violation_max > tolerance:
-            failures.append(f"row {index} primal violation exceeds tolerance")
-        if item.dual_violation_max > tolerance:
-            failures.append(f"row {index} dual violation exceeds tolerance")
-        if item.complementarity_max > tolerance:
-            failures.append(f"row {index} complementarity exceeds tolerance")
-        if item.projected_residual_max > tolerance:
-            failures.append(f"row {index} projected residual exceeds tolerance")
-        rows.append(
-            {
-                "row": index,
-                "iterations": item.iterations,
-                "tolerance": tolerance,
-                "primal_violation_max": item.primal_violation_max,
-                "dual_violation_max": item.dual_violation_max,
-                "complementarity_max": item.complementarity_max,
-                "projected_residual_max": item.projected_residual_max,
-                "exercise_count": item.exercise_count,
-                "exercise_front_observed": row_has_front,
-            }
-        )
-    if not exercise_front_observed:
-        failures.append("exercise front was not observed")
     report = AmericanLCPGateReport(
-        accepted=not failures,
-        benchmark_id=benchmark_id,
-        exercise_front_observed=exercise_front_observed,
-        max_complementarity=max_complementarity,
-        max_projected_residual=max_projected_residual,
-        failures=tuple(failures),
-        rows=tuple(rows),
+        **american_lcp_gate_values(benchmark_id, diagnostics)
     )
     if fail_on_error and not report.accepted:
         raise ValidationGateError(f"American LCP gate failed: {report.failures}")

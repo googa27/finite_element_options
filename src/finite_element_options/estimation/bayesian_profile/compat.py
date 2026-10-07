@@ -32,7 +32,9 @@ def require_pymc() -> ModuleType:
 
     try:
         import pymc
-    except ModuleNotFoundError as exc:  # pragma: no cover - dependency-absence contract test
+    except (
+        ModuleNotFoundError
+    ) as exc:  # pragma: no cover - dependency-absence contract test
         raise ModuleNotFoundError(LEGACY_PYMC_HINT) from exc
     return pymc
 

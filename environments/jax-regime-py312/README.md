@@ -34,7 +34,7 @@ XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 ## Frozen stack and limitations
 
 - JAX/jaxlib 0.11.1; NumPyro 0.21.0; DYNAMAX 1.0.2; Diffrax 0.7.2.
-- CI build/audit/SBOM tooling is independently frozen: build 1.6.0, CycloneDX 7.3.1, packaging 26.2, pip 26.2.1, pip-audit 2.10.1, setuptools 84.0.0, and wheel 0.48.0.
+- CI build/audit/SBOM tooling is independently frozen: build 1.6.0, CycloneDX 7.3.1, packaging 26.2, pip 26.2.1, pip-audit 2.10.1, setuptools 84.0.0, wheel 0.48.0, and the CI HTTP tooling security floor urllib3 2.8.0 (issue 172).
 - Test tooling is independently frozen at packaging 26.2, pytest 9.0.3, and pytest-cov 7.0.0 with every transitive dependency hash-pinned.
 - `fastprogress` is fixed at version `1.0.3` as an explicit lean compatibility pin. Later 1.1.x releases add an unrelated web stack that this research profile does not need.
 - DYNAMAX 1.0.2 leaves TensorFlow Probability unconstrained. This lock freezes `tfp-nightly` at version `0.26.0.dev20260907`; a JAX/DYNAMAX/TFP upgrade requires the full external profile replay.
@@ -42,4 +42,6 @@ XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 - TFP emits deprecation warnings under JAX 0.11.1. They are a reassessment trigger, not suppressed support evidence.
 - Diffrax is forced onto every daily regime boundary and checked pathwise against the exact log-diffusion update. It is an abstraction/extension seam, not an accuracy improvement.
 
-The runtime lock SHA-256 is `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`; the test-tool lock SHA-256 is `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`; and the CI-tool lock SHA-256 is `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`. Release acceptance requires replaying the external profile and `pip-audit` commands in the current pull request; this document does not substitute for their live output.
+The runtime lock SHA-256 is `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`; the test-tool lock SHA-256 is `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`; and the CI-tool lock SHA-256 is `7779e0c2ea2b64c957093d76e1ae24401088e801feaa770cb675e72727a5607c`. Release acceptance requires replaying the external profile and `pip-audit` commands in the current pull request; this document does not substitute for their live output.
+
+The historical 2026-09-07 CI-tool lock checksum was `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`. The current checksum above includes only the 2026-10-07 CI-tooling security repair (issues 172/174); the numerical study JSON, sidecar, figures and scientific runtime/test/visual lock identities are unchanged. Current isolated profile/audit and bounded synthetic checks do not imply a new canonical research run.

@@ -169,7 +169,9 @@ def _streamlit():
 
     try:
         import streamlit as st  # type: ignore[import-untyped]
-    except ModuleNotFoundError as exc:  # pragma: no cover - exercised in clean extras CI
+    except (
+        ModuleNotFoundError
+    ) as exc:  # pragma: no cover - exercised in clean extras CI
         raise ModuleNotFoundError(
             "finite_element_options.sidebar requires the 'ui' extra: "
             "pip install 'finite-element-options[ui]'"

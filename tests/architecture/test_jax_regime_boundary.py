@@ -73,7 +73,8 @@ def test_jax_regime_public_facade_exposes_typed_boundaries_not_dict_runners() ->
 
 def test_jax_regime_contracts_are_dependency_light() -> None:
     path = (
-        ROOT / "src/finite_element_options/examples/regime_switching_quanto/jax_regime/contracts.py"
+        ROOT
+        / "src/finite_element_options/examples/regime_switching_quanto/jax_regime/contracts.py"
     )
     tree = ast.parse(path.read_text(encoding="utf-8"))
     imports: set[str] = set()
@@ -86,7 +87,9 @@ def test_jax_regime_contracts_are_dependency_light() -> None:
 
 
 def test_jax_regime_extra_is_python312_only_and_complete() -> None:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"
+    ]
     requirements = project["optional-dependencies"]["jax-regime"]
     joined = "\n".join(requirements)
     for dependency in (
@@ -155,7 +158,9 @@ def test_jax_regime_cli_requires_explicit_input_and_canonical_publication() -> N
         (str(ROOT / "docs/images/jax_regime_study_2026-09-07.pdf"), Path("/tmp")),
     ),
 )
-def test_jax_regime_plot_refuses_implicit_canonical_write(output: str, cwd: Path) -> None:
+def test_jax_regime_plot_refuses_implicit_canonical_write(
+    output: str, cwd: Path
+) -> None:
     generator = ROOT / "scripts/generate_jax_regime_plot.py"
     result = subprocess.run(
         [sys.executable, str(generator), "--output", output],
@@ -209,9 +214,9 @@ def test_canonical_visual_publication_requires_bound_evidence(
     assert payload["status"] == "passed"
     assert historical_markers_match(payload) is True
     unmatched = json.loads(json.dumps(payload))
-    unmatched["pricing"]["matched_historical_three_state_jax_numpy_oracle"]["assumption_match"][
-        "maturity"
-    ] = False
+    unmatched["pricing"]["matched_historical_three_state_jax_numpy_oracle"][
+        "assumption_match"
+    ]["maturity"] = False
     assert historical_markers_match(unmatched) is False
     empty_assumptions = json.loads(json.dumps(payload))
     empty_assumptions["pricing"]["matched_historical_three_state_jax_numpy_oracle"][

@@ -49,7 +49,8 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     destination = parser.add_mutually_exclusive_group(required=True)
     destination.add_argument(
-        "--publish-canonical", action="store_true",
+        "--publish-canonical",
+        action="store_true",
         help="Deliberately regenerate and mirror the checkout and packaged reference snapshots.",
     )
     destination.add_argument(
@@ -92,7 +93,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     generated = [spec_path, result_path]
     if args.publish_canonical:
         # This maintainer script, never the library writer, owns package snapshots.
-        packaged = repo_root / "src/finite_element_options/validation/evidence/reference_data/fem_bs_001"
+        packaged = (
+            repo_root
+            / "src/finite_element_options/validation/evidence/reference_data/fem_bs_001"
+        )
         packaged.mkdir(parents=True, exist_ok=True)
         for source in (spec_path, result_path):
             target = packaged / source.name
@@ -103,7 +107,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         "benchmark_id": PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID,
         "config_hash": report.config_hash,
         "generated": [
-            {"path": _display_path(path, repo_root=repo_root), "sha256": _file_sha256(path)}
+            {
+                "path": _display_path(path, repo_root=repo_root),
+                "sha256": _file_sha256(path),
+            }
             for path in generated
         ],
         "status": report.status,

@@ -106,7 +106,7 @@ python scripts/export_arxiv_lab_black_scholes_fixture.py --publish-canonical
 
 Public benchmark references are packaged read-only resources. Library exports require an explicit caller-owned path; see [reference and export migration](docs/PUBLIC_REFERENCE_RESOURCES.md).
 
-`requirements.txt` is a legacy all-in developer mirror; prefer package metadata and `constraints.txt` for reproducible checks.
+`requirements.txt` is a legacy all-in developer mirror; prefer package metadata and `constraints.txt` for reproducible checks. Development and validation tooling pins Ruff 0.12.12; run `ruff check .` and `ruff format --check .` over the whole repository.
 
 ## Architecture and ownership
 

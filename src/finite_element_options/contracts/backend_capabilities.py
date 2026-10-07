@@ -15,6 +15,14 @@ from typing import Any
 from .fpf_evidence import fpf_solver_result_evidence_contract
 from .route_mapping import coerce_dimension, state_dimension
 
+from .route_mapping import (
+    _mapping as _mapping,
+    _first_present as _first_present,
+    _tuple_of_strings as _tuple_of_strings,
+    _boundary_condition_classes as _boundary_condition_classes,
+    _optional_string as _optional_string,
+)
+
 
 class CapabilityStatus(str, Enum):
     """Maturity of one advertised backend capability."""
@@ -228,12 +236,16 @@ class FEMRouteRequest:
             ),
             element_family=str(
                 _first_present(
-                    solver, ("element_family", "element", "space_family"), default="lagrange_p2"
+                    solver,
+                    ("element_family", "element", "space_family"),
+                    default="lagrange_p2",
                 )
             ),
             pde_terms=_tuple_of_strings(
                 _first_present(
-                    math, ("pde_terms", "terms"), default=("drift", "diffusion", "reaction")
+                    math,
+                    ("pde_terms", "terms"),
+                    default=("drift", "diffusion", "reaction"),
                 )
             ),
             boundary_conditions=_boundary_condition_classes(
@@ -248,11 +260,15 @@ class FEMRouteRequest:
             ),
             requested_outputs=_tuple_of_strings(
                 _first_present(
-                    solver, ("requested_outputs", "required_outputs", "outputs"), default=("value",)
+                    solver,
+                    ("requested_outputs", "required_outputs", "outputs"),
+                    default=("value",),
                 )
             ),
             stability_controls=_tuple_of_strings(
-                _first_present(solver, ("stability_controls", "stability"), default=("theta",))
+                _first_present(
+                    solver, ("stability_controls", "stability"), default=("theta",)
+                )
             ),
             linear_solver=str(
                 _first_present(
@@ -266,7 +282,9 @@ class FEMRouteRequest:
                     context,
                     ("measure",),
                     default=_first_present(
-                        math, ("measure_id", "measure"), default=conventions.get("measure")
+                        math,
+                        ("measure_id", "measure"),
+                        default=conventions.get("measure"),
                     ),
                 )
             ),
@@ -275,7 +293,9 @@ class FEMRouteRequest:
                     context,
                     ("numeraire",),
                     default=_first_present(
-                        math, ("numeraire_id", "numeraire"), default=conventions.get("numeraire")
+                        math,
+                        ("numeraire_id", "numeraire"),
+                        default=conventions.get("numeraire"),
                     ),
                 )
             ),
@@ -283,17 +303,25 @@ class FEMRouteRequest:
                 _first_present(
                     context,
                     ("units",),
-                    default=_first_present(math, ("units",), default=conventions.get("units", {})),
+                    default=_first_present(
+                        math, ("units",), default=conventions.get("units", {})
+                    ),
                 )
             ),
-            boundary_details={str(key): str(value) for key, value in boundary_details.items()},
+            boundary_details={
+                str(key): str(value) for key, value in boundary_details.items()
+            },
             valuation_date=_optional_string(
                 _first_present(
-                    context, ("valuation_date", "as_of_date"), default=vintage.get("valuation_date")
+                    context,
+                    ("valuation_date", "as_of_date"),
+                    default=vintage.get("valuation_date"),
                 )
             ),
             maturity_date=_optional_string(
-                _first_present(context, ("maturity_date",), default=vintage.get("maturity_date"))
+                _first_present(
+                    context, ("maturity_date",), default=vintage.get("maturity_date")
+                )
             ),
             time_domain=_optional_string(
                 _first_present(context, ("time_domain",), default=domain.get("t"))
@@ -595,64 +623,6 @@ def _extend_set_diagnostics(
                     f"Unsupported {field_name} value {value!r}; supported values are {supported}.",
                 )
             )
-
-
-def _mapping(value: Any) -> Mapping[str, Any]:
-    return value if isinstance(value, Mapping) else {}
-
-
-def _first_present(mapping: Mapping[str, Any], keys: tuple[str, ...], *, default: Any) -> Any:
-    for key in keys:
-        if key in mapping:
-            return mapping[key]
-    return default
-
-
-def _tuple_of_strings(value: Any) -> tuple[str, ...]:
-    if isinstance(value, str):
-        return (value,)
-    if isinstance(value, Iterable) and not isinstance(value, Mapping):
-        return tuple(str(item) for item in value)
-    return (str(value),)
-
-
-def _boundary_condition_classes(value: Any) -> tuple[str, ...]:
-    """Normalize public schema boundary formulas to FEM capability classes."""
-
-    if isinstance(value, Mapping):
-        raw_items: Iterable[tuple[str, Any]] = value.items()
-    else:
-        raw_items = (("", item) for item in _tuple_of_strings(value))
-
-    classes: list[str] = []
-    for location, item in raw_items:
-        text = str(item).lower().replace("-", "_")
-        location_text = str(location).lower().replace("-", "_")
-        if "free" in text and "boundary" in text:
-            boundary_class = "free_boundary"
-        elif "robin" in text:
-            boundary_class = "robin"
-        elif "neumann" in text or "slope" in text:
-            boundary_class = "neumann"
-        elif "dirichlet" in text or "absorbing" in text or text.strip() in {"0", "zero"}:
-            boundary_class = "dirichlet"
-        elif ("linear" in text or "growth" in text) and any(
-            marker in location_text
-            for marker in ("s=0", "s_min", "lower", "left", "s_max", "upper", "right", "far_field")
-        ):
-            boundary_class = "dirichlet"
-        else:
-            boundary_class = text
-        if boundary_class not in classes:
-            classes.append(boundary_class)
-    return tuple(classes)
-
-
-def _optional_string(value: Any) -> str | None:
-    if value is None:
-        return None
-    text = str(value)
-    return text or None
 
 
 __all__ = [

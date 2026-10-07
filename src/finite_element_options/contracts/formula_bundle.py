@@ -55,7 +55,12 @@ def source_ref(
         "vintage": vintage,
     }
     base["source_hash"] = stable_hash(
-        {"source_id": source_id, "source_type": source_type, "uri": uri, "vintage": vintage}
+        {
+            "source_id": source_id,
+            "source_type": source_type,
+            "uri": uri,
+            "vintage": vintage,
+        }
     )
     return base
 
@@ -97,7 +102,10 @@ def formula(
 
 
 def bundle(
-    bundle_id: str, producer: str, formulas: list[dict[str, Any]], source_refs: list[dict[str, Any]]
+    bundle_id: str,
+    producer: str,
+    formulas: list[dict[str, Any]],
+    source_refs: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Return a versioned formula bundle payload."""
 
@@ -142,11 +150,16 @@ def validate_formula_bundle(payload: dict[str, Any]) -> list[str]:
             components if isinstance(components, list) else []
         ):
             if not isinstance(component_item, dict):
-                errors.append(f"formulas[{index}].components[{component_index}] must be an object")
+                errors.append(
+                    f"formulas[{index}].components[{component_index}] must be an object"
+                )
                 continue
             if not {"component_id", "role", "label", "latex"} <= set(component_item):
                 errors.append(f"formulas[{index}] component missing required keys")
-            if any(key in component_item for key in ("color", "style", "style_token", "css")):
+            if any(
+                key in component_item
+                for key in ("color", "style", "style_token", "css")
+            ):
                 errors.append(f"formulas[{index}] component contains renderer styling")
     return errors
 
@@ -169,11 +182,20 @@ def finite_element_formula_bundle() -> dict[str, Any]:
                     r"\langle \partial_t V,\varphi\rangle",
                 ),
                 component(
-                    "bilinear_form", "bilinear_form", "operator bilinear form", r"a(V,\varphi)"
+                    "bilinear_form",
+                    "bilinear_form",
+                    "operator bilinear form",
+                    r"a(V,\varphi)",
                 ),
-                component("linear_form", "linear_form", "load/linear form", r"\ell(\varphi)"),
-                component("basis", "basis", "finite-element basis", r"V_h=\sum_j V_j\phi_j"),
-                component("quadrature", "quadrature", "quadrature rule", r"\sum_q w_q f(x_q)"),
+                component(
+                    "linear_form", "linear_form", "load/linear form", r"\ell(\varphi)"
+                ),
+                component(
+                    "basis", "basis", "finite-element basis", r"V_h=\sum_j V_j\phi_j"
+                ),
+                component(
+                    "quadrature", "quadrature", "quadrature rule", r"\sum_q w_q f(x_q)"
+                ),
             ],
             method_id="finite_element.galerkin.black_scholes.v1",
             formulation_kind="weak_form_discretization",
@@ -189,7 +211,10 @@ def finite_element_formula_bundle() -> dict[str, Any]:
         )
     ]
     return bundle(
-        "finite_element_options_formula_bundle_v1", "finite_element_options", formulas, refs
+        "finite_element_options_formula_bundle_v1",
+        "finite_element_options",
+        formulas,
+        refs,
     )
 
 

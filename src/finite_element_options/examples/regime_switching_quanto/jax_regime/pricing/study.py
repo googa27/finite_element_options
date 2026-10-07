@@ -19,7 +19,11 @@ from ..data import _MEMBER_ROOT
 from ..hmm.forward import forecast_next_state_probs, gaussian_hmm_filter_probs
 from ..utils import stack as _stack
 from .analytic import one_state_price
-from .exact import correlated_diffusion, draw_paths_and_increments, simulate_exact_terminal_states
+from .exact import (
+    correlated_diffusion,
+    draw_paths_and_increments,
+    simulate_exact_terminal_states,
+)
 from .payoffs import discounted_summary, payoff_samples
 
 _POSTERIOR_INTERVAL_PATHS = 131_072
@@ -33,7 +37,9 @@ def _bounded_pricing_paths(preferred: int, requested: int, steps: int) -> int:
         raise ValueError("steps must be positive")
     maximum_paths = MAX_PRICING_PATH_STEPS // steps
     if maximum_paths < 2:
-        raise ValueError("path-step ceiling cannot support finite Monte Carlo diagnostics")
+        raise ValueError(
+            "path-step ceiling cannot support finite Monte Carlo diagnostics"
+        )
     return min(max(preferred, requested), maximum_paths)
 
 
@@ -42,7 +48,9 @@ def _publication_or_requested_paths(
 ) -> int:
     """Use a publication floor only for exact canonical config; otherwise honor the request."""
 
-    preferred = canonical_floor if config == JaxRegimeStudyConfig() else config.pricing_paths
+    preferred = (
+        canonical_floor if config == JaxRegimeStudyConfig() else config.pricing_paths
+    )
     return _bounded_pricing_paths(preferred, config.pricing_paths, steps)
 
 
@@ -54,9 +62,13 @@ def _posterior_pricing_paths(config: JaxRegimeStudyConfig, posterior_draws: int)
     per_draw = _publication_or_requested_paths(
         config, _POSTERIOR_INTERVAL_PATHS, config.pricing_steps
     )
-    total_cap = MAX_POSTERIOR_PRICING_PATH_STEPS // (posterior_draws * config.pricing_steps)
+    total_cap = MAX_POSTERIOR_PRICING_PATH_STEPS // (
+        posterior_draws * config.pricing_steps
+    )
     if total_cap < 2:
-        raise ValueError("total posterior path-step ceiling cannot support finite diagnostics")
+        raise ValueError(
+            "total posterior path-step ceiling cannot support finite diagnostics"
+        )
     return min(per_draw, total_cap)
 
 
@@ -152,7 +164,9 @@ def _price_contracts(
 ) -> dict[str, dict[str, float]]:
     prices: dict[str, dict[str, float]] = {}
     for contract in contracts:
-        terms = {key: value for key, value in contract.items() if key not in {"name", "kind"}}
+        terms = {
+            key: value for key, value in contract.items() if key not in {"name", "kind"}
+        }
         samples = payoff_samples(
             contract["kind"],
             states,
@@ -197,7 +211,9 @@ def _one_state_oracles(
     )
     results: dict[str, dict[str, float | bool | None]] = {}
     for contract in contracts:
-        terms = {key: value for key, value in contract.items() if key not in {"name", "kind"}}
+        terms = {
+            key: value for key, value in contract.items() if key not in {"name", "kind"}
+        }
         analytic = one_state_price(
             contract["kind"],
             equity_spot=equity_spot,
@@ -243,15 +259,17 @@ def _posterior_price_intervals(
     draw_pairs = [
         (chain, int(draw))
         for chain in range(int(chain_count))
-        for draw in jnp.linspace(0, available_draws_per_chain - 1, selected_draws_per_chain).astype(
-            int
-        )
+        for draw in jnp.linspace(
+            0, available_draws_per_chain - 1, selected_draws_per_chain
+        ).astype(int)
     ]
     steps = config.pricing_steps
     reduced_paths = _posterior_pricing_paths(config, len(draw_pairs))
     common_key = jr.key(config.seed + 200)
     collected: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
-    collected_mc_se: dict[str, list[float]] = {contract["name"]: [] for contract in contracts}
+    collected_mc_se: dict[str, list[float]] = {
+        contract["name"]: [] for contract in contracts
+    }
     for chain, draw in draw_pairs:
         transition = grouped["transition_matrix"][chain, draw]
         initial_draw = grouped["initial_probs"][chain, draw]
@@ -272,8 +290,8 @@ def _posterior_price_intervals(
             steps=steps,
             maturity=config.maturity_years,
         )
-        drift, diffusion, _equity_vol, _fx_vol, _correlation = _risk_neutral_coefficients(
-            covariances, config
+        drift, diffusion, _equity_vol, _fx_vol, _correlation = (
+            _risk_neutral_coefficients(covariances, config)
         )
         states = simulate_exact_terminal_states(
             regimes, increments, drift, diffusion, config.maturity_years
@@ -315,7 +333,9 @@ def _posterior_price_intervals(
             "posterior_draws": len(values),
             "posterior_draws_per_chain": selected_draws_per_chain,
             "available_draws_per_chain": int(available_draws_per_chain),
-            "split_subsample_max_quantile_delta_to_full_half_width": float(split_delta_ratio),
+            "split_subsample_max_quantile_delta_to_full_half_width": float(
+                split_delta_ratio
+            ),
             "paths_per_draw": reduced_paths,
             "common_random_numbers": True,
             "selection": (
@@ -400,7 +420,9 @@ def _matched_historical_oracle(
             "jax_exact_step_clp": current_result["price_clp"],
             "jax_standard_error_clp": current_result["standard_error_clp"],
             "archived_numpy_exact_step_clp": float(previous["mc_clp"]),
-            "archived_numpy_standard_error_clp": float(previous["mc_standard_error_clp"]),
+            "archived_numpy_standard_error_clp": float(
+                previous["mc_standard_error_clp"]
+            ),
             "difference_clp": difference,
             "combined_standard_error_clp": combined_error,
             "z_score": z_score,
@@ -410,9 +432,15 @@ def _matched_historical_oracle(
         "equity_spot": math.isclose(equity_spot, float(prior["spot"]["sp500"])),
         "fx_spot": math.isclose(fx_spot, float(prior["spot"]["usdclp"])),
         "maturity": math.isclose(config.maturity_years, float(prior["maturity_years"])),
-        "domestic_rate": math.isclose(config.domestic_rate, float(prior_model["domestic_rate"])),
-        "foreign_rate": math.isclose(config.foreign_rate, float(prior_model["foreign_rate"])),
-        "dividend_yield": math.isclose(config.dividend_yield, float(prior_model["dividend_yield"])),
+        "domestic_rate": math.isclose(
+            config.domestic_rate, float(prior_model["domestic_rate"])
+        ),
+        "foreign_rate": math.isclose(
+            config.foreign_rate, float(prior_model["foreign_rate"])
+        ),
+        "dividend_yield": math.isclose(
+            config.dividend_yield, float(prior_model["dividend_yield"])
+        ),
     }
     return {
         "purpose": "numerical parity only; this reuses the archived three-state parameters and is distinct from the selected four-state model",

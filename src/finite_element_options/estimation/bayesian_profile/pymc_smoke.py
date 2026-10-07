@@ -28,7 +28,9 @@ def run_pymc_smoke(config: BayesianSmokeConfig | None = None) -> dict[str, Any]:
     started = perf_counter()
     with pm.Model():
         mean = pm.Normal("mean", mu=selected.prior_mean, sigma=selected.prior_sigma)
-        pm.Normal("observed", mu=mean, sigma=selected.known_sigma, observed=observations)
+        pm.Normal(
+            "observed", mu=mean, sigma=selected.known_sigma, observed=observations
+        )
         inference_data = pm.sample(
             draws=selected.draws,
             tune=selected.warmup,
@@ -50,7 +52,9 @@ def run_pymc_smoke(config: BayesianSmokeConfig | None = None) -> dict[str, Any]:
     summary_frame: Any = az.summary(inference_data, var_names=["mean"], round_to=None)
     summary = summary_frame.loc["mean"]
     posterior = np.asarray(inference_data.posterior["mean"], dtype=float)
-    predictive_values = np.asarray(predictive.posterior_predictive["observed"], dtype=float)
+    predictive_values = np.asarray(
+        predictive.posterior_predictive["observed"], dtype=float
+    )
     log_density = np.asarray(inference_data.sample_stats["lp"], dtype=float)
     divergences = int(np.asarray(inference_data.sample_stats["diverging"]).sum())
     return build_diagnostic_summary(

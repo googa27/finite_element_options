@@ -41,7 +41,9 @@ def price_quantlib_oracle(spec: QuantLibOracleSpec) -> QuantLibOracleResult:
         payoff = quantlib.PlainVanillaPayoff(quantlib.Option.Call, float(spec.strike))
         exercise = quantlib.EuropeanExercise(ql_maturity)
         exercise_dates = list(exercise.dates())
-        received_exercise_date = exercise_dates[0] if len(exercise_dates) == 1 else exercise_dates
+        received_exercise_date = (
+            exercise_dates[0] if len(exercise_dates) == 1 else exercise_dates
+        )
         _require_matching_quantlib_date(
             field="exercise_date",
             received=received_exercise_date,
@@ -59,7 +61,9 @@ def price_quantlib_oracle(spec: QuantLibOracleSpec) -> QuantLibOracleResult:
                 quantlib.QuantoEuropeanEngine(
                     process,
                     _flat_rate_handle(quantlib, ql_eval, day_count, spec.foreign_rate),
-                    _flat_vol_handle(quantlib, ql_eval, calendar, day_count, spec.fx_vol),
+                    _flat_vol_handle(
+                        quantlib, ql_eval, calendar, day_count, spec.fx_vol
+                    ),
                     quantlib.QuoteHandle(quantlib.SimpleQuote(float(spec.correlation))),
                 )
             )
@@ -101,12 +105,16 @@ def analytical_oracle_price(spec: QuantLibOracleSpec, *, year_fraction: float) -
         mkt=Market(r=float(spec.domestic_rate)),
     )
     raw = float(
-        option.call_from_volatility(year_fraction, float(spec.spot), float(spec.equity_vol))
+        option.call_from_volatility(
+            year_fraction, float(spec.spot), float(spec.equity_vol)
+        )
     )
     return raw if spec.kind == "vanilla" else raw * float(spec.fixed_fx)
 
 
-def _require_matching_quantlib_date(*, field: str, received: Any, expected: Any, kind: str) -> None:
+def _require_matching_quantlib_date(
+    *, field: str, received: Any, expected: Any, kind: str
+) -> None:
     """Raise a JSON-safe typed error when QuantLib changes an explicit date."""
 
     if received != expected:
@@ -129,7 +137,9 @@ def _bsm_process(
         quantlib.QuoteHandle(quantlib.SimpleQuote(float(spec.spot))),
         _flat_rate_handle(quantlib, evaluation_date, day_count, spec.dividend_yield),
         _flat_rate_handle(quantlib, evaluation_date, day_count, spec.domestic_rate),
-        _flat_vol_handle(quantlib, evaluation_date, calendar, day_count, spec.equity_vol),
+        _flat_vol_handle(
+            quantlib, evaluation_date, calendar, day_count, spec.equity_vol
+        ),
     )
 
 
@@ -155,7 +165,9 @@ def _flat_vol_handle(
     volatility: float,
 ) -> Any:
     return quantlib.BlackVolTermStructureHandle(
-        quantlib.BlackConstantVol(evaluation_date, calendar, float(volatility), day_count)
+        quantlib.BlackConstantVol(
+            evaluation_date, calendar, float(volatility), day_count
+        )
     )
 
 

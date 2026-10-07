@@ -11,7 +11,9 @@ def _stack() -> tuple[Any, Any, Any]:
         import jax.numpy as jnp
         import jax.random as jr
     except ModuleNotFoundError as exc:
-        raise ImportError("JAX exact pricing requires finite-element-options[jax-regime].") from exc
+        raise ImportError(
+            "JAX exact pricing requires finite-element-options[jax-regime]."
+        ) from exc
     jax.config.update("jax_enable_x64", True)
     return jax, jnp, jr
 
@@ -32,7 +34,9 @@ def simulate_regime_paths(
     keys = jr.split(scan_key, max(steps - 1, 0))
 
     def advance(current: Any, current_key: Any) -> tuple[Any, Any]:
-        following = jr.categorical(current_key, jnp.log(transition_matrix[current]), axis=-1)
+        following = jr.categorical(
+            current_key, jnp.log(transition_matrix[current]), axis=-1
+        )
         return following, following
 
     if steps == 1:
@@ -51,7 +55,9 @@ def correlated_diffusion(equity_vol: Any, fx_vol: Any, correlation: Any) -> Any:
     matrices = jnp.zeros((equity_vol.shape[0], 2, 2))
     matrices = matrices.at[:, 0, 0].set(equity_vol)
     matrices = matrices.at[:, 1, 0].set(correlation * fx_vol)
-    matrices = matrices.at[:, 1, 1].set(fx_vol * jnp.sqrt(jnp.maximum(1.0 - correlation**2, 0.0)))
+    matrices = matrices.at[:, 1, 1].set(
+        fx_vol * jnp.sqrt(jnp.maximum(1.0 - correlation**2, 0.0))
+    )
     return matrices
 
 

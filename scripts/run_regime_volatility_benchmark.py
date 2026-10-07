@@ -13,7 +13,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, help="PDP-exported joint level CSV")
-    parser.add_argument("--expected-sha256", required=True, help="expected immutable CSV SHA-256")
+    parser.add_argument(
+        "--expected-sha256", required=True, help="expected immutable CSV SHA-256"
+    )
     parser.add_argument("--output", required=True, help="canonical JSON artifact path")
     parser.add_argument("--seed", type=int, default=131)
     parser.add_argument("--holdout-size", type=int, default=126)
@@ -24,7 +26,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--markov-search-reps", type=int, default=2)
     parser.add_argument("--changepoint-window", type=int, default=63)
     parser.add_argument("--changepoint-penalty", type=float, default=6.0)
-    parser.add_argument("--verify", action="store_true", help="regenerate and compare output")
+    parser.add_argument(
+        "--verify", action="store_true", help="regenerate and compare output"
+    )
     args = parser.parse_args(argv)
 
     from finite_element_options.examples.regime_switching_quanto.adoption.volatility_benchmark import (  # noqa: PLC0415
@@ -46,7 +50,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         import pandas as pd  # noqa: PLC0415
     except ModuleNotFoundError as exc:
-        raise ImportError("CSV input requires finite-element-options[calibration].") from exc
+        raise ImportError(
+            "CSV input requires finite-element-options[calibration]."
+        ) from exc
 
     config = VolatilityBenchmarkConfig(
         seed=args.seed,
@@ -71,14 +77,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         current = output.read_text(encoding="utf-8")
         if current != expected:
             print(
-                "artifact verification failed: regenerated canonical JSON differs", file=sys.stderr
+                "artifact verification failed: regenerated canonical JSON differs",
+                file=sys.stderr,
             )
             return 4
         print("artifact verification OK")
         return 0
     artifact_hash = write_atomic_json(output, result.to_dict())
     print(f"wrote {output} sha256={artifact_hash}")
-    print(f"decision={result.decision.decision} selected={result.decision.selected_candidate}")
+    print(
+        f"decision={result.decision.decision} selected={result.decision.selected_candidate}"
+    )
     return 0
 
 

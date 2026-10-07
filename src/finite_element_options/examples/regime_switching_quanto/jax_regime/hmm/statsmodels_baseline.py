@@ -20,12 +20,16 @@ def fit_statsmodels_var_baseline(observations: Any, train_count: int) -> dict[st
     values = np.asarray(observations, dtype=float)
     train = values[:train_count]
     if values.ndim != 2 or values.shape[1] != 2 or train_count < 30:
-        raise ValueError("VAR baseline requires at least 30 bivariate training observations")
+        raise ValueError(
+            "VAR baseline requires at least 30 bivariate training observations"
+        )
     fitted = VAR(train).fit(maxlags=1, trend="c")
     covariance = np.asarray(fitted.sigma_u, dtype=float)
     sign, logdet = np.linalg.slogdet(covariance)
     if sign <= 0.0 or not np.isfinite(covariance).all():
-        raise ValueError("statsmodels VAR residual covariance must be finite positive definite")
+        raise ValueError(
+            "statsmodels VAR residual covariance must be finite positive definite"
+        )
     inverse = np.linalg.inv(covariance)
     scores: list[float] = []
     for index in range(train_count, len(values)):

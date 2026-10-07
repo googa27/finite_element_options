@@ -63,7 +63,5 @@ def test_apply_dirichlet_enforces_values(n: int, data: st.DataObject) -> None:
         assert b_enf[idx] == pytest.approx(x[idx])
 
     for idx in set(range(n)) - set(dofs):
-        assert np.allclose(
-            A_enf.getrow(idx).toarray(), A.getrow(idx).toarray()
-        )
+        assert np.allclose(A_enf.getrow(idx).toarray(), A.getrow(idx).toarray())
         assert b_enf[idx] == pytest.approx(b[idx])

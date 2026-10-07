@@ -112,9 +112,9 @@ class DynamicsParametersHeston3D(
         zero = np.zeros_like(s)
         ones = np.ones_like(s)
         return [
-            [s ** 2 * v, self.rho * self.sig_v * s * v, zero],
-            [self.rho * self.sig_v * s * v, self.sig_v ** 2 * v, zero],
-            [zero, zero, self.sig_r ** 2 * ones],
+            [s**2 * v, self.rho * self.sig_v * s * v, zero],
+            [self.rho * self.sig_v * s * v, self.sig_v**2 * v, zero],
+            [zero, zero, self.sig_r**2 * ones],
         ]
 
     def dA(self, s, v, r_val):  # pylint: disable=unused-argument
@@ -122,7 +122,7 @@ class DynamicsParametersHeston3D(
         zero = np.zeros_like(s)
         return [
             2 * s * v + self.rho * self.sig_v * s,
-            self.rho * self.sig_v * v + self.sig_v ** 2,
+            self.rho * self.sig_v * v + self.sig_v**2,
             zero,
         ]
 

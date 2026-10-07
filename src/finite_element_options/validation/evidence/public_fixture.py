@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 
 if TYPE_CHECKING:
     from ..black_scholes_parity import FEMParityReport
+    from ..pinares_fixed_price_proxy import PinaresFixedPriceProxyCase
 
 PUBLIC_NUMERIC_CANONICALIZATION: dict[str, str | int] = {
     "policy_id": "public-synthetic-fem-bs-significant-digits-v1",
@@ -217,3 +218,90 @@ __all__ = [
     "public_fixture_provenance_metadata",
     "public_pde_convention_metadata",
 ]
+
+
+def _public_black_scholes_units() -> dict[str, str]:
+    return {
+        "spot": "CLP",
+        "strike": "CLP",
+        "underlying": "CLP",
+        "value": "CLP",
+        "rate": "1/year",
+        "time": "year",
+        "volatility": "annualized_decimal",
+        "delta": "value_per_underlying",
+        "gamma": "value_per_underlying_squared",
+    }
+
+
+def _weak_form_metadata() -> dict[str, str]:
+    return {
+        "equation_id": "pinares_fixed_price_proxy_black_scholes_weak_form",
+        "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+        "time_transformation": "tau = T - t",
+        "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+        "payoff_scaling": "UF value = survival_probability * K_uf * normalized_call_value",
+    }
+
+
+def _mesh_metadata(case: PinaresFixedPriceProxyCase) -> dict[str, Any]:
+    return {
+        "mesh_family": "line_uniform",
+        "element_family": "lagrange_p2",
+        "domain_min": 0.0,
+        "domain_max": case.domain_max_ratio,
+        "spatial_domain": f"[0, {case.domain_max_ratio:.12g}] normalized spot S/K",
+        "refinement_levels": list(case.refinement_levels),
+        "solver_backing": "scikit-fem+sparse-direct",
+    }
+
+
+def _time_metadata(case: PinaresFixedPriceProxyCase) -> dict[str, float | int | str]:
+    return {
+        "integrator": "theta_crank_nicolson",
+        "theta": 0.5,
+        "time_steps": case.time_steps,
+        "start_time": 0.0,
+        "end_time": case.maturity_years,
+        "time_domain": f"[0, {case.maturity_years:g}]",
+    }
+
+
+def _boundary_metadata(
+    case: PinaresFixedPriceProxyCase,
+) -> list[dict[str, float | int | str]]:
+    return [
+        {
+            "location": "S=0",
+            "condition_type": "dirichlet",
+            "expression": "0",
+            "enforced_nodes": 1,
+        },
+        {
+            "location": "S=S_max",
+            "condition_type": "dirichlet",
+            "expression": "linear_growth_call_far_field",
+            "s_max_uf": case.s_max_uf,
+            "enforced_nodes": 1,
+        },
+    ]
+
+
+def _stable_public_float(value: float) -> float:
+    """Round public numeric evidence past platform-noise precision."""
+
+    return float(f"{float(value):.8g}")
+
+
+def _stable_public_payload(value: Any) -> Any:
+    """Return a JSON payload with float noise normalized across Python/NumPy builds."""
+
+    if isinstance(value, float):
+        return _stable_public_float(value)
+    if isinstance(value, list):
+        return [_stable_public_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return [_stable_public_payload(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _stable_public_payload(item) for key, item in value.items()}
+    return value

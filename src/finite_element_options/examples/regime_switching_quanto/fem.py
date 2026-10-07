@@ -70,7 +70,9 @@ def price_contract_fem(
     doflocs = basis.doflocs
 
     values = np.tile(
-        contract.payoff(doflocs[0], doflocs[1], equity_spot=equity_spot, fx_spot=fx_spot),
+        contract.payoff(
+            doflocs[0], doflocs[1], equity_spot=equity_spot, fx_spot=fx_spot
+        ),
         model.n_regimes,
     ).astype(float)
     values[boundary] = _boundary_values(
@@ -122,7 +124,8 @@ def price_contract_fem(
 
     probe = basis.probes(np.array([[0.0], [0.0]]))
     per_regime = [
-        float((probe @ values[r * n_nodes : (r + 1) * n_nodes])[0]) for r in range(model.n_regimes)
+        float((probe @ values[r * n_nodes : (r + 1) * n_nodes])[0])
+        for r in range(model.n_regimes)
     ]
     probs = np.asarray(model.current_probabilities, dtype=float)
     mixture = float(np.dot(probs, per_regime))
@@ -194,7 +197,9 @@ def _regime_generator_form(
         gu = grad(u)
         gv = grad(v)
         diffusion = -(
-            d_xx * gv[0] * gu[0] + d_xy * (gv[0] * gu[1] + gv[1] * gu[0]) + d_yy * gv[1] * gu[1]
+            d_xx * gv[0] * gu[0]
+            + d_xy * (gv[0] * gu[1] + gv[1] * gu[0])
+            + d_yy * gv[1] * gu[1]
         )
         advection = v * (a_s * gu[0] + a_f * gu[1])
         reaction = -rd * u * v
@@ -208,7 +213,9 @@ def _block_boundary_dofs(basis: Basis, n_regimes: int) -> np.ndarray:
     return np.concatenate([base + regime * basis.N for regime in range(n_regimes)])
 
 
-def _time_schedule(maturity: float, grid: FEMGridSpec) -> list[tuple[float, float, float, float]]:
+def _time_schedule(
+    maturity: float, grid: FEMGridSpec
+) -> list[tuple[float, float, float, float]]:
     dt = maturity / grid.time_steps
     if not grid.rannacher or grid.rannacher_steps == 0:
         tau = 0.0

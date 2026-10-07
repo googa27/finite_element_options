@@ -133,7 +133,9 @@ def memory_evidence(
     )
     snapshots = system.interior_dofs * trained.snapshot_count * np.dtype(float).itemsize
     reduced_dimension = trained.basis_size
-    online_payload = trained.projection.memory_bytes + trained.output_boundary_weights.nbytes
+    online_payload = (
+        trained.projection.memory_bytes + trained.output_boundary_weights.nbytes
+    )
     workspace = np.dtype(float).itemsize * (
         3 * reduced_dimension * reduced_dimension + 6 * reduced_dimension
     )

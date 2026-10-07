@@ -56,6 +56,36 @@
       "review_followup_issue": "https://github.com/googa27/finite_element_options/issues/157",
       "internal_steps": "Validate finite positive generated widths and finite strictly increasing internal endpoints before all solver work; preserve representable subnormals.",
       "validation_owner": "finite_element_options.time_integration.time_grid"
+    },
+    "canonical_formatting_policy": {
+      "owner_issue": "https://github.com/googa27/finite_element_options/issues/166",
+      "extraction_prerequisite_issue": "https://github.com/googa27/finite_element_options/issues/167",
+      "formatter": "ruff==0.12.12",
+      "required_version": "==0.12.12",
+      "line_length": 88,
+      "commands": [
+        "ruff check .",
+        "ruff format --check ."
+      ],
+      "scope": "Whole repository; no formatter exclusions or changed lint selections",
+      "exact_math_and_reference_preservation": true,
+      "compatibility": "Original public class/report/function modules remain; private aliases or delegating methods preserve existing call sites",
+      "cohesive_owners": [
+        "contracts.route_mapping",
+        "estimation.calibration_values",
+        "estimation.heston_engine_identity",
+        "space.domain",
+        "validation.evidence.public_fixture",
+        "validation.evidence.american_lcp",
+        "examples.regime_switching_quanto.adoption.uncertainty.study_parameters"
+      ],
+      "fitness_tests": [
+        "tests/architecture/test_ci_contract.py",
+        "tests/test_calibrator.py",
+        "tests/test_ui_config.py",
+        "tests/test_validation_gates.py",
+        "tests/test_pinares_fem_proxy.py"
+      ]
     }
   },
   "source_layout": {

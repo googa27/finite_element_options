@@ -5,7 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from finite_element_options.contracts import evidence_serialization as serialization_impl
+from finite_element_options.contracts import (
+    evidence_serialization as serialization_impl,
+)
 from finite_element_options.examples.regime_switching_quanto.adoption import evidence_io
 from finite_element_options.validation.evidence.serialization import (
     canonical_json,
@@ -14,10 +16,16 @@ from finite_element_options.validation.evidence.serialization import (
 )
 
 
-def test_shared_serialization_handles_numpy_bool_and_preserves_compatibility_exports() -> None:
+def test_shared_serialization_handles_numpy_bool_and_preserves_compatibility_exports() -> (
+    None
+):
     """Promoting evidence I/O must preserve adoption artifact semantics."""
 
-    payload = {"flag": np.bool_(True), "value": np.float64(1.25), "array": np.array([1, 2])}
+    payload = {
+        "flag": np.bool_(True),
+        "value": np.float64(1.25),
+        "array": np.array([1, 2]),
+    }
     assert json_safe(payload) == {"flag": True, "value": 1.25, "array": [1, 2]}
     assert evidence_io.canonical_json(payload) == canonical_json(payload)
     assert evidence_io.canonical_json_sha256(payload) == canonical_json_sha256(payload)
@@ -48,5 +56,10 @@ def test_distribution_install_mode_rejects_non_wheel_direct_urls(
             assert filename == "direct_url.json"
             return direct_url
 
-    monkeypatch.setattr(serialization_impl, "distribution", lambda _: FakeDistribution())
-    assert serialization_impl.distribution_install_mode("finite-element-options") == expected
+    monkeypatch.setattr(
+        serialization_impl, "distribution", lambda _: FakeDistribution()
+    )
+    assert (
+        serialization_impl.distribution_install_mode("finite-element-options")
+        == expected
+    )

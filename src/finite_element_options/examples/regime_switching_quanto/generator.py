@@ -73,6 +73,8 @@ def _generator_initial_guesses(
     if np.iscomplexobj(log_guess):
         log_guess = np.real(log_guess)
     guesses = [np.array([max(float(log_guess[i, j]), 0.0) for i, j in pairs])]
-    guesses.append(np.array([max(float(p[i, j] * periods_per_year), 0.0) for i, j in pairs]))
+    guesses.append(
+        np.array([max(float(p[i, j] * periods_per_year), 0.0) for i, j in pairs])
+    )
     guesses.append(np.full(len(pairs), 0.1, dtype=float))
     return guesses

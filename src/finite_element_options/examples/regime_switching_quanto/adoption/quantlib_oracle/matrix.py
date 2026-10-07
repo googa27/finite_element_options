@@ -179,7 +179,9 @@ def default_matrix_cases() -> tuple[MatrixCase, ...]:
     )
 
 
-def run_quantlib_oracle_matrix(cases: tuple[MatrixCase, ...] | None = None) -> MatrixRunResult:
+def run_quantlib_oracle_matrix(
+    cases: tuple[MatrixCase, ...] | None = None,
+) -> MatrixRunResult:
     """Run the deterministic one-regime QuantLib/FEM/MC matrix."""
 
     selected = default_matrix_cases() if cases is None else cases
@@ -189,7 +191,9 @@ def run_quantlib_oracle_matrix(cases: tuple[MatrixCase, ...] | None = None) -> M
     matrix_spec_hash = canonical_json_sha256(matrix_inputs)
     rows = [_run_case(case) for case in selected]
     all_passed = all(row["gates"]["all_passed"] for row in rows)
-    max_quantlib_error = max(row["errors"]["quantlib_vs_analytical_abs"] for row in rows)
+    max_quantlib_error = max(
+        row["errors"]["quantlib_vs_analytical_abs"] for row in rows
+    )
     max_fem_error = max(row["errors"]["fem_vs_analytical_abs"] for row in rows)
     max_mc_z = max(row["errors"]["mc_vs_analytical_standard_errors"] for row in rows)
     return MatrixRunResult(
@@ -199,8 +203,12 @@ def run_quantlib_oracle_matrix(cases: tuple[MatrixCase, ...] | None = None) -> M
         cases=rows,
         summary={
             "case_count": len(rows),
-            "vanilla_case_count": sum(1 for row in rows if row["spec"]["kind"] == "vanilla"),
-            "quanto_case_count": sum(1 for row in rows if row["spec"]["kind"] == "fixed_fx_quanto"),
+            "vanilla_case_count": sum(
+                1 for row in rows if row["spec"]["kind"] == "vanilla"
+            ),
+            "quanto_case_count": sum(
+                1 for row in rows if row["spec"]["kind"] == "fixed_fx_quanto"
+            ),
             "all_passed": all_passed,
             "max_quantlib_vs_analytical_abs": max_quantlib_error,
             "max_fem_vs_analytical_abs": max_fem_error,
@@ -264,7 +272,9 @@ def _run_case(case: MatrixCase) -> dict[str, Any]:
     analytical = quantlib.analytical_price
     fem_error = abs(fem.mixture_price - analytical)
     mc_error = abs(mc.price - analytical)
-    mc_tolerance = max(case.mc_abs_floor, case.mc_standard_error_multiplier * mc.standard_error)
+    mc_tolerance = max(
+        case.mc_abs_floor, case.mc_standard_error_multiplier * mc.standard_error
+    )
     quantlib_error = quantlib.analytical_absolute_error
     gates = {
         "quantlib_analytical_passed": quantlib.analytical_passed,

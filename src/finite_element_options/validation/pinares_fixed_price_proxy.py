@@ -31,6 +31,16 @@ from finite_element_options.space.mesh import create_mesh
 from finite_element_options.space.solver import SpaceSolver
 from finite_element_options.time_integration.stepper import ThetaScheme
 
+from .evidence.public_fixture import (
+    _weak_form_metadata as _weak_form_metadata,
+    _mesh_metadata as _mesh_metadata,
+    _time_metadata as _time_metadata,
+    _boundary_metadata as _boundary_metadata,
+    _stable_public_float as _stable_public_float,
+    _stable_public_payload as _stable_public_payload,
+)
+
+
 PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID = "PINARES-FEM-FIXED-PRICE-PROXY-V0"
 PINARES_QPS_CONTRACT_BENCHMARK_ID = "PINARES-QPS-FIXED-PRICE-PROXY-V0"
 PINARES_FEM_FAIL_CLOSED_BENCHMARK_ID = "PINARES-FEM-FAIL-CLOSED-V0"
@@ -40,16 +50,29 @@ PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS = (
 )
 PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_ID = "pinares.fixed_price_option_proxy.v1"
 PINARES_FEM_FIXED_PRICE_PROXY_PROBLEM_HASH = "publicsyntheticpinares001"
-PINARES_FEM_FIXED_PRICE_PROXY_FIXTURE_ID = "public-synthetic.pinares-fem-fixed-price-proxy.v1"
-PINARES_FEM_FIXED_PRICE_PROXY_ROUTE_ID = "fem.pinares_fixed_price_proxy.weak_form_p2_theta"
-PINARES_FEM_FIXED_PRICE_PROXY_SCHEMA_VERSION = "finite-element-pinares-fixed-price-proxy/v0"
+PINARES_FEM_FIXED_PRICE_PROXY_FIXTURE_ID = (
+    "public-synthetic.pinares-fem-fixed-price-proxy.v1"
+)
+PINARES_FEM_FIXED_PRICE_PROXY_ROUTE_ID = (
+    "fem.pinares_fixed_price_proxy.weak_form_p2_theta"
+)
+PINARES_FEM_FIXED_PRICE_PROXY_SCHEMA_VERSION = (
+    "finite-element-pinares-fixed-price-proxy/v0"
+)
 PINARES_FEM_PROXY_REFINEMENT_LEVELS = (5, 6, 7)
 PINARES_FEM_PROXY_TIME_STEPS = 160
 PINARES_FEM_PROXY_FIXTURE_ROOT = (
-    Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "fem_pinares_fixed_price_proxy_v1"
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "fem_pinares_fixed_price_proxy_v1"
 )
-PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
-PINARES_FEM_PROXY_RESULT_EXPORT_PATH = PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
+PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = (
+    PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
+)
+PINARES_FEM_PROXY_RESULT_EXPORT_PATH = (
+    PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
+)
 PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH = (
     PINARES_FEM_PROXY_FIXTURE_ROOT / "provider_evidence_manifest.json"
 )
@@ -218,7 +241,11 @@ class PinaresFEMProxyReport:
             self.price_absolute_error_uf <= self.case.price_abs_tolerance_uf
             and self.delta_absolute_error <= self.case.delta_abs_tolerance
             and self.gamma_absolute_error <= self.case.gamma_abs_tolerance
-            and all(bool(value) for key, value in self.no_arbitrage.items() if key.endswith("_ok"))
+            and all(
+                bool(value)
+                for key, value in self.no_arbitrage.items()
+                if key.endswith("_ok")
+            )
         )
 
     @property
@@ -466,7 +493,9 @@ def public_pinares_fixed_price_problem_spec(
                 "survival_probability": case.survival_probability,
             },
             "valuation_graph": {
-                "solver_hints": {"benchmark_ids": list(PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS)}
+                "solver_hints": {
+                    "benchmark_ids": list(PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_IDS)
+                }
             },
         },
         "result_bundle": {
@@ -540,28 +569,10 @@ def public_pinares_full_deal_unsupported_problem_spec() -> dict[str, Any]:
 def build_pinares_fem_proxy_hash(payload: dict[str, Any]) -> str:
     """Compute a deterministic hash for Pinares FEM fixture contracts."""
 
-    payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    payload_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
     return sha256(payload_bytes).hexdigest()
-
-
-def _stable_public_float(value: float) -> float:
-    """Round public numeric evidence past platform-noise precision."""
-
-    return float(f"{float(value):.8g}")
-
-
-def _stable_public_payload(value: Any) -> Any:
-    """Return a JSON payload with float noise normalized across Python/NumPy builds."""
-
-    if isinstance(value, float):
-        return _stable_public_float(value)
-    if isinstance(value, list):
-        return [_stable_public_payload(item) for item in value]
-    if isinstance(value, tuple):
-        return [_stable_public_payload(item) for item in value]
-    if isinstance(value, dict):
-        return {key: _stable_public_payload(item) for key, item in value.items()}
-    return value
 
 
 def run_public_pinares_fixed_price_proxy_fixture(
@@ -570,7 +581,9 @@ def run_public_pinares_fixed_price_proxy_fixture(
     """Run the public-synthetic Pinares fixed-price weak-form proxy fixture."""
 
     case = case or PinaresFixedPriceProxyCase()
-    rows = tuple(_run_row(case, refinement_level=level) for level in case.refinement_levels)
+    rows = tuple(
+        _run_row(case, refinement_level=level) for level in case.refinement_levels
+    )
     final = rows[-1]
     intrinsic = case.survival_probability * max(case.spot_uf - case.strike_uf, 0.0)
     upper_bound = case.survival_probability * case.spot_uf
@@ -580,7 +593,8 @@ def run_public_pinares_fixed_price_proxy_fixture(
         "value_bound_ok": final.observed_price_uf >= intrinsic - 1e-12,
         "upper_bound_ok": final.observed_price_uf <= upper_bound + 1e-12,
         "delta_lower_bound_ok": final.observed_delta >= -1e-12,
-        "delta_upper_bound_ok": final.observed_delta <= case.survival_probability + 1e-12,
+        "delta_upper_bound_ok": final.observed_delta
+        <= case.survival_probability + 1e-12,
         "gamma_non_negative_ok": final.observed_gamma >= -1e-12,
         "survival_scale_ok": 0.0 <= case.survival_probability <= 1.0,
     }
@@ -600,7 +614,9 @@ def run_public_pinares_fixed_price_proxy_fixture(
         no_arbitrage=no_arbitrage,
         config_hash="",
     )
-    report = PinaresFEMProxyReport(**{**report.__dict__, "config_hash": _config_hash(report)})
+    report = PinaresFEMProxyReport(
+        **{**report.__dict__, "config_hash": _config_hash(report)}
+    )
     if refresh_exports:
         write_public_pinares_fixed_price_problem_spec(report=report)
         write_public_pinares_fixed_price_result_export(report=report, refresh=True)
@@ -621,7 +637,9 @@ def write_public_pinares_fixed_price_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
-    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return target
 
 
@@ -654,7 +672,9 @@ def build_pinares_fem_provider_evidence_manifest(
     manifest = DEFAULT_FEM_CAPABILITY_MANIFEST
     case = active_report.case
     scipy_direct = next(
-        backend for backend in manifest.solver_backends if backend.name == "scipy_direct"
+        backend
+        for backend in manifest.solver_backends
+        if backend.name == "scipy_direct"
     )
     final_row = active_report.rows[-1]
     return _stable_public_payload(
@@ -761,7 +781,9 @@ def write_public_pinares_provider_evidence_manifest(
             report = run_public_pinares_fixed_price_proxy_fixture()
         target.write_text(
             json.dumps(
-                build_pinares_fem_provider_evidence_manifest(report), indent=2, sort_keys=True
+                build_pinares_fem_provider_evidence_manifest(report),
+                indent=2,
+                sort_keys=True,
             )
             + "\n",
             encoding="utf-8",
@@ -778,7 +800,9 @@ def write_public_pinares_unsupported_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
         payload = public_pinares_full_deal_unsupported_problem_spec()
-        target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        target.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
     return target
 
 
@@ -793,14 +817,18 @@ def write_public_pinares_quant_problem_spec(
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
-    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return target
 
 
 def _run_row(
     case: PinaresFixedPriceProxyCase, *, refinement_level: int
 ) -> PinaresFEMProxyConvergenceRow:
-    dynamics = DynamicsParametersBlackScholes(r=case.risk_free_rate, q=0.0, sig=case.volatility)
+    dynamics = DynamicsParametersBlackScholes(
+        r=case.risk_free_rate, q=0.0, sig=case.volatility
+    )
     market = Market(r=dynamics.r)
     option = EuropeanOptionBs(k=1.0, q=dynamics.q, mkt=market)
     times = np.linspace(0.0, case.maturity_years, case.time_steps + 1)
@@ -816,8 +844,10 @@ def _run_row(
         solution = ThetaScheme(theta=0.5).solve(
             times, space, boundary_condition=DirichletBC(["left", "right"])
         )
-    normalized_price, normalized_delta, normalized_gamma = _interpolate_solution_and_greeks(
-        space.Vh.doflocs[0], solution[-1], case.spot_ratio
+    normalized_price, normalized_delta, normalized_gamma = (
+        _interpolate_solution_and_greeks(
+            space.Vh.doflocs[0], solution[-1], case.spot_ratio
+        )
     )
     expected_price, expected_delta, expected_gamma = _analytical_reference(case)
     observed_price = case.survival_probability * case.strike_uf * normalized_price
@@ -933,60 +963,9 @@ def _config_hash(report: PinaresFEMProxyReport) -> str:
     return build_pinares_fem_proxy_hash(payload)
 
 
-def _weak_form_metadata() -> dict[str, str]:
-    return {
-        "equation_id": "pinares_fixed_price_proxy_black_scholes_weak_form",
-        "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
-        "time_transformation": "tau = T - t",
-        "coordinate_transform": "normalized_spot_x_equals_S_over_K",
-        "payoff_scaling": "UF value = survival_probability * K_uf * normalized_call_value",
-    }
-
-
-def _mesh_metadata(case: PinaresFixedPriceProxyCase) -> dict[str, Any]:
-    return {
-        "mesh_family": "line_uniform",
-        "element_family": "lagrange_p2",
-        "domain_min": 0.0,
-        "domain_max": case.domain_max_ratio,
-        "spatial_domain": f"[0, {case.domain_max_ratio:.12g}] normalized spot S/K",
-        "refinement_levels": list(case.refinement_levels),
-        "solver_backing": "scikit-fem+sparse-direct",
-    }
-
-
-def _time_metadata(case: PinaresFixedPriceProxyCase) -> dict[str, float | int | str]:
-    return {
-        "integrator": "theta_crank_nicolson",
-        "theta": 0.5,
-        "time_steps": case.time_steps,
-        "start_time": 0.0,
-        "end_time": case.maturity_years,
-        "time_domain": f"[0, {case.maturity_years:g}]",
-    }
-
-
-def _boundary_metadata(
+def _backend_capability_status(
     case: PinaresFixedPriceProxyCase,
-) -> list[dict[str, float | int | str]]:
-    return [
-        {
-            "location": "S=0",
-            "condition_type": "dirichlet",
-            "expression": "0",
-            "enforced_nodes": 1,
-        },
-        {
-            "location": "S=S_max",
-            "condition_type": "dirichlet",
-            "expression": "linear_growth_call_far_field",
-            "s_max_uf": case.s_max_uf,
-            "enforced_nodes": 1,
-        },
-    ]
-
-
-def _backend_capability_status(case: PinaresFixedPriceProxyCase) -> dict[str, str | bool | None]:
+) -> dict[str, str | bool | None]:
     scipy_direct = next(
         backend
         for backend in DEFAULT_FEM_CAPABILITY_MANIFEST.solver_backends
@@ -1021,7 +1000,9 @@ def _result_evidence_diagnostics(report: PinaresFEMProxyReport) -> dict[str, Any
         "refinement_level": final_row.refinement_level,
         "degrees_of_freedom": final_row.degrees_of_freedom,
         "time_steps": final_row.time_steps,
-        "deterministic_seed": report.case.seed if report.case.seed is not None else "not_applicable",
+        "deterministic_seed": report.case.seed
+        if report.case.seed is not None
+        else "not_applicable",
         "source_issue": "googa27/finite_element_options#104",
         "scope": "fixed-price proxy only; full family contract remains fail-closed",
     }

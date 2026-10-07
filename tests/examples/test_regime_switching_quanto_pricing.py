@@ -27,10 +27,18 @@ def _normal_cdf(value: float) -> float:
 
 
 def _black_scholes_product_call(
-    *, spot_product: float, strike: float, maturity: float, rd: float, dividend: float, vol: float
+    *,
+    spot_product: float,
+    strike: float,
+    maturity: float,
+    rd: float,
+    dividend: float,
+    vol: float,
 ) -> float:
     std = vol * sqrt(maturity)
-    d1 = (log(spot_product / strike) + (rd - dividend + 0.5 * vol * vol) * maturity) / std
+    d1 = (
+        log(spot_product / strike) + (rd - dividend + 0.5 * vol * vol) * maturity
+    ) / std
     d2 = d1 - std
     return spot_product * exp(-dividend * maturity) * _normal_cdf(d1) - strike * exp(
         -rd * maturity
@@ -59,7 +67,9 @@ def test_grid_contract_rejects_nonfinite_domains_and_domains_excluding_origin() 
         FEMGridSpec((0.1, 1.0), (-1.0, 1.0), 5, 5, 2)
 
 
-def test_contract_payoffs_are_vectorized_and_model_validation_documents_q_assumptions() -> None:
+def test_contract_payoffs_are_vectorized_and_model_validation_documents_q_assumptions() -> (
+    None
+):
     x = np.array([-0.1, 0.0, 0.2])
     y = np.array([0.15, 0.0, -0.05])
 
@@ -124,7 +134,9 @@ def test_contract_payoffs_are_vectorized_and_model_validation_documents_q_assump
     json.dumps(payload, allow_nan=False)
 
 
-def test_one_regime_composite_call_fem_matches_product_black_scholes_with_refinement() -> None:
+def test_one_regime_composite_call_fem_matches_product_black_scholes_with_refinement() -> (
+    None
+):
     maturity = 0.5
     model = _one_regime_model()
     contract = ContractSpec(kind="composite_call", strike=1.0)
@@ -143,7 +155,9 @@ def test_one_regime_composite_call_fem_matches_product_black_scholes_with_refine
         maturity=maturity,
         equity_spot=1.0,
         fx_spot=1.0,
-        grid=FEMGridSpec(x_domain=(-1.4, 1.4), y_domain=(-1.4, 1.4), nx=13, ny=13, time_steps=12),
+        grid=FEMGridSpec(
+            x_domain=(-1.4, 1.4), y_domain=(-1.4, 1.4), nx=13, ny=13, time_steps=12
+        ),
     )
     fine = price_contract_fem(
         model,
@@ -151,18 +165,25 @@ def test_one_regime_composite_call_fem_matches_product_black_scholes_with_refine
         maturity=maturity,
         equity_spot=1.0,
         fx_spot=1.0,
-        grid=FEMGridSpec(x_domain=(-1.4, 1.4), y_domain=(-1.4, 1.4), nx=25, ny=25, time_steps=28),
+        grid=FEMGridSpec(
+            x_domain=(-1.4, 1.4), y_domain=(-1.4, 1.4), nx=25, ny=25, time_steps=28
+        ),
     )
 
     assert abs(fine.mixture_price - reference) < 7.5e-3
-    assert abs(fine.mixture_price - reference) <= abs(coarse.mixture_price - reference) + 2.0e-3
+    assert (
+        abs(fine.mixture_price - reference)
+        <= abs(coarse.mixture_price - reference) + 2.0e-3
+    )
     assert fine.degrees_of_freedom > coarse.degrees_of_freedom
     assert "frozen-diffusion" in fine.boundary_description
 
 
 def test_composite_call_prices_are_monotone_decreasing_in_strike() -> None:
     model = _one_regime_model(sig_s=0.18, sig_f=0.10, rho=-0.15)
-    grid = FEMGridSpec(x_domain=(-1.3, 1.3), y_domain=(-1.3, 1.3), nx=19, ny=19, time_steps=18)
+    grid = FEMGridSpec(
+        x_domain=(-1.3, 1.3), y_domain=(-1.3, 1.3), nx=19, ny=19, time_steps=18
+    )
 
     low = price_contract_fem(
         model,
@@ -206,7 +227,9 @@ def test_multi_regime_fem_agrees_with_seeded_monte_carlo_oracle() -> None:
         maturity=maturity,
         equity_spot=1.0,
         fx_spot=1.0,
-        grid=FEMGridSpec(x_domain=(-1.5, 1.5), y_domain=(-1.5, 1.5), nx=21, ny=21, time_steps=24),
+        grid=FEMGridSpec(
+            x_domain=(-1.5, 1.5), y_domain=(-1.5, 1.5), nx=21, ny=21, time_steps=24
+        ),
     )
     mc = price_contract_monte_carlo(
         model,
@@ -227,7 +250,9 @@ def test_multi_regime_fem_agrees_with_seeded_monte_carlo_oracle() -> None:
 def test_pricing_results_serialize_without_numpy_leakage() -> None:
     model = _one_regime_model()
     contract = ContractSpec(kind="composite_digital", strike=1.0, payout=3.0)
-    grid = FEMGridSpec(x_domain=(-1.2, 1.2), y_domain=(-1.2, 1.2), nx=11, ny=11, time_steps=8)
+    grid = FEMGridSpec(
+        x_domain=(-1.2, 1.2), y_domain=(-1.2, 1.2), nx=11, ny=11, time_steps=8
+    )
 
     fem = price_contract_fem(
         model,

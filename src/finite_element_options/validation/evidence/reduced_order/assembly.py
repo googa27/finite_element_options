@@ -26,7 +26,9 @@ def space_solver(config: PymorBlackScholesConfig, volatility: float) -> SpaceSol
 
     dynamics = DynamicsParametersBlackScholes(r=config.rate, q=0.0, sig=volatility)
     option = EuropeanOptionBs(k=config.strike, q=0.0, mkt=Market(r=config.rate))
-    mesh, finite_element_config = create_mesh([config.domain_max], config.refinement_level)
+    mesh, finite_element_config = create_mesh(
+        [config.domain_max], config.refinement_level
+    )
     mesh = mesh.with_boundaries(
         {
             "left": lambda x: np.isclose(x[0], 0.0),

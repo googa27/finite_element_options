@@ -35,7 +35,9 @@ def fit_markov_baseline(
             MarkovAutoregression,
         )
     except ModuleNotFoundError as exc:
-        raise ImportError("Markov baseline requires finite-element-options[calibration].") from exc
+        raise ImportError(
+            "Markov baseline requires finite-element-options[calibration]."
+        ) from exc
     observations: list[float] = []
     means: list[float] = []
     variances: list[float] = []
@@ -125,9 +127,13 @@ def full_markov_high_volatility_probability(
     """Return smoothed probability of the highest-variance Markov regime or failure."""
 
     try:
-        from statsmodels.tsa.regime_switching.markov_autoregression import MarkovAutoregression
+        from statsmodels.tsa.regime_switching.markov_autoregression import (
+            MarkovAutoregression,
+        )
     except ModuleNotFoundError as exc:
-        return MarkovHighVolatilityProbability(None, CandidateFailure("dependency", str(exc), 0))
+        return MarkovHighVolatilityProbability(
+            None, CandidateFailure("dependency", str(exc), 0)
+        )
     try:
         with temporary_numpy_seed(cfg.seed + 3000):
             fitted = MarkovAutoregression(
@@ -145,7 +151,9 @@ def full_markov_high_volatility_probability(
                 search_reps=cfg.markov_search_reps,
                 search_iter=cfg.markov_search_iter,
             )
-        converged = bool((getattr(fitted, "mle_retvals", {}) or {}).get("converged", False))
+        converged = bool(
+            (getattr(fitted, "mle_retvals", {}) or {}).get("converged", False)
+        )
         if not converged:
             return MarkovHighVolatilityProbability(
                 None,
@@ -158,7 +166,9 @@ def full_markov_high_volatility_probability(
         probs = np.asarray(fitted.smoothed_marginal_probabilities, dtype=float)
         names = list(fitted.model.param_names)
         params = np.asarray(fitted.params, dtype=float)
-        variances = np.array([params[names.index(f"sigma2[{i}]")] for i in range(fitted.k_regimes)])
+        variances = np.array(
+            [params[names.index(f"sigma2[{i}]")] for i in range(fitted.k_regimes)]
+        )
         aligned = np.full(len(response), np.nan, dtype=float)
         aligned[cfg.markov_order :] = probs[:, int(np.argmax(variances))]
         if np.any(~np.isfinite(aligned[cfg.markov_order :])):
@@ -200,14 +210,20 @@ def markov_forecast(
     names = list(fitted.model.param_names)
     values = np.asarray(fitted.params, dtype=float)
     k = int(fitted.k_regimes)
-    const = np.array([values[names.index(f"const[{i}]")] for i in range(k)], dtype=float)
-    sig2 = np.maximum(np.array([values[names.index(f"sigma2[{i}]")] for i in range(k)]), 1.0e-12)
+    const = np.array(
+        [values[names.index(f"const[{i}]")] for i in range(k)], dtype=float
+    )
+    sig2 = np.maximum(
+        np.array([values[names.index(f"sigma2[{i}]")] for i in range(k)]), 1.0e-12
+    )
     ar = np.array(
         [[values[names.index(f"ar.L{lag}[{i}]")] for lag in (1, 2)] for i in range(k)],
         dtype=float,
     )
     transition = statsmodels_row_stochastic_transition(fitted)
-    prob = normalize(np.asarray(fitted.smoothed_marginal_probabilities, dtype=float)[-1])
+    prob = normalize(
+        np.asarray(fitted.smoothed_marginal_probabilities, dtype=float)[-1]
+    )
     previous = [float(train[-1]), float(train[-2])]
     means: list[float] = []
     variances: list[float] = []
@@ -259,12 +275,17 @@ def statsmodels_row_stochastic_transition(fitted: Any) -> np.ndarray:
     raw = np.asarray(fitted.regime_transition[:, :, 0], dtype=float)
     expected = (int(fitted.k_regimes), int(fitted.k_regimes))
     if raw.shape != expected:
-        raise ValueError(f"unexpected Markov transition shape {raw.shape}, expected {expected}")
+        raise ValueError(
+            f"unexpected Markov transition shape {raw.shape}, expected {expected}"
+        )
     return normalize_rows(raw.T)
 
 
 def update_markov_probabilities(
-    prior: np.ndarray, observed: float, component_mean: np.ndarray, component_variance: np.ndarray
+    prior: np.ndarray,
+    observed: float,
+    component_mean: np.ndarray,
+    component_variance: np.ndarray,
 ) -> np.ndarray:
     """Filter Markov regime probabilities after observing one hold-out value."""
 
@@ -276,7 +297,10 @@ def update_markov_probabilities(
 
 
 def mixture_logpdf(
-    observed: float, weights: np.ndarray, component_mean: np.ndarray, component_variance: np.ndarray
+    observed: float,
+    weights: np.ndarray,
+    component_mean: np.ndarray,
+    component_variance: np.ndarray,
 ) -> float:
     """Return the predictive log density of a Gaussian regime mixture."""
 
@@ -287,7 +311,10 @@ def mixture_logpdf(
 
 
 def gaussian_mixture_var(
-    weights: np.ndarray, component_mean: np.ndarray, component_variance: np.ndarray, alpha: float
+    weights: np.ndarray,
+    component_mean: np.ndarray,
+    component_variance: np.ndarray,
+    alpha: float,
 ) -> float:
     """Return the exact alpha quantile of a univariate Gaussian mixture."""
 
@@ -303,13 +330,17 @@ def gaussian_mixture_var(
         return float(np.dot(probabilities, norm.cdf(z)) - alpha)
 
     mixture_mean = float(np.dot(probabilities, means))
-    mixture_variance = float(np.dot(probabilities, variances + (means - mixture_mean) ** 2))
+    mixture_variance = float(
+        np.dot(probabilities, variances + (means - mixture_mean) ** 2)
+    )
     mixture_std = math.sqrt(max(mixture_variance, 1.0e-12))
     lower = float(min(np.min(means - 10.0 * std), mixture_mean - 10.0 * mixture_std))
     upper = float(max(np.max(means + 10.0 * std), mixture_mean + 10.0 * mixture_std))
     for _ in range(12):
         if cdf_minus_alpha(lower) <= 0.0 and cdf_minus_alpha(upper) >= 0.0:
-            return float(brentq(cdf_minus_alpha, lower, upper, xtol=1.0e-12, rtol=1.0e-12))
+            return float(
+                brentq(cdf_minus_alpha, lower, upper, xtol=1.0e-12, rtol=1.0e-12)
+            )
         width = upper - lower
         lower -= width
         upper += width
@@ -321,7 +352,9 @@ def normalize(vector: np.ndarray) -> np.ndarray:
 
     clipped = np.clip(np.asarray(vector, dtype=float), 0.0, None)
     total = float(np.sum(clipped))
-    return np.full_like(clipped, 1.0 / clipped.size) if total <= 0.0 else clipped / total
+    return (
+        np.full_like(clipped, 1.0 / clipped.size) if total <= 0.0 else clipped / total
+    )
 
 
 def normalize_rows(matrix: np.ndarray) -> np.ndarray:

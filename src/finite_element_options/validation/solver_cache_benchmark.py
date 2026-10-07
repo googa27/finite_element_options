@@ -26,7 +26,10 @@ from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.boundary import DirichletBC
 from finite_element_options.space.mesh import create_mesh
 from finite_element_options.space.solver import SpaceSolver
-from finite_element_options.time_integration.stepper import LinearSolveDiagnostics, ThetaScheme
+from finite_element_options.time_integration.stepper import (
+    LinearSolveDiagnostics,
+    ThetaScheme,
+)
 
 SOLVER_CACHE_BENCHMARK_ID = "FEM-SOLVER-CACHE-001"
 SOLVER_CACHE_CONTRACT_VERSION = "solver-cache-benchmark/v1"
@@ -60,8 +63,13 @@ class SolverCacheBenchmarkCase:
             raise ValueError("time_steps must be positive")
         if self.repeats <= 0:
             raise ValueError("repeats must be positive")
-        if min(self.spot, self.strike, self.domain_max, self.volatility, self.maturity) <= 0.0:
-            raise ValueError("spot, strike, domain_max, volatility and maturity must be positive")
+        if (
+            min(self.spot, self.strike, self.domain_max, self.volatility, self.maturity)
+            <= 0.0
+        ):
+            raise ValueError(
+                "spot, strike, domain_max, volatility and maturity must be positive"
+            )
 
 
 @dataclass(frozen=True)
@@ -130,7 +138,8 @@ class SolverCacheBenchmarkReport:
         """Return true when all repeated solves satisfy acceptance budgets."""
 
         return all(row.accepted for row in self.rows) and all(
-            row.price_absolute_error <= self.case.price_abs_tolerance for row in self.rows
+            row.price_absolute_error <= self.case.price_abs_tolerance
+            for row in self.rows
         )
 
     def to_public_dict(self) -> dict[str, Any]:
@@ -186,10 +195,14 @@ def run_solver_cache_benchmark(
         unsupported_solver_routes=unsupported_routes,
         config_hash="",
     )
-    return SolverCacheBenchmarkReport(**{**report.__dict__, "config_hash": _config_hash(report)})
+    return SolverCacheBenchmarkReport(
+        **{**report.__dict__, "config_hash": _config_hash(report)}
+    )
 
 
-def _run_row(case: SolverCacheBenchmarkCase, *, repeat_index: int) -> SolverCacheBenchmarkRow:
+def _run_row(
+    case: SolverCacheBenchmarkCase, *, repeat_index: int
+) -> SolverCacheBenchmarkRow:
     started_assembly = perf_counter()
     dynamics = DynamicsParametersBlackScholes(r=case.rate, q=0.0, sig=case.volatility)
     market = Market(r=dynamics.r)
@@ -204,9 +217,13 @@ def _run_row(case: SolverCacheBenchmarkCase, *, repeat_index: int) -> SolverCach
     space = SpaceSolver(mesh, dynamics, option, is_call=True, config=config)
     assembly_time = perf_counter() - started_assembly
     times = np.linspace(0.0, case.maturity, case.time_steps + 1)
-    stepper = ThetaScheme(theta=0.5, linear_solver="scipy_direct", reuse_factorization=True)
+    stepper = ThetaScheme(
+        theta=0.5, linear_solver="scipy_direct", reuse_factorization=True
+    )
     with np.errstate(divide="ignore", invalid="ignore"):
-        solution = stepper.solve(times, space, boundary_condition=DirichletBC(["left", "right"]))
+        solution = stepper.solve(
+            times, space, boundary_condition=DirichletBC(["left", "right"])
+        )
     diagnostics = stepper.last_solve_diagnostics
     spot_node = int(np.argmin(np.abs(space.Vh.doflocs[0] - case.spot)))
     observed_price = float(solution[-1, spot_node])
@@ -230,7 +247,9 @@ def _run_row(case: SolverCacheBenchmarkCase, *, repeat_index: int) -> SolverCach
     )
 
 
-def _stage_timings(assembly_time: float, diagnostics: LinearSolveDiagnostics) -> dict[str, float]:
+def _stage_timings(
+    assembly_time: float, diagnostics: LinearSolveDiagnostics
+) -> dict[str, float]:
     return {
         "assembly": assembly_time,
         "factorization": diagnostics.stage_timings_sec["factorization"],

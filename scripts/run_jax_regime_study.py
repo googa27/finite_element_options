@@ -57,7 +57,9 @@ def _atomic_write_bytes(path: Path, content: bytes) -> None:
             temporary.unlink(missing_ok=True)
 
 
-def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
+def _validated_output_paths(
+    output: Path, *, publish_canonical: bool
+) -> tuple[Path, Path]:
     """Return JSON/sidecar targets after protecting the complete canonical pair."""
 
     output = output.expanduser()
@@ -72,15 +74,20 @@ def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[P
     if aliases_canonical and not publish_canonical:
         raise ValueError("canonical evidence requires --publish-canonical")
     if publish_canonical and resolved_targets != canonical_targets:
-        raise ValueError("--publish-canonical requires the canonical JSON/sidecar output paths")
+        raise ValueError(
+            "--publish-canonical requires the canonical JSON/sidecar output paths"
+        )
     if output.suffix.lower() != ".json":
-        raise ValueError("--output must name a JSON path; the SHA-256 sidecar path is derived")
+        raise ValueError(
+            "--output must name a JSON path; the SHA-256 sidecar path is derived"
+        )
     return output, sidecar
 
 
 def _canonical(payload: dict[str, object]) -> bytes:
     return (
-        json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        + "\n"
     ).encode()
 
 
@@ -88,7 +95,9 @@ def main() -> int:
     """Execute a bounded study; reserve canonical writes for an exact explicit publish."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--synthetic", action="store_true", help="run archive-independent CI smoke")
+    parser.add_argument(
+        "--synthetic", action="store_true", help="run archive-independent CI smoke"
+    )
     parser.add_argument(
         "--input",
         type=Path,
@@ -132,7 +141,9 @@ def main() -> int:
             parser.error("synthetic runs cannot publish canonical evidence")
         requested_output = args.output or DEFAULT_SYNTHETIC_OUTPUT
         try:
-            output, sidecar = _validated_output_paths(requested_output, publish_canonical=False)
+            output, sidecar = _validated_output_paths(
+                requested_output, publish_canonical=False
+            )
         except ValueError as error:
             parser.error(str(error))
         from finite_element_options.examples.regime_switching_quanto.jax_regime.synthetic import (
@@ -155,7 +166,9 @@ def main() -> int:
             parser.error(str(error))
         if args.publish_canonical:
             if config != JaxRegimeStudyConfig():
-                parser.error("--publish-canonical requires the exact canonical configuration")
+                parser.error(
+                    "--publish-canonical requires the exact canonical configuration"
+                )
         evidence = run_jax_regime_study(args.input, config=config)
         diagnostics_passed = bool(evidence["verification"]["diagnostics_passed"])
         if args.publish_canonical and not diagnostics_passed:

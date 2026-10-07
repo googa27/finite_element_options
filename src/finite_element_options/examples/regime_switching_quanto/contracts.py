@@ -74,7 +74,9 @@ class TwoFactorRegimeModel:
         if n_regimes < 1:
             raise ValueError("at least one regime is required")
         if vols_f.shape != (n_regimes,) or corr.shape != (n_regimes,):
-            raise ValueError("volatility and correlation arrays must have one value per regime")
+            raise ValueError(
+                "volatility and correlation arrays must have one value per regime"
+            )
         if q.shape != (n_regimes, n_regimes):
             raise ValueError("generator must be a square matrix matching regimes")
         if probs.shape != (n_regimes,):
@@ -97,7 +99,9 @@ class TwoFactorRegimeModel:
         if not np.allclose(q.sum(axis=1), 0.0, atol=1.0e-10):
             raise ValueError("generator rows must sum to zero")
         if np.any(probs < -1.0e-12) or not np.isclose(probs.sum(), 1.0, atol=1.0e-10):
-            raise ValueError("current_probabilities must be non-negative and sum to one")
+            raise ValueError(
+                "current_probabilities must be non-negative and sum to one"
+            )
         for name, value in (
             ("domestic_rate", self.domestic_rate),
             ("foreign_rate", self.foreign_rate),
@@ -130,7 +134,12 @@ class TwoFactorRegimeModel:
         sig_s = self.scaled_equity_vol
         sig_f = self.scaled_fx_vol
         rho = np.asarray(self.correlation, dtype=float)
-        a_s = self.foreign_rate - self.dividend_yield - rho * sig_s * sig_f - 0.5 * sig_s * sig_s
+        a_s = (
+            self.foreign_rate
+            - self.dividend_yield
+            - rho * sig_s * sig_f
+            - 0.5 * sig_s * sig_s
+        )
         a_f = self.domestic_rate - self.foreign_rate - 0.5 * sig_f * sig_f
         return a_s, a_f
 
@@ -187,7 +196,12 @@ class ContractSpec:
 
         if self.kind not in SUPPORTED_CONTRACT_KINDS:
             raise ValueError(f"unsupported contract kind: {self.kind}")
-        if self.kind in {"composite_call", "composite_put", "composite_digital", "quanto_call"}:
+        if self.kind in {
+            "composite_call",
+            "composite_put",
+            "composite_digital",
+            "quanto_call",
+        }:
             _require_positive(self.strike, "strike")
         if self.kind in {"composite_digital", "dual_trigger_protection"}:
             _require_positive(self.payout, "payout")
@@ -223,14 +237,18 @@ class ContractSpec:
             return float(self.payout) * (composite >= strike)
         if self.kind == "quanto_call":
             fixed_fx = self.fixed_fx
-            if fixed_fx is None:  # defensive; __post_init__ validates public construction
+            if (
+                fixed_fx is None
+            ):  # defensive; __post_init__ validates public construction
                 raise ValueError("fixed_fx must be positive")
             return float(fixed_fx) * np.maximum(equity - strike, 0.0)
         equity_barrier = self.equity_barrier
         fx_barrier = self.fx_barrier
         if equity_barrier is None or fx_barrier is None:  # defensive validation guard
             raise ValueError("equity_barrier and fx_barrier must be positive")
-        return float(self.payout) * ((equity <= float(equity_barrier)) & (fx >= float(fx_barrier)))
+        return float(self.payout) * (
+            (equity <= float(equity_barrier)) & (fx >= float(fx_barrier))
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe representation."""
@@ -259,7 +277,8 @@ class FEMGridSpec:
         if self.x_domain[0] >= self.x_domain[1] or self.y_domain[0] >= self.y_domain[1]:
             raise ValueError("log domains must be increasing")
         if not (
-            self.x_domain[0] < 0.0 < self.x_domain[1] and self.y_domain[0] < 0.0 < self.y_domain[1]
+            self.x_domain[0] < 0.0 < self.x_domain[1]
+            and self.y_domain[0] < 0.0 < self.y_domain[1]
         ):
             raise ValueError("both log domains must contain zero in their interior")
         if self.nx < 3 or self.ny < 3:

@@ -88,7 +88,9 @@ def _load_pdp_snapshot(
     returns: list[tuple[float, float]] = []
     for previous, current in zip(levels, levels[1:], strict=False):
         dates.append(current[0])
-        returns.append((math.log(current[1] / previous[1]), math.log(current[2] / previous[2])))
+        returns.append(
+            (math.log(current[1] / previous[1]), math.log(current[2] / previous[2]))
+        )
 
     window = provenance["requested_window"]
     preprocessing = PDPPreprocessingAudit(

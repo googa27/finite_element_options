@@ -262,12 +262,12 @@ def test_architecture_yaml_limits_and_exceptions_are_enforced() -> None:
             "__init__.py plus runtime package directories"
         ),
     }
-    assert "haircut.solver_backends:finite_element_options" in (
-        architecture["interfaces"]["ai"]["declared_entrypoints"]
+    assert (
+        "haircut.solver_backends:finite_element_options"
+        in (architecture["interfaces"]["ai"]["declared_entrypoints"])
     )
     exceptions = {
-        (entry["rule"], entry["path"]): entry
-        for entry in architecture["exceptions"]
+        (entry["rule"], entry["path"]): entry for entry in architecture["exceptions"]
     }
     backend_exception = exceptions[
         (
@@ -277,7 +277,9 @@ def test_architecture_yaml_limits_and_exceptions_are_enforced() -> None:
     ]
     assert backend_exception["accepted_ceiling"] == 668
     for entry in exceptions.values():
-        assert isinstance(entry["accepted_ceiling"], int) and entry["accepted_ceiling"] > 0
+        assert (
+            isinstance(entry["accepted_ceiling"], int) and entry["accepted_ceiling"] > 0
+        )
         for field in ("owner", "reason", "risk", "refactoring_trigger"):
             assert isinstance(entry[field], str) and entry[field]
 

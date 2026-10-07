@@ -78,14 +78,21 @@ def run_iminuit_identifiability_study(
     study_input_hash = canonical_json_sha256(inputs)
     runs = [run_iminuit_identifiability(case) for case in selected]
     rows = [run.to_dict() for run in runs]
-    decisions = {row["case"]["case_id"]: row["identification"]["identified"] for row in rows}
+    decisions = {
+        row["case"]["case_id"]: row["identification"]["identified"] for row in rows
+    }
     summary = {
         "case_count": len(rows),
-        "identified_case_count": sum(1 for row in rows if row["identification"]["identified"]),
-        "all_expected_decisions_passed": decisions.get("identified_quanto_surface") is True
+        "identified_case_count": sum(
+            1 for row in rows if row["identification"]["identified"]
+        ),
+        "all_expected_decisions_passed": decisions.get("identified_quanto_surface")
+        is True
         and decisions.get("weak_rho_fxvol_zero") is False,
         "decisions": decisions,
-        "case_input_hashes": {row["case"]["case_id"]: row["case_input_hash"] for row in rows},
+        "case_input_hashes": {
+            row["case"]["case_id"]: row["case_input_hash"] for row in rows
+        },
         "scope_limitation": SCOPE_STATEMENT,
     }
     return IdentifiabilityStudyResult(

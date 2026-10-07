@@ -25,7 +25,9 @@ def test_fem_formula_bundle_exports_weak_form_crosswalk() -> None:
     assert payload["producer"] == "finite_element_options"
     assert not validate_formula_bundle(payload)
     roles = {
-        component["role"] for formula in payload["formulas"] for component in formula["components"]
+        component["role"]
+        for formula in payload["formulas"]
+        for component in formula["components"]
     }
     assert {"weak_form", "bilinear_form", "linear_form", "basis", "quadrature"} <= roles
     assert not _contains_forbidden_style_key(payload)

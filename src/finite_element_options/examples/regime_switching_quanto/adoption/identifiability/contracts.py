@@ -112,7 +112,9 @@ class QuantoOptionTarget:
             raise ValueError("source must be public-synthetic")
         if self.option_type != "call":
             raise ValueError("only call targets are supported")
-        if not isinstance(self.evaluation_date, date) or not isinstance(self.maturity_date, date):
+        if not isinstance(self.evaluation_date, date) or not isinstance(
+            self.maturity_date, date
+        ):
             raise TypeError("evaluation_date and maturity_date must be datetime.date")
         if self.maturity_date <= self.evaluation_date:
             raise ValueError("maturity_date must be after evaluation_date")
@@ -163,7 +165,9 @@ class CalibrationCase:
         _require_positive_finite("initial_equity_vol", self.initial_equity_vol)
         _require_finite("initial_correlation", self.initial_correlation)
         _require_positive_finite("edm_threshold", self.edm_threshold)
-        _require_positive_finite("bound_contact_tolerance", self.bound_contact_tolerance)
+        _require_positive_finite(
+            "bound_contact_tolerance", self.bound_contact_tolerance
+        )
         _require_positive_finite("minos_cl", self.minos_cl)
         if not 0.0 < float(self.minos_cl) < 1.0:
             raise ValueError("minos_cl must lie in (0, 1)")
@@ -274,10 +278,15 @@ class WeightedQuantoCalibrationObjective:
         try:
             for target in self.case.targets:
                 model_price = quanto_call_price(target, equity_vol, correlation)
-                residual = (model_price - float(target.target_price)) / float(target.price_std)
+                residual = (model_price - float(target.target_price)) / float(
+                    target.price_std
+                )
                 if not math.isfinite(residual):
                     return self._failed_evaluation(
-                        {"reason": "nonfinite_residual", "instrument_id": target.instrument_id}
+                        {
+                            "reason": "nonfinite_residual",
+                            "instrument_id": target.instrument_id,
+                        }
                     )
                 term = residual * residual
                 chi2 += term
@@ -313,7 +322,9 @@ class WeightedQuantoCalibrationObjective:
             "last_diagnostic": json_safe(self.last_diagnostic),
         }
 
-    def _parameter_diagnostic(self, equity_vol: float, correlation: float) -> dict[str, Any] | None:
+    def _parameter_diagnostic(
+        self, equity_vol: float, correlation: float
+    ) -> dict[str, Any] | None:
         for name, value in (
             ("equity_vol", equity_vol),
             ("correlation", correlation),
@@ -346,7 +357,9 @@ class WeightedQuantoCalibrationObjective:
         )
 
 
-def quanto_call_price(target: QuantoOptionTarget, equity_vol: float, correlation: float) -> float:
+def quanto_call_price(
+    target: QuantoOptionTarget, equity_vol: float, correlation: float
+) -> float:
     """Return fixed-FX quanto call price from the core analytical BS oracle."""
 
     q_eff = (
@@ -375,7 +388,9 @@ def _validate_initial_inside_bounds(case: CalibrationCase) -> None:
             raise ValueError(f"initial {name} must lie inside bounds")
 
 
-def _validate_bounds(field: str, value: tuple[float, float], *, lower_positive: bool) -> None:
+def _validate_bounds(
+    field: str, value: tuple[float, float], *, lower_positive: bool
+) -> None:
     if len(value) != 2:
         raise ValueError(f"{field} bounds must have length 2")
     lower, upper = float(value[0]), float(value[1])

@@ -26,7 +26,9 @@ def test_constant_intensity_defaultable_zcb_matches_closed_form() -> None:
     rate_sum = model.r + model.default_intensity
 
     expected_survival_leg = 2.0 * exp(-rate_sum * maturity)
-    expected_recovery_leg = 2.0 * 0.4 * 0.02 * (1.0 - exp(-rate_sum * maturity)) / rate_sum
+    expected_recovery_leg = (
+        2.0 * 0.4 * 0.02 * (1.0 - exp(-rate_sum * maturity)) / rate_sum
+    )
     expected_value = expected_survival_leg + expected_recovery_leg
 
     outputs = model.value_components(claim, maturity)
@@ -37,7 +39,9 @@ def test_constant_intensity_defaultable_zcb_matches_closed_form() -> None:
     assert outputs.survival_leg_pv == pytest.approx(expected_survival_leg)
     assert outputs.recovery_leg_pv == pytest.approx(expected_recovery_leg)
     assert outputs.defaultable_bond_value == pytest.approx(expected_value)
-    assert model.defaultable_zero_coupon_value(claim, maturity) == pytest.approx(expected_value)
+    assert model.defaultable_zero_coupon_value(claim, maturity) == pytest.approx(
+        expected_value
+    )
 
 
 def test_reduced_form_model_satisfies_scalar_pricing_ode() -> None:
@@ -64,16 +68,22 @@ def test_zero_intensity_recovery_extremes_and_expiry_limits() -> None:
         3.0 * exp(-0.05 * 4.0)
     )
     assert risk_free.default_probability(4.0) == pytest.approx(0.0)
-    assert risk_free.value_components(claim, 4.0).credit_loss_value == pytest.approx(0.0)
+    assert risk_free.value_components(claim, 4.0).credit_loss_value == pytest.approx(
+        0.0
+    )
 
     zero_rate_model = ReducedFormCreditRiskModel(r=0.0, default_intensity=0.7)
     zero_recovery = DefaultableZeroCouponClaim(notional=1.0, recovery_rate=0.0)
     full_recovery = DefaultableZeroCouponClaim(notional=1.0, recovery_rate=1.0)
-    assert zero_rate_model.defaultable_zero_coupon_value(zero_recovery, 2.0) == pytest.approx(
-        exp(-0.7 * 2.0)
-    )
-    assert zero_rate_model.defaultable_zero_coupon_value(full_recovery, 2.0) == pytest.approx(1.0)
-    assert zero_rate_model.defaultable_zero_coupon_value(zero_recovery, 0.0) == pytest.approx(1.0)
+    assert zero_rate_model.defaultable_zero_coupon_value(
+        zero_recovery, 2.0
+    ) == pytest.approx(exp(-0.7 * 2.0))
+    assert zero_rate_model.defaultable_zero_coupon_value(
+        full_recovery, 2.0
+    ) == pytest.approx(1.0)
+    assert zero_rate_model.defaultable_zero_coupon_value(
+        zero_recovery, 0.0
+    ) == pytest.approx(1.0)
 
 
 def test_invalid_credit_risk_inputs_fail_before_assembly() -> None:
@@ -101,9 +111,13 @@ def test_credit_risk_problem_separates_outputs_and_fails_closed_for_fem() -> Non
 
     with pytest.raises(UnsupportedSpatialCreditRiskModel, match="no spatial FEM state"):
         problem.reduced_form_model.A(1.0)
-    with pytest.raises(UnsupportedSpatialCreditRiskModel, match="not a call/put payoff"):
+    with pytest.raises(
+        UnsupportedSpatialCreditRiskModel, match="not a call/put payoff"
+    ):
         problem.claim.put_payoff(1.0)
-    with pytest.raises(UnsupportedSpatialCreditRiskModel, match="no spatial boundary facets"):
+    with pytest.raises(
+        UnsupportedSpatialCreditRiskModel, match="no spatial boundary facets"
+    ):
         problem.boundary_condition.apply(None, None, None, 0.0)  # type: ignore[arg-type]
 
 

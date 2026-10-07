@@ -29,7 +29,9 @@ def _without_persisted_pymor_cache(function: Callable[..., Any]) -> Callable[...
             except ImportError as exc:  # pragma: no cover - isolated wheel probe
                 raise ModuleNotFoundError(INSTALL_HINT) from exc
             previous = os.environ.get("PYMOR_CACHE_DISABLE")
-            was_disabled = bool(getattr(pymor_cache, "_caching_disabled", previous == "1"))
+            was_disabled = bool(
+                getattr(pymor_cache, "_caching_disabled", previous == "1")
+            )
             os.environ["PYMOR_CACHE_DISABLE"] = "1"
             pymor_cache.disable_caching()
             try:
@@ -76,7 +78,9 @@ def build_pod_projection(
 
     snapshot_matrix = np.asarray(snapshots, dtype=float)
     if snapshot_matrix.ndim != 2 or snapshot_matrix.shape[1] < 2:
-        raise ValueError("snapshots must have shape (full_dofs, at least_two_snapshots)")
+        raise ValueError(
+            "snapshots must have shape (full_dofs, at least_two_snapshots)"
+        )
     if snapshot_matrix.shape[0] != mass.shape[0]:
         raise ValueError("snapshot and mass dimensions differ")
     if not np.all(np.isfinite(snapshot_matrix)):
@@ -104,13 +108,23 @@ def build_pod_projection(
     started = perf_counter()
     constant_operator = NumpyMatrixOperator(sps.csc_matrix(operator_constant))
     variance_operator = NumpyMatrixOperator(sps.csc_matrix(operator_variance))
-    reduced_mass = np.asarray(to_matrix(project(mass_operator, basis, basis)), dtype=float)
-    reduced_constant = np.asarray(to_matrix(project(constant_operator, basis, basis)), dtype=float)
-    reduced_variance = np.asarray(to_matrix(project(variance_operator, basis, basis)), dtype=float)
+    reduced_mass = np.asarray(
+        to_matrix(project(mass_operator, basis, basis)), dtype=float
+    )
+    reduced_constant = np.asarray(
+        to_matrix(project(constant_operator, basis, basis)), dtype=float
+    )
+    reduced_variance = np.asarray(
+        to_matrix(project(variance_operator, basis, basis)), dtype=float
+    )
     basis_matrix = np.asarray(basis.to_numpy(), dtype=float)
     reduced_mass_boundary = basis_matrix.T @ np.asarray(mass_boundary, dtype=float)
-    reduced_constant_boundary = basis_matrix.T @ np.asarray(constant_boundary, dtype=float)
-    reduced_variance_boundary = basis_matrix.T @ np.asarray(variance_boundary, dtype=float)
+    reduced_constant_boundary = basis_matrix.T @ np.asarray(
+        constant_boundary, dtype=float
+    )
+    reduced_variance_boundary = basis_matrix.T @ np.asarray(
+        variance_boundary, dtype=float
+    )
     reduced_initial = sla.solve(
         reduced_mass,
         basis_matrix.T @ (mass @ np.asarray(initial, dtype=float)),

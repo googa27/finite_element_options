@@ -16,7 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs/evidence/bayesian_jax_profile_2026-09-05.json"
 LOCK = ROOT / "environments/bayesian-jax-py312/requirements.lock"
 EXPECTED_SHA256 = "3a4fde478b4f8b43c8eed31774f2086638105249f2029239ab7cb25d49d2c876"
-EXPECTED_LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
+EXPECTED_LOCK_SHA256 = (
+    "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
+)
 
 
 def test_documented_jax_runtime_is_a_decision_gate() -> None:
@@ -86,4 +88,7 @@ def test_semantic_replay_ignores_host_and_python_patch_provenance() -> None:
     assert stable_environment_checks(observed, expected)["python_minor"] is False
 
     observed = {**expected, "finite_element_options": "0.3.0"}
-    assert stable_environment_checks(observed, expected)["locked_package_versions"] is False
+    assert (
+        stable_environment_checks(observed, expected)["locked_package_versions"]
+        is False
+    )

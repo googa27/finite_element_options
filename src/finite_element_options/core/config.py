@@ -15,5 +15,6 @@ class Config:
     elem:
         Finite element used for spatial discretization.
     """
+
     eps: float = 1e-10
     elem: fem.Element = fem.ElementTriP2()

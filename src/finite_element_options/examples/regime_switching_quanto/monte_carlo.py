@@ -74,7 +74,9 @@ def price_contracts_monte_carlo(
     out = []
     discount = np.exp(-model.domestic_rate * maturity)
     for contract in contracts:
-        discounted = discount * contract.payoff(x, y, equity_spot=equity_spot, fx_spot=fx_spot)
+        discounted = discount * contract.payoff(
+            x, y, equity_spot=equity_spot, fx_spot=fx_spot
+        )
         out.append(
             MonteCarloPriceResult(
                 price=float(np.mean(discounted)),
@@ -131,7 +133,9 @@ def _simulate_terminal_states(
     cumulative = np.cumsum(transition, axis=1)
 
     regimes = rng.choice(
-        model.n_regimes, size=paths, p=np.asarray(model.current_probabilities, dtype=float)
+        model.n_regimes,
+        size=paths,
+        p=np.asarray(model.current_probabilities, dtype=float),
     )
     x = np.zeros(paths, dtype=float)
     y = np.zeros(paths, dtype=float)
@@ -147,7 +151,8 @@ def _simulate_terminal_states(
         current = regimes.copy()
         x += a_s[current] * dt + sig_s[current] * sqrt_dt * z_s
         z_f = (
-            rho[current] * z_s + np.sqrt(np.maximum(1.0 - rho[current] * rho[current], 0.0)) * z_ind
+            rho[current] * z_s
+            + np.sqrt(np.maximum(1.0 - rho[current] * rho[current], 0.0)) * z_ind
         )
         y += a_f[current] * dt + sig_f[current] * sqrt_dt * z_f
         uniforms = rng.random(paths)
@@ -162,5 +167,7 @@ def _transition_regimes(
     for regime in range(cumulative.shape[0]):
         mask = current == regime
         if np.any(mask):
-            next_regimes[mask] = np.searchsorted(cumulative[regime], uniforms[mask], side="right")
+            next_regimes[mask] = np.searchsorted(
+                cumulative[regime], uniforms[mask], side="right"
+            )
     return next_regimes

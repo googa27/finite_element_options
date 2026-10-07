@@ -35,7 +35,9 @@ def iter_code_blocks(path: Path) -> Iterator[CodeBlock]:
     language = ""
     start_line = 0
     body: list[str] = []
-    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_number, raw_line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), 1
+    ):
         match = _FENCE_RE.match(raw_line)
         if match and not in_block:
             in_block = True
@@ -44,7 +46,9 @@ def iter_code_blocks(path: Path) -> Iterator[CodeBlock]:
             body = []
             continue
         if raw_line == "```" and in_block:
-            yield CodeBlock(language=language, code="\n".join(body), start_line=start_line)
+            yield CodeBlock(
+                language=language, code="\n".join(body), start_line=start_line
+            )
             in_block = False
             language = ""
             body = []
@@ -64,7 +68,9 @@ def _clean_environment() -> dict[str, str]:
     return env
 
 
-def _run_python(block: CodeBlock, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+def _run_python(
+    block: CodeBlock, cwd: Path, timeout: int
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-c", block.code],
         cwd=cwd,
@@ -88,7 +94,9 @@ def _validate_shell(block: CodeBlock) -> None:
             )
 
 
-def _run_shell(block: CodeBlock, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+def _run_shell(
+    block: CodeBlock, cwd: Path, timeout: int
+) -> subprocess.CompletedProcess[str]:
     _validate_shell(block)
     return subprocess.run(
         ["bash", "-euo", "pipefail", "-c", block.code],

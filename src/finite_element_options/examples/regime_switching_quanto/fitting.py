@@ -16,7 +16,9 @@ from finite_element_options.examples.regime_switching_quanto.generator import (
     TRADING_DAYS,
     discrete_to_continuous_generator,
 )
-from finite_element_options.examples.regime_switching_quanto.quality import FACTOR_COLUMNS
+from finite_element_options.examples.regime_switching_quanto.quality import (
+    FACTOR_COLUMNS,
+)
 
 
 def fit_markov_switching_joint_diffusion(
@@ -178,7 +180,9 @@ def _fit_gaussian_baseline(
 
         fitted = AutoReg(y, lags=autoregressive_order, trend="c").fit()
         residuals = np.asarray(fitted.resid, dtype=float)
-        ar_coefficients = [[float(value) for value in fitted.params[-autoregressive_order:]]]
+        ar_coefficients = [
+            [float(value) for value in fitted.params[-autoregressive_order:]]
+        ]
         llf = float(fitted.llf)
         aic = float(fitted.aic)
         bic = float(fitted.bic)
@@ -188,7 +192,10 @@ def _fit_gaussian_baseline(
         residuals = y - mu
         ar_coefficients = []
         llf = float(
-            np.sum(-0.5 * (np.log(2.0 * np.pi * variance) + (residuals * residuals) / variance))
+            np.sum(
+                -0.5
+                * (np.log(2.0 * np.pi * variance) + (residuals * residuals) / variance)
+            )
         )
         n_params = 2
         aic = float(2 * n_params - 2 * llf)
@@ -237,7 +244,9 @@ def _regime_order(clean: pd.DataFrame, probabilities: np.ndarray) -> np.ndarray:
     for idx in range(probabilities.shape[1]):
         weights = probabilities[:, idx]
         mean = _weighted_mean(composite[:, None], weights)[0]
-        variances.append(float(_weighted_cov(composite[:, None], weights, [mean])[0, 0]))
+        variances.append(
+            float(_weighted_cov(composite[:, None], weights, [mean])[0, 0])
+        )
     return np.argsort(np.asarray(variances))
 
 
@@ -292,7 +301,9 @@ def _correlation_from_cov(covariance: np.ndarray) -> np.ndarray:
     return np.clip(corr, -1.0, 1.0)
 
 
-def _residual_diagnostics(residuals: np.ndarray, probabilities: np.ndarray) -> dict[str, Any]:
+def _residual_diagnostics(
+    residuals: np.ndarray, probabilities: np.ndarray
+) -> dict[str, Any]:
     try:
         from statsmodels.stats.diagnostic import acorr_ljungbox
         from statsmodels.stats.stattools import jarque_bera
@@ -387,7 +398,9 @@ def _expected_durations(transition: np.ndarray) -> list[float | None]:
     durations: list[float | None] = []
     for stay_probability in np.diag(transition):
         exit_probability = 1.0 - float(stay_probability)
-        durations.append(None if exit_probability <= 1.0e-12 else 1.0 / exit_probability)
+        durations.append(
+            None if exit_probability <= 1.0e-12 else 1.0 / exit_probability
+        )
     return durations
 
 

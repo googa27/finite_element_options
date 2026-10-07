@@ -40,6 +40,10 @@ from .evidence.reference_artifacts import (
     write_result_export,
 )
 
+from .evidence.public_fixture import (
+    _public_black_scholes_units as _public_black_scholes_units,
+)
+
 
 PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID = "fem-bs-001"
 PUBLIC_SYNTHETIC_PROBLEM_ID = "public-synthetic-vanilla-call-v0"
@@ -482,20 +486,6 @@ def _public_black_scholes_problem_hash() -> str:
     )
 
 
-def _public_black_scholes_units() -> dict[str, str]:
-    return {
-        "spot": "CLP",
-        "strike": "CLP",
-        "underlying": "CLP",
-        "value": "CLP",
-        "rate": "1/year",
-        "time": "year",
-        "volatility": "annualized_decimal",
-        "delta": "value_per_underlying",
-        "gamma": "value_per_underlying_squared",
-    }
-
-
 def _backend_capability_status() -> dict[str, str | bool | None]:
     scipy_direct = next(
         backend
@@ -520,7 +510,9 @@ def write_public_fem_bs_oracle_spec(
 ) -> Path:
     """Write a deterministic spec to an explicit caller-owned filesystem path."""
     return write_oracle_spec(
-        path, report=report, result_export_uri=result_export_uri,
+        path,
+        report=report,
+        result_export_uri=result_export_uri,
         build_spec=build_public_fem_bs_oracle_problem_spec,
     )
 
@@ -533,7 +525,9 @@ def write_public_fem_bs_result_export(
 ) -> Path:
     """Write a deterministic result to an explicit caller-owned filesystem path."""
     return write_result_export(
-        path, refresh=refresh, report=report,
+        path,
+        refresh=refresh,
+        report=report,
         run_fixture=run_public_black_scholes_parity_fixture,
     )
 
@@ -675,7 +669,9 @@ def run_public_black_scholes_parity_fixture(
         write_public_fem_bs_oracle_spec(
             path=destinations[0], report=report, result_export_uri="result_export.json"
         )
-        write_public_fem_bs_result_export(path=destinations[1], refresh=True, report=report)
+        write_public_fem_bs_result_export(
+            path=destinations[1], refresh=True, report=report
+        )
 
     return report
 

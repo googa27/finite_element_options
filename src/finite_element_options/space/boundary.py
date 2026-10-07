@@ -7,7 +7,10 @@ from typing import Iterable
 
 import skfem as fem
 
-from finite_element_options.core.interfaces import BoundaryCondition, SpaceDiscretization
+from finite_element_options.core.interfaces import (
+    BoundaryCondition,
+    SpaceDiscretization,
+)
 
 
 def _materialize_boundaries(boundaries: Iterable[str] | str | bytes) -> tuple[str, ...]:

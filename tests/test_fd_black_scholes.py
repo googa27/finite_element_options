@@ -24,11 +24,11 @@ def test_fd_black_scholes_price():
     s0 = 1.0
     idx = np.argmin(np.abs(s_grid - s0))
     price_num = v.sel(time=t[-1], space=s0, method="nearest").item()
-    price_exact = bsopt.call(t[-1], s0, dh.sig ** 2)
+    price_exact = bsopt.call(t[-1], s0, dh.sig**2)
     assert price_num == pytest.approx(price_exact, rel=1e-2)
 
     d_num = delta(v.sel(time=t[-1]).values, s_grid[1] - s_grid[0])[idx]
-    d_exact = bsopt.call_delta(t[-1], s0, dh.sig ** 2)
+    d_exact = bsopt.call_delta(t[-1], s0, dh.sig**2)
     assert d_num == pytest.approx(d_exact, rel=2e-2)
 
 
@@ -41,8 +41,12 @@ def test_fd_solver_initial_condition_matches_vectorized_payoff_formula():
     call_solver = FDSolver(s_grid, dh, bsopt, is_call=True)
     put_solver = FDSolver(s_grid, dh, bsopt, is_call=False)
 
-    np.testing.assert_allclose(call_solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0))
-    np.testing.assert_allclose(put_solver.initial_condition(), np.maximum(bsopt.k - s_grid, 0.0))
+    np.testing.assert_allclose(
+        call_solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0)
+    )
+    np.testing.assert_allclose(
+        put_solver.initial_condition(), np.maximum(bsopt.k - s_grid, 0.0)
+    )
 
 
 def test_fd_solver_initial_condition_accepts_noncontiguous_grid_views():
@@ -54,7 +58,9 @@ def test_fd_solver_initial_condition_accepts_noncontiguous_grid_views():
     solver = FDSolver(s_grid, dh, bsopt, is_call=True)
 
     assert not s_grid.flags.c_contiguous
-    np.testing.assert_allclose(solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0))
+    np.testing.assert_allclose(
+        solver.initial_condition(), np.maximum(s_grid - bsopt.k, 0.0)
+    )
 
 
 class _CappedPayoffWithStrike:

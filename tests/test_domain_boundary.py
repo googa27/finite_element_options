@@ -107,7 +107,9 @@ def test_log_transformed_boundary_values_match_physical_boundaries() -> None:
     dynamics = DynamicsParametersBlackScholes(r=0.03, q=0.01, sig=0.2)
     payoff = EuropeanOptionBs(k=100.0, q=dynamics.q, mkt=Market(r=dynamics.r))
     physical_domain = DomainSpec((DomainAxis("s", 20.0, 220.0),))
-    transformed_domain = physical_domain.transform(CoordinateTransform(price=LogPrice()))
+    transformed_domain = physical_domain.transform(
+        CoordinateTransform(price=LogPrice())
+    )
     mesh, config = create_mesh(transformed_domain, refine=2)
     space = SpaceSolver(
         mesh,
@@ -141,7 +143,9 @@ def test_domain_diagnostics_are_attached_to_time_step_solves() -> None:
     space = SpaceSolver(mesh, dynamics, payoff, is_call=True, config=config)
     stepper = ThetaScheme(theta=0.5)
 
-    result = stepper.solve([0.0, 0.25, 1.0], space, boundary_condition=DirichletBC(["s_min", "s_max"]))
+    result = stepper.solve(
+        [0.0, 0.25, 1.0], space, boundary_condition=DirichletBC(["s_min", "s_max"])
+    )
 
     diagnostics = stepper.last_domain_diagnostics
     assert result.shape[0] == 3

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from finite_element_options.core.interfaces import DynamicsModel, Payoff, BoundaryCondition
+from finite_element_options.core.interfaces import (
+    DynamicsModel,
+    Payoff,
+    BoundaryCondition,
+)
 
 
 @dataclass

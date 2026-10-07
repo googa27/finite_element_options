@@ -54,7 +54,9 @@ def build_matrix() -> dict[str, Any]:
                 f"{len(boundaries['isolated_profiles'])} research extras isolated; zero base leaks"
             ),
             "boundary": "Optional adapters only; base FEM imports remain lightweight.",
-            "evidence": [_source("docs/evidence/dependency_boundaries_2026-09-04.json")],
+            "evidence": [
+                _source("docs/evidence/dependency_boundaries_2026-09-04.json")
+            ],
         },
         {
             "step": 2,
@@ -89,7 +91,9 @@ def build_matrix() -> dict[str, Any]:
             ),
             "boundary": "One-regime vanilla/fixed-FX reductions only.",
             "evidence": [
-                _source("docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json")
+                _source(
+                    "docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json"
+                )
             ],
         },
         {
@@ -126,7 +130,9 @@ def build_matrix() -> dict[str, Any]:
             ),
             "boundary": "Optional non-production pilot; NumPy remains baseline.",
             "evidence": [
-                _source("docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json")
+                _source(
+                    "docs/evidence/regime_switching_quanto_openturns_uq_2026-09-04.json"
+                )
             ],
         },
         {
@@ -145,7 +151,9 @@ def build_matrix() -> dict[str, Any]:
                 "Optional adapter; max ROM/FOM price error "
                 f"{max(row['rom_fom_errors']['price'] for row in holdouts):.2e}."
             ),
-            "evidence": [_source("docs/evidence/black_scholes_pymor_rom_2026-09-05.json")],
+            "evidence": [
+                _source("docs/evidence/black_scholes_pymor_rom_2026-09-05.json")
+            ],
         },
         {
             "step": 7,
@@ -178,7 +186,9 @@ def build_matrix() -> dict[str, Any]:
             "evidence": [_source("docs/evidence/bayesian_jax_profile_2026-09-05.json")],
         },
     ]
-    action_counts = dict(sorted(Counter(step["route_action"] for step in steps).items()))
+    action_counts = dict(
+        sorted(Counter(step["route_action"] for step in steps).items())
+    )
     return {
         "schema_version": "adoption-sequence-closeout/v1",
         "privacy_class": "public_synthetic",
@@ -245,7 +255,10 @@ def write_matrix(path: Path, payload: dict[str, Any]) -> str:
     """Write canonical JSON and return its SHA-256 digest."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+    data = (
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        + "\n"
+    )
     path.write_text(data, encoding="utf-8")
     return _sha256(path)
 
@@ -349,7 +362,13 @@ def render_matrix(path: Path, payload: dict[str, Any], digest: str) -> None:
             va="center",
         )
         ax.text(
-            x + 0.018, y + 0.043, step["metric"], color=muted, fontsize=7.7, va="center", wrap=True
+            x + 0.018,
+            y + 0.043,
+            step["metric"],
+            color=muted,
+            fontsize=7.7,
+            va="center",
+            wrap=True,
         )
         ax.text(
             x + 0.018,
@@ -361,7 +380,15 @@ def render_matrix(path: Path, payload: dict[str, Any], digest: str) -> None:
             wrap=True,
         )
 
-    ax.text(0.06, 0.19, "UNCERTAINTY OWNERSHIP", color=text, fontsize=15, weight="bold", va="top")
+    ax.text(
+        0.06,
+        0.19,
+        "UNCERTAINTY OWNERSHIP",
+        color=text,
+        fontsize=15,
+        weight="bold",
+        va="top",
+    )
     labels = [
         ("STATISTICAL", "baseline + identifiability", "#FFB86B"),
         ("MODEL FORM", "scoped reductions + sensitivity", "#45CFF4"),
@@ -381,11 +408,24 @@ def render_matrix(path: Path, payload: dict[str, Any], digest: str) -> None:
                 facecolor=surface,
             )
         )
-        ax.text(x + 0.012, 0.143, label, color=color, fontsize=8.3, weight="bold", va="center")
+        ax.text(
+            x + 0.012,
+            0.143,
+            label,
+            color=color,
+            fontsize=8.3,
+            weight="bold",
+            va="center",
+        )
         ax.text(x + 0.012, 0.119, detail, color=muted, fontsize=6.4, va="center")
 
     ax.text(
-        0.06, 0.063, "NO PRODUCTION MATURITY UPGRADE", color="#FFB86B", fontsize=9.5, weight="bold"
+        0.06,
+        0.063,
+        "NO PRODUCTION MATURITY UPGRADE",
+        color="#FFB86B",
+        fontsize=9.5,
+        weight="bold",
     )
     ax.text(
         0.06,

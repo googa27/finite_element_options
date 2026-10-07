@@ -14,7 +14,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, help="canonical JSON artifact path")
-    parser.add_argument("--verify", action="store_true", help="regenerate and compare output")
+    parser.add_argument(
+        "--verify", action="store_true", help="regenerate and compare output"
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -50,7 +52,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         current = output.read_text(encoding="utf-8")
         if current != expected:
             print(
-                "artifact verification failed: regenerated canonical JSON differs", file=sys.stderr
+                "artifact verification failed: regenerated canonical JSON differs",
+                file=sys.stderr,
             )
             return 4
         print("artifact verification OK")

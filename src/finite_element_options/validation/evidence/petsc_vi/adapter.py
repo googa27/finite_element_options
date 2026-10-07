@@ -44,7 +44,9 @@ class PetscVISolverSettings:
         if self.snes_type not in {"vinewtonrsls", "vinewtonssls"}:
             raise ValueError("PETSc VI snes_type must be vinewtonrsls or vinewtonssls")
         if self.ksp_type != "preonly" or self.pc_type != "lu":
-            raise ValueError("the validated single-rank PETSc profile requires preonly+lu")
+            raise ValueError(
+                "the validated single-rank PETSc profile requires preonly+lu"
+            )
 
 
 class PetscVISolver:
@@ -71,7 +73,9 @@ class PetscVISolver:
             raise ModuleNotFoundError(EXTERNAL_PROFILE_HINT) from exc
 
         matrix, rhs, obstacle = validate_discrete_lcp(problem)
-        initial_values = obstacle.copy() if initial is None else np.asarray(initial, dtype=float)
+        initial_values = (
+            obstacle.copy() if initial is None else np.asarray(initial, dtype=float)
+        )
         if initial_values.shape != rhs.shape or not np.all(np.isfinite(initial_values)):
             raise ValueError("initial LCP iterate must be finite and match rhs shape")
         initial_values = np.maximum(initial_values.copy(), obstacle)
@@ -83,7 +87,9 @@ class PetscVISolver:
         )
         petsc_matrix.assemble()
         rhs_vector = PETSc.Vec().createWithArray(rhs.copy(), comm=PETSc.COMM_SELF)
-        solution = PETSc.Vec().createWithArray(initial_values.copy(), comm=PETSc.COMM_SELF)
+        solution = PETSc.Vec().createWithArray(
+            initial_values.copy(), comm=PETSc.COMM_SELF
+        )
         residual = solution.duplicate()
         lower = PETSc.Vec().createWithArray(obstacle.copy(), comm=PETSc.COMM_SELF)
         upper = solution.duplicate()
@@ -93,7 +99,9 @@ class PetscVISolver:
             petsc_matrix.mult(values, output)
             output.axpy(-1.0, rhs_vector)
 
-        def form_jacobian(_snes: Any, _values: Any, jacobian: Any, preconditioner: Any) -> Any:
+        def form_jacobian(
+            _snes: Any, _values: Any, jacobian: Any, preconditioner: Any
+        ) -> Any:
             jacobian.assemble()
             if preconditioner.handle != jacobian.handle:
                 preconditioner.assemble()
@@ -127,7 +135,9 @@ class PetscVISolver:
                 iterations=int(snes.getIterationNumber()),
                 max_update=float(np.max(np.abs(values - initial_values))),
                 message=(
-                    "PETSc SNES VI converged" if reason_code > 0 else "PETSc SNES VI diverged"
+                    "PETSc SNES VI converged"
+                    if reason_code > 0
+                    else "PETSc SNES VI diverged"
                 ),
                 solve_time_sec=perf_counter() - started,
                 solver=f"petsc_snes_{self.settings.snes_type}",
@@ -174,16 +184,28 @@ class PetscVISolver:
                 "matrix_memory_bytes": float(petsc_matrix.getInfo()["memory"]),
                 "comm_size": int(PETSc.COMM_SELF.getSize()),
             }
-            result = LCPResult(values=values, success=diagnostics.success, diagnostics=diagnostics)
+            result = LCPResult(
+                values=values, success=diagnostics.success, diagnostics=diagnostics
+            )
             if not result.success and fail_on_nonconvergence:
                 raise LCPConvergenceError(diagnostics)
             return result
         finally:
-            for obj in (snes, upper, lower, residual, solution, rhs_vector, petsc_matrix):
+            for obj in (
+                snes,
+                upper,
+                lower,
+                residual,
+                solution,
+                rhs_vector,
+                petsc_matrix,
+            ):
                 obj.destroy()
 
 
-def _petsc_versions_match(petsc4py_version: str, petsc_version: tuple[int, ...]) -> bool:
+def _petsc_versions_match(
+    petsc4py_version: str, petsc_version: tuple[int, ...]
+) -> bool:
     """Return whether petsc4py and PETSc report the same release version."""
 
     return petsc4py_version == ".".join(str(item) for item in petsc_version)

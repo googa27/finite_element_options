@@ -6,7 +6,9 @@ import pytest
 from finite_element_options.space import fenics_solver
 from finite_element_options.space.fenics_solver import FenicsSolver
 from finite_element_options.space.solver import SpaceSolver
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.mesh import create_mesh
@@ -34,7 +36,13 @@ def test_fenics_solver_benchmark(benchmark) -> None:
 
     benchmark(run_sk)
 
-    solver = FenicsSolver(domain=(0.0, 2.0), num_elements=mesh_sk.nelements, dynamics=dh, payoff=bsopt, is_call=True)
+    solver = FenicsSolver(
+        domain=(0.0, 2.0),
+        num_elements=mesh_sk.nelements,
+        dynamics=dh,
+        payoff=bsopt,
+        is_call=True,
+    )
 
     def run_fn():
         return solver.solve(t)

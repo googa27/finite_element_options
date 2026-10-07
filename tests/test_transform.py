@@ -90,6 +90,7 @@ def test_log_price_form_matches_native_log_black_scholes_form():
     """Weak-form assembly must consume transformed coefficients in log space."""
 
     physical = DynamicsParametersBlackScholes(r=0.05, q=0.01, sig=0.2)
+
     class NativeLogBlackScholes:
         r = physical.r
 
@@ -108,18 +109,26 @@ def test_log_price_form_matches_native_log_black_scholes_form():
     mesh = fem.MeshLine(np.linspace(np.log(50.0), np.log(150.0), 6))
     basis = fem.CellBasis(mesh, fem.ElementLineP2())
 
-    transformed_form = PDEForms(
-        is_call=True,
-        payoff=payoff,
-        dynamics=physical,
-        transform=CoordinateTransform(price=LogPrice()),
-    ).l_bil().assemble(basis)
-    native_log_form = PDEForms(
-        is_call=True,
-        payoff=payoff,
-        dynamics=log_dynamics,
-        transform=CoordinateTransform(price=Identity()),
-    ).l_bil().assemble(basis)
+    transformed_form = (
+        PDEForms(
+            is_call=True,
+            payoff=payoff,
+            dynamics=physical,
+            transform=CoordinateTransform(price=LogPrice()),
+        )
+        .l_bil()
+        .assemble(basis)
+    )
+    native_log_form = (
+        PDEForms(
+            is_call=True,
+            payoff=payoff,
+            dynamics=log_dynamics,
+            transform=CoordinateTransform(price=Identity()),
+        )
+        .l_bil()
+        .assemble(basis)
+    )
 
     np.testing.assert_allclose(transformed_form.toarray(), native_log_form.toarray())
 
@@ -202,15 +211,21 @@ def test_heston_log_sqrt_transform_coefficients_and_psd_covariance():
 
     sqrt_v = np.sqrt(physical_state[1])
     np.testing.assert_allclose(diffusion[0][0], physical_state[1])
-    np.testing.assert_allclose(diffusion[0][1], 0.5 * dynamics.rho * dynamics.sig * sqrt_v)
-    np.testing.assert_allclose(diffusion[1][0], 0.5 * dynamics.rho * dynamics.sig * sqrt_v)
+    np.testing.assert_allclose(
+        diffusion[0][1], 0.5 * dynamics.rho * dynamics.sig * sqrt_v
+    )
+    np.testing.assert_allclose(
+        diffusion[1][0], 0.5 * dynamics.rho * dynamics.sig * sqrt_v
+    )
     np.testing.assert_allclose(diffusion[1][1], np.full(3, dynamics.sig**2 / 4.0))
     np.testing.assert_allclose(
         diffusion_divergence[0],
         np.full(3, 0.5 * dynamics.rho * dynamics.sig),
     )
     np.testing.assert_allclose(diffusion_divergence[1], np.zeros(3), atol=1.0e-14)
-    np.testing.assert_allclose(drift[0], dynamics.r - dynamics.q - 0.5 * physical_state[1])
+    np.testing.assert_allclose(
+        drift[0], dynamics.r - dynamics.q - 0.5 * physical_state[1]
+    )
     np.testing.assert_allclose(
         drift[1],
         dynamics.kappa * (dynamics.theta - physical_state[1]) / (2.0 * sqrt_v)
@@ -244,7 +259,9 @@ def test_heston_log_sqrt_diffusion_divergence_matches_finite_difference():
     )
 
     def diffusion_entry(point, row: int, col: int) -> float:
-        matrix, _divergence, _drift = transform.transformed_coefficients(dynamics, point)
+        matrix, _divergence, _drift = transform.transformed_coefficients(
+            dynamics, point
+        )
         return float(np.asarray(matrix[row][col]).reshape(-1)[0])
 
     eps = 1.0e-5

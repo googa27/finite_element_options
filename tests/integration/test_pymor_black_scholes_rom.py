@@ -104,7 +104,8 @@ def test_nonunit_maturity_gamma_oracle_includes_sqrt_time() -> None:
     sigma = 0.2
     observed = system.analytical_outputs(sigma).gamma
     d1 = (
-        np.log(config.spot / config.strike) + (config.rate + 0.5 * sigma * sigma) * config.maturity
+        np.log(config.spot / config.strike)
+        + (config.rate + 0.5 * sigma * sigma) * config.maturity
     ) / (sigma * np.sqrt(config.maturity))
     expected = spst.norm.pdf(d1) / (config.spot * sigma * np.sqrt(config.maturity))
     assert observed == pytest.approx(expected, rel=1.0e-13)
@@ -124,10 +125,14 @@ def test_boundary_outputs_and_cached_fom_match_cold_reference() -> None:
     cold = system.solve_full_order(0.2)
     cached = system.prepare_full_order(0.2).solve()
     boundary = np.array(
-        [0.0, config.domain_max - config.strike * np.exp(-config.rate * config.maturity)]
+        [
+            0.0,
+            config.domain_max - config.strike * np.exp(-config.rate * config.maturity),
+        ]
     )
     expected = (
-        system.output_weights @ cold.final_interior + system.output_boundary_weights @ boundary
+        system.output_weights @ cold.final_interior
+        + system.output_boundary_weights @ boundary
     )
     assert np.any(system.output_boundary_weights[:, 1] != 0.0)
     observed = (cold.outputs.price, cold.outputs.delta, cold.outputs.gamma)

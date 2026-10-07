@@ -62,7 +62,9 @@ def _supported_payload() -> dict[str, object]:
     }
 
 
-def test_default_manifest_declares_fem_support_without_claiming_unvalidated_routes() -> None:
+def test_default_manifest_declares_fem_support_without_claiming_unvalidated_routes() -> (
+    None
+):
     manifest = DEFAULT_FEM_CAPABILITY_MANIFEST
 
     assert manifest.backend_id == "finite_element_options.fem_backend.v0"
@@ -71,14 +73,20 @@ def test_default_manifest_declares_fem_support_without_claiming_unvalidated_rout
     assert manifest.element_families == ("lagrange_p2",)
     assert "american" not in manifest.exercise_styles
     assert "hjb_control" not in manifest.pde_terms
-    assert {"measure", "numeraire", "units", "valuation_date", "maturity_or_time_domain"} <= set(
-        manifest.required_conventions
-    )
+    assert {
+        "measure",
+        "numeraire",
+        "units",
+        "valuation_date",
+        "maturity_or_time_domain",
+    } <= set(manifest.required_conventions)
     assert any("Pinares fixed-price proxy" in note for note in manifest.notes)
     assert any("obstacles/free boundaries" in note for note in manifest.notes)
 
 
-def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_routes() -> None:
+def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_routes() -> (
+    None
+):
     contract = DEFAULT_RELEASED_FEM_SOLVER_CONTRACT
     public_contract = contract.to_public_dict()
     manifest_payload = public_contract["capability_manifest"]
@@ -87,9 +95,15 @@ def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_r
     }
 
     assert contract.backend_id == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
-    assert public_contract["schema_version"] == "finite-element-options.public-fem-solver-contract/v0"
+    assert (
+        public_contract["schema_version"]
+        == "finite-element-options.public-fem-solver-contract/v0"
+    )
     assert public_contract["status"] == "validated"
-    assert public_contract["fpf_result_evidence_contract"] == fpf_solver_result_evidence_contract()
+    assert (
+        public_contract["fpf_result_evidence_contract"]
+        == fpf_solver_result_evidence_contract()
+    )
     assert public_contract["fpf_result_evidence_contract"]["required_fields"] == [
         "problem_id",
         "problem_hash",
@@ -104,7 +118,9 @@ def test_released_solver_contract_exposes_pinares_public_proxy_and_fail_closed_r
     assert "PINARES-FEM-FIXED-PRICE-PROXY-V0" in contract.public_fixture_ids
     assert "PINARES-FEM-FAIL-CLOSED-V0" in contract.public_fixture_ids
     assert all("private" not in path for path in contract.public_fixture_paths)
-    assert any("Pinares private modules" in item for item in contract.forbidden_dependencies)
+    assert any(
+        "Pinares private modules" in item for item in contract.forbidden_dependencies
+    )
     assert solver_statuses["scipy_direct"] == CapabilityStatus.VALIDATED
     assert solver_statuses["scipy_banded"] == CapabilityStatus.UNSUPPORTED
     assert solver_statuses["amg"] == CapabilityStatus.UNSUPPORTED
@@ -195,7 +211,9 @@ def test_wrong_backend_id_fails_closed_for_fem_route() -> None:
     )
 
 
-def test_empty_boundary_conditions_fail_closed_instead_of_defaulting_to_dirichlet() -> None:
+def test_empty_boundary_conditions_fail_closed_instead_of_defaulting_to_dirichlet() -> (
+    None
+):
     payload = _supported_payload()
     math_problem = payload["mathematical_problem"]
     assert isinstance(math_problem, dict)
@@ -230,7 +248,9 @@ def test_malformed_dimension_fails_closed_instead_of_raising_during_mapping() ->
     )
 
 
-def test_endpoint_linear_growth_is_classified_as_dirichlet_only_for_endpoint_locations() -> None:
+def test_endpoint_linear_growth_is_classified_as_dirichlet_only_for_endpoint_locations() -> (
+    None
+):
     payload = _supported_payload()
     math_problem = payload["mathematical_problem"]
     assert isinstance(math_problem, dict)
@@ -259,11 +279,14 @@ def test_free_boundary_text_is_not_misclassified_as_dirichlet() -> None:
 
     assert request.boundary_conditions == ("free_boundary",)
     assert any(
-        diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY for diagnostic in diagnostics
+        diagnostic.reason == UnsupportedReason.UNSUPPORTED_BOUNDARY
+        for diagnostic in diagnostics
     )
 
 
-def test_unsupported_variational_terms_dimensions_boundaries_and_exercise_fail_closed() -> None:
+def test_unsupported_variational_terms_dimensions_boundaries_and_exercise_fail_closed() -> (
+    None
+):
     payload = _supported_payload()
     payload["mathematical_problem"] = {
         "dimension": 2,
@@ -286,7 +309,9 @@ def test_unsupported_variational_terms_dimensions_boundaries_and_exercise_fail_c
         "boundary_conditions",
         "exercise_style",
     }
-    with pytest.raises(UnsupportedRouteError, match="FEM backend supports dimensions") as exc_info:
+    with pytest.raises(
+        UnsupportedRouteError, match="FEM backend supports dimensions"
+    ) as exc_info:
         ensure_route_supported(request)
     assert exc_info.value.diagnostics == diagnostics
 
@@ -303,11 +328,19 @@ def test_missing_measure_numeraire_units_and_dates_are_actionable_diagnostics() 
         if diagnostic.reason == UnsupportedReason.MISSING_CONVENTION
     }
 
-    assert missing == {"measure", "numeraire", "units", "valuation_date", "maturity_or_time_domain"}
+    assert missing == {
+        "measure",
+        "numeraire",
+        "units",
+        "valuation_date",
+        "maturity_or_time_domain",
+    }
     assert all("missing or empty" in diagnostic.message for diagnostic in diagnostics)
 
 
-def test_unsupported_outputs_mesh_element_and_solver_controls_do_not_silently_downgrade() -> None:
+def test_unsupported_outputs_mesh_element_and_solver_controls_do_not_silently_downgrade() -> (
+    None
+):
     payload = _supported_payload()
     payload["solver_plan"] = {
         "mesh_family": "adaptive_unstructured",
@@ -323,22 +356,30 @@ def test_unsupported_outputs_mesh_element_and_solver_controls_do_not_silently_do
 
     assert by_field["mesh_family"].reason == UnsupportedReason.UNSUPPORTED_MESH
     assert by_field["element_family"].reason == UnsupportedReason.UNSUPPORTED_ELEMENT
-    assert by_field["linear_solver"].reason == UnsupportedReason.UNSUPPORTED_LINEAR_SOLVER
+    assert (
+        by_field["linear_solver"].reason == UnsupportedReason.UNSUPPORTED_LINEAR_SOLVER
+    )
     assert {
-        diagnostic.value for diagnostic in diagnostics if diagnostic.field == "requested_outputs"
+        diagnostic.value
+        for diagnostic in diagnostics
+        if diagnostic.field == "requested_outputs"
     } == {
         "vega",
         "mesh_error_indicator",
     }
     assert {
-        diagnostic.value for diagnostic in diagnostics if diagnostic.field == "stability_controls"
+        diagnostic.value
+        for diagnostic in diagnostics
+        if diagnostic.field == "stability_controls"
     } == {
         "adaptive_time",
         "rannacher",
     }
 
 
-def test_public_black_scholes_parity_fixture_matches_analytical_oracle_with_evidence() -> None:
+def test_public_black_scholes_parity_fixture_matches_analytical_oracle_with_evidence() -> (
+    None
+):
     report = run_public_black_scholes_parity_fixture()
 
     assert report.benchmark_id == PUBLIC_SYNTHETIC_BLACK_SCHOLES_BENCHMARK_ID
@@ -389,11 +430,19 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
     assert spec_payload["problem_id"] == report.problem_id
     assert spec_payload["problem_hash"] == report.problem_hash
     assert spec_payload["privacy_class"] == "public_synthetic"
-    assert spec_payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
+    assert (
+        spec_payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
+    )
     assert spec_payload["weak_form"]["equation_id"] == report.weak_form.equation_id
-    assert spec_payload["weak_form"]["time_transformation"] == report.weak_form.time_transformation
+    assert (
+        spec_payload["weak_form"]["time_transformation"]
+        == report.weak_form.time_transformation
+    )
     assert spec_payload["comparison_policy"]["mode"] == report.comparison_policy.mode
-    assert spec_payload["comparison_policy"]["policy_id"] == report.comparison_policy.policy_id
+    assert (
+        spec_payload["comparison_policy"]["policy_id"]
+        == report.comparison_policy.policy_id
+    )
     assert spec_payload["comparison_policy"]["metric_tolerances"] == dict(
         report.comparison_policy.metric_tolerances
     )
@@ -401,7 +450,9 @@ def test_fem_bs_001_public_problem_spec_is_stable_and_consumable() -> None:
         spec_payload["sensitivity_reference_policy"]["policy_id"]
         == report.sensitivity_reference_policy.policy_id
     )
-    assert spec_payload["boundaries"] == [item.to_public_dict() for item in report.boundaries]
+    assert spec_payload["boundaries"] == [
+        item.to_public_dict() for item in report.boundaries
+    ]
     assert spec_payload["contract_id"] == regenerated_id
     assert FEM_FIXTURE_DIR.joinpath("problem_spec.json").exists()
 
@@ -420,15 +471,25 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     assert payload["measure"] == report.measure
     assert payload["numeraire"] == report.numeraire
     assert payload["units"] == report.units
-    assert payload["backend_capability_status"]["backend_id"] == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert (
+        payload["backend_capability_status"]["backend_id"]
+        == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    )
     assert payload["backend_capability_status"]["manifest_status"] == "validated"
     assert payload["diagnostics"]["mesh_family"] == "line_uniform"
     assert payload["config_hash"] == report.config_hash
     assert payload["weak_form"]["sign_convention"] == report.weak_form.sign_convention
-    assert payload["pde_convention"]["operator_sign"] == "forward_tau_generator_minus_discount"
-    assert payload["boundaries"] == [item.to_public_dict() for item in report.boundaries]
+    assert (
+        payload["pde_convention"]["operator_sign"]
+        == "forward_tau_generator_minus_discount"
+    )
+    assert payload["boundaries"] == [
+        item.to_public_dict() for item in report.boundaries
+    ]
     assert payload["provenance"]["source_issue"] == "googa27/finite_element_options#74"
-    payload_without_hash = {key: value for key, value in payload.items() if key != "result_hash"}
+    payload_without_hash = {
+        key: value for key, value in payload.items() if key != "result_hash"
+    }
     assert payload["result_hash"] == build_fixture_config_hash(payload_without_hash)
     assert payload["comparison_policy"]["mode"] == "equal_error"
     assert payload["comparison_policy"]["metric_tolerances"] == {
@@ -455,18 +516,28 @@ def test_fem_bs_001_result_export_is_public_mesh_time_and_result_payload() -> No
     ]
     assert payload["rows"][0]["absolute_error"] >= payload["rows"][1]["absolute_error"]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
-    assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
+    assert payload["summary"]["price_absolute_error"] == pytest.approx(
+        report.price_absolute_error
+    )
     assert payload["summary"]["price_tolerance_absolute"] == report.tolerance_absolute
     assert payload["summary"]["price_tolerance_relative"] == report.tolerance_relative
-    assert payload["summary"]["delta_tolerance_absolute"] == report.delta_tolerance_absolute
-    assert payload["summary"]["gamma_tolerance_absolute"] == report.gamma_tolerance_absolute
+    assert (
+        payload["summary"]["delta_tolerance_absolute"]
+        == report.delta_tolerance_absolute
+    )
+    assert (
+        payload["summary"]["gamma_tolerance_absolute"]
+        == report.gamma_tolerance_absolute
+    )
 
 
 def test_config_hash_distinguishes_sparse_refinement_schedule() -> None:
     default_report = run_public_black_scholes_parity_fixture(
         refinement_levels=(4, 5, 6), time_steps=40
     )
-    sparse_report = run_public_black_scholes_parity_fixture(refinement_levels=(4, 6), time_steps=40)
+    sparse_report = run_public_black_scholes_parity_fixture(
+        refinement_levels=(4, 6), time_steps=40
+    )
 
     assert default_report.mesh_metadata.refinement_levels == (4, 5, 6)
     assert sparse_report.mesh_metadata.refinement_levels == (4, 6)
@@ -478,7 +549,10 @@ def test_refresh_exports_serializes_current_non_default_report(tmp_path) -> None
     spec_path = tmp_path / "problem_spec.json"
 
     report = parity_module.run_public_black_scholes_parity_fixture(
-        refinement_levels=(4, 5), time_steps=40, refresh_exports=True, export_directory=tmp_path
+        refinement_levels=(4, 5),
+        time_steps=40,
+        refresh_exports=True,
+        export_directory=tmp_path,
     )
     payload = json.loads(result_path.read_text())
     spec_payload = json.loads(spec_path.read_text())
@@ -494,4 +568,6 @@ def test_refresh_exports_serializes_current_non_default_report(tmp_path) -> None
     )
     assert [row["time_steps"] for row in payload["rows"]] == [40, 40]
     assert payload["summary"]["observed_price"] == pytest.approx(report.observed_price)
-    assert payload["summary"]["price_absolute_error"] == pytest.approx(report.price_absolute_error)
+    assert payload["summary"]["price_absolute_error"] == pytest.approx(
+        report.price_absolute_error
+    )

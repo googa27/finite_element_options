@@ -11,7 +11,7 @@ cryptography>=50.0.0
 GitPython>=3.1.59
 # Ruff 0.13+ expands default lint enforcement for the historical source tree;
 # keep CI deterministic until the repository intentionally adopts that rule set.
-ruff>=0.8,<0.13
+ruff==0.12.12
 # Issue #133 profile-likelihood adapter is exercised through the optional extra.
 iminuit>=2.32,<3
 # Issue #134 OpenTURNS adapter is exercised through the optional uncertainty extra.

@@ -2,7 +2,9 @@
 
 import numpy as np
 
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.mesh import create_mesh

@@ -31,7 +31,9 @@ def run_synthetic_verification(config: JaxRegimeStudyConfig) -> dict[str, Any]:
         seed=config.seed + 400,
         timesteps=80,
     )
-    jax_likelihood = gaussian_hmm_log_prob(observations, initial, transition, means, covariances)
+    jax_likelihood = gaussian_hmm_log_prob(
+        observations, initial, transition, means, covariances
+    )
     dynamax_likelihood = dynamax_marginal_log_prob(
         observations, initial, transition, means, covariances
     )
@@ -57,7 +59,9 @@ def run_synthetic_verification(config: JaxRegimeStudyConfig) -> dict[str, Any]:
     drift = jnp.array([[0.03, 0.01], [-0.02, 0.04]])
     diffusion = jnp.array([[[0.2, 0.0], [-0.05, 0.1]], [[0.35, 0.0], [0.08, 0.22]]])
     exact = simulate_exact_terminal_states(regimes, increments, drift, diffusion, 1.0)
-    diffrax = simulate_diffrax_terminal_states(regimes, increments, drift, diffusion, 1.0)
+    diffrax = simulate_diffrax_terminal_states(
+        regimes, increments, drift, diffusion, 1.0
+    )
     pathwise_error = float(jnp.max(jnp.abs(exact - diffrax)))
     recovery = _synthetic_recovery(config)
     ctmc = check_ctmc_generator(transition)

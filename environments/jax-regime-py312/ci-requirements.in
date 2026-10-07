@@ -6,3 +6,5 @@ pip==26.2.1
 pip-audit==2.10.1
 setuptools==84.0.0
 wheel==0.48.0
+# CI HTTP tooling security floor; PYSEC-2026-4175/4176/4177 (issue172).
+urllib3==2.8.0

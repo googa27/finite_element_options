@@ -76,7 +76,9 @@ def saltelli_indices(
     with openturns_seeded(seed):
         openturns = require_optional("openturns")
         distribution, constructor_name = _distribution(openturns)
-        experiment = openturns.SobolIndicesExperiment(distribution, int(base_size), False)
+        experiment = openturns.SobolIndicesExperiment(
+            distribution, int(base_size), False
+        )
         design = experiment.generate()
         x = _as_numpy(design)
         y = np.asarray([[float(response(row))] for row in x], dtype=float)
@@ -87,8 +89,12 @@ def saltelli_indices(
         first_raw = list(algorithm.getFirstOrderIndices())
         total_raw = list(algorithm.getTotalOrderIndices())
         intervals = {
-            "first_order": _interval_by_component(algorithm.getFirstOrderIndicesInterval()),
-            "total_order": _interval_by_component(algorithm.getTotalOrderIndicesInterval()),
+            "first_order": _interval_by_component(
+                algorithm.getFirstOrderIndicesInterval()
+            ),
+            "total_order": _interval_by_component(
+                algorithm.getTotalOrderIndicesInterval()
+            ),
         }
         version = str(openturns.__version__)
     first = _raw_indices(first_raw)
@@ -137,7 +143,9 @@ def additive_sobol_recovery(config: UQPilotConfig) -> AdditiveSobolRecovery:
     """Verify maintained OpenTURNS Saltelli estimators on a cheap additive function."""
 
     coefficients = np.asarray([2.0, 1.0, 0.5, 0.0, 1.5], dtype=float)
-    variances = np.asarray([1 / 3, 1 / 3, 1 / 3, 1 / 3, 1.0], dtype=float) * coefficients**2
+    variances = (
+        np.asarray([1 / 3, 1 / 3, 1 / 3, 1 / 3, 1.0], dtype=float) * coefficients**2
+    )
     shares = variances / float(np.sum(variances))
     expected: dict[ComponentName, float] = {
         name: float(shares[index]) for index, name in enumerate(COMPONENT_NAMES)
@@ -146,11 +154,19 @@ def additive_sobol_recovery(config: UQPilotConfig) -> AdditiveSobolRecovery:
     def additive(row: np.ndarray) -> float:
         return float(np.dot(coefficients, row))
 
-    estimated_first, estimated_total, _intervals, _version, _constructor = saltelli_indices(
-        additive, seed=config.additive_sobol_seed, base_size=config.additive_sobol_base_size
+    estimated_first, estimated_total, _intervals, _version, _constructor = (
+        saltelli_indices(
+            additive,
+            seed=config.additive_sobol_seed,
+            base_size=config.additive_sobol_base_size,
+        )
     )
-    first_errors = [abs(estimated_first[name] - expected[name]) for name in COMPONENT_NAMES]
-    total_errors = [abs(estimated_total[name] - expected[name]) for name in COMPONENT_NAMES]
+    first_errors = [
+        abs(estimated_first[name] - expected[name]) for name in COMPONENT_NAMES
+    ]
+    total_errors = [
+        abs(estimated_total[name] - expected[name]) for name in COMPONENT_NAMES
+    ]
     tolerance = 0.08
     return AdditiveSobolRecovery(
         expected_first=expected,

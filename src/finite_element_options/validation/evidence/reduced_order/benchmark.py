@@ -22,7 +22,12 @@ from .black_scholes import (
     build_affine_black_scholes_system,
     train_pymor_rom,
 )
-from .contracts import OptionOutputs, PymorBlackScholesConfig, ROMEnvelopeError, SCHEMA_VERSION
+from .contracts import (
+    OptionOutputs,
+    PymorBlackScholesConfig,
+    ROMEnvelopeError,
+    SCHEMA_VERSION,
+)
 from .performance import (
     TimingSummary,
     amortization_evidence,
@@ -146,7 +151,9 @@ def run_pymor_benchmark(
     holdouts = _evaluate_holdouts(system, trained)
     timing = benchmark_online(system, trained)
     refusals = _verify_envelope_refusal(trained)
-    offline_total = system_build_seconds + affine_validation_seconds + trained.offline_seconds
+    offline_total = (
+        system_build_seconds + affine_validation_seconds + trained.offline_seconds
+    )
     amortization = amortization_evidence(timing, offline_total, selected)
     timing.update(amortization)
     offline = {
@@ -172,10 +179,13 @@ def run_pymor_benchmark(
             and row.reduced_order_residual_linf <= selected.linear_residual_tolerance
             for row in holdouts
         ),
-        "out_of_envelope_refusal": len(refusals) == 2 and all(row["passed"] for row in refusals),
-        "median_online_speedup": timing["median_online_speedup"] >= selected.minimum_online_speedup,
+        "out_of_envelope_refusal": len(refusals) == 2
+        and all(row["passed"] for row in refusals),
+        "median_online_speedup": timing["median_online_speedup"]
+        >= selected.minimum_online_speedup,
         "ten_x_amortization": timing["ten_x_amortization_solve_count"] is not None
-        and timing["ten_x_amortization_solve_count"] <= selected.maximum_ten_x_amortization_solves,
+        and timing["ten_x_amortization_solve_count"]
+        <= selected.maximum_ten_x_amortization_solves,
     }
     promoted = all(checks.values())
     decision = {
@@ -208,26 +218,43 @@ def verify_pymor_benchmark(
     observed = fresh.to_dict()
     reference_input = reference.get("study_input")
     reference_input_hash = (
-        canonical_json_sha256(reference_input) if isinstance(reference_input, dict) else None
+        canonical_json_sha256(reference_input)
+        if isinstance(reference_input, dict)
+        else None
     )
     exact = {
         "schema_version": observed["schema_version"] == reference.get("schema_version"),
-        "reference_study_input_hash": reference_input_hash == reference.get("study_input_hash"),
-        "study_input_hash": observed["study_input_hash"] == reference.get("study_input_hash"),
+        "reference_study_input_hash": reference_input_hash
+        == reference.get("study_input_hash"),
+        "study_input_hash": observed["study_input_hash"]
+        == reference.get("study_input_hash"),
         "decomposition_hash": observed["decomposition"]["hash"]
         == reference.get("decomposition", {}).get("hash"),
         "library_major_minor": _major_minor(observed["environment"]["pymor"])
         == _major_minor(reference.get("environment", {}).get("pymor", "")),
-        "decision": observed["decision"]["status"] == reference.get("decision", {}).get("status"),
+        "decision": observed["decision"]["status"]
+        == reference.get("decision", {}).get("status"),
     }
     gates = {
         "fresh_decision_promoted": bool(observed["decision"]["promoted"]),
-        "fresh_accuracy_passed": bool(observed["decision"]["checks"]["holdout_accuracy"]),
-        "fresh_residuals_passed": bool(observed["decision"]["checks"]["solver_residuals"]),
-        "fresh_speed_passed": bool(observed["decision"]["checks"]["median_online_speedup"]),
-        "fresh_amortization_passed": bool(observed["decision"]["checks"]["ten_x_amortization"]),
+        "fresh_accuracy_passed": bool(
+            observed["decision"]["checks"]["holdout_accuracy"]
+        ),
+        "fresh_residuals_passed": bool(
+            observed["decision"]["checks"]["solver_residuals"]
+        ),
+        "fresh_speed_passed": bool(
+            observed["decision"]["checks"]["median_online_speedup"]
+        ),
+        "fresh_amortization_passed": bool(
+            observed["decision"]["checks"]["ten_x_amortization"]
+        ),
     }
-    return {"passed": all(exact.values()) and all(gates.values()), "exact": exact, "gates": gates}
+    return {
+        "passed": all(exact.values()) and all(gates.values()),
+        "exact": exact,
+        "gates": gates,
+    }
 
 
 def _validate_affine_decomposition(system: AffineBlackScholesSystem) -> dict[str, Any]:
@@ -256,7 +283,9 @@ def _validate_affine_decomposition(system: AffineBlackScholesSystem) -> dict[str
         "operator_formula": "K(eta)=K_constant+eta*K_variance",
         "boundary_policy": system.boundary_policy,
         "fixed_mesh_and_time_grid": True,
-        "interior_operator_nnz": int(system.assemble_affine_operator(config.volatility_min).nnz),
+        "interior_operator_nnz": int(
+            system.assemble_affine_operator(config.volatility_min).nnz
+        ),
         "sample_relative_errors": errors,
         "maximum_relative_error": maximum,
         "tolerance": config.affine_relative_tolerance,

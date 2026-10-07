@@ -9,7 +9,9 @@ try:
     import jax as _jax  # noqa: F401
     import numpyro as _numpyro  # noqa: F401
 except ImportError as exc:  # pragma: no cover - selected profile must fail, never skip
-    raise RuntimeError("install the locked bayesian-jax profile; this test never skips") from exc
+    raise RuntimeError(
+        "install the locked bayesian-jax profile; this test never skips"
+    ) from exc
 
 from finite_element_options.estimation.bayesian_profile import (
     BayesianSmokeConfig,
@@ -31,7 +33,9 @@ def test_numpyro_posterior_predictive_and_log_density() -> None:
     assert result["jax_backend"] == "cpu"
     assert result["finite_log_density"] is True
     assert result["divergences"] == 0
-    assert abs(result["posterior_mean"] - exact["mean"]) <= config.posterior_mean_tolerance
+    assert (
+        abs(result["posterior_mean"] - exact["mean"]) <= config.posterior_mean_tolerance
+    )
     assert (
         abs(result["posterior_predictive_sd"] - exact["posterior_predictive_sd"])
         <= config.predictive_sd_tolerance

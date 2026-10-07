@@ -104,9 +104,7 @@ def test_initial_condition_matches_intrinsic(is_call, payoff_attr):
     space, _, payoff = _build_space_solver(is_call=is_call)
     initial = space.initial_condition()
     expected = space.Vh.project(
-        lambda x: getattr(payoff, payoff_attr)(
-            space.transform.untransform_state(x)[0]
-        )
+        lambda x: getattr(payoff, payoff_attr)(space.transform.untransform_state(x)[0])
     )
     np.testing.assert_allclose(initial, expected)
 
