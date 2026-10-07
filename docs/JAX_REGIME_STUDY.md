@@ -5,7 +5,8 @@
 **Evidence SHA-256:** `2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854`<br>
 **Python 3.12 lock SHA-256:** `42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c`<br>
 **Python 3.12 test-tool lock SHA-256:** `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`<br>
-**Python 3.12 CI-tool lock SHA-256:** `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`<br>
+**Current Python 3.12 CI-tool lock SHA-256:** `7779e0c2ea2b64c957093d76e1ae24401088e801feaa770cb675e72727a5607c`<br>
+**Historical 2026-09-07 CI-tool lock SHA-256:** `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`<br>
 **Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
 **PNG/PDF SHA-256:** `46e3e795c5bf693d117550a0e1b57b5bc77c7e05792120d9e750ede56df1df24` / `06d0e5d298e00cdbd3aee83248baec0f53c8ca4c4ca8882dc7a16a7d66585646`
 
@@ -163,6 +164,8 @@ The SciPy-derived CTMC generator is only an embeddability/law diagnostic. Actual
 Accepted runs require at least four retained draws per chain for finite split-chain diagnostics. Every pricing route obeys a 16,515,072 per-draw path-step ceiling, and posterior repricing additionally obeys a 2,113,929,216 total path-step ceiling equal to the executed canonical allocation. Only the exact canonical publication config applies the documented high-precision path floors (131,072 posterior-interval, 4,096 prior-sensitivity, and 16,384 archived-oracle paths); noncanonical runs treat `pricing_paths` as a true upper bound and may adapt it downward for total-work safety. Non-finite NumPyro diagnostics serialize as `null`, render as `N/A`, set `finite=false`, and fail promotion.
 
 ## Reproducibility and supply chain
+
+The numerical JSON, figure bytes and scientific runtime/test/visual locks retain their historical identities. On 2026-10-07, issues 172/174 update only the independently frozen CI HTTP tooling to urllib3 2.8.0 and synchronize its current checksum. The historical CI-tool checksum above remains dated provenance; it does not describe the security-maintained lock used by the current recreation commands. Installed profile tests, strict dependency auditing and the bounded synthetic replay validate the updated tooling. They do not claim a fresh canonical historical-data research run or change the published numerical results or maturity.
 
 The isolated profile contains JAX/JAXLIB 0.11.1, NumPyro 0.21.0, DYNAMAX 1.0.2, Diffrax 0.7.2, statsmodels 0.14.6, fastprogress 1.0.3, and pinned `tfp-nightly` version `0.26.0.dev20260907`. DYNAMAX's TFP layer emits deprecation warnings under this JAX version; those warnings are retained as an upgrade/reassessment trigger.
 

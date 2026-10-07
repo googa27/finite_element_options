@@ -31,6 +31,9 @@ EXPECTED_TEST_LOCK_SHA256 = (
     "ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0"
 )
 EXPECTED_CI_LOCK_SHA256 = (
+    "7779e0c2ea2b64c957093d76e1ae24401088e801feaa770cb675e72727a5607c"
+)
+EXPECTED_HISTORICAL_CI_TOOL_LOCK_SHA256 = (
     "5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b"
 )
 EXPECTED_VISUAL_LOCK_SHA256 = (
@@ -240,6 +243,19 @@ def test_public_report_tracks_hash_bound_numerical_evidence() -> None:
     report = (ROOT / "docs/JAX_REGIME_STUDY.md").read_text(encoding="utf-8")
     assert EXPECTED_EVIDENCE_SHA256 in report
     assert EXPECTED_LOCK_SHA256 in report
+    assert EXPECTED_TEST_LOCK_SHA256 in report
+    assert EXPECTED_CI_LOCK_SHA256 in report
+    assert EXPECTED_HISTORICAL_CI_TOOL_LOCK_SHA256 in report
+    environment_guide = (ROOT / "environments/jax-regime-py312/README.md").read_text(
+        encoding="utf-8"
+    )
+    for digest in (
+        EXPECTED_LOCK_SHA256,
+        EXPECTED_TEST_LOCK_SHA256,
+        EXPECTED_CI_LOCK_SHA256,
+        EXPECTED_HISTORICAL_CI_TOOL_LOCK_SHA256,
+    ):
+        assert digest in environment_guide
     assert EXPECTED_VISUAL_LOCK_SHA256 in report
     assert all(digest in report for digest in EXPECTED_ARTIFACT_HASHES.values())
 
