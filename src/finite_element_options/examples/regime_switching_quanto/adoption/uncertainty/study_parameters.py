@@ -1,12 +1,10 @@
 """Unchanged public-synthetic inputs for the OpenTURNS UQ pilot."""
 
-from finite_element_options.examples.regime_switching_quanto.contracts import (
-    FEMGridSpec,
-)
-
 from typing import Any
+
 from finite_element_options.examples.regime_switching_quanto.contracts import (
     ContractSpec,
+    FEMGridSpec,
     TwoFactorRegimeModel,
 )
 from ..evidence_io import canonical_json_sha256
