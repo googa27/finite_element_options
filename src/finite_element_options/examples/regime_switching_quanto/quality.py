@@ -57,7 +57,10 @@ def prepare_joint_log_returns(
                     "index": json_safe(index),
                     "date": _date_to_str(row[cfg.date_column]),
                     "reasons": reasons,
-                    "levels": {column: _finite_or_none(row[column]) for column in FACTOR_COLUMNS},
+                    "levels": {
+                        column: _finite_or_none(row[column])
+                        for column in FACTOR_COLUMNS
+                    },
                 }
             )
 
@@ -88,7 +91,9 @@ def prepare_joint_log_returns(
         "valid_level_rows": int(len(valid_levels)),
         "quarantined_row_count": int(len(quarantined)),
         "return_rows": int(len(returns)),
-        "bridged_return_gaps": _bridged_gaps(valid_levels, cfg.date_column, quarantined_dates),
+        "bridged_return_gaps": _bridged_gaps(
+            valid_levels, cfg.date_column, quarantined_dates
+        ),
         "bounds": {
             "sp500": [cfg.sp500_min, cfg.sp500_max],
             "usdclp": [cfg.usdclp_min, cfg.usdclp_max],
@@ -109,7 +114,9 @@ def _bridged_gaps(
     for idx in range(1, len(dates)):
         previous = dates.iloc[idx - 1]
         current = dates.iloc[idx]
-        bridged = sorted(date for date in quarantined_dates if previous < date < current)
+        bridged = sorted(
+            date for date in quarantined_dates if previous < date < current
+        )
         if bridged:
             gaps.append(
                 {

@@ -28,7 +28,9 @@ def test_ci_contract_script_passes() -> None:
 
 def test_actions_are_pinned_to_full_commit_shas() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    mutable_refs = re.findall(r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)", text)
+    mutable_refs = re.findall(
+        r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)", text
+    )
     assert mutable_refs
     for action, ref in mutable_refs:
         assert re.fullmatch(r"[0-9a-f]{40}", ref), f"{action}@{ref} is mutable"
@@ -52,7 +54,9 @@ def test_ci_profiles_are_required_and_named() -> None:
         assert f"profile: {profile}" in text
 
 
-def test_new_optional_profiles_import_actual_dependency_and_cover_supported_pythons() -> None:
+def test_new_optional_profiles_import_actual_dependency_and_cover_supported_pythons() -> (
+    None
+):
     """Issue #130 CI must prove each new extra on Python 3.11 and 3.12."""
 
     text = WORKFLOW.read_text(encoding="utf-8")
@@ -70,9 +74,14 @@ def test_new_optional_profiles_import_actual_dependency_and_cover_supported_pyth
                 rf"dependency:\s*{re.escape(dependency)}\b",
                 re.DOTALL,
             )
-            assert pattern.search(text), f"missing {profile} {python_version} dependency proof"
+            assert pattern.search(text), (
+                f"missing {profile} {python_version} dependency proof"
+            )
     assert "DEPENDENCY: ${{ matrix.dependency }}" in text
-    assert "importlib.import_module(dependency)" in text or "require_optional(dependency)" in text
+    assert (
+        "importlib.import_module(dependency)" in text
+        or "require_optional(dependency)" in text
+    )
     assert "quantlib_evaluation_date" in text
     assert "forced QuantLib failure" in text
     assert "test_regime_switching_quanto_quantlib_oracle.py" in text
@@ -98,7 +107,7 @@ def test_quantlib_optional_pytest_uses_workspace_paths_after_tmp_cd() -> None:
 def test_supply_chain_and_artifact_gates_are_present() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for snippet in (
-        "ruff check src tests scripts",
+        "ruff check .",
         "mypy --ignore-missing-imports",
         "python -m pip_audit",
         "cyclonedx-py environment",
@@ -120,7 +129,9 @@ def test_supply_chain_audits_new_optional_dependency_extras() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     supply_chain = text.split("  supply_chain:", 1)[1]
     install_commands = re.findall(r"python -m pip install(?:[^\n]*)", supply_chain)
-    audited_project_installs = [command for command in install_commands if ".[" in command]
+    audited_project_installs = [
+        command for command in install_commands if ".[" in command
+    ]
     assert audited_project_installs, "supply_chain must install this project for audit"
     for extra in AUDITED_OPTIONAL_EXTRAS:
         assert any(extra in command for command in audited_project_installs), (
@@ -185,7 +196,52 @@ def test_static_analysis_toolchain_is_bounded_for_reproducible_ci() -> None:
     optional_deps = pyproject["project"]["optional-dependencies"]
     for extra in ("validation", "dev"):
         ruff_specs = [dep for dep in optional_deps[extra] if dep.startswith("ruff")]
-        assert ruff_specs == ["ruff>=0.8,<0.13"]
+        assert ruff_specs == ["ruff==0.12.12"]
 
     constraints = (ROOT / "constraints.txt").read_text(encoding="utf-8")
-    assert "ruff>=0.8,<0.13" in constraints
+    assert "ruff==0.12.12" in constraints
+    assert pyproject["tool"]["ruff"]["required-version"] == "==0.12.12"
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    (
+        "",
+        "# ruff format --check .",
+        "ruff format --check src",
+        "echo ruff format --check .",
+        "ruff format --check . || true",
+    ),
+)
+def test_ci_contract_refuses_missing_or_non_enforced_whole_format_gate(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, replacement: str
+) -> None:
+    """Formatting must execute over the whole tree and retain its failure status."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    original_line = "          ruff format --check .\n"
+    assert original_line in text
+    mutated = text.replace(original_line, "          " + replacement + "\n", 1)
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(mutated, encoding="utf-8")
+    monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)
+    assert any("static" in error for error in check_ci_contract())
+
+
+@pytest.mark.parametrize(
+    "override",
+    ("if: false", "shell: true {0}", "working-directory: .."),
+)
+def test_ci_contract_refuses_static_step_execution_overrides(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, override: str
+) -> None:
+    """Correct command text cannot replace enforced execution in the repository."""
+
+    text = WORKFLOW.read_text(encoding="utf-8")
+    marker = "      - name: Static, docstring, and type gates\n"
+    assert text.count(marker) == 1
+    mutated = text.replace(marker, marker + "        " + override + "\n", 1)
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(mutated, encoding="utf-8")
+    monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)
+    assert any("static" in error for error in check_ci_contract())

@@ -145,7 +145,9 @@ class PDEForms(Forms):
 
         return self.dynamics.boundary_term(self.is_call, self.payoff)
 
-    def _scalar_field(self, *, name: str, state: np.ndarray, time: float, default: float):
+    def _scalar_field(
+        self, *, name: str, state: np.ndarray, time: float, default: float
+    ):
         """Evaluate a finite scalar field on quadrature state/time arrays."""
 
         field = getattr(self.dynamics, name, None)

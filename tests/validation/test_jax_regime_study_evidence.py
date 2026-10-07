@@ -21,11 +21,21 @@ CI_LOCK = ROOT / "environments/jax-regime-py312/ci-requirements.lock"
 VISUAL_LOCK = ROOT / "environments/jax-regime-visual-py312/requirements.lock"
 IMAGE_DIR = ROOT / "docs/images"
 ARTIFACT_MANIFEST = IMAGE_DIR / "jax_regime_study_2026-09-07.sha256"
-EXPECTED_EVIDENCE_SHA256 = "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
-EXPECTED_LOCK_SHA256 = "42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c"
-EXPECTED_TEST_LOCK_SHA256 = "ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0"
-EXPECTED_CI_LOCK_SHA256 = "5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b"
-EXPECTED_VISUAL_LOCK_SHA256 = "8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6"
+EXPECTED_EVIDENCE_SHA256 = (
+    "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
+)
+EXPECTED_LOCK_SHA256 = (
+    "42f83eb5da5716b7f228bdb94338beb5b552d9fe0fdb866449e5cb31b8c46a7c"
+)
+EXPECTED_TEST_LOCK_SHA256 = (
+    "ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0"
+)
+EXPECTED_CI_LOCK_SHA256 = (
+    "5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b"
+)
+EXPECTED_VISUAL_LOCK_SHA256 = (
+    "8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6"
+)
 EXPECTED_ARTIFACT_HASHES = {
     "jax_regime_study_2026-09-07.png": (
         "46e3e795c5bf693d117550a0e1b57b5bc77c7e05792120d9e750ede56df1df24"
@@ -54,7 +64,9 @@ def test_jax_regime_locks_agree_on_every_shared_distribution() -> None:
     for left_index, left in enumerate(locks):
         for right in locks[left_index + 1 :]:
             shared = set(left) & set(right)
-            assert {name: left[name] for name in shared} == {name: right[name] for name in shared}
+            assert {name: left[name] for name in shared} == {
+                name: right[name] for name in shared
+            }
 
 
 def _strings(value: Any) -> list[str]:
@@ -108,7 +120,9 @@ def test_jax_regime_evidence_is_hash_bound_and_promotably_honest() -> None:
     posterior_filtered = np.asarray(
         payload["hmm"]["numpyro"]["posterior_end_sample_filtered_probs"]
     )
-    posterior_transition = np.asarray(payload["hmm"]["numpyro"]["posterior_mean_transition_matrix"])
+    posterior_transition = np.asarray(
+        payload["hmm"]["numpyro"]["posterior_mean_transition_matrix"]
+    )
     posterior_forecast = np.asarray(
         payload["hmm"]["numpyro"]["posterior_first_interval_forecast_probs"]
     )
@@ -213,7 +227,9 @@ def test_jax_regime_evidence_is_hash_bound_and_promotably_honest() -> None:
     assert pricing["strike_monotonicity"]["passed"] is True
     assert pricing["brownian_bridge_refinement"]["passed"] is True
     assert pricing["matched_historical_three_state_jax_numpy_oracle"]["passed"] is True
-    assert all(row["passed_5se"] for row in pricing["one_state_analytical_oracles"].values())
+    assert all(
+        row["passed_5se"] for row in pricing["one_state_analytical_oracles"].values()
+    )
     assert payload["verification"]["diagnostics_passed"] is True
     assert all(payload["verification"]["gates"].values())
     assert all("/home/" not in value for value in _strings(payload))

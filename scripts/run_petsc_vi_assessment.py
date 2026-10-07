@@ -8,7 +8,10 @@ import json
 from pathlib import Path
 
 from finite_element_options.validation.evidence.petsc_vi import run_petsc_vi_assessment
-from finite_element_options.validation.evidence.serialization import file_sha256, write_atomic_json
+from finite_element_options.validation.evidence.serialization import (
+    file_sha256,
+    write_atomic_json,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,12 +29,15 @@ def main() -> int:
     if args.verify:
         expected = json.loads(args.output.read_text(encoding="utf-8"))
         exact = {
-            "schema_version": report["schema_version"] == expected.get("schema_version"),
+            "schema_version": report["schema_version"]
+            == expected.get("schema_version"),
             "input": report["input"] == expected.get("input"),
-            "petsc": report["environment"]["petsc"] == expected.get("environment", {}).get("petsc"),
+            "petsc": report["environment"]["petsc"]
+            == expected.get("environment", {}).get("petsc"),
             "petsc4py": report["environment"]["petsc4py"]
             == expected.get("environment", {}).get("petsc4py"),
-            "decision": report["decision"]["status"] == expected.get("decision", {}).get("status"),
+            "decision": report["decision"]["status"]
+            == expected.get("decision", {}).get("status"),
         }
         gates = report["decision"]["checks"]
         result = {
@@ -46,7 +52,9 @@ def main() -> int:
     write_atomic_json(args.output, report)
     print(f"wrote {args.output} sha256={file_sha256(args.output)}")
     print(f"decision={report['decision']['status']}")
-    print(f"petsc_over_psor_runtime_ratio={report['timing']['petsc_over_psor_runtime_ratio']}")
+    print(
+        f"petsc_over_psor_runtime_ratio={report['timing']['petsc_over_psor_runtime_ratio']}"
+    )
     return 0 if report["decision"]["promoted"] else 2
 
 

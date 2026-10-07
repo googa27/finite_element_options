@@ -7,7 +7,9 @@ from math import isfinite
 import sys
 from typing import Any, Final
 
-from finite_element_options.contracts.evidence_serialization import canonical_json_sha256
+from finite_element_options.contracts.evidence_serialization import (
+    canonical_json_sha256,
+)
 
 
 SCHEMA_VERSION: Final = "bayesian-jax-profile/v1"
@@ -78,7 +80,9 @@ class BayesianSmokeConfig:
     def __post_init__(self) -> None:
         """Reject underidentified or weakened smoke controls."""
 
-        if len(self.observations) < 10 or any(not isfinite(item) for item in self.observations):
+        if len(self.observations) < 10 or any(
+            not isfinite(item) for item in self.observations
+        ):
             raise ValueError("Bayesian smoke requires at least ten finite observations")
         positive = (
             self.known_sigma,
@@ -98,7 +102,9 @@ class BayesianSmokeConfig:
         if any(not isfinite(value) or value <= 0.0 for value in positive):
             raise ValueError("Bayesian smoke controls must be finite and positive")
         if self.chains < 2 or self.warmup < 300 or self.draws < 300:
-            raise ValueError("Bayesian diagnostics require >=2 chains and >=300 tune/draws")
+            raise ValueError(
+                "Bayesian diagnostics require >=2 chains and >=300 tune/draws"
+            )
         if not 0.9 <= self.target_accept < 1.0:
             raise ValueError("target_accept cannot be below the evidenced 0.9")
         if self.maximum_rhat > 1.05 or self.minimum_bulk_ess < 100.0:
@@ -131,7 +137,9 @@ class BayesianSmokeConfig:
         )
         weakened = [name for name, value, limit in accuracy_limits if value > limit]
         if weakened:
-            raise ValueError(f"Bayesian accuracy controls cannot be weakened: {weakened}")
+            raise ValueError(
+                f"Bayesian accuracy controls cannot be weakened: {weakened}"
+            )
         if any(
             not isinstance(seed, int) or seed < 0
             for seed in (
@@ -142,7 +150,9 @@ class BayesianSmokeConfig:
             )
         ):
             raise ValueError("Bayesian seeds must be non-negative integers")
-        object.__setattr__(self, "observations", tuple(float(item) for item in self.observations))
+        object.__setattr__(
+            self, "observations", tuple(float(item) for item in self.observations)
+        )
 
     @property
     def input_hash(self) -> str:

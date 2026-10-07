@@ -15,7 +15,9 @@ def _jnp() -> Any:
     return jnp
 
 
-def terminal_levels(states: Any, *, equity_spot: float, fx_spot: float) -> tuple[Any, Any]:
+def terminal_levels(
+    states: Any, *, equity_spot: float, fx_spot: float
+) -> tuple[Any, Any]:
     """Map terminal log returns to equity and FX levels."""
 
     jnp = _jnp()

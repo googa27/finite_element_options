@@ -7,7 +7,9 @@ import inspect
 import numpy as np
 import pytest
 
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space import fenics_solver
@@ -61,7 +63,9 @@ def test_fenics_black_scholes() -> None:
     assert price_num == pytest.approx(price_exact, rel=1e-2)
 
 
-def test_fenics_solver_uses_dolfinx_boundary_dof_apis_not_local_row_replacement() -> None:
+def test_fenics_solver_uses_dolfinx_boundary_dof_apis_not_local_row_replacement() -> (
+    None
+):
     """The backend must not zero the whole matrix or assume local edge DOFs."""
 
     source = "\n".join(
@@ -81,7 +85,9 @@ def test_fenics_solver_uses_dolfinx_boundary_dof_apis_not_local_row_replacement(
     assert "vals[-1]" not in source
 
 
-def test_fenics_solver_sets_ksp_operator_after_boundary_application_and_checks_reason() -> None:
+def test_fenics_solver_sets_ksp_operator_after_boundary_application_and_checks_reason() -> (
+    None
+):
     """PETSc divergence must fail explicitly with solver diagnostics."""
 
     source = "\n".join(

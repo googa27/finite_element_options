@@ -34,7 +34,9 @@ def _is_lower_sha256(value: object) -> bool:
     """Return whether ``value`` is exactly one lowercase SHA-256 hex digest."""
 
     return (
-        isinstance(value, str) and len(value) == 64 and all(ch in _LOWER_HEX_DIGITS for ch in value)
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in _LOWER_HEX_DIGITS for ch in value)
     )
 
 
@@ -84,9 +86,13 @@ class UncertaintyComponent:
             elif not np.isfinite(float(value)):
                 raise ValueError(f"non-finite scale/range value for {self.name}.{key}")
         if self.perturbs_fem_model == self.additive_validation_estimator_error:
-            raise ValueError(f"component {self.name} must choose exactly one perturbation role")
+            raise ValueError(
+                f"component {self.name} must choose exactly one perturbation role"
+            )
         expected_role = (
-            "fem_perturbation" if self.perturbs_fem_model else "additive_validation_estimator_error"
+            "fem_perturbation"
+            if self.perturbs_fem_model
+            else "additive_validation_estimator_error"
         )
         if self.role != expected_role:
             raise ValueError(f"component {self.name} role must be {expected_role}")
@@ -183,10 +189,15 @@ class UQCalibration:
         if not all(np.isfinite(value) for value in finite_values):
             raise ValueError("calibration values must be finite")
         if self.numerical_half_width < 0.0 or self.mc_standard_error <= 0.0:
-            raise ValueError("calibration scales must be non-negative/positive as documented")
+            raise ValueError(
+                "calibration scales must be non-negative/positive as documented"
+            )
         if self.fine_oracle_abs_error < 0.0 or self.coarse_oracle_abs_error < 0.0:
             raise ValueError("analytical-oracle absolute errors must be non-negative")
-        if self.domain_max_fine_oracle_abs_error <= 0.0 or self.domain_error_safety_factor < 1.0:
+        if (
+            self.domain_max_fine_oracle_abs_error <= 0.0
+            or self.domain_error_safety_factor < 1.0
+        ):
             raise ValueError(
                 "domain error calibration and safety factor must be positive/conservative"
             )
@@ -209,7 +220,9 @@ class UQCalibration:
             self.domain_error_grid_hash,
         ):
             if not _is_lower_sha256(value):
-                raise ValueError("calibration hashes must be lowercase SHA-256 hex strings")
+                raise ValueError(
+                    "calibration hashes must be lowercase SHA-256 hex strings"
+                )
         for label, grid, digest in (
             ("fine", self.fine_grid, self.fine_grid_hash),
             ("coarse", self.coarse_grid, self.coarse_grid_hash),
@@ -333,10 +346,14 @@ class UQPilotResult:
     def __post_init__(self) -> None:
         """Enforce exactly the five named components and no model-risk bucket."""
 
-        _freeze_fields(self, "decision", "components", "attribution_table", "provenance")
+        _freeze_fields(
+            self, "decision", "components", "attribution_table", "provenance"
+        )
         names = tuple(component.name for component in self.components)
         if names != COMPONENT_NAMES or self.component_names != COMPONENT_NAMES:
-            raise ValueError(f"pilot must expose exactly {COMPONENT_NAMES}, got {names}")
+            raise ValueError(
+                f"pilot must expose exactly {COMPONENT_NAMES}, got {names}"
+            )
         if "model_risk" in names or "model_risk" in self.attribution_table:
             raise ValueError("undifferentiated model_risk bucket is forbidden")
 

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Sequence
+from typing import Callable, Iterable, Protocol, Sequence
 
 import numpy as np
 
 from finite_element_options.transform import CoordinateTransform
+
+from math import exp, sqrt
+from statistics import NormalDist
+
 
 _DEFAULT_AXIS_NAMES = ("s", "v", "z")
 _BOUNDARY_TOL_SCALE = 1.0e-12
@@ -99,7 +103,9 @@ class DomainSpec:
         object.__setattr__(self, "coordinate_system", str(coordinate_system))
 
     @classmethod
-    def from_extents(cls, extents: Sequence[float | Sequence[float] | DomainAxis]) -> "DomainSpec":
+    def from_extents(
+        cls, extents: Sequence[float | Sequence[float] | DomainAxis]
+    ) -> "DomainSpec":
         """Create a domain from legacy maxima, bound pairs, or axis records."""
 
         axes: list[DomainAxis] = []
@@ -107,7 +113,11 @@ class DomainSpec:
             if isinstance(item, DomainAxis):
                 axes.append(item)
                 continue
-            name = _DEFAULT_AXIS_NAMES[axis] if axis < len(_DEFAULT_AXIS_NAMES) else f"x{axis}"
+            name = (
+                _DEFAULT_AXIS_NAMES[axis]
+                if axis < len(_DEFAULT_AXIS_NAMES)
+                else f"x{axis}"
+            )
             if isinstance(item, (str, bytes)):
                 raise ValueError("domain extents must be numeric bounds, not strings")
             values = np.asarray(item, dtype=float)
@@ -205,3 +215,81 @@ def _axis_boundary_predicate(axis_index: int, value: float):
         return np.isclose(x[axis_index], value, rtol=0.0, atol=atol)
 
     return predicate
+
+
+class _TruncationModel(Protocol):
+    """Read-only scalar inputs for the existing domain truncation policy."""
+
+    @property
+    def strike(self) -> float:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def volatility(self) -> float:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def long_run_variance(self) -> float | None:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def maturity(self) -> float:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def rate(self) -> float:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def carry(self) -> float:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def variance_upper(self) -> float | None:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+    @property
+    def vol_of_variance(self) -> float | None:
+        """Return the model scalar used by domain truncation."""
+        ...
+
+
+def _spot_upper(model: _TruncationModel, alpha_tail: float) -> float:
+    volatility = max(
+        float(model.volatility), sqrt(max(float(model.long_run_variance or 0.0), 0.0))
+    )
+    maturity = max(float(model.maturity), 1.0e-12)
+    drift = abs(float(model.rate - model.carry)) * maturity
+    bounded_tail = max(min(float(alpha_tail), 0.5 - 1.0e-12), 1.0e-6)
+    z_score = NormalDist().inv_cdf(1.0 - bounded_tail)
+    diffusion = z_score * max(volatility, 1.0e-12) * sqrt(maturity)
+    return model.strike * (1.0 + exp(drift + diffusion))
+
+
+def _variance_upper(model: _TruncationModel) -> float:
+    if model.variance_upper is not None:
+        return float(model.variance_upper)
+    base = max(float(model.long_run_variance or 0.0), float(model.volatility) ** 2)
+    vol_of_variance = max(float(model.vol_of_variance or 0.0), 0.0)
+    return max(
+        5.0 * base + 2.0 * vol_of_variance * sqrt(max(model.maturity, 0.0)), 1.0e-10
+    )
+
+
+def _ui_mesh_topology_counts(dimension: int, intervals: int) -> tuple[int, int, int]:
+    """Return element/node/stencil estimates aligned with ``space.mesh.create_mesh``."""
+
+    if dimension == 1:
+        return intervals, 2 * intervals + 1, 5  # ElementLineP2
+    if dimension == 2:
+        return 2 * intervals**2, (2 * intervals + 1) ** 2, 25  # ElementTriP2
+    if dimension == 3:
+        return 6 * intervals**3, (intervals + 1) ** 3, 81  # ElementTetP1
+    return 6 * intervals**3, (intervals + 1) ** 3, 81

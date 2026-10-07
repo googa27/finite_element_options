@@ -82,7 +82,9 @@ def cir_conditional_mean(
     if np.any(v0 < 0.0):
         raise ValueError("initial_variance must be non-negative")
     if kappa == 0.0:
-        result = np.broadcast_to(v0, np.broadcast_shapes(np.shape(tau), np.shape(v0))).astype(float)
+        result = np.broadcast_to(
+            v0, np.broadcast_shapes(np.shape(tau), np.shape(v0))
+        ).astype(float)
     else:
         decay = np.exp(-kappa * tau)
         result = theta + (v0 - theta) * decay
@@ -146,7 +148,7 @@ def cir_conditional_variance(
         decay = np.exp(-kappa * tau)
         result = (
             v0 * sigma2 * decay * one_minus_decay / kappa
-            + theta * sigma2 * one_minus_decay**2 / (2.0 * kappa)
+            + theta * sigma2 * one_minus_decay** 2 / (2.0 * kappa)
         )
     return _maybe_scalar(np.asarray(result, dtype=float), horizon, initial_variance)
 

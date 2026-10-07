@@ -111,7 +111,12 @@ def _failed_result(
         case_input_hash=case_hash,
         case=case.to_input_dict(),
         objective_name=OBJECTIVE_NAME,
-        optimizer={"library": "iminuit", "version": None, "errordef": 1.0, "failure": failure},
+        optimizer={
+            "library": "iminuit",
+            "version": None,
+            "errordef": 1.0,
+            "failure": failure,
+        },
         minimum={"status": "missing", "reason": failure["type"]},
         hesse={"status": "missing", "reason": failure["type"]},
         minos={"status": "missing", "reason": failure["type"]},
@@ -179,7 +184,9 @@ def _serialize_hesse(minuit: Any) -> dict[str, Any]:
         reason = "not_available"
     else:
         array = np.asarray(covariance, dtype=float)
-        if array.shape != (len(PARAMETERS), len(PARAMETERS)) or not np.all(np.isfinite(array)):
+        if array.shape != (len(PARAMETERS), len(PARAMETERS)) or not np.all(
+            np.isfinite(array)
+        ):
             matrix = None
             status = "missing"
             reason = "invalid"
@@ -187,7 +194,8 @@ def _serialize_hesse(minuit: Any) -> dict[str, Any]:
             symmetric = 0.5 * (array + array.T)
             matrix = {
                 row_name: {
-                    col_name: float(symmetric[i, j]) for j, col_name in enumerate(PARAMETERS)
+                    col_name: float(symmetric[i, j])
+                    for j, col_name in enumerate(PARAMETERS)
                 }
                 for i, row_name in enumerate(PARAMETERS)
             }
@@ -207,7 +215,9 @@ def _serialize_hesse(minuit: Any) -> dict[str, Any]:
     }
 
 
-def _serialize_minos(minuit: Any, optimizer_failure: dict[str, Any] | None) -> dict[str, Any]:
+def _serialize_minos(
+    minuit: Any, optimizer_failure: dict[str, Any] | None
+) -> dict[str, Any]:
     records: dict[str, Any] = {}
     for parameter in PARAMETERS:
         error = getattr(minuit, "merrors", {}).get(parameter)
@@ -262,7 +272,11 @@ def _boundary_contact(case: CalibrationCase, values: dict[str, Any]) -> dict[str
             "upper_distance": upper_distance,
             "near_bound": near,
         }
-    return {"status": "available", "any_near_bound": any_contact, "parameters": contacts}
+    return {
+        "status": "available",
+        "any_near_bound": any_contact,
+        "parameters": contacts,
+    }
 
 
 def _finite_difference_diagnostics(
@@ -297,7 +311,9 @@ def _finite_difference_diagnostics(
             "gradient": _finite_or_none(gradient),
             "curvature": _finite_or_none(curvature),
             "positive_local_curvature": bool(
-                curvature is not None and math.isfinite(curvature) and curvature > MIN_CURVATURE
+                curvature is not None
+                and math.isfinite(curvature)
+                and curvature > MIN_CURVATURE
             ),
         }
     return {"status": "available", "parameters": records}
@@ -359,7 +375,9 @@ def _profile_evidence(trace: list[dict[str, Any]], best_value: float) -> dict[st
         for row in trace
     )
     ordered = sorted(trace, key=lambda row: float(row["value"]))
-    center_supported = finite_stable and _profile_center_is_supported(ordered, best_value)
+    center_supported = finite_stable and _profile_center_is_supported(
+        ordered, best_value
+    )
     lower_side = sorted(
         (row for row in ordered if float(row["value"]) < best_value),
         key=lambda row: abs(float(row["value"]) - best_value),
@@ -377,7 +395,9 @@ def _profile_evidence(trace: list[dict[str, Any]], best_value: float) -> dict[st
         "upper_crosses_delta_chi2_1": upper_cross,
         "delta_chi2_threshold": DELTA_CHI2_ONE,
         "min_delta_chi2": min_delta if math.isfinite(min_delta) else None,
-        "max_delta_chi2": max((float(row["delta_chi2"]) for row in trace), default=None),
+        "max_delta_chi2": max(
+            (float(row["delta_chi2"]) for row in trace), default=None
+        ),
     }
 
 
@@ -386,7 +406,9 @@ def _profile_center_is_supported(rows: list[dict[str, Any]], best_value: float) 
         return False
     values = [float(row["value"]) for row in rows]
     positive_spacings = [
-        right - left for left, right in zip(values, values[1:], strict=False) if right > left
+        right - left
+        for left, right in zip(values, values[1:], strict=False)
+        if right > left
     ]
     if not positive_spacings:
         value_tolerance = 1.0e-12
@@ -418,7 +440,8 @@ def _side_brackets_delta_one(rows: list[dict[str, Any]]) -> bool:
 
 def _minimum_has_finite_values(values: dict[str, Any]) -> bool:
     return all(
-        isinstance(values.get(parameter), (float, int)) and math.isfinite(float(values[parameter]))
+        isinstance(values.get(parameter), (float, int))
+        and math.isfinite(float(values[parameter]))
         for parameter in PARAMETERS
     )
 

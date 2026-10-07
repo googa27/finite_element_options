@@ -13,7 +13,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, help="canonical JSON artifact path")
-    parser.add_argument("--verify", action="store_true", help="regenerate and compare output")
+    parser.add_argument(
+        "--verify", action="store_true", help="regenerate and compare output"
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -54,12 +56,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 4
         print("artifact verification OK")
         print(f"study_input_hash={result.study_input_hash}")
-        print(f"all_expected_decisions_passed={result.summary['all_expected_decisions_passed']}")
+        print(
+            f"all_expected_decisions_passed={result.summary['all_expected_decisions_passed']}"
+        )
         return 0
     artifact_hash = write_atomic_json(output, result.to_dict())
     print(f"wrote {output} sha256={artifact_hash}")
     print(f"study_input_hash={result.study_input_hash}")
-    print(f"all_expected_decisions_passed={result.summary['all_expected_decisions_passed']}")
+    print(
+        f"all_expected_decisions_passed={result.summary['all_expected_decisions_passed']}"
+    )
     return 0 if result.summary["all_expected_decisions_passed"] else 5
 
 

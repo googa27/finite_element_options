@@ -32,7 +32,10 @@ from finite_element_options.examples.regime_switching_quanto.adoption.identifiab
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "run_iminuit_identifiability.py"
 ARTIFACT = (
-    ROOT / "docs" / "evidence" / "regime_switching_quanto_iminuit_identifiability_2026-09-04.json"
+    ROOT
+    / "docs"
+    / "evidence"
+    / "regime_switching_quanto_iminuit_identifiability_2026-09-04.json"
 )
 ARTIFACT_SHA256 = "6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b"
 
@@ -222,7 +225,10 @@ def test_profile_crossing_requires_center_support_and_sidewise_brackets() -> Non
     )
 
     def trace(rows: list[tuple[float, float]]) -> list[dict[str, object]]:
-        return [{"value": value, "delta_chi2": delta, "valid": True} for value, delta in rows]
+        return [
+            {"value": value, "delta_chi2": delta, "valid": True}
+            for value, delta in rows
+        ]
 
     bracketed = _profile_evidence(
         trace([(-2.0, 2.0), (-1.0, 0.2), (0.0, 0.0), (1.0, 0.2), (2.0, 2.0)]),
@@ -256,9 +262,9 @@ def test_pricing_exceptions_serialize_only_typed_public_diagnostics(
         raise ValueError("/var/private/customer.csv <iminuit.object> nan inf")
 
     monkeypatch.setattr(contract_module, "quanto_call_price", fail_price)
-    result = WeightedQuantoCalibrationObjective(_case("identified_quanto_surface")).evaluate(
-        0.23, -0.40
-    )
+    result = WeightedQuantoCalibrationObjective(
+        _case("identified_quanto_surface")
+    ).evaluate(0.23, -0.40)
     encoded = canonical_json(result.to_dict())
 
     assert result.finite is False
@@ -358,7 +364,9 @@ def test_runtime_study_is_deterministic_and_matches_expected_decisions() -> None
     assert "Public-synthetic" in study["scope"]
     assert "not observed/live market" in study["scope"]
     assert "production calibration" in study["scope"]
-    assert set(study["summary"]["case_input_hashes"]) == set(study["summary"]["decisions"])
+    assert set(study["summary"]["case_input_hashes"]) == set(
+        study["summary"]["decisions"]
+    )
 
 
 def _central_difference(

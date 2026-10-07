@@ -71,7 +71,9 @@ def verify_predecessor_hashes(root: Path | None = None) -> dict[str, dict[str, A
             "expected_sha256": expected,
             "observed_sha256": observed,
             "verified": observed == expected,
-            "verification_mode": "declared_digest_only" if root is None else "file_sha256",
+            "verification_mode": "declared_digest_only"
+            if root is None
+            else "file_sha256",
             "used_as_parameter_source": used,
         }
     return out
@@ -88,7 +90,9 @@ def run_openturns_uq_pilot(
     components = build_components(calibration, controls)
 
     sample = sample_normalized(controls.sample_seed, controls.sample_size)
-    ot_values = np.asarray([evaluate_response(row, calibration) for row in sample], dtype=float)
+    ot_values = np.asarray(
+        [evaluate_response(row, calibration) for row in sample], dtype=float
+    )
     price_summary = summarize_prices(ot_values)
     first, total, sobol_intervals, version, distribution_constructor = saltelli_indices(
         lambda row: evaluate_response(row, calibration),
@@ -132,7 +136,9 @@ def run_openturns_uq_pilot(
         and propagation.finite_count == propagation.sample_size
     )
     decision = {
-        "status": "retain_optional_adapter" if passed else "reject_adapter_until_gates_pass",
+        "status": "retain_optional_adapter"
+        if passed
+        else "reject_adapter_until_gates_pass",
         "passed": passed,
         "predecessor_hashes_verified": predecessor_hashes_verified,
         "maturity": "experimental_optional_non_production" if passed else "rejected",
@@ -206,7 +212,9 @@ def _direct_reference(
     ot_quantiles = propagation.prices["quantiles"]
     direct_quantiles = direct_summary["quantiles"]
     for level, value in ot_quantiles.items():
-        differences[f"quantile_{level}"] = abs(float(value) - float(direct_quantiles[level]))
+        differences[f"quantile_{level}"] = abs(
+            float(value) - float(direct_quantiles[level])
+        )
     tolerances = _sampling_tolerances(ot_values, direct_values)
     passed = all(differences[key] <= tolerances[key] for key in differences)
     return UQParityResult(
@@ -234,7 +242,9 @@ def _sampling_tolerances(a: np.ndarray, b: np.ndarray) -> dict[str, float]:
     mean_tol = 3.0 * float(np.sqrt(var_a / n_a + var_b / n_b))
     std_a = float(np.std(a, ddof=1))
     std_b = float(np.std(b, ddof=1))
-    std_tol = 3.0 * float(np.sqrt(std_a**2 / (2 * (n_a - 1)) + std_b**2 / (2 * (n_b - 1))))
+    std_tol = 3.0 * float(
+        np.sqrt(std_a**2 / (2 * (n_a - 1)) + std_b**2 / (2 * (n_b - 1)))
+    )
     mean_se = mean_tol / 3.0
     pooled = np.concatenate([np.asarray(a, dtype=float), np.asarray(b, dtype=float)])
     rng = np.random.default_rng(134_902)
@@ -245,7 +255,9 @@ def _sampling_tolerances(a: np.ndarray, b: np.ndarray) -> dict[str, float]:
         for _ in range(600):
             ra = rng.choice(pooled, size=n_a, replace=True)
             rb = rng.choice(pooled, size=n_b, replace=True)
-            diffs.append(abs(float(np.quantile(ra, level)) - float(np.quantile(rb, level))))
+            diffs.append(
+                abs(float(np.quantile(ra, level)) - float(np.quantile(rb, level)))
+            )
         tolerances[f"quantile_{level}"] = float(np.quantile(diffs, 0.995) + mean_se)
     return tolerances
 
@@ -264,8 +276,12 @@ def _attribution_table(
             "standalone_variance": propagation.component_variance[name]["variance"],
             "raw_first_order_sobol": propagation.first_order_sobol[name],
             "raw_total_order_sobol": propagation.total_order_sobol[name],
-            "first_order_confidence_interval": propagation.sobol_intervals["first_order"][name],
-            "total_order_confidence_interval": propagation.sobol_intervals["total_order"][name],
+            "first_order_confidence_interval": propagation.sobol_intervals[
+                "first_order"
+            ][name],
+            "total_order_confidence_interval": propagation.sobol_intervals[
+                "total_order"
+            ][name],
             "interpretation": (
                 "Standalone one-at-a-time variance estimate; raw Saltelli first/total estimators "
                 "are finite-sample diagnostics and may be slightly negative or out of [0, 1] due "

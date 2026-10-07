@@ -106,7 +106,9 @@ def conditional_holdout_log_prob(
 ) -> Any:
     """Return chronological hold-out log score conditional on the training sample."""
 
-    full = gaussian_hmm_log_prob(observations, initial_probs, transition_matrix, means, covariances)
+    full = gaussian_hmm_log_prob(
+        observations, initial_probs, transition_matrix, means, covariances
+    )
     train = gaussian_hmm_log_prob(
         observations[:train_count], initial_probs, transition_matrix, means, covariances
     )

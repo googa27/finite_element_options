@@ -19,8 +19,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 ADOPTION = "finite_element_options.examples.regime_switching_quanto.adoption"
 UNCERTAINTY = f"{ADOPTION}.uncertainty"
-ARTIFACT = ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
-EXPECTED_ARTIFACT_SHA256 = "d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f"
+ARTIFACT = (
+    ROOT / "docs" / "evidence" / "regime_switching_quanto_openturns_uq_2026-09-04.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "d488ea1d2300b3cd1da882479a5a475b22732145335ca3e4a3abd4393e80463f"
+)
 _VALID_SHA = "0" * 64
 
 
@@ -90,7 +94,9 @@ def _run_import_probe(code: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_result: object) -> None:
+def test_contracts_enforce_exactly_five_components_and_no_model_risk(
+    pilot_result: object,
+) -> None:
     """The public contract separates all five required components."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
@@ -99,7 +105,9 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
 
     artifact = pilot_result.to_dict()
     assert tuple(artifact["component_names"]) == COMPONENT_NAMES
-    assert [component["name"] for component in artifact["components"]] == list(COMPONENT_NAMES)
+    assert [component["name"] for component in artifact["components"]] == list(
+        COMPONENT_NAMES
+    )
     assert "model_risk" not in json.dumps(artifact)
     for component in artifact["components"]:
         assert component["source_hash"]
@@ -109,8 +117,13 @@ def test_contracts_enforce_exactly_five_components_and_no_model_risk(pilot_resul
         for value in component["scale_or_range"].values():
             if isinstance(value, (int, float)):
                 assert np.isfinite(value)
-    numerical = next(item for item in artifact["components"] if item["name"] == "numerical")
-    assert numerical["scale_or_range"]["mode"] == "independent_domain_screened_oracle_envelope"
+    numerical = next(
+        item for item in artifact["components"] if item["name"] == "numerical"
+    )
+    assert (
+        numerical["scale_or_range"]["mode"]
+        == "independent_domain_screened_oracle_envelope"
+    )
     assert "domain_half_width" in numerical["distribution"]
 
 
@@ -132,7 +145,9 @@ def test_hash_bound_public_metadata_is_deeply_immutable(pilot_result: Any) -> No
     assert pilot_result.decision["status"] == "retain_optional_adapter"
     assert pilot_result.calibration.domain_error_grid["spot_range"][0] == 95.0
 
-    from finite_element_options.examples.regime_switching_quanto._types import FrozenMapping
+    from finite_element_options.examples.regime_switching_quanto._types import (
+        FrozenMapping,
+    )
 
     left = FrozenMapping({"a": 1, "b": [2, 3]})
     right = FrozenMapping({"b": [2, 3], "a": 1})
@@ -157,7 +172,9 @@ def test_float_evidence_normalization_is_cross_platform_stable() -> None:
         quantize_json_floats(first, significant_digits=5)
 
 
-def test_custom_config_component_sources_match_custom_study_hash(pilot_result: Any) -> None:
+def test_custom_config_component_sources_match_custom_study_hash(
+    pilot_result: Any,
+) -> None:
     """Non-default controls must propagate into study-input-sourced component hashes."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
@@ -195,7 +212,9 @@ def test_monte_carlo_source_hash_binds_calibrated_outputs(pilot_result: Any) -> 
     assert changed != original
 
 
-def test_runtime_provenance_names_actual_distribution_constructor(pilot_result: Any) -> None:
+def test_runtime_provenance_names_actual_distribution_constructor(
+    pilot_result: Any,
+) -> None:
     """Artifact API provenance must report the constructor selected by the installed OpenTURNS."""
 
     propagation = pilot_result.propagation.to_dict()
@@ -234,18 +253,25 @@ def test_runner_works_outside_checkout_and_fails_closed_on_unverified_predecesso
     assert result.decision["passed"] is False
     assert result.decision["status"] == "reject_adapter_until_gates_pass"
     assert result.decision["predecessor_hashes_verified"] is False
-    assert all(check["verification_mode"] == "declared_digest_only" for check in checks.values())
+    assert all(
+        check["verification_mode"] == "declared_digest_only"
+        for check in checks.values()
+    )
     assert all(check["observed_sha256"] is None for check in checks.values())
 
 
-def test_explicit_root_reports_missing_predecessor_as_typed_error(tmp_path: Path) -> None:
+def test_explicit_root_reports_missing_predecessor_as_typed_error(
+    tmp_path: Path,
+) -> None:
     """Partial checkout errors must name the missing relative artifact without a raw path."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
         verify_predecessor_hashes,
     )
 
-    with pytest.raises(ValueError, match="missing predecessor artifact: docs/evidence/"):
+    with pytest.raises(
+        ValueError, match="missing predecessor artifact: docs/evidence/"
+    ):
         verify_predecessor_hashes(tmp_path)
 
 
@@ -255,7 +281,9 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     """Scale calibration and response evaluation route through the existing FEM solver."""
 
     from finite_element_options.examples.regime_switching_quanto import fem
-    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import cases
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        cases,
+    )
 
     original = fem.price_contract_fem
     calls: list[object] = []
@@ -272,7 +300,8 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
     assert calibration.numerical_half_width >= calibration.fine_oracle_abs_error > 0.0
     assert calibration.numerical_half_width >= calibration.coarse_oracle_abs_error > 0.0
     assert calibration.numerical_half_width >= (
-        calibration.domain_error_safety_factor * calibration.domain_max_fine_oracle_abs_error
+        calibration.domain_error_safety_factor
+        * calibration.domain_max_fine_oracle_abs_error
     )
     assert calibration.domain_error_grid["spot_levels"] == 11
     assert calibration.domain_max_error_input == {
@@ -293,7 +322,9 @@ def test_real_fem_response_calls_existing_solver_and_records_separate_calibratio
 def test_numerical_error_envelope_covers_supported_domain_screening_case() -> None:
     """The independent domain envelope covers the reviewer's worst screened input."""
 
-    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import cases
+    from finite_element_options.examples.regime_switching_quanto.adoption.uncertainty import (
+        cases,
+    )
 
     calibration = cases.calibrate_scales()
     zero_numerical = np.asarray([0.0, -1.0, -1.0, 0.0, 0.0])
@@ -307,11 +338,15 @@ def test_numerical_error_envelope_covers_supported_domain_screening_case() -> No
     )
     off_baseline_error = abs(fem_price - oracle_price)
 
-    assert off_baseline_error == pytest.approx(calibration.domain_max_fine_oracle_abs_error)
+    assert off_baseline_error == pytest.approx(
+        calibration.domain_max_fine_oracle_abs_error
+    )
     assert calibration.numerical_half_width >= (
         calibration.domain_error_safety_factor * off_baseline_error
     )
-    assert perturbed_price - fem_price == pytest.approx(calibration.numerical_half_width)
+    assert perturbed_price - fem_price == pytest.approx(
+        calibration.numerical_half_width
+    )
 
 
 def test_mapping_and_baseline_model_fail_closed_without_clipping() -> None:
@@ -370,7 +405,9 @@ def test_calibration_hashes_require_lowercase_sha256_hex() -> None:
 
     undercovered = dict(baseline)
     undercovered["numerical_half_width"] = 0.19
-    with pytest.raises(ValueError, match="must cover baseline and domain analytical errors"):
+    with pytest.raises(
+        ValueError, match="must cover baseline and domain analytical errors"
+    ):
         UQCalibration(**undercovered)
 
     from dataclasses import replace
@@ -418,7 +455,9 @@ def test_sobol_raw_estimates_are_not_clipped_and_validation_reports_envelope() -
     assert validation["point_violations"][0]["value"] == pytest.approx(1.3349)
 
 
-def test_seeded_openturns_reproducibility_and_json_serialization(pilot_result: object) -> None:
+def test_seeded_openturns_reproducibility_and_json_serialization(
+    pilot_result: object,
+) -> None:
     """OpenTURNS samples and public results are deterministic and JSON serializable."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.evidence_io import (
@@ -485,10 +524,14 @@ def test_synthetic_additive_variance_and_sobol_recovery(pilot_result: object) ->
     assert recovery["passed"] is True
     assert recovery["max_abs_error_first"] <= recovery["tolerance"]
     assert recovery["max_abs_error_total"] <= recovery["tolerance"]
-    assert recovery["expected_first"]["monte_carlo"] > recovery["expected_first"]["data"]
+    assert (
+        recovery["expected_first"]["monte_carlo"] > recovery["expected_first"]["data"]
+    )
 
 
-def test_numerical_absent_from_parameter_and_mc_is_estimator_only(pilot_result: object) -> None:
+def test_numerical_absent_from_parameter_and_mc_is_estimator_only(
+    pilot_result: object,
+) -> None:
     """Numerical and MC additive validation errors are not folded into parameter uncertainty."""
 
     components = {component.name: component for component in pilot_result.components}
@@ -498,14 +541,20 @@ def test_numerical_absent_from_parameter_and_mc_is_estimator_only(pilot_result: 
     assert components["numerical"].perturbs_fem_model is False
     assert components["monte_carlo"].additive_validation_estimator_error is True
     assert components["monte_carlo"].perturbs_fem_model is False
-    assert "not intrinsic fair-value uncertainty" in components["monte_carlo"].description
+    assert (
+        "not intrinsic fair-value uncertainty" in components["monte_carlo"].description
+    )
 
 
-def test_openturns_rng_success_failure_and_coordinated_concurrency_restoration() -> None:
+def test_openturns_rng_success_failure_and_coordinated_concurrency_restoration() -> (
+    None
+):
     """Shared public context restores RNG state for success, failure, and coordinated calls."""
 
     openturns = pytest.importorskip("openturns")
-    from finite_element_options.examples.regime_switching_quanto.adoption import openturns_seeded
+    from finite_element_options.examples.regime_switching_quanto.adoption import (
+        openturns_seeded,
+    )
 
     def next_draw_after_seed(seed: int) -> list[list[float]]:
         openturns.RandomGenerator.SetSeed(seed)
@@ -567,7 +616,9 @@ def test_openturns_rng_success_failure_and_coordinated_concurrency_restoration()
     assert list(openturns.Normal().getSample(3)) == expected_concurrent
 
 
-def test_missing_extra_hint_and_base_facade_contract_imports_with_openturns_blocked() -> None:
+def test_missing_extra_hint_and_base_facade_contract_imports_with_openturns_blocked() -> (
+    None
+):
     """Base/facade/contracts import without OpenTURNS; execution advertises exact extra."""
 
     probe = _run_import_probe(
@@ -643,6 +694,8 @@ def test_canonical_artifact_sha_input_scope_and_decision_static() -> None:
     assert artifact["provenance"]["privacy_class"] == "public-synthetic"
     assert artifact["provenance"]["raw_samples_recorded"] is False
     assert (
-        artifact["provenance"]["predecessor_hash_verification"]["quantlib_oracle"]["verified"]
+        artifact["provenance"]["predecessor_hash_verification"]["quantlib_oracle"][
+            "verified"
+        ]
         is True
     )

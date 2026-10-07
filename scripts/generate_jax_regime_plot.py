@@ -19,8 +19,12 @@ EXPECTED_VISUAL_STACK = {
 }
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_INPUT = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
-CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(CANONICAL_INPUT.suffix + ".sha256")
-EXPECTED_EVIDENCE_SHA256 = "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
+CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(
+    CANONICAL_INPUT.suffix + ".sha256"
+)
+EXPECTED_EVIDENCE_SHA256 = (
+    "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
+)
 EXPECTED_CANONICAL_CONFIG = {
     "chains": 2,
     "dividend_yield": 0.0,
@@ -94,7 +98,9 @@ def _historical_markers_match(payload: dict[str, Any]) -> bool:
 def _horizon_label(maturity_years: float) -> str:
     """Return a concise horizon label while preserving the canonical wording."""
 
-    return "Six-month" if math.isclose(maturity_years, 0.5) else f"{maturity_years:g}-year"
+    return (
+        "Six-month" if math.isclose(maturity_years, 0.5) else f"{maturity_years:g}-year"
+    )
 
 
 def _regime_labels(state_count: int) -> list[str]:
@@ -115,7 +121,9 @@ def _validate_canonical_payload(payload: dict[str, Any]) -> None:
     """Require the exact publication config and successful named gates."""
 
     if payload.get("config") != EXPECTED_CANONICAL_CONFIG:
-        raise ValueError("canonical visual publication requires the exact evidence configuration")
+        raise ValueError(
+            "canonical visual publication requires the exact evidence configuration"
+        )
     verification = payload.get("verification")
     gates = verification.get("gates") if isinstance(verification, dict) else None
     if (
@@ -126,7 +134,9 @@ def _validate_canonical_payload(payload: dict[str, Any]) -> None:
         or not gates
         or not all(value is True for value in gates.values())
     ):
-        raise ValueError("canonical visual publication requires passed evidence and named gates")
+        raise ValueError(
+            "canonical visual publication requires passed evidence and named gates"
+        )
 
 
 def _load_payload(path: Path, *, publish_canonical: bool) -> dict[str, Any]:
@@ -139,18 +149,26 @@ def _load_payload(path: Path, *, publish_canonical: bool) -> dict[str, Any]:
         raise ValueError("visual evidence input must be a JSON object")
     if publish_canonical:
         if expanded.resolve() != CANONICAL_INPUT.resolve():
-            raise ValueError("canonical visual publication requires the canonical evidence path")
+            raise ValueError(
+                "canonical visual publication requires the canonical evidence path"
+            )
         digest = sha256(raw).hexdigest()
         if digest != EXPECTED_EVIDENCE_SHA256:
-            raise ValueError("canonical visual publication requires the hash-bound evidence bytes")
+            raise ValueError(
+                "canonical visual publication requires the hash-bound evidence bytes"
+            )
         expected_sidecar = f"{digest}  {CANONICAL_INPUT.name}\n"
         if CANONICAL_INPUT_SIDECAR.read_text(encoding="utf-8") != expected_sidecar:
-            raise ValueError("canonical visual publication requires the matching evidence sidecar")
+            raise ValueError(
+                "canonical visual publication requires the matching evidence sidecar"
+            )
         _validate_canonical_payload(payload)
     return payload
 
 
-def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[Path, Path]:
+def _validated_output_paths(
+    output: Path, *, publish_canonical: bool
+) -> tuple[Path, Path]:
     """Return PNG/PDF targets after protecting the complete canonical pair."""
 
     output = output.expanduser()
@@ -165,7 +183,9 @@ def _validated_output_paths(output: Path, *, publish_canonical: bool) -> tuple[P
     if aliases_canonical and not publish_canonical:
         raise ValueError("canonical visual output requires --publish-canonical")
     if publish_canonical and resolved_targets != canonical_targets:
-        raise ValueError("--publish-canonical requires the canonical PNG/PDF output paths")
+        raise ValueError(
+            "--publish-canonical requires the canonical PNG/PDF output paths"
+        )
     if output.suffix.lower() != ".png":
         raise ValueError("--output must name a PNG path; the PDF path is derived")
     return output, pdf
@@ -256,7 +276,9 @@ def main() -> int:
         help="fail on canvas escapes or overlaps among same-role labels",
     )
     args = parser.parse_args()
-    args.output = args.output or (CANONICAL_OUTPUT if args.publish_canonical else DEFAULT_OUTPUT)
+    args.output = args.output or (
+        CANONICAL_OUTPUT if args.publish_canonical else DEFAULT_OUTPUT
+    )
     try:
         args.output, pdf = _validated_output_paths(
             args.output, publish_canonical=args.publish_canonical
@@ -291,7 +313,8 @@ def main() -> int:
     intervals = payload["pricing"]["posterior_parameter_price_intervals"]
     show_historical = _historical_markers_match(payload)
     historical = {
-        row["contract"]: row for row in payload["pricing"]["historical_scikit_fem_and_numpy_mc"]
+        row["contract"]: row
+        for row in payload["pricing"]["historical_scikit_fem_and_numpy_mc"]
     }
 
     background = "#0d1117"
@@ -352,7 +375,9 @@ def main() -> int:
     selection = payload["hmm"]["selection"]
     selected_states = selection["selected_by_heldout_score"]
     selected_score = next(
-        score for state, score in zip(states, scores, strict=True) if state == selected_states
+        score
+        for state, score in zip(states, scores, strict=True)
+        if state == selected_states
     )
     score_axis.axhline(selected_score, color=cyan, lw=1, ls="--", alpha=0.6)
     for state, score in zip(states, scores, strict=True):
@@ -377,7 +402,9 @@ def main() -> int:
     regime_axis.set_title(f"{count_name} volatility-ordered DYNAMAX HMM states")
     regime_axis.set_ylabel("Annualized composite volatility (%)")
     regime_axis.set_xticks(x, regime_labels)
-    for index, (volatility, weight) in enumerate(zip(volatilities, occupancy, strict=True)):
+    for index, (volatility, weight) in enumerate(
+        zip(volatilities, occupancy, strict=True)
+    ):
         regime_axis.text(
             index,
             volatility + max(volatilities) * 0.035,
@@ -390,14 +417,26 @@ def main() -> int:
     names = list(prices)
     positions = np.arange(len(names))
     point = np.asarray([prices[name]["price_clp"] for name in names]) / 1_000.0
-    point_se = np.asarray([prices[name]["standard_error_clp"] for name in names]) / 1_000.0
-    q05 = np.asarray([intervals[name]["posterior_parameter_q05_clp"] for name in names]) / 1_000.0
-    posterior_median = (
-        np.asarray([intervals[name]["posterior_parameter_median_clp"] for name in names]) / 1_000.0
+    point_se = (
+        np.asarray([prices[name]["standard_error_clp"] for name in names]) / 1_000.0
     )
-    q95 = np.asarray([intervals[name]["posterior_parameter_q95_clp"] for name in names]) / 1_000.0
+    q05 = (
+        np.asarray([intervals[name]["posterior_parameter_q05_clp"] for name in names])
+        / 1_000.0
+    )
+    posterior_median = (
+        np.asarray(
+            [intervals[name]["posterior_parameter_median_clp"] for name in names]
+        )
+        / 1_000.0
+    )
+    q95 = (
+        np.asarray([intervals[name]["posterior_parameter_q95_clp"] for name in names])
+        / 1_000.0
+    )
     old_mc = (
-        np.asarray([historical[name]["numpy_exact_step_mc_clp"] for name in names]) / 1_000.0
+        np.asarray([historical[name]["numpy_exact_step_mc_clp"] for name in names])
+        / 1_000.0
         if show_historical
         else np.asarray([])
     )
@@ -529,7 +568,9 @@ def main() -> int:
             format="png",
             dpi=300,
             facecolor=background,
-            metadata={"Software": "finite_element_options deterministic JAX regime visual"},
+            metadata={
+                "Software": "finite_element_options deterministic JAX regime visual"
+            },
         )
         figure.savefig(
             pdf_temporary,

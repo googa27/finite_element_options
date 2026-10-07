@@ -49,7 +49,9 @@ def main() -> int:
     print(f"study_input_hash={payload['study_input_hash']}")
     print(f"decision={payload['decision']['status']}")
     print(f"median_online_speedup={payload['timing']['median_online_speedup']}")
-    print(f"ten_x_amortization_solve_count={payload['timing']['ten_x_amortization_solve_count']}")
+    print(
+        f"ten_x_amortization_solve_count={payload['timing']['ten_x_amortization_solve_count']}"
+    )
     return 0
 
 

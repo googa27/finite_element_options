@@ -27,15 +27,15 @@ class DynamicsParametersBlackScholes(
         config=None,
     ) -> float:  # pylint: disable=unused-argument
         """Return the constant variance ``sig^2``."""
-        return self.sig ** 2
+        return self.sig**2
 
     def A(self, s):
         """Diffusion matrix (1x1) for the stock price."""
-        return [[self.sig ** 2 * s ** 2]]
+        return [[self.sig**2 * s**2]]
 
     def dA(self, s):
         """Divergence of the diffusion matrix."""
-        return [2 * self.sig ** 2 * s]
+        return [2 * self.sig**2 * s]
 
     def b(self, s):
         """Drift vector in the Feynman–Kac formulation."""

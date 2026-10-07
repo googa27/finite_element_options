@@ -58,7 +58,8 @@ def stable_environment_checks(
         "python_minor": _python_minor(observed.get("python"))
         == _python_minor(expected.get("python"))
         == (3, 12),
-        "implementation": observed.get("implementation") == expected.get("implementation"),
+        "implementation": observed.get("implementation")
+        == expected.get("implementation"),
     }
 
 
@@ -79,8 +80,12 @@ def run_bayesian_jax_profile(
     exact = exact_normal_posterior(selected)
     jax_fem = jax_fem_differentiation_status()
     cross_engine = {
-        "posterior_mean_abs_difference": abs(pymc["posterior_mean"] - numpyro["posterior_mean"]),
-        "posterior_sd_abs_difference": abs(pymc["posterior_sd"] - numpyro["posterior_sd"]),
+        "posterior_mean_abs_difference": abs(
+            pymc["posterior_mean"] - numpyro["posterior_mean"]
+        ),
+        "posterior_sd_abs_difference": abs(
+            pymc["posterior_sd"] - numpyro["posterior_sd"]
+        ),
         "posterior_predictive_mean_abs_difference": abs(
             pymc["posterior_predictive_mean"] - numpyro["posterior_predictive_mean"]
         ),
@@ -159,7 +164,9 @@ def run_bayesian_jax_profile(
         "jax_fem_differentiation": jax_fem,
         "decision": {
             "status": (
-                "adopt_isolated_bayesian_profiles" if promoted else "reject_profile_adoption"
+                "adopt_isolated_bayesian_profiles"
+                if promoted
+                else "reject_profile_adoption"
             ),
             "promoted": promoted,
             "checks": checks,
@@ -181,16 +188,20 @@ def _profile_split_evidence() -> dict[str, Any]:
     from packaging.utils import canonicalize_name
 
     requirements = [
-        Requirement(item) for item in (distribution("finite-element-options").requires or [])
+        Requirement(item)
+        for item in (distribution("finite-element-options").requires or [])
     ]
 
     def applies(requirement: Requirement, extra: str) -> bool:
-        return requirement.marker is None or requirement.marker.evaluate({"extra": extra})
+        return requirement.marker is None or requirement.marker.evaluate(
+            {"extra": extra}
+        )
 
     def has(extra: str, dependency: str) -> bool:
         expected = canonicalize_name(dependency)
         return any(
-            canonicalize_name(requirement.name) == expected and applies(requirement, extra)
+            canonicalize_name(requirement.name) == expected
+            and applies(requirement, extra)
             for requirement in requirements
         )
 
@@ -201,7 +212,8 @@ def _profile_split_evidence() -> dict[str, Any]:
     base_leaks = sorted(
         str(requirement)
         for requirement in requirements
-        if canonicalize_name(requirement.name) in optional_stacks and applies(requirement, "")
+        if canonicalize_name(requirement.name) in optional_stacks
+        and applies(requirement, "")
     )
     calibration_is_lightweight = (
         has("calibration", "pandas")
@@ -213,7 +225,8 @@ def _profile_split_evidence() -> dict[str, Any]:
         has("bayesian", "pymc")
         and has("bayesian", "arviz")
         and all(
-            has("bayesian-jax", dependency) for dependency in ("pymc", "arviz", "jax", "numpyro")
+            has("bayesian-jax", dependency)
+            for dependency in ("pymc", "arviz", "jax", "numpyro")
         )
     )
     return {

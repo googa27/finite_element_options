@@ -39,7 +39,11 @@ from .pricing.study import (
     _price_contracts,
     _risk_neutral_coefficients,
 )
-from .pricing.validation import martingale_checks, refinement_invariance, strike_monotonicity
+from .pricing.validation import (
+    martingale_checks,
+    refinement_invariance,
+    strike_monotonicity,
+)
 from .prior_sensitivity import run_prior_sensitivity
 from .utils import stack as _stack, to_python as _python
 
@@ -216,7 +220,8 @@ def run_jax_regime_study(
     hmm_summary = HMMParameterSummary(
         initial_probs=tuple(float(value) for value in parameters["initial_probs"]),
         transition_matrix=tuple(
-            tuple(float(value) for value in row) for row in parameters["transition_matrix"]
+            tuple(float(value) for value in row)
+            for row in parameters["transition_matrix"]
         ),
         means_percent_daily=tuple(
             tuple(float(value) for value in row) for row in parameters["means"]
@@ -261,7 +266,9 @@ def run_jax_regime_study(
         and posterior["maximum_rhat"] <= PUBLICATION_MAX_RHAT,
         "numpyro_ess": posterior["minimum_ess"] is not None
         and posterior["minimum_ess"] >= PUBLICATION_MIN_ESS,
-        "one_state_analytic": all(bool(row["passed_5se"]) for row in one_state.values()),
+        "one_state_analytic": all(
+            bool(row["passed_5se"]) for row in one_state.values()
+        ),
         "synthetic_recovery": bool(synthetic["passed"]),
     }
     promotion = PromotionDecision(tuple(sorted(gates.items())))
@@ -346,7 +353,9 @@ def run_jax_regime_study(
                 "prior": posterior["prior"],
                 "worst_rhat": posterior["worst_rhat"],
                 "worst_ess": posterior["worst_ess"],
-                "weakly_identified_parameters": posterior["weakly_identified_parameters"],
+                "weakly_identified_parameters": posterior[
+                    "weakly_identified_parameters"
+                ],
                 "finite": posterior["finite"],
                 "diagnostic_fields": posterior["diagnostic_fields"],
                 "state_treatment": "analytically marginalized with a JAX log-space forward scan",
@@ -354,12 +363,18 @@ def run_jax_regime_study(
                     "empirical-Bayes reference-identified priors conditional on volatility-ordered "
                     "DYNAMAX EM states"
                 ),
-                "posterior_mean_initial_probs": _python(posterior_mean["initial_probs"]),
-                "posterior_mean_transition_matrix": _python(posterior_mean["transition_matrix"]),
+                "posterior_mean_initial_probs": _python(
+                    posterior_mean["initial_probs"]
+                ),
+                "posterior_mean_transition_matrix": _python(
+                    posterior_mean["transition_matrix"]
+                ),
                 "posterior_mean_covariances_percent_squared_daily": _python(
                     posterior_mean["covariances"]
                 ),
-                "posterior_end_sample_filtered_probs": _python(end_sample_filtered_probs),
+                "posterior_end_sample_filtered_probs": _python(
+                    end_sample_filtered_probs
+                ),
                 "posterior_first_interval_forecast_probs": _python(current_probs),
             },
             "synthetic_recovery": synthetic,

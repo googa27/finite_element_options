@@ -37,6 +37,6 @@ def test_black_scholes_benchmark(benchmark) -> None:
     s0 = 1.0
     node = np.argmin(np.abs(space.Vh.doflocs[0] - s0))
     price_num = v_tsv[-1, node]
-    price_exact = bsopt.call(t[-1], s0, dh.sig ** 2)
+    price_exact = bsopt.call(t[-1], s0, dh.sig**2)
 
     assert price_num == pytest.approx(price_exact, rel=1e-2)

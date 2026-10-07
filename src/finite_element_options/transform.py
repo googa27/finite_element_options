@@ -48,19 +48,27 @@ class Mapping(Protocol):
 
     # The following methods define the expected interface and are not
     # executed directly; hence they are excluded from coverage metrics.
-    def transform(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
+    def transform(
+        self, x: float | np.ndarray
+    ) -> float | np.ndarray:  # pragma: no cover
         """Map ``x`` from the physical to the transformed domain."""
         ...
 
-    def untransform(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
+    def untransform(
+        self, x: float | np.ndarray
+    ) -> float | np.ndarray:  # pragma: no cover
         """Map ``x`` from the transformed back to the physical domain."""
         ...
 
-    def derivative(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
+    def derivative(
+        self, x: float | np.ndarray
+    ) -> float | np.ndarray:  # pragma: no cover
         r"""Return ``dy/dx`` for the physical-to-transformed map."""
         ...
 
-    def second_derivative(self, x: float | np.ndarray) -> float | np.ndarray:  # pragma: no cover
+    def second_derivative(
+        self, x: float | np.ndarray
+    ) -> float | np.ndarray:  # pragma: no cover
         r"""Return ``d²y/dx²`` for the physical-to-transformed map."""
         ...
 
@@ -96,7 +104,9 @@ class LogPrice:
 
     def transform(self, s: float | np.ndarray) -> float | np.ndarray:
         r"""Map strictly positive spot price ``s`` to log space ``\log s``."""
-        return _match_input_shape(s, np.log(_require_strictly_positive("log-price transform", s)))
+        return _match_input_shape(
+            s, np.log(_require_strictly_positive("log-price transform", s))
+        )
 
     def untransform(self, x: float | np.ndarray) -> float | np.ndarray:
         """Recover price ``s = e^x`` from log space."""
@@ -151,7 +161,9 @@ class TimeToMaturity:
     def transform(self, t: float | np.ndarray) -> float | np.ndarray:
         """Return the time-to-maturity ``T - t``."""
 
-        return _match_input_shape(t, self.maturity - _as_float_array("time coordinate", t))
+        return _match_input_shape(
+            t, self.maturity - _as_float_array("time coordinate", t)
+        )
 
     def untransform(self, tau: float | np.ndarray) -> float | np.ndarray:
         """Recover the original time from time-to-maturity ``tau``."""
@@ -285,7 +297,9 @@ class CoordinateTransform:
         physical_divergence = dynamics.dA(*physical_state)
         physical_drift = dynamics.b(*physical_state)
         if len(physical_diffusion) != dim or len(physical_drift) != dim:
-            raise ValueError("dynamics coefficient dimension does not match state dimension")
+            raise ValueError(
+                "dynamics coefficient dimension does not match state dimension"
+            )
 
         diffusion = [
             [

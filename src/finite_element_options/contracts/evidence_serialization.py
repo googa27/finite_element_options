@@ -44,14 +44,20 @@ def json_safe(value: Any) -> Any:
     if isinstance(value, (datetime, date)):
         if type(value).__name__ == "NaTType":
             return None
-        return value.date().isoformat() if isinstance(value, datetime) else value.isoformat()
+        return (
+            value.date().isoformat()
+            if isinstance(value, datetime)
+            else value.isoformat()
+        )
     return value
 
 
 def canonical_json(payload: Any) -> str:
     """Serialize payload as deterministic JSON with no local path dependence."""
 
-    return json.dumps(json_safe(payload), sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return json.dumps(
+        json_safe(payload), sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
 
 
 def canonical_json_sha256(payload: Any) -> str:
@@ -72,7 +78,10 @@ def quantize_json_floats(payload: Any, *, significant_digits: int = 10) -> Any:
             for key, item in value.items()
         }
     if isinstance(value, list):
-        return [quantize_json_floats(item, significant_digits=significant_digits) for item in value]
+        return [
+            quantize_json_floats(item, significant_digits=significant_digits)
+            for item in value
+        ]
     if isinstance(value, bool) or not isinstance(value, float):
         return value
     if not math.isfinite(value):
@@ -135,7 +144,9 @@ def write_atomic_json(path: str | Path, payload: Any) -> str:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     data = canonical_json(payload) + "\n"
-    descriptor, tmp_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    descriptor, tmp_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", dir=target.parent
+    )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(data)

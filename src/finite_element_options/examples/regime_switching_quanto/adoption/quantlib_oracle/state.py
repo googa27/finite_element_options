@@ -44,5 +44,7 @@ def _to_quantlib_date(quantlib: ModuleType, evaluation_date: Any) -> Any:
     """Convert stdlib dates after lazy QuantLib import; preserve sentinels."""
 
     if isinstance(evaluation_date, date):
-        return quantlib.Date(evaluation_date.day, evaluation_date.month, evaluation_date.year)
+        return quantlib.Date(
+            evaluation_date.day, evaluation_date.month, evaluation_date.year
+        )
     return evaluation_date

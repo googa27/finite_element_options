@@ -68,7 +68,9 @@ def test_synthetic_calibration_returns_full_diagnostics() -> None:
     assert result.method == "scipy.least_squares"
 
 
-def test_calibration_reports_rank_deficiency_without_claiming_full_identification() -> None:
+def test_calibration_reports_rank_deficiency_without_claiming_full_identification() -> (
+    None
+):
     true_params = np.array([0.04, 1.0, 0.04, 0.3, -0.7])
     strikes = np.full(8, 100.0)
     maturities = np.full(8, 0.5)
@@ -84,7 +86,9 @@ def test_calibration_reports_rank_deficiency_without_claiming_full_identificatio
     assert result.jacobian_condition == np.inf
 
 
-def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypatch() -> None:
+def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypatch() -> (
+    None
+):
     data, true_params = _surface()
     calibrator = StatsmodelsCalibrator(data)
     initial = true_params + np.array([0.01, -0.1, 0.02, -0.05, 0.1])
@@ -106,7 +110,9 @@ def test_statsmodels_calibrator_is_deprecated_scipy_shim_without_global_monkeypa
     assert np.allclose(result.parameters, true_params, atol=1e-2)
     if regression is not None:
         assert hasattr(regression, "RegressionResults") is had_regression_results
-        assert getattr(regression, "RegressionResults", None) is prior_regression_results
+        assert (
+            getattr(regression, "RegressionResults", None) is prior_regression_results
+        )
 
 
 def test_heston_named_calibrator_fails_closed_until_real_heston_engine_exists() -> None:
@@ -290,7 +296,9 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
         '{"engine_family":"heston","validation_grid":"smoke"}\n',
         encoding="utf-8",
     )
-    validation_artifact_sha256 = hashlib.sha256(validation_artifact.read_bytes()).hexdigest()
+    validation_artifact_sha256 = hashlib.sha256(
+        validation_artifact.read_bytes()
+    ).hexdigest()
 
     result = build_heston_bayesian_calibration_result(
         posterior_draws=draws,
@@ -322,13 +330,17 @@ def test_heston_bayesian_result_requires_validated_engine_and_retains_provenance
     assert result.bounds[0].tolist() == [0.0, 0.0, 0.0, 0.0, -1.0]
     assert result.bounds[1][-1] == 1.0
     assert result.active_mask.tolist() == [0, 0, 0, 0, 0]
-    assert result.cost == pytest.approx(0.5 * float(np.sum((fitted - observed).ravel() ** 2)))
+    assert result.cost == pytest.approx(
+        0.5 * float(np.sum((fitted - observed).ravel() ** 2))
+    )
     assert result.artifacts == ("artifacts/heston-idata.nc",)
     assert result.provenance["pricing_engine"] == "validated-fourier-heston"
     validation_metadata = result.provenance["pricing_engine_validation"]
     assert isinstance(validation_metadata, Mapping)
     assert validation_metadata["validation_artifact"] == str(validation_artifact)
-    assert validation_metadata["validation_artifact_sha256"] == validation_artifact_sha256
+    assert (
+        validation_metadata["validation_artifact_sha256"] == validation_artifact_sha256
+    )
     assert result.provenance["likelihood_units"] == "price"
     mcmc_diagnostics = result.diagnostics["mcmc"]
     constraint_diagnostics = result.diagnostics["constraints"]
@@ -480,7 +492,9 @@ def _linear_smile_prices(
     log_moneyness = np.log(strike / spot)
     discount = np.exp(-rate * maturity)
     forward_adjustment = np.exp(-carry * maturity)
-    return discount * (level + skew * log_moneyness + term * maturity) * forward_adjustment
+    return (
+        discount * (level + skew * log_moneyness + term * maturity) * forward_adjustment
+    )
 
 
 def _linear_smile_engine(
@@ -497,7 +511,9 @@ def _linear_smile_engine(
     )
 
 
-def test_pricing_model_calibrator_enforces_bounds_weights_and_holdout_diagnostics() -> None:
+def test_pricing_model_calibrator_enforces_bounds_weights_and_holdout_diagnostics() -> (
+    None
+):
     frame = _pricing_frame()
     dataset = PricingCalibrationDataset.from_frame(frame, quote_units="price")
     calibrator = PricingModelCalibrator(
@@ -581,7 +597,9 @@ def test_pricing_model_calibrator_fails_closed_for_bad_market_data_and_prices() 
         bad_calibrator.calibrate(initial_guess=np.array([0.20, -0.06, 0.03]))
 
 
-def test_pricing_model_calibrator_supports_vega_scaled_implied_volatility_objective() -> None:
+def test_pricing_model_calibrator_supports_vega_scaled_implied_volatility_objective() -> (
+    None
+):
     frame = _pricing_frame()
     implied_vol = frame.copy()
     true_params = np.array([0.20, -0.06, 0.03])
@@ -593,7 +611,9 @@ def test_pricing_model_calibrator_supports_vega_scaled_implied_volatility_object
         implied_vol["rate"].to_numpy(),
         implied_vol["carry"].to_numpy(),
     )
-    dataset = PricingCalibrationDataset.from_frame(implied_vol, quote_units="implied_volatility")
+    dataset = PricingCalibrationDataset.from_frame(
+        implied_vol, quote_units="implied_volatility"
+    )
     calibrator = PricingModelCalibrator(
         dataset=dataset,
         pricing_function=_linear_smile_engine,
@@ -640,13 +660,15 @@ def test_pricing_dataset_accepts_plural_weights_column_for_explicit_objective() 
     assert result.diagnostics["weights"]["source"] == "explicit"
 
 
-def _heston_smoke_prices(params: np.ndarray, dataset: PricingCalibrationDataset) -> np.ndarray:
+def _heston_smoke_prices(
+    params: np.ndarray, dataset: PricingCalibrationDataset
+) -> np.ndarray:
     v0, kappa, theta, sigma, rho = params
     if min(v0, kappa, theta, sigma) <= 0.0 or abs(rho) >= 1.0:
         raise ValueError("invalid Heston parameters")
-    average_variance = theta + (v0 - theta) * (1.0 - np.exp(-kappa * dataset.maturity)) / (
-        kappa * dataset.maturity
-    )
+    average_variance = theta + (v0 - theta) * (
+        1.0 - np.exp(-kappa * dataset.maturity)
+    ) / (kappa * dataset.maturity)
     log_moneyness = np.log(dataset.strike / dataset.spot)
     skew_adjustment = 1.0 + 0.15 * rho * log_moneyness + 0.03 * sigma * dataset.maturity
     return np.sqrt(average_variance) * skew_adjustment
@@ -692,7 +714,8 @@ def test_heston_pricing_calibrator_recovers_parameters_with_validated_injected_e
     assert np.all(result.parameters[:4] > 0.0)
     assert -1.0 < result.parameters[4] < 1.0
     assert np.all(
-        np.abs(result.parameters - true_params) <= np.array([5e-3, 0.8, 5e-3, 0.12, 0.25])
+        np.abs(result.parameters - true_params)
+        <= np.array([5e-3, 0.8, 5e-3, 0.12, 0.25])
     )
     assert result.provenance["pricing_engine"] == "validated-moment-heston-smoke"
     assert result.diagnostics["constraints"]["feller_policy"] == "report"

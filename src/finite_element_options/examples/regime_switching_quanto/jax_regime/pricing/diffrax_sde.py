@@ -11,7 +11,9 @@ def _stack() -> tuple[Any, Any, Any]:
         import jax
         import jax.numpy as jnp
     except ModuleNotFoundError as exc:
-        raise ImportError("Diffrax pricing requires finite-element-options[jax-regime].") from exc
+        raise ImportError(
+            "Diffrax pricing requires finite-element-options[jax-regime]."
+        ) from exc
     jax.config.update("jax_enable_x64", True)
     return diffrax, jax, jnp
 
@@ -40,7 +42,9 @@ def simulate_diffrax_terminal_states(
     times = jnp.linspace(0.0, maturity, steps + 1)
 
     def solve_one(path: Any, increments: Any) -> Any:
-        cumulative = jnp.concatenate([jnp.zeros((1, 2)), jnp.cumsum(increments, axis=0)], axis=0)
+        cumulative = jnp.concatenate(
+            [jnp.zeros((1, 2)), jnp.cumsum(increments, axis=0)], axis=0
+        )
         control = dfx.LinearInterpolation(ts=times, ys=cumulative)
 
         def index(time: Any) -> Any:
@@ -49,7 +53,9 @@ def simulate_diffrax_terminal_states(
 
         terms = dfx.MultiTerm(
             dfx.ODETerm(lambda time, state, args: drift[path[index(time)]]),
-            dfx.ControlTerm(lambda time, state, args: diffusion[path[index(time)]], control),
+            dfx.ControlTerm(
+                lambda time, state, args: diffusion[path[index(time)]], control
+            ),
         )
         solution = dfx.diffeqsolve(
             terms,

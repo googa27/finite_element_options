@@ -70,7 +70,9 @@ def test_supported_black_scholes_ui_problem_builds_shareable_contract() -> None:
     assert status["backend"]["capability_maturity"] == "validated"
     assert status["benchmark_ids"]
     assert status["approximation_status"]["estimated_dofs"] > 0
-    assert status["convergence_status"] == "benchmark_evidenced_not_reestimated_in_ui_run"
+    assert (
+        status["convergence_status"] == "benchmark_evidenced_not_reestimated_in_ui_run"
+    )
     assert status["solver_diagnostics"] == {"steps": 63}
 
 
@@ -125,7 +127,9 @@ def test_tail_probability_changes_domain_width_monotonically() -> None:
             grid=UiGridSpec(mesh_refine=4, time_steps=32, alpha_tail=alpha_tail),
             solver=UiSolverOptions(theta=0.5),
             strict=True,
-        ).domain_axes[0].upper
+        )
+        .domain_axes[0]
+        .upper
         for alpha_tail in alpha_tails
     ]
 
@@ -141,7 +145,9 @@ def test_tail_probability_changes_domain_width_monotonically() -> None:
     assert widest_tail.domain_axes[0].tail_mass == 0.45
 
 
-def test_work_estimate_matches_create_mesh_element_orders_without_allocation_drift() -> None:
+def test_work_estimate_matches_create_mesh_element_orders_without_allocation_drift() -> (
+    None
+):
     for dimension, extents in (
         (1, [1.0]),
         (2, [1.0, 1.0]),

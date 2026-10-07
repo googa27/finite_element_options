@@ -79,7 +79,9 @@ def test_pinares_fixed_price_proxy_runs_against_analytical_survival_scaled_oracl
     assert report.no_arbitrage["gamma_non_negative_ok"]
 
 
-def test_pinares_problem_spec_maps_to_supported_fem_route_and_preserves_conventions() -> None:
+def test_pinares_problem_spec_maps_to_supported_fem_route_and_preserves_conventions() -> (
+    None
+):
     payload = public_pinares_fixed_price_problem_spec()
     request = FEMRouteRequest.from_quant_problem_spec(payload)
 
@@ -124,7 +126,9 @@ def test_static_pinares_exports_are_current_public_and_hash_stable(
     assert qps_spec == generated_spec
     assert unsupported_spec == generated_unsupported
     assert result_export == pinares_report.export_payload()
-    assert provider_manifest == build_pinares_fem_provider_evidence_manifest(pinares_report)
+    assert provider_manifest == build_pinares_fem_provider_evidence_manifest(
+        pinares_report
+    )
     assert problem_spec["contract_id"] == build_pinares_fem_proxy_hash(
         {key: value for key, value in problem_spec.items() if key != "contract_id"}
     )
@@ -140,7 +144,10 @@ def test_static_pinares_exports_are_current_public_and_hash_stable(
     assert result_export["measure"] == "Q*"
     assert result_export["numeraire"] == "UF_money_market_account_proxy"
     assert result_export["units"] == pinares_report.case.normalized_units()
-    assert result_export["backend_capability_status"]["backend_id"] == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    assert (
+        result_export["backend_capability_status"]["backend_id"]
+        == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+    )
     assert result_export["diagnostics"]["route_id"] == pinares_report.case.route_id
     assert result_export["privacy_class"] == "public_synthetic"
     assert (
@@ -158,9 +165,13 @@ def test_pinares_fem_provider_evidence_manifest_reports_cache_and_performance_fi
     assert manifest["producer"] == "finite_element_options"
     assert manifest["privacy_class"] == "public_synthetic"
     assert manifest["issue_refs"] == ["googa27/finite_element_options#104"]
-    assert manifest["evidence_class"] == "deterministic_proxy_not_full_family_contract_valuation"
     assert (
-        manifest["capability_manifest"]["backend_id"] == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
+        manifest["evidence_class"]
+        == "deterministic_proxy_not_full_family_contract_valuation"
+    )
+    assert (
+        manifest["capability_manifest"]["backend_id"]
+        == DEFAULT_FEM_CAPABILITY_MANIFEST.backend_id
     )
     assert (
         manifest["capability_manifest"]["contract_version"]
@@ -178,7 +189,10 @@ def test_pinares_fem_provider_evidence_manifest_reports_cache_and_performance_fi
         manifest["performance_sidecar"]["degrees_of_freedom"]
         == pinares_report.rows[-1].degrees_of_freedom
     )
-    assert manifest["parity_metrics"]["price_abs_uf"] <= manifest["error_budgets"]["price_abs_uf"]
+    assert (
+        manifest["parity_metrics"]["price_abs_uf"]
+        <= manifest["error_budgets"]["price_abs_uf"]
+    )
     assert manifest["unsupported_routes"]["full_family_contract"] == "fail_closed"
 
 

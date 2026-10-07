@@ -16,8 +16,12 @@ PDE_IR_SCHEMA_VERSION = "pde_ir.v0"
 PUBLIC_BS_FIXTURE_ID = "VQPW-FEM-COMPILED-BS-CALL-V0"
 PUBLIC_BS_SOURCE_PROBLEM_ID = "black_scholes_call_public_synthetic"
 PUBLIC_BS_FORMULATION_ID = "black_scholes_call_pde_v0"
-PUBLIC_BS_SOURCE_HASH = "sha256:5ab53779a5e322284a6cb18b22302c119f22bc740659aedf1c07823529d68a47"
-PUBLIC_BS_COMPILED_HASH = "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e"
+PUBLIC_BS_SOURCE_HASH = (
+    "sha256:5ab53779a5e322284a6cb18b22302c119f22bc740659aedf1c07823529d68a47"
+)
+PUBLIC_BS_COMPILED_HASH = (
+    "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e"
+)
 
 ALLOWED_TOP_LEVEL_FIELDS = frozenset(
     {
@@ -130,9 +134,12 @@ def reject_private_markers(
         for key, child in value.items():
             child_path = f"{path}.{key}" if path else str(key)
             lowered = str(key).lower()
-            allowed_public_flag = lowered == "contains_private_data" and str(child).lower() == "false"
+            allowed_public_flag = (
+                lowered == "contains_private_data" and str(child).lower() == "false"
+            )
             if not allowed_public_flag and (
-                "private" in lowered or lowered in {"credential", "credentials", "secret", "token"}
+                "private" in lowered
+                or lowered in {"credential", "credentials", "secret", "token"}
             ):
                 append_diagnostic(
                     diagnostics,
@@ -175,14 +182,22 @@ def append_diagnostic(
 ) -> None:
     """Append one compiled weak-form diagnostic."""
 
-    diagnostics.append(CompiledWeakFormDiagnostic(code=code, field=field, value=value, message=message))
+    diagnostics.append(
+        CompiledWeakFormDiagnostic(code=code, field=field, value=value, message=message)
+    )
 
 
-def rejected(fixture_id: str | None, field: str, value: str, message: str) -> CompiledWeakFormScreen:
+def rejected(
+    fixture_id: str | None, field: str, value: str, message: str
+) -> CompiledWeakFormScreen:
     """Build a rejected screen for payload loading failures."""
 
-    diagnostic = CompiledWeakFormDiagnostic("compiled_weak_form.load", field, value, message)
-    return CompiledWeakFormScreen(False, fixture_id, None, None, None, None, (diagnostic,), {})
+    diagnostic = CompiledWeakFormDiagnostic(
+        "compiled_weak_form.load", field, value, message
+    )
+    return CompiledWeakFormScreen(
+        False, fixture_id, None, None, None, None, (diagnostic,), {}
+    )
 
 
 def as_mapping(value: Any) -> Mapping[str, Any]:
@@ -194,7 +209,12 @@ def as_mapping(value: Any) -> Mapping[str, Any]:
 def as_sequence(value: Any) -> Sequence[Any]:
     """Return ``value`` as a non-string sequence or an empty tuple."""
 
-    return value if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)) else ()
+    return (
+        value
+        if isinstance(value, Sequence)
+        and not isinstance(value, (str, bytes, bytearray))
+        else ()
+    )
 
 
 def optional_string(value: Any) -> str | None:

@@ -45,11 +45,17 @@ class BenchmarkSpec:
             "oracle": self.oracle,
             "norm": self.norm,
         }
-        missing = tuple(name for name, value in fields.items() if not str(value).strip())
+        missing = tuple(
+            name for name, value in fields.items() if not str(value).strip()
+        )
         if missing:
-            raise ValidationGateError(f"benchmark {self.benchmark_id!r} missing fields: {missing}")
+            raise ValidationGateError(
+                f"benchmark {self.benchmark_id!r} missing fields: {missing}"
+            )
         if not isfinite(self.expected_order) or self.expected_order < 0.0:
-            raise ValidationGateError(f"benchmark {self.benchmark_id!r} has invalid expected order")
+            raise ValidationGateError(
+                f"benchmark {self.benchmark_id!r} has invalid expected order"
+            )
         missing_components = tuple(
             component
             for component in REQUIRED_TOLERANCE_COMPONENTS
@@ -133,7 +139,9 @@ def default_benchmark_registry() -> dict[str, BenchmarkSpec]:
             domain="public synthetic one-dimensional spot interval [0, 400]",
             grid="line_uniform lagrange_p2 refinements 4/5/6",
             time_schedule="theta_crank_nicolson, 80 time steps",
-            oracle=("closed-form Black-Scholes price, Delta and Gamma plus exact compiler hashes"),
+            oracle=(
+                "closed-form Black-Scholes price, Delta and Gamma plus exact compiler hashes"
+            ),
             norm="screening acceptance plus price/Delta/Gamma absolute and relative error budget",
             expected_order=2.0,
             tolerance_components={

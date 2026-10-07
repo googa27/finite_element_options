@@ -7,11 +7,9 @@ Tests use an explicitly synthetic formula, never a production Heston engine.
 
 from __future__ import annotations
 
-import hashlib
 import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -27,6 +25,13 @@ from .calibrator import (
     PricingModelCalibrator,
 )
 
+from .heston_engine_identity import (
+    _validate_heston_engine_name as _validate_heston_engine_name,
+    _validated_artifact_sha256 as _validated_artifact_sha256,
+    _validate_heston_engine_metadata as _validate_heston_engine_metadata,
+)
+
+
 _SYNTHETIC_PARAMETER_NAMES = (
     "level",
     "strike_slope",
@@ -38,7 +43,6 @@ _SYNTHETIC_PARAMETER_NAMES = (
 HESTON_PARAMETER_NAMES = ("v0", "kappa", "theta", "sigma", "rho")
 _ALLOWED_FELLER_POLICIES = frozenset({"report", "enforce"})
 _ALLOWED_LIKELIHOOD_UNITS = frozenset({"price", "implied_volatility"})
-_FORBIDDEN_ENGINE_TOKENS = ("toy", "synthetic", "polynomial", "fixture")
 
 
 @dataclass(frozen=True)
@@ -158,7 +162,9 @@ def validate_heston_posterior_draws(
     """
 
     if feller_policy not in _ALLOWED_FELLER_POLICIES:
-        raise ValueError(f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}")
+        raise ValueError(
+            f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}"
+        )
     draws = _coerce_heston_draws(posterior_draws)
     for name in ("v0", "kappa", "theta", "sigma"):
         if np.any(draws[name] <= 0.0):
@@ -194,10 +200,14 @@ def _diagnostic_frame(
             "diagnostic_summary must contain r_hat, ess_bulk and ess_tail; "
             f"missing {sorted(missing_columns)}"
         )
-    missing_parameters = [name for name in HESTON_PARAMETER_NAMES if name not in frame.index]
+    missing_parameters = [
+        name for name in HESTON_PARAMETER_NAMES if name not in frame.index
+    ]
     if missing_parameters:
         raise ValueError(f"diagnostic_summary is missing {missing_parameters}")
-    return frame.loc[list(HESTON_PARAMETER_NAMES), ["r_hat", "ess_bulk", "ess_tail"]].astype(float)
+    return frame.loc[
+        list(HESTON_PARAMETER_NAMES), ["r_hat", "ess_bulk", "ess_tail"]
+    ].astype(float)
 
 
 def evaluate_heston_mcmc_diagnostics(
@@ -230,11 +240,17 @@ def evaluate_heston_mcmc_diagnostics(
     if max_r_hat > thresholds.max_r_hat:
         failures.append(f"r_hat {max_r_hat:.4g} exceeds {thresholds.max_r_hat:.4g}")
     if min_bulk_ess < thresholds.min_bulk_ess:
-        failures.append(f"bulk ESS {min_bulk_ess:.4g} below {thresholds.min_bulk_ess:.4g}")
+        failures.append(
+            f"bulk ESS {min_bulk_ess:.4g} below {thresholds.min_bulk_ess:.4g}"
+        )
     if min_tail_ess < thresholds.min_tail_ess:
-        failures.append(f"tail ESS {min_tail_ess:.4g} below {thresholds.min_tail_ess:.4g}")
+        failures.append(
+            f"tail ESS {min_tail_ess:.4g} below {thresholds.min_tail_ess:.4g}"
+        )
     if divergences > thresholds.max_divergences:
-        failures.append(f"divergence count {divergences} exceeds {thresholds.max_divergences}")
+        failures.append(
+            f"divergence count {divergences} exceeds {thresholds.max_divergences}"
+        )
     if tree_depth_hits > thresholds.max_tree_depth_hits:
         failures.append(
             f"tree depth hit count {tree_depth_hits} exceeds {thresholds.max_tree_depth_hits}"
@@ -263,60 +279,9 @@ def evaluate_heston_mcmc_diagnostics(
 
 
 def _posterior_means(draws: Mapping[str, np.ndarray]) -> np.ndarray:
-    return np.asarray([np.mean(draws[name]) for name in HESTON_PARAMETER_NAMES], dtype=float)
-
-
-def _validate_heston_engine_name(pricing_engine: str) -> str:
-    normalized = pricing_engine.strip()
-    if not normalized:
-        raise ValueError("pricing_engine must name a validated Heston pricing engine")
-    lowered = normalized.lower()
-    if "heston" not in lowered or any(token in lowered for token in _FORBIDDEN_ENGINE_TOKENS):
-        raise ValueError("pricing_engine must name a validated Heston pricing engine")
-    return normalized
-
-
-def _validated_artifact_sha256(artifact: str, expected_sha256: str) -> str:
-    """Load a validation artifact and verify its content-addressed digest."""
-
-    artifact_path = Path(artifact).expanduser()
-    if not artifact_path.is_file():
-        raise ValueError("pricing_engine_validation validation_artifact must be an existing file")
-    actual_sha256 = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
-    if actual_sha256 != expected_sha256:
-        raise ValueError(
-            "pricing_engine_validation validation_artifact_sha256 does not match artifact"
-        )
-    return actual_sha256
-
-
-def _validate_heston_engine_metadata(
-    pricing_engine: str,
-    pricing_engine_validation: Mapping[str, object],
-) -> dict[str, object]:
-    """Validate non-lexical evidence for a Heston pricing engine."""
-
-    engine = _validate_heston_engine_name(pricing_engine)
-    metadata = dict(pricing_engine_validation)
-    if metadata.get("validated") is not True:
-        raise ValueError("pricing_engine_validation must mark the engine as validated")
-    if str(metadata.get("engine_family", "")).lower() != "heston":
-        raise ValueError("pricing_engine_validation must declare engine_family='heston'")
-    artifact = str(metadata.get("validation_artifact", "")).strip()
-    if not artifact:
-        raise ValueError("pricing_engine_validation must include a validation_artifact")
-    artifact_sha256 = str(metadata.get("validation_artifact_sha256", "")).strip().lower()
-    if len(artifact_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in artifact_sha256):
-        raise ValueError("pricing_engine_validation must include validation_artifact_sha256")
-    artifact_sha256 = _validated_artifact_sha256(artifact, artifact_sha256)
-    version = str(metadata.get("version", "")).strip()
-    if not version:
-        raise ValueError("pricing_engine_validation must include a pricing engine version")
-    metadata["pricing_engine"] = engine
-    metadata["validation_artifact"] = artifact
-    metadata["validation_artifact_sha256"] = artifact_sha256
-    metadata["version"] = version
-    return metadata
+    return np.asarray(
+        [np.mean(draws[name]) for name in HESTON_PARAMETER_NAMES], dtype=float
+    )
 
 
 def _active_parameter_mask(
@@ -373,9 +338,13 @@ def build_heston_bayesian_calibration_result(
     mislabeled as Heston calibration evidence.
     """
 
-    engine_metadata = _validate_heston_engine_metadata(pricing_engine, pricing_engine_validation)
+    engine_metadata = _validate_heston_engine_metadata(
+        pricing_engine, pricing_engine_validation
+    )
     if likelihood_units not in _ALLOWED_LIKELIHOOD_UNITS:
-        raise ValueError(f"likelihood_units must be one of {sorted(_ALLOWED_LIKELIHOOD_UNITS)}")
+        raise ValueError(
+            f"likelihood_units must be one of {sorted(_ALLOWED_LIKELIHOOD_UNITS)}"
+        )
     if observation_noise <= 0.0 or not np.isfinite(observation_noise):
         raise ValueError("observation_noise must be finite and strictly positive")
     if not inference_data_artifact:
@@ -390,8 +359,14 @@ def build_heston_bayesian_calibration_result(
     fitted = np.asarray(fitted_values, dtype=float)
     if observed.shape != fitted.shape:
         raise ValueError("observed_values and fitted_values must have matching shapes")
-    if observed.size == 0 or not np.all(np.isfinite(observed)) or not np.all(np.isfinite(fitted)):
-        raise ValueError("observed_values and fitted_values must be non-empty and finite")
+    if (
+        observed.size == 0
+        or not np.all(np.isfinite(observed))
+        or not np.all(np.isfinite(fitted))
+    ):
+        raise ValueError(
+            "observed_values and fitted_values must be non-empty and finite"
+        )
     residuals = fitted - observed
     residuals_flat = np.ravel(residuals)
     fit_rmse = float(np.sqrt(np.mean(residuals_flat**2)))
@@ -475,7 +450,9 @@ class HestonPricingCalibrator(PricingModelCalibrator):
             pricing_engine_validation,
         )
         if feller_policy not in _ALLOWED_FELLER_POLICIES:
-            raise ValueError(f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}")
+            raise ValueError(
+                f"feller_policy must be one of {sorted(_ALLOWED_FELLER_POLICIES)}"
+            )
         if bounds is None:
             bounds = (
                 [1.0e-10, 1.0e-10, 1.0e-10, 1.0e-10, -0.999],
@@ -516,7 +493,9 @@ class HestonPricingCalibrator(PricingModelCalibrator):
         )
         draws = {
             name: np.array([value], dtype=float)
-            for name, value in zip(HESTON_PARAMETER_NAMES, result.parameters, strict=True)
+            for name, value in zip(
+                HESTON_PARAMETER_NAMES, result.parameters, strict=True
+            )
         }
         constraint_failure: str | None = None
         try:
@@ -579,7 +558,9 @@ class SyntheticSurfaceCalibrator(Calibrator):
             sqrt_strike_slope, maturity_quadratic]``.
         """
 
-        level, strike_slope, maturity_slope, sqrt_strike_slope, maturity_quadratic = params
+        level, strike_slope, maturity_slope, sqrt_strike_slope, maturity_quadratic = (
+            params
+        )
         return (
             level
             + 1e-2 * strike_slope * strikes

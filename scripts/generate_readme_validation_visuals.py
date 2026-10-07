@@ -88,13 +88,31 @@ def _plot_black_scholes(path: Path) -> dict[str, Any]:
 
     _style_axes(ax_error)
     ax_error.semilogy(dofs, errors, color=MAGENTA, marker="o", linewidth=2.4)
-    ax_error.axhline(report.tolerance_absolute, color=GREEN, linestyle="--", linewidth=2.0)
-    ax_error.fill_between(dofs, report.tolerance_absolute, errors.max() * 1.15, color=ORANGE, alpha=0.08)
+    ax_error.axhline(
+        report.tolerance_absolute, color=GREEN, linestyle="--", linewidth=2.0
+    )
+    ax_error.fill_between(
+        dofs, report.tolerance_absolute, errors.max() * 1.15, color=ORANGE, alpha=0.08
+    )
     ax_error.set_xlabel("degrees of freedom")
     ax_error.set_ylabel("absolute price error")
     ax_error.set_title("Validated route satisfies price tolerance")
-    ax_error.text(dofs[-1], errors[-1], f"  {errors[-1]:.2e}", color=MAGENTA, va="center", fontsize=9)
-    ax_error.text(dofs[0], report.tolerance_absolute, "  tolerance", color=GREEN, va="bottom", fontsize=9)
+    ax_error.text(
+        dofs[-1],
+        errors[-1],
+        f"  {errors[-1]:.2e}",
+        color=MAGENTA,
+        va="center",
+        fontsize=9,
+    )
+    ax_error.text(
+        dofs[0],
+        report.tolerance_absolute,
+        "  tolerance",
+        color=GREEN,
+        va="bottom",
+        fontsize=9,
+    )
 
     caption = (
         "Source: run_public_black_scholes_parity_fixture(), benchmark fem-bs-001; "
@@ -139,12 +157,16 @@ def _plot_pinares(path: Path) -> dict[str, Any]:
     ax_price.set_xlabel("degrees of freedom")
     ax_price.set_ylabel("survival-scaled value (UF)")
     ax_price.set_title("Proxy weak-form solve against oracle")
-    ax_price.text(dofs[-1], prices[-1], "  FEM proxy", color=PURPLE, va="center", fontsize=9)
+    ax_price.text(
+        dofs[-1], prices[-1], "  FEM proxy", color=PURPLE, va="center", fontsize=9
+    )
     ax_price.text(dofs[0], oracle, "  oracle", color=CYAN, va="bottom", fontsize=9)
 
     _style_axes(ax_error)
     ax_error.semilogy(dofs, errors, color=MAGENTA, marker="o", linewidth=2.4)
-    ax_error.axhline(report.case.price_abs_tolerance_uf, color=GREEN, linestyle="--", linewidth=2.0)
+    ax_error.axhline(
+        report.case.price_abs_tolerance_uf, color=GREEN, linestyle="--", linewidth=2.0
+    )
     ax_error.fill_between(
         dofs,
         report.case.price_abs_tolerance_uf,
@@ -155,8 +177,22 @@ def _plot_pinares(path: Path) -> dict[str, Any]:
     ax_error.set_xlabel("degrees of freedom")
     ax_error.set_ylabel("absolute price error (UF)")
     ax_error.set_title("Finest refinement inside 1.0 UF budget")
-    ax_error.text(dofs[-1], errors[-1], f"  {errors[-1]:.3f} UF", color=MAGENTA, va="center", fontsize=9)
-    ax_error.text(dofs[0], report.case.price_abs_tolerance_uf, "  budget", color=GREEN, va="bottom", fontsize=9)
+    ax_error.text(
+        dofs[-1],
+        errors[-1],
+        f"  {errors[-1]:.3f} UF",
+        color=MAGENTA,
+        va="center",
+        fontsize=9,
+    )
+    ax_error.text(
+        dofs[0],
+        report.case.price_abs_tolerance_uf,
+        "  budget",
+        color=GREEN,
+        va="bottom",
+        fontsize=9,
+    )
 
     caption = (
         "Source: run_public_pinares_fixed_price_proxy_fixture(); public-synthetic Q* weak-form proxy only. "
@@ -195,20 +231,35 @@ def _write_pipeline_svg(path: Path) -> dict[str, Any]:
         f'<rect x="20" y="25" width="1020" height="185" rx="18" fill="{PANEL}" stroke="{GRID}"/>',
     ]
     for idx, (x, y, title, subtitle, color) in enumerate(boxes):
-        svg_parts.append(f'<rect x="{x}" y="{y}" width="205" height="82" rx="13" fill="{BG}" stroke="{color}" stroke-width="2"/>')
-        svg_parts.append(f'<text x="{x + 18}" y="{y + 34}" fill="{color}" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">{html.escape(title)}</text>')
-        svg_parts.append(f'<text x="{x + 18}" y="{y + 61}" fill="{TEXT}" font-family="Inter,Arial,sans-serif" font-size="14">{html.escape(subtitle)}</text>')
+        svg_parts.append(
+            f'<rect x="{x}" y="{y}" width="205" height="82" rx="13" fill="{BG}" stroke="{color}" stroke-width="2"/>'
+        )
+        svg_parts.append(
+            f'<text x="{x + 18}" y="{y + 34}" fill="{color}" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">{html.escape(title)}</text>'
+        )
+        svg_parts.append(
+            f'<text x="{x + 18}" y="{y + 61}" fill="{TEXT}" font-family="Inter,Arial,sans-serif" font-size="14">{html.escape(subtitle)}</text>'
+        )
         if idx < len(boxes) - 1:
             x2 = x + 226
-            svg_parts.append(f'<path d="M{x + 205} {y + 41} L{x2} {y + 41}" stroke="{MUTED}" stroke-width="2" marker-end="url(#arrow)"/>')
+            svg_parts.append(
+                f'<path d="M{x + 205} {y + 41} L{x2} {y + 41}" stroke="{MUTED}" stroke-width="2" marker-end="url(#arrow)"/>'
+            )
     svg_parts.insert(
         5,
         f'<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="{MUTED}"/></marker></defs>',
     )
-    svg_parts.append(f'<text x="40" y="228" fill="{MUTED}" font-family="Inter,Arial,sans-serif" font-size="13">Evidence sources: docs/CAPABILITY_MATRIX.md, tests/fixtures/fem_bs_001, tests/fixtures/fem_pinares_fixed_price_proxy_v1. Optional FEniCSx/PETSc remain outside base validation.</text>')
+    svg_parts.append(
+        f'<text x="40" y="228" fill="{MUTED}" font-family="Inter,Arial,sans-serif" font-size="13">Evidence sources: docs/CAPABILITY_MATRIX.md, tests/fixtures/fem_bs_001, tests/fixtures/fem_pinares_fixed_price_proxy_v1. Optional FEniCSx/PETSc remain outside base validation.</text>'
+    )
     svg_parts.append("</svg>\n")
     path.write_text("\n".join(svg_parts), encoding="utf-8")
-    return {"path": str(path), "visual_qa": "pass", "palette_background": BG, "palette_panel": PANEL}
+    return {
+        "path": str(path),
+        "visual_qa": "pass",
+        "palette_background": BG,
+        "palette_panel": PANEL,
+    }
 
 
 def main() -> None:
@@ -260,8 +311,18 @@ def main() -> None:
             report["assets"][key] = {"path": str(path), "visual_qa": "pass"}
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"assets": {k: str(v) for k, v in assets.items()}, "report": str(report_path)}, indent=2))
+    report_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {
+                "assets": {k: str(v) for k, v in assets.items()},
+                "report": str(report_path),
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

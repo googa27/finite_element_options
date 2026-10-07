@@ -15,7 +15,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-ORACLE = "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle"
+ORACLE = (
+    "finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle"
+)
 
 
 def _spec(**overrides: object):
@@ -151,7 +153,11 @@ def test_unsupported_conventions_raise_typed_actionable_error(
     assert error.field == field
     assert error.received == value
     assert error.supported == supported
-    assert error.to_dict() == {"field": field, "received": value, "supported": list(supported)}
+    assert error.to_dict() == {
+        "field": field,
+        "received": value,
+        "supported": list(supported),
+    }
 
 
 def test_quantlib_date_invariant_failure_is_typed_and_json_safe() -> None:
@@ -262,7 +268,13 @@ def test_reduction_validation_runs_before_quantlib_state_mutation(
 @pytest.mark.parametrize(
     "spec",
     [
-        _spec(kind="vanilla", fixed_fx=1.0, foreign_rate=0.035, fx_vol=0.0, correlation=0.0),
+        _spec(
+            kind="vanilla",
+            fixed_fx=1.0,
+            foreign_rate=0.035,
+            fx_vol=0.0,
+            correlation=0.0,
+        ),
         _spec(
             kind="vanilla",
             fixed_fx=1.0,
@@ -292,7 +304,9 @@ def test_reduction_validation_runs_before_quantlib_state_mutation(
         ),
     ],
 )
-def test_real_quantlib_prices_match_repository_analytical_reduction(spec: object) -> None:
+def test_real_quantlib_prices_match_repository_analytical_reduction(
+    spec: object,
+) -> None:
     """QuantLib engines price vanilla and QuantoVanillaOption reductions independently."""
 
     pytest.importorskip("QuantLib")
@@ -305,7 +319,9 @@ def test_real_quantlib_prices_match_repository_analytical_reduction(spec: object
     assert result.analytical_absolute_error <= 1.0e-9
     assert result.year_fraction > 0.0
     if result.spec["kind"] == "fixed_fx_quanto":
-        assert result.price == pytest.approx(result.quantlib_npv * result.spec["fixed_fx"])
+        assert result.price == pytest.approx(
+            result.quantlib_npv * result.spec["fixed_fx"]
+        )
         assert result.effective_dividend_yield == pytest.approx(
             result.spec["dividend_yield"]
             + result.spec["domestic_rate"]
@@ -343,7 +359,9 @@ def test_unadjusted_convention_uses_explicit_maturity_date() -> None:
     assert result.spec["maturity_date"] == "2027-09-04"
 
 
-def test_quantlib_evaluation_date_accepts_stdlib_date_and_restores_after_exception() -> None:
+def test_quantlib_evaluation_date_accepts_stdlib_date_and_restores_after_exception() -> (
+    None
+):
     """The global QuantLib evaluation date is restored for stdlib dates on failures."""
 
     QuantLib = pytest.importorskip("QuantLib")
@@ -433,7 +451,12 @@ def test_canonical_artifact_scope_and_hash_regression() -> None:
         canonical_json,
     )
 
-    path = ROOT / "docs" / "evidence" / "regime_switching_quanto_quantlib_oracle_2026-09-04.json"
+    path = (
+        ROOT
+        / "docs"
+        / "evidence"
+        / "regime_switching_quanto_quantlib_oracle_2026-09-04.json"
+    )
     artifact_text = path.read_text(encoding="utf-8")
     assert hashlib.sha256(artifact_text.encode("utf-8")).hexdigest() == (
         "ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056"
@@ -452,7 +475,12 @@ def test_canonical_artifact_scope_and_hash_regression() -> None:
 def test_artifact_fem_mc_gates_are_seeded_and_account_for_standard_error() -> None:
     """Artifact gates compare FEM and seeded MC with explicit tolerances."""
 
-    path = ROOT / "docs" / "evidence" / "regime_switching_quanto_quantlib_oracle_2026-09-04.json"
+    path = (
+        ROOT
+        / "docs"
+        / "evidence"
+        / "regime_switching_quanto_quantlib_oracle_2026-09-04.json"
+    )
     artifact = json.loads(path.read_text(encoding="utf-8"))
     seeds = set()
     for row in artifact["cases"]:
@@ -461,13 +489,20 @@ def test_artifact_fem_mc_gates_are_seeded_and_account_for_standard_error() -> No
         assert gates["fem_passed"] is True
         assert gates["mc_passed"] is True
         assert gates["all_passed"] is True
-        assert row["errors"]["fem_vs_analytical_abs"] <= row["tolerances"]["fem_vs_analytical_abs"]
+        assert (
+            row["errors"]["fem_vs_analytical_abs"]
+            <= row["tolerances"]["fem_vs_analytical_abs"]
+        )
         assert row["mc_result"]["standard_error"] > 0.0
         assert row["mc_result"]["paths"] >= 90_000
         seeds.add(row["mc_result"]["seed"])
-        assert row["errors"]["mc_vs_analytical_abs"] <= row["tolerances"]["mc_vs_analytical_abs"]
+        assert (
+            row["errors"]["mc_vs_analytical_abs"]
+            <= row["tolerances"]["mc_vs_analytical_abs"]
+        )
         assert row["tolerances"]["mc_vs_analytical_abs"] >= (
-            row["tolerances"]["mc_standard_error_multiplier"] * row["mc_result"]["standard_error"]
+            row["tolerances"]["mc_standard_error_multiplier"]
+            * row["mc_result"]["standard_error"]
         )
     assert seeds == {132_001, 132_002, 132_003, 132_004}
     assert len(artifact["cases"]) == 4
@@ -484,7 +519,9 @@ def test_artifact_fem_mc_gates_are_seeded_and_account_for_standard_error() -> No
         ({"mc_standard_error_multiplier": 0.0}, "mc_standard_error_multiplier"),
     ],
 )
-def test_matrix_case_validation_rejects_actionably(kwargs: dict[str, object], message: str) -> None:
+def test_matrix_case_validation_rejects_actionably(
+    kwargs: dict[str, object], message: str
+) -> None:
     """Matrix cases validate IDs, paths, steps, and tolerances before execution."""
 
     from finite_element_options.examples.regime_switching_quanto import FEMGridSpec

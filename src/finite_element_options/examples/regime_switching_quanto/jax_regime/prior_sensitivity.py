@@ -110,7 +110,9 @@ def run_prior_sensitivity(
     }
     warmup = config.warmup
     samples = config.posterior_samples
-    for offset, prior in enumerate((NumPyroPriorConfig.weak(), NumPyroPriorConfig.strong())):
+    for offset, prior in enumerate(
+        (NumPyroPriorConfig.weak(), NumPyroPriorConfig.strong())
+    ):
         fitted = run_numpyro_hmm(
             observations,
             initial=reference_parameters["initial_probs"],
@@ -146,7 +148,9 @@ def run_prior_sensitivity(
     maximum_relative_delta = 0.0
     for profile_name in ("weak", "strong"):
         price_deltas: dict[str, Any] = {}
-        for contract_name, result in profiles[profile_name]["pricing"]["point_prices"].items():
+        for contract_name, result in profiles[profile_name]["pricing"][
+            "point_prices"
+        ].items():
             reference_price = reference_prices[contract_name]["price_clp"]
             difference = result["price_clp"] - reference_price
             relative = abs(difference) / max(abs(reference_price), 1.0)

@@ -477,8 +477,9 @@ def compiled_units(pde_ir: Mapping[str, Any]) -> dict[str, Any]:
 
     state_variables = as_sequence(pde_ir.get("state_variables"))
     state_unit = (
-        as_mapping(as_mapping(state_variables[0]).get("unit")) if state_variables else {}
+        as_mapping(as_mapping(state_variables[0]).get("unit"))
+        if state_variables
+        else {}
     )
     terminal_unit = as_mapping(as_mapping(pde_ir.get("terminal_condition")).get("unit"))
     return {"state": state_unit, "value": terminal_unit}
-

@@ -52,7 +52,9 @@ def rolling_boundaries(
     return blocks
 
 
-def qlike_loss(realized_variance_proxy: np.ndarray, variance_forecast: np.ndarray) -> np.ndarray:
+def qlike_loss(
+    realized_variance_proxy: np.ndarray, variance_forecast: np.ndarray
+) -> np.ndarray:
     """Compute QLIKE ``log(h) + rv / h`` with positive finite forecasts only."""
 
     rv = np.asarray(realized_variance_proxy, dtype=float)
@@ -72,7 +74,9 @@ def calculate_var_diagnostics(
     y = np.asarray(observations, dtype=float)
     var_values = np.asarray(var_forecasts, dtype=float)
     if y.shape != var_values.shape or y.size == 0:
-        raise ValueError("observations and VaR forecasts must have the same non-empty shape")
+        raise ValueError(
+            "observations and VaR forecasts must have the same non-empty shape"
+        )
     exceed = y < var_values
     count = int(np.sum(exceed))
     rate = float(count / y.size)
@@ -108,7 +112,9 @@ def candidate_result(
     try:
         qlike = float(np.mean(qlike_loss((y - mu) ** 2, variance)))
         log_score = float(np.mean(logs))
-        var = calculate_var_diagnostics(y, np.asarray(var_values, dtype=float), cfg.var_alpha)
+        var = calculate_var_diagnostics(
+            y, np.asarray(var_values, dtype=float), cfg.var_alpha
+        )
     except ValueError as exc:
         return CandidateBenchmarkResult(
             family,
@@ -121,12 +127,16 @@ def candidate_result(
             None,
             parameter_stability(params),
         )
-    if not all(math.isfinite(value) for value in [qlike, log_score, var.exceedance_rate]):
+    if not all(
+        math.isfinite(value) for value in [qlike, log_score, var.exceedance_rate]
+    ):
         return CandidateBenchmarkResult(
             family,
             distribution,
             False,
-            CandidateFailure("metric_nonfinite", "nonfinite hold-out metric", len(params)),
+            CandidateFailure(
+                "metric_nonfinite", "nonfinite hold-out metric", len(params)
+            ),
             len(params),
             None,
             None,
@@ -136,7 +146,9 @@ def candidate_result(
     failure = (
         None
         if converged
-        else CandidateFailure("optimizer", "one or more fits did not converge", len(params))
+        else CandidateFailure(
+            "optimizer", "one or more fits did not converge", len(params)
+        )
     )
     return CandidateBenchmarkResult(
         family,
@@ -162,7 +174,11 @@ def parameter_stability(params: list[dict[str, float]]) -> dict[str, Any]:
     first = np.asarray([params[0][key] for key in common], dtype=float)
     last = np.asarray([params[-1][key] for key in common], dtype=float)
     value = float(np.sum(np.abs(last - first)) / max(np.sum(np.abs(first)), 1.0e-12))
-    return {"available": True, "l1_relative_first_last": value, "parameter_count": len(common)}
+    return {
+        "available": True,
+        "l1_relative_first_last": value,
+        "parameter_count": len(common),
+    }
 
 
 def params_dict(params: Any, names: list[str] | None = None) -> dict[str, float]:

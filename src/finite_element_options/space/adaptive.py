@@ -91,9 +91,7 @@ class AdaptiveMesh:
         *,
         criterion: str = "residual",
         theta: float = 0.5,
-        boundaries: (
-            Dict[str, Callable[[np.ndarray], np.ndarray]] | None
-        ) = None,
+        boundaries: (Dict[str, Callable[[np.ndarray], np.ndarray]] | None) = None,
     ) -> None:
         """Store mesh refinement configuration."""
 
@@ -142,9 +140,7 @@ class AdaptiveMesh:
         """Return normal-gradient jump indicators on interior facets."""
 
         dim = int(mesh.dim())
-        fbasis = [
-            fem.InteriorFacetBasis(mesh, self.element, side=i) for i in [0, 1]
-        ]
+        fbasis = [fem.InteriorFacetBasis(mesh, self.element, side=i) for i in [0, 1]]
         w = {f"u{i + 1}": fbasis[i].interpolate(u) for i in [0, 1]}
 
         @fem.Functional
@@ -250,7 +246,10 @@ class AdaptiveMesh:
         return transferred
 
     def _transfer_l2_change(
-        self, old_mesh: fem.Mesh, new_mesh: fem.Mesh, old_values: np.ndarray,
+        self,
+        old_mesh: fem.Mesh,
+        new_mesh: fem.Mesh,
+        old_values: np.ndarray,
         new_values: np.ndarray,
     ) -> float:
         """Return round-trip RMS transfer change at old degrees of freedom."""
@@ -271,7 +270,9 @@ class AdaptiveMesh:
             return {}
         return dict(domain.boundary_predicates())
 
-    def _restore_refined_metadata(self, original: fem.Mesh, refined: fem.Mesh) -> fem.Mesh:
+    def _restore_refined_metadata(
+        self, original: fem.Mesh, refined: fem.Mesh
+    ) -> fem.Mesh:
         """Restore named boundary and domain metadata after refinement."""
 
         domain = getattr(original, "domain_spec", None)

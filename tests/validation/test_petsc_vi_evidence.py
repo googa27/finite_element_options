@@ -51,7 +51,8 @@ def test_petsc_external_evidence_is_real_bounded_and_fail_closed() -> None:
     assert payload["trigger"]["capability_status"] == "validated"
     assert payload["runtime_doctor"]["passed"] is True
     assert (
-        payload["runtime_doctor"]["petsc4py_version"] == payload["runtime_doctor"]["petsc_version"]
+        payload["runtime_doctor"]["petsc4py_version"]
+        == payload["runtime_doctor"]["petsc_version"]
     )
     assert payload["environment"]["finite_element_options_install_mode"] == "wheel"
     assert payload["runtime_doctor"]["ksp"]["converged"] is True

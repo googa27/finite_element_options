@@ -44,7 +44,9 @@ def identification_decision(
     if not _finite_difference_identified(finite_difference):
         reasons.append("finite-difference local curvature is unstable or non-positive")
     if not _profiles_identified(profiles):
-        reasons.append("bounded mnprofile traces do not bracket Delta-chi2=1 on both sides")
+        reasons.append(
+            "bounded mnprofile traces do not bracket Delta-chi2=1 on both sides"
+        )
     return {
         "identified": not reasons,
         "reasons": reasons,

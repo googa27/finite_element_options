@@ -78,7 +78,9 @@ def _model(
     numpyro.deterministic("covariances", covariances)
     numpyro.factor(
         "marginal_hmm_log_likelihood",
-        gaussian_hmm_log_prob(observations, initial_probs, transition, means, covariances),
+        gaussian_hmm_log_prob(
+            observations, initial_probs, transition, means, covariances
+        ),
     )
 
 
@@ -105,21 +107,32 @@ def _diagnostic_extrema(report: dict[str, Any]) -> dict[str, Any]:
     finite = bool(diagnostics) and all(
         row["rhat"] is not None and row["ess"] is not None for row in diagnostics
     )
-    maximum_rhat = max((row["rhat"] for row in diagnostics), default=None) if finite else None
-    minimum_ess = min((row["ess"] for row in diagnostics), default=None) if finite else None
+    maximum_rhat = (
+        max((row["rhat"] for row in diagnostics), default=None) if finite else None
+    )
+    minimum_ess = (
+        min((row["ess"] for row in diagnostics), default=None) if finite else None
+    )
     weak = [
         row
         for row in diagnostics
-        if row["rhat"] is None or row["ess"] is None or row["rhat"] > 1.05 or row["ess"] < 100.0
+        if row["rhat"] is None
+        or row["ess"] is None
+        or row["rhat"] > 1.05
+        or row["ess"] < 100.0
     ]
     return {
         "maximum_rhat": maximum_rhat,
         "minimum_ess": minimum_ess,
         "worst_rhat": (
-            max(diagnostics, key=lambda row: row["rhat"], default=None) if finite else None
+            max(diagnostics, key=lambda row: row["rhat"], default=None)
+            if finite
+            else None
         ),
         "worst_ess": (
-            min(diagnostics, key=lambda row: row["ess"], default=None) if finite else None
+            min(diagnostics, key=lambda row: row["ess"], default=None)
+            if finite
+            else None
         ),
         "weakly_identified_parameters": weak,
         "finite": finite,
@@ -130,7 +143,9 @@ def _required_divergence_count(extra_fields: dict[str, Any]) -> int:
     """Return divergence count, failing closed when NumPyro omits telemetry."""
 
     if "diverging" not in extra_fields:
-        raise RuntimeError("NumPyro extra fields omitted required 'diverging' diagnostics")
+        raise RuntimeError(
+            "NumPyro extra fields omitted required 'diverging' diagnostics"
+        )
     return int(extra_fields["diverging"].sum())
 
 
@@ -189,7 +204,9 @@ def run_numpyro_hmm(
     divergences = _required_divergence_count(extra)
     flat = mcmc.get_samples(group_by_chain=False)
     posterior_mean = {name: jnp.mean(value, axis=0) for name, value in flat.items()}
-    parameter_finite = all(bool(jnp.all(jnp.isfinite(value))) for value in flat.values())
+    parameter_finite = all(
+        bool(jnp.all(jnp.isfinite(value))) for value in flat.values()
+    )
     finite = parameter_finite and bool(diagnostics["finite"])
     return {
         "chains": chains,

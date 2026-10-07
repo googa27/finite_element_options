@@ -128,7 +128,9 @@ class FenicsSolver(SpaceDiscretization):
         """Return the θ-step right-hand-side matrix expression."""
         return fem.form(self._mass_expr + (1.0 - theta) * dt * self._operator_expr)
 
-    def _system_matrix(self, theta: float, dt: float, bcs: Sequence[Any]) -> tuple[Any, Any]:
+    def _system_matrix(
+        self, theta: float, dt: float, bcs: Sequence[Any]
+    ) -> tuple[Any, Any]:
         """Assemble the boundary-modified left-hand-side matrix."""
         system_form = self._system_form(theta, dt)
         matrix = fem.petsc.assemble_matrix(system_form, bcs=list(bcs))

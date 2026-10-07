@@ -90,7 +90,8 @@ jobs:
           python -m pip install -e '.[dev]' -c constraints.txt
       - name: Static, docstring, and type gates
         run: |
-          ruff check src tests scripts
+          ruff check .
+          ruff format --check .
           pydocstyle src/finite_element_options
           mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation src/finite_element_options/estimation/bayesian_profile scripts/check_ci_contract.py scripts/run_bayesian_jax_profile.py
       - name: Architecture contract

@@ -24,50 +24,45 @@ from ..evidence_io import (
     quantize_upper_bound,
 )
 from .contracts import (
-    COMPONENT_NAMES,
     UQCalibration,
     UQPilotConfig,
     UncertaintyComponent,
 )
 
-SCHEMA_VERSION = "regime-switching-quanto-openturns-uq/v1"
-SCOPE_STATEMENT = (
-    "Public-synthetic one-regime fixed-FX quanto-call estimator/validation diagnostic. "
-    "The FEM response is the existing regime-switching quanto solver with one regime, not an "
-    "analytical surrogate. The combined distribution is not a risk-neutral payoff distribution."
+from .study_parameters import (
+    SCHEMA_VERSION as SCHEMA_VERSION,
+    SCOPE_STATEMENT as SCOPE_STATEMENT,
+    QUANTLIB_ORACLE_ARTIFACT as QUANTLIB_ORACLE_ARTIFACT,
+    QUANTLIB_ORACLE_SHA256 as QUANTLIB_ORACLE_SHA256,
+    IMINUIT_ARTIFACT as IMINUIT_ARTIFACT,
+    IMINUIT_SHA256 as IMINUIT_SHA256,
+    BASE_MATURITY as BASE_MATURITY,
+    BASELINE_SPOT as BASELINE_SPOT,
+    BASELINE_SIGMA as BASELINE_SIGMA,
+    BASELINE_FULL_CORRELATION as BASELINE_FULL_CORRELATION,
+    BASELINE_FX_VOL as BASELINE_FX_VOL,
+    BASELINE_DOMESTIC_RATE as BASELINE_DOMESTIC_RATE,
+    BASELINE_FOREIGN_RATE as BASELINE_FOREIGN_RATE,
+    BASELINE_DIVIDEND as BASELINE_DIVIDEND,
+    BASELINE_STRIKE as BASELINE_STRIKE,
+    BASELINE_FIXED_FX as BASELINE_FIXED_FX,
+    BASELINE_FX_SPOT as BASELINE_FX_SPOT,
+    BASELINE_GENERATOR as BASELINE_GENERATOR,
+    BASELINE_PROBABILITIES as BASELINE_PROBABILITIES,
+    FINE_GRID as FINE_GRID,
+    COARSE_GRID as COARSE_GRID,
+    MC_CALIBRATION_SEED as MC_CALIBRATION_SEED,
+    MC_CALIBRATION_PATHS as MC_CALIBRATION_PATHS,
+    MC_CALIBRATION_STEPS_PER_YEAR as MC_CALIBRATION_STEPS_PER_YEAR,
+    ANALYTICAL_ORACLE_IDENTITY as ANALYTICAL_ORACLE_IDENTITY,
+    DOMAIN_ERROR_GRID as DOMAIN_ERROR_GRID,
+    DOMAIN_ERROR_SAFETY_FACTOR as DOMAIN_ERROR_SAFETY_FACTOR,
+    NUMERICAL_HALF_WIDTH_FORMULA as NUMERICAL_HALF_WIDTH_FORMULA,
 )
-QUANTLIB_ORACLE_ARTIFACT = "docs/evidence/regime_switching_quanto_quantlib_oracle_2026-09-04.json"
-QUANTLIB_ORACLE_SHA256 = "ca2789e8f686a2f25b9abebc076f18ce7596673b038e52b681478cad22c4a056"
-IMINUIT_ARTIFACT = "docs/evidence/regime_switching_quanto_iminuit_identifiability_2026-09-04.json"
-IMINUIT_SHA256 = "6294b52e9d6aa26aeda39a1809486272223d41ecc7a00e42e670f5dcbba39a3b"
 
-BASE_MATURITY = 458.0 / 365.0
-BASELINE_SPOT = 100.0
-BASELINE_SIGMA = 0.20
-BASELINE_FULL_CORRELATION = 0.35
-BASELINE_FX_VOL = 0.12
-BASELINE_DOMESTIC_RATE = 0.035
-BASELINE_FOREIGN_RATE = 0.015
-BASELINE_DIVIDEND = 0.010
-BASELINE_STRIKE = 105.0
-BASELINE_FIXED_FX = 850.0
-BASELINE_FX_SPOT = 1.0
-BASELINE_GENERATOR = [[0.0]]
-BASELINE_PROBABILITIES = [1.0]
-
-FINE_GRID = FEMGridSpec((-1.6, 1.6), (-0.7, 0.7), nx=31, ny=7, time_steps=16)
-COARSE_GRID = FEMGridSpec((-1.6, 1.6), (-0.7, 0.7), nx=21, ny=5, time_steps=10)
-MC_CALIBRATION_SEED = 134_011
-MC_CALIBRATION_PATHS = 4096
-MC_CALIBRATION_STEPS_PER_YEAR = 32
-ANALYTICAL_ORACLE_IDENTITY = "core.EuropeanOptionBs fixed-FX one-regime quanto reduction"
-DOMAIN_ERROR_GRID = {"spot_levels": 11, "sigma_levels": 5, "correlation_weight_levels": 5}
-DOMAIN_ERROR_SAFETY_FACTOR = 1.10
-NUMERICAL_HALF_WIDTH_FORMULA = (
-    "ceil_10sig(max(abs(fine_fem_price - analytical_oracle_price), "
-    "abs(coarse_fem_price - analytical_oracle_price), "
-    "1.5 * abs(fine_fem_price - coarse_fem_price), "
-    "1.10 * max_domain_grid_fine_oracle_error, 1e-12))"
+from .study_parameters import (
+    build_study_input as _build_study_input,
+    grid_identity as _study_grid_identity,
 )
 
 
@@ -107,67 +102,22 @@ def baseline_model(
 def baseline_contract() -> ContractSpec:
     """Return the fixed-FX quanto call payoff used by the pilot."""
 
-    return ContractSpec(kind="quanto_call", strike=BASELINE_STRIKE, fixed_fx=BASELINE_FIXED_FX)
+    return ContractSpec(
+        kind="quanto_call", strike=BASELINE_STRIKE, fixed_fx=BASELINE_FIXED_FX
+    )
 
 
 def grid_identity(grid: FEMGridSpec) -> dict[str, Any]:
     """Return a compact grid identity with nodes, steps, domain, and hash."""
 
-    payload = grid.to_dict()
-    payload["nodes"] = int(grid.nx * grid.ny)
-    payload["triangular_cells"] = int(2 * (grid.nx - 1) * (grid.ny - 1))
-    payload["element"] = "Lagrange-P1 triangular tensor grid"
-    payload["theta_schedule"] = "four backward-Euler Rannacher half-steps then Crank-Nicolson"
-    payload["hash"] = canonical_json_sha256(payload)
-    return payload
+    return _study_grid_identity(grid)
 
 
 def canonical_study_input(config: UQPilotConfig | None = None) -> dict[str, Any]:
     """Return the deterministic canonical study input whose hash binds the artifact."""
 
     controls = UQPilotConfig() if config is None else config
-    model = baseline_model()
-    contract = baseline_contract()
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "scope": SCOPE_STATEMENT,
-        "controls": controls.to_dict(),
-        "baseline": {
-            "maturity": BASE_MATURITY,
-            "equity_spot": BASELINE_SPOT,
-            "fx_spot": BASELINE_FX_SPOT,
-            "spot_data_relative_range": 0.05,
-            "equity_volatility_relative_range": 0.15,
-            "model_form_endpoints": [
-                "zero_correlation_independent_equity_fx_generator",
-                "full_quanto_correlation_generator",
-            ],
-            "normalized_zero_input_correlation_weight": 0.5,
-            "baseline_correlation": 0.5 * BASELINE_FULL_CORRELATION,
-            "model": model.to_dict(),
-            "payoff": contract.to_dict(),
-        },
-        "fine_grid": grid_identity(FINE_GRID),
-        "coarse_grid": grid_identity(COARSE_GRID),
-        "mc_calibration": {
-            "seed": MC_CALIBRATION_SEED,
-            "paths": MC_CALIBRATION_PATHS,
-            "steps_per_year": MC_CALIBRATION_STEPS_PER_YEAR,
-        },
-        "numerical_calibration": {
-            "oracle_identity": ANALYTICAL_ORACLE_IDENTITY,
-            "half_width_formula": NUMERICAL_HALF_WIDTH_FORMULA,
-            "domain_error_grid": DOMAIN_ERROR_GRID,
-            "domain_error_safety_factor": DOMAIN_ERROR_SAFETY_FACTOR,
-        },
-        "component_names": COMPONENT_NAMES,
-        "predecessor_source": {
-            "artifact": QUANTLIB_ORACLE_ARTIFACT,
-            "sha256": QUANTLIB_ORACLE_SHA256,
-            "case_id": "quanto_positive_correlation",
-            "use": "baseline public-synthetic quanto parameters and payoff conventions",
-        },
-    }
+    return _build_study_input(controls, baseline_model(), baseline_contract())
 
 
 def canonical_uq_input_hash(config: UQPilotConfig | None = None) -> str:
@@ -214,8 +164,12 @@ def domain_error_calibration() -> dict[str, Any]:
     points = 0
     for spot in np.linspace(95.0, 105.0, DOMAIN_ERROR_GRID["spot_levels"]):
         for sigma in np.linspace(0.17, 0.23, DOMAIN_ERROR_GRID["sigma_levels"]):
-            for weight in np.linspace(0.0, 1.0, DOMAIN_ERROR_GRID["correlation_weight_levels"]):
-                model = baseline_model(sigma=float(sigma), correlation_weight=float(weight))
+            for weight in np.linspace(
+                0.0, 1.0, DOMAIN_ERROR_GRID["correlation_weight_levels"]
+            ):
+                model = baseline_model(
+                    sigma=float(sigma), correlation_weight=float(weight)
+                )
                 result = regime_fem.price_contract_fem(
                     model,
                     contract,
@@ -225,7 +179,9 @@ def domain_error_calibration() -> dict[str, Any]:
                     grid=FINE_GRID,
                 )
                 oracle = analytical_price(
-                    spot=float(spot), sigma=float(sigma), correlation_weight=float(weight)
+                    spot=float(spot),
+                    sigma=float(sigma),
+                    correlation_weight=float(weight),
                 )
                 error = abs(float(result.mixture_price) - oracle)
                 points += 1
@@ -236,7 +192,12 @@ def domain_error_calibration() -> dict[str, Any]:
                         "sigma": float(sigma),
                         "correlation_weight": float(weight),
                     }
-    return {"grid": grid, "points": points, "max_error": maximum, "max_input": maximum_input}
+    return {
+        "grid": grid,
+        "points": points,
+        "max_error": maximum,
+        "max_input": maximum_input,
+    }
 
 
 def calibrate_scales() -> UQCalibration:
@@ -344,7 +305,11 @@ def build_components(
         UncertaintyComponent(
             name="data",
             distribution="Uniform(-1, 1) normalized; spot = 100 * (1 + 0.05*z_data)",
-            scale_or_range={"spot_min": 95.0, "spot_baseline": 100.0, "spot_max": 105.0},
+            scale_or_range={
+                "spot_min": 95.0,
+                "spot_baseline": 100.0,
+                "spot_max": 105.0,
+            },
             units="equity spot currency units",
             role="fem_perturbation",
             source_identity="public-synthetic spot/input-state band",
@@ -356,7 +321,11 @@ def build_components(
         UncertaintyComponent(
             name="parameter",
             distribution="Uniform(-1, 1) normalized; sigmaS = 0.20 * (1 + 0.15*z_parameter)",
-            scale_or_range={"sigma_min": 0.17, "sigma_baseline": 0.20, "sigma_max": 0.23},
+            scale_or_range={
+                "sigma_min": 0.17,
+                "sigma_baseline": 0.20,
+                "sigma_max": 0.23,
+            },
             units="annualized equity volatility",
             role="fem_perturbation",
             source_identity="public-synthetic equity-volatility-only parameter band",
@@ -452,7 +421,9 @@ def build_components(
     )
 
 
-def map_normalized_inputs(z: np.ndarray, calibration: UQCalibration) -> dict[str, float]:
+def map_normalized_inputs(
+    z: np.ndarray, calibration: UQCalibration
+) -> dict[str, float]:
     """Map five lawful normalized coordinates to FEM inputs and error coordinates."""
 
     values = np.asarray(z, dtype=float)
@@ -482,7 +453,9 @@ def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
     """Evaluate the FEM solver plus independent additive validation errors."""
 
     mapped = map_normalized_inputs(z, calibration)
-    model = baseline_model(sigma=mapped["sigma"], correlation_weight=mapped["correlation_weight"])
+    model = baseline_model(
+        sigma=mapped["sigma"], correlation_weight=mapped["correlation_weight"]
+    )
     result = regime_fem.price_contract_fem(
         model,
         baseline_contract(),
@@ -491,4 +464,6 @@ def evaluate_response(z: np.ndarray, calibration: UQCalibration) -> float:
         fx_spot=BASELINE_FX_SPOT,
         grid=FINE_GRID,
     )
-    return float(result.mixture_price + mapped["numerical_error"] + mapped["monte_carlo_error"])
+    return float(
+        result.mixture_price + mapped["numerical_error"] + mapped["monte_carlo_error"]
+    )

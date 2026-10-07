@@ -21,7 +21,9 @@ from finite_element_options.validation.evidence.serialization import (
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "docs" / "evidence" / "black_scholes_pymor_rom_2026-09-05.json"
 EXPECTED_SHA256 = "f30d712e054937ac7e17ea452fc2bcbc0a874087b1ec180caa5e63dc190ea4b7"
-EXPECTED_INPUT_SHA256 = "d56805683c07bd8ef5bd7a54b39c3faca3bcd48fd01366ef0de3f7e7a97a0044"
+EXPECTED_INPUT_SHA256 = (
+    "d56805683c07bd8ef5bd7a54b39c3faca3bcd48fd01366ef0de3f7e7a97a0044"
+)
 
 
 def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
@@ -45,20 +47,32 @@ def test_committed_pymor_evidence_is_hash_bound_and_promoted() -> None:
     assert payload["timing"]["full_order_policy"].startswith("parameter-specific")
     assert payload["timing"]["full_order_factorization_reuses_per_holdout"] == 13
     assert payload["memory"]["online_rom_numerical_payload_bytes"] > 0
-    assert payload["environment"]["pymor_cache_policy"].startswith("scoped and RLock-serialized")
+    assert payload["environment"]["pymor_cache_policy"].startswith(
+        "scoped and RLock-serialized"
+    )
     assert all(row["passed"] for row in payload["holdouts"])
     assert (
-        max(row["solver_diagnostics"]["full_order_residual_linf"] for row in payload["holdouts"])
+        max(
+            row["solver_diagnostics"]["full_order_residual_linf"]
+            for row in payload["holdouts"]
+        )
         <= payload["study_input"]["linear_residual_tolerance"]
     )
     assert (
-        max(row["solver_diagnostics"]["reduced_order_residual_linf"] for row in payload["holdouts"])
+        max(
+            row["solver_diagnostics"]["reduced_order_residual_linf"]
+            for row in payload["holdouts"]
+        )
         <= payload["study_input"]["linear_residual_tolerance"]
     )
     assert all(row["passed"] for row in payload["envelope_refusals"])
-    capability_matrix = (ROOT / "docs" / "CAPABILITY_MATRIX.md").read_text(encoding="utf-8")
+    capability_matrix = (ROOT / "docs" / "CAPABILITY_MATRIX.md").read_text(
+        encoding="utf-8"
+    )
     normalized_matrix = capability_matrix.lower()
-    assert all(token not in normalized_matrix for token in ("pymor", "reduced-order", "rom-"))
+    assert all(
+        token not in normalized_matrix for token in ("pymor", "reduced-order", "rom-")
+    )
     assert "/home/" not in ARTIFACT.read_text(encoding="utf-8")
 
 

@@ -11,10 +11,13 @@ from .contracts import BayesianSmokeConfig
 def exact_normal_posterior(config: BayesianSmokeConfig) -> dict[str, float]:
     """Return the conjugate posterior for the synthetic known-variance mean."""
 
-    precision = 1.0 / config.prior_sigma**2 + len(config.observations) / config.known_sigma**2
+    precision = (
+        1.0 / config.prior_sigma**2 + len(config.observations) / config.known_sigma**2
+    )
     variance = 1.0 / precision
     mean = variance * (
-        config.prior_mean / config.prior_sigma**2 + sum(config.observations) / config.known_sigma**2
+        config.prior_mean / config.prior_sigma**2
+        + sum(config.observations) / config.known_sigma**2
     )
     return {
         "mean": mean,
@@ -50,8 +53,11 @@ def build_diagnostic_summary(
         "finite_log_density": finite_log_density,
         "finite_posterior": finite_posterior,
         "finite_predictive": finite_predictive,
-        "posterior_mean": (abs(posterior_mean - exact["mean"]) <= config.posterior_mean_tolerance),
-        "posterior_sd": abs(posterior_sd - exact["sd"]) <= config.posterior_sd_tolerance,
+        "posterior_mean": (
+            abs(posterior_mean - exact["mean"]) <= config.posterior_mean_tolerance
+        ),
+        "posterior_sd": abs(posterior_sd - exact["sd"])
+        <= config.posterior_sd_tolerance,
         "posterior_predictive_mean": (
             abs(posterior_predictive_mean - exact["posterior_predictive_mean"])
             <= config.predictive_mean_tolerance

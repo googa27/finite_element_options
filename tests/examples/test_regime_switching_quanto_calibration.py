@@ -50,7 +50,9 @@ def test_prepare_joint_log_returns_quarantines_bad_levels_and_bridges() -> None:
     assert report["input_rows"] == 6
     assert report["valid_level_rows"] == 3
     assert report["return_rows"] == 2
-    reasons = {reason for row in report["quarantined_rows"] for reason in row["reasons"]}
+    reasons = {
+        reason for row in report["quarantined_rows"] for reason in row["reasons"]
+    }
     assert reasons == {"sp500_nonfinite", "usdclp_nonpositive", "sp500_out_of_bounds"}
     assert report["bridged_return_gaps"] == [
         {
@@ -63,7 +65,9 @@ def test_prepare_joint_log_returns_quarantines_bad_levels_and_bridges() -> None:
     json.dumps(report)
 
 
-def test_discrete_to_continuous_generator_recovers_known_three_state_generator() -> None:
+def test_discrete_to_continuous_generator_recovers_known_three_state_generator() -> (
+    None
+):
     q_true = np.array(
         [
             [-4.0, 1.5, 2.5],
@@ -81,7 +85,9 @@ def test_discrete_to_continuous_generator_recovers_known_three_state_generator()
     assert np.all(q_est[~np.eye(3, dtype=bool)] >= -1.0e-12)
 
 
-def test_fit_markov_switching_joint_diffusion_orders_vol_and_orients_transition() -> None:
+def test_fit_markov_switching_joint_diffusion_orders_vol_and_orients_transition() -> (
+    None
+):
     rng = np.random.default_rng(1234)
     n_obs = 260
     p_true = np.array([[0.96, 0.04], [0.10, 0.90]])
@@ -90,10 +96,14 @@ def test_fit_markov_switching_joint_diffusion_orders_vol_and_orients_transition(
         regimes[idx] = rng.choice(2, p=p_true[regimes[idx - 1]])
     covariances = [
         np.array([[0.004**2, 0.25 * 0.004 * 0.003], [0.25 * 0.004 * 0.003, 0.003**2]]),
-        np.array([[0.018**2, -0.35 * 0.018 * 0.014], [-0.35 * 0.018 * 0.014, 0.014**2]]),
+        np.array(
+            [[0.018**2, -0.35 * 0.018 * 0.014], [-0.35 * 0.018 * 0.014, 0.014**2]]
+        ),
     ]
     means = [np.array([0.00015, -0.00005]), np.array([-0.00025, 0.00015])]
-    rows = [rng.multivariate_normal(means[state], covariances[state]) for state in regimes]
+    rows = [
+        rng.multivariate_normal(means[state], covariances[state]) for state in regimes
+    ]
     returns = pd.DataFrame(rows, columns=["sp500", "usdclp"])
     returns.insert(0, "date", pd.date_range("2025-01-01", periods=n_obs, freq="B"))
 
@@ -124,7 +134,9 @@ def test_fit_markov_switching_joint_diffusion_orders_vol_and_orients_transition(
     assert np.asarray(payload["ar_coefficients"]).shape == (2, 1)
     assert np.all(np.abs(np.asarray(payload["ar_coefficients"])) < 1.0)
     assert len(payload["fit_attempt_diagnostics"]) == 2
-    assert payload["llf"] == max(item["llf"] for item in payload["fit_attempt_diagnostics"])
+    assert payload["llf"] == max(
+        item["llf"] for item in payload["fit_attempt_diagnostics"]
+    )
     json.dumps(payload)
 
 
@@ -152,7 +164,9 @@ def test_fit_regime_result_serializes_without_numpy_scalars() -> None:
     assert payload["autoregressive_order"] == 2
     assert np.asarray(payload["ar_coefficients"]).shape == (1, 2)
 
-    candidates = fit_regime_candidates(returns, candidate_ks=(1,), autoregressive_order=2, seed=11)
+    candidates = fit_regime_candidates(
+        returns, candidate_ks=(1,), autoregressive_order=2, seed=11
+    )
     candidate_payload = [candidate.to_dict() for candidate in candidates]
     assert candidate_payload[0]["k_regimes"] == 1
     assert candidate_payload[0]["autoregressive_order"] == 2

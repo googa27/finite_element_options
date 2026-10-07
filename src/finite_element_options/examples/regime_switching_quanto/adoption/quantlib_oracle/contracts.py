@@ -22,7 +22,9 @@ SUPPORTED_KINDS = ("vanilla", "fixed_fx_quanto")
 class QuantLibConventionError(ValueError):
     """Actionable failure for unsupported QuantLib oracle conventions."""
 
-    def __init__(self, *, field: str, received: object, supported: tuple[str, ...]) -> None:
+    def __init__(
+        self, *, field: str, received: object, supported: tuple[str, ...]
+    ) -> None:
         """Store the unsupported field, received value, and supported values."""
 
         self.field = field
@@ -109,12 +111,18 @@ class QuantLibOracleSpec:
             self.business_day_convention,
             SUPPORTED_BUSINESS_DAY_CONVENTIONS,
         )
-        _ensure_supported("rate_compounding", self.rate_compounding, SUPPORTED_RATE_COMPOUNDING)
+        _ensure_supported(
+            "rate_compounding", self.rate_compounding, SUPPORTED_RATE_COMPOUNDING
+        )
         _ensure_supported("exercise", self.exercise, SUPPORTED_EXERCISES)
         _ensure_supported("option_type", self.option_type, SUPPORTED_OPTION_TYPES)
         _ensure_supported("kind", self.kind, SUPPORTED_KINDS)
-        if not isinstance(self.evaluation_date, date) or not isinstance(self.maturity_date, date):
-            raise TypeError("evaluation_date and maturity_date must be datetime.date values")
+        if not isinstance(self.evaluation_date, date) or not isinstance(
+            self.maturity_date, date
+        ):
+            raise TypeError(
+                "evaluation_date and maturity_date must be datetime.date values"
+            )
         if self.maturity_date <= self.evaluation_date:
             raise ValueError("maturity_date must be after evaluation_date")
         _require_positive_finite("spot", self.spot)
@@ -124,7 +132,10 @@ class QuantLibOracleSpec:
         _require_positive_finite("fixed_fx", self.fixed_fx)
         for field in ("domestic_rate", "foreign_rate", "dividend_yield"):
             _require_finite(field, getattr(self, field))
-        if not math.isfinite(float(self.correlation)) or abs(float(self.correlation)) > 1.0:
+        if (
+            not math.isfinite(float(self.correlation))
+            or abs(float(self.correlation)) > 1.0
+        ):
             raise ValueError("correlation must be finite and lie in [-1, 1]")
         _ensure_reduction_invariants(self)
 
@@ -181,7 +192,9 @@ class QuantLibOracleResult:
 
 def _ensure_supported(field: str, received: object, supported: tuple[str, ...]) -> None:
     if received not in supported:
-        raise QuantLibConventionError(field=field, received=received, supported=supported)
+        raise QuantLibConventionError(
+            field=field, received=received, supported=supported
+        )
 
 
 def _ensure_reduction_invariants(spec: QuantLibOracleSpec) -> None:

@@ -16,7 +16,9 @@ from finite_element_options.contracts.capability_matrix import (
     DEFAULT_CAPABILITY_RECORDS,
     CapabilityStatus,
 )
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.mesh import create_mesh
@@ -87,9 +89,13 @@ class PetscVIAssessmentConfig:
         if self.domain_max <= self.strike or not self.greek_bump < min(
             self.spot, self.domain_max - self.spot
         ):
-            raise ValueError("domain and Greek bump must contain the put evaluation stencil")
+            raise ValueError(
+                "domain and Greek bump must contain the put evaluation stencil"
+            )
         if self.refinement_level < 2 or self.time_steps < 2 or self.max_iterations < 1:
-            raise ValueError("assessment discretization and iteration controls are too small")
+            raise ValueError(
+                "assessment discretization and iteration controls are too small"
+            )
         if not 0.5 <= self.theta <= 1.0 or not 0.0 < self.psor_relaxation < 2.0:
             raise ValueError("theta/PSOR relaxation controls are invalid")
         if self.repeats < 3:
@@ -145,7 +151,8 @@ def run_petsc_vi_assessment(
         "runtime_ksp_snes_vi_ts": bool(doctor["passed"]),
         "equal_discretization_parity": parity_passed,
         "american_dominates_european": bool(
-            errors["projected_sor_early_exercise_premium"] >= -selected.price_abs_tolerance
+            errors["projected_sor_early_exercise_premium"]
+            >= -selected.price_abs_tolerance
             and errors["petsc_early_exercise_premium"] >= -selected.price_abs_tolerance
         ),
         "canonical_residuals": residual_passed,
@@ -190,7 +197,9 @@ def run_petsc_vi_assessment(
         "memory": memory,
         "failure_evidence": failure,
         "decision": {
-            "status": "promote_external_single_rank_vi_adapter" if promoted else "defer_petsc",
+            "status": "promote_external_single_rank_vi_adapter"
+            if promoted
+            else "defer_petsc",
             "promoted": promoted,
             "checks": checks,
             "scipy_remains_canonical": True,
@@ -207,7 +216,11 @@ def run_petsc_vi_assessment(
 def _trigger_evidence() -> dict[str, object]:
     capability_id = "FEM-AMERICAN-LCP-REFERENCE"
     record = next(
-        (item for item in DEFAULT_CAPABILITY_RECORDS if item.capability_id == capability_id),
+        (
+            item
+            for item in DEFAULT_CAPABILITY_RECORDS
+            if item.capability_id == capability_id
+        ),
         None,
     )
     triggered = bool(
@@ -220,22 +233,30 @@ def _trigger_evidence() -> dict[str, object]:
         "capability_id": capability_id,
         "capability_status": None if record is None else record.status.value,
         "evidence_ids": [] if record is None else list(record.evidence_ids),
-        "reason": "existing validated lower-obstacle route" if triggered else "trigger absent",
+        "reason": "existing validated lower-obstacle route"
+        if triggered
+        else "trigger absent",
         "canonical_scipy_solver": "projected_sor",
     }
 
 
 def _space(config: PetscVIAssessmentConfig) -> SpaceSolver:
-    mesh, finite_element_config = create_mesh([config.domain_max], config.refinement_level)
+    mesh, finite_element_config = create_mesh(
+        [config.domain_max], config.refinement_level
+    )
     mesh = mesh.with_boundaries(
         {
             "left": lambda x: np.isclose(x[0], 0.0),
             "right": lambda x: np.isclose(x[0], config.domain_max),
         }
     )
-    dynamics = DynamicsParametersBlackScholes(r=config.rate, q=0.0, sig=config.volatility)
+    dynamics = DynamicsParametersBlackScholes(
+        r=config.rate, q=0.0, sig=config.volatility
+    )
     option = EuropeanOptionBs(k=config.strike, q=0.0, mkt=Market(r=config.rate))
-    return SpaceSolver(mesh, dynamics, option, is_call=False, config=finite_element_config)
+    return SpaceSolver(
+        mesh, dynamics, option, is_call=False, config=finite_element_config
+    )
 
 
 def _solve_psor(
@@ -304,7 +325,13 @@ def _output_values(
     config: PetscVIAssessmentConfig, space: SpaceSolver, values: np.ndarray
 ) -> np.ndarray:
     points = np.array(
-        [[config.spot - config.greek_bump, config.spot, config.spot + config.greek_bump]]
+        [
+            [
+                config.spot - config.greek_bump,
+                config.spot,
+                config.spot + config.greek_bump,
+            ]
+        ]
     )
     prices = np.asarray(space.Vh.probes(points) @ values, dtype=float)
     delta = (prices[2] - prices[0]) / (2.0 * config.greek_bump)
@@ -334,7 +361,9 @@ def _parity_errors(
         "projected_sor_gamma": float(psor_outputs[2]),
         "petsc_gamma": float(petsc_outputs[2]),
         "european_price": float(european_outputs[0]),
-        "projected_sor_early_exercise_premium": float(psor_outputs[0] - european_outputs[0]),
+        "projected_sor_early_exercise_premium": float(
+            psor_outputs[0] - european_outputs[0]
+        ),
         "petsc_early_exercise_premium": float(petsc_outputs[0] - european_outputs[0]),
     }
 
@@ -364,7 +393,8 @@ def _timings(config: PetscVIAssessmentConfig) -> dict[str, Any]:
         "repeats": config.repeats,
         "projected_sor": psor,
         "petsc": petsc,
-        "petsc_over_psor_runtime_ratio": petsc["median_seconds"] / psor["median_seconds"],
+        "petsc_over_psor_runtime_ratio": petsc["median_seconds"]
+        / psor["median_seconds"],
     }
 
 
@@ -387,7 +417,9 @@ def _failure_evidence(config: PetscVIAssessmentConfig) -> dict[str, Any]:
         obstacle=np.array([0.0, 0.0]),
     )
     solver = PetscVISolver(
-        PetscVISolverSettings(tolerance=min(config.lcp_tolerance, 1.0e-12), max_iterations=2)
+        PetscVISolverSettings(
+            tolerance=min(config.lcp_tolerance, 1.0e-12), max_iterations=2
+        )
     )
     result = solver.solve(problem, fail_on_nonconvergence=False)
     typed_exception_caught = False
@@ -414,12 +446,17 @@ def _failure_evidence(config: PetscVIAssessmentConfig) -> dict[str, Any]:
 def _memory_evidence(space: SpaceSolver, backend: dict[str, object]) -> dict[str, Any]:
     matrices = [sps.csc_matrix(space.mass), sps.csc_matrix(space.stiffness)]
     scipy_bytes = sum(
-        matrix.data.nbytes + matrix.indices.nbytes + matrix.indptr.nbytes for matrix in matrices
+        matrix.data.nbytes + matrix.indices.nbytes + matrix.indptr.nbytes
+        for matrix in matrices
     )
     return {
         "scipy_assembled_mass_and_operator_bytes": int(scipy_bytes),
-        "petsc_last_step_csr_transfer_bytes": cast(int, backend["matrix_csr_input_bytes"]),
-        "petsc_last_step_mat_reported_memory_bytes": cast(float, backend["matrix_memory_bytes"]),
+        "petsc_last_step_csr_transfer_bytes": cast(
+            int, backend["matrix_csr_input_bytes"]
+        ),
+        "petsc_last_step_mat_reported_memory_bytes": cast(
+            float, backend["matrix_memory_bytes"]
+        ),
         "petsc_last_step_vector_payload_estimate_bytes": int(5 * space.Vh.N * 8),
         "measurement_scope": "allocated sparse buffers/PETSc Mat info/vector payload; not process RSS",
     }

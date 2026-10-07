@@ -63,11 +63,22 @@ def test_seeded_synthetic_benchmark_exercises_arch_and_ruptures() -> None:
     )
     assert result.schema_version == "regime_volatility_benchmark.v1"
     assert result.observed_response == "100 * (sp500_log_return + usdclp_log_return)"
-    assert result.train_start < result.train_end < result.holdout_start <= result.holdout_end
+    assert (
+        result.train_start
+        < result.train_end
+        < result.holdout_start
+        <= result.holdout_end
+    )
     assert result.immutable_input_sha256 == "f" * 64
     assert len(result.candidates) == 4
-    assert {candidate.family for candidate in result.candidates} == {"GJR-GARCH", "EGARCH"}
-    assert {candidate.distribution for candidate in result.candidates} == {"student-t", "skewed-t"}
+    assert {candidate.family for candidate in result.candidates} == {
+        "GJR-GARCH",
+        "EGARCH",
+    }
+    assert {candidate.distribution for candidate in result.candidates} == {
+        "student-t",
+        "skewed-t",
+    }
     assert all(candidate.fit_count == 2 for candidate in result.candidates)
     assert result.markov_baseline.fit_count == 2
     assert result.changepoints.breakpoints
@@ -121,7 +132,9 @@ def test_no_leakage_boundaries_and_metric_calculations() -> None:
 
     cfg = VolatilityBenchmarkConfig(holdout_size=6, rolling_window=10, refit_block=4)
     boundaries = rolling_boundaries(20, cfg)
-    assert [(b.train_start, b.train_end, b.holdout_start, b.holdout_end) for b in boundaries] == [
+    assert [
+        (b.train_start, b.train_end, b.holdout_start, b.holdout_end) for b in boundaries
+    ] == [
         (4, 14, 14, 18),
         (8, 18, 18, 20),
     ]
@@ -175,17 +188,30 @@ def test_failure_records_and_canonical_artifact_are_serializable() -> None:
         canonical_json_sha256,
     )
 
-    failure = CandidateFailure(kind="optimizer", message="nonfinite objective", fit_count=3)
+    failure = CandidateFailure(
+        kind="optimizer", message="nonfinite objective", fit_count=3
+    )
     payload = failure.to_dict()
-    assert payload == {"kind": "optimizer", "message": "nonfinite objective", "fit_count": 3}
+    assert payload == {
+        "kind": "optimizer",
+        "message": "nonfinite objective",
+        "fit_count": 3,
+    }
     encoded = canonical_json({"b": 1, "a": payload})
     assert encoded == canonical_json(json.loads(encoded))
     assert (
-        len(canonical_json_sha256({"config": VolatilityBenchmarkConfig(seed=11).to_dict()})) == 64
+        len(
+            canonical_json_sha256(
+                {"config": VolatilityBenchmarkConfig(seed=11).to_dict()}
+            )
+        )
+        == 64
     )
 
 
-def test_atomic_artifact_write_replaces_target_without_shared_temp_file(tmp_path: Path) -> None:
+def test_atomic_artifact_write_replaces_target_without_shared_temp_file(
+    tmp_path: Path,
+) -> None:
     """Canonical artifact writes must be atomic and leave no temp-file debris."""
 
     from finite_element_options.examples.regime_switching_quanto.adoption.volatility_benchmark import (
@@ -290,7 +316,9 @@ def test_any_nonconverged_markov_refit_fails_baseline_closed(
 ) -> None:
     """One nonconverged Markov rolling refit marks the whole baseline invalid."""
 
-    module = pytest.importorskip("statsmodels.tsa.regime_switching.markov_autoregression")
+    module = pytest.importorskip(
+        "statsmodels.tsa.regime_switching.markov_autoregression"
+    )
     from finite_element_options.examples.regime_switching_quanto.adoption.volatility_contracts import (
         RollingBoundary,
         VolatilityBenchmarkConfig,
@@ -424,7 +452,9 @@ def test_arch_candidate_uses_analytic_one_step_distribution_forecasts(
             calls["dist"] = kwargs["dist"]
             return FakeModel(data)
 
-    monkeypatch.setattr(volatility_benchmark, "require_optional", lambda name: FakeArch())
+    monkeypatch.setattr(
+        volatility_benchmark, "require_optional", lambda name: FakeArch()
+    )
     response = np.linspace(-0.2, 0.3, 12)
     result = volatility_benchmark._fit_arch_candidate(
         returns=pd.DataFrame(),
@@ -530,7 +560,8 @@ def test_markov_high_volatility_probability_returns_typed_failure(
 
     monkeypatch.setattr(builtins, "__import__", failing_import)
     result = full_markov_high_volatility_probability(
-        np.arange(30, dtype=float), VolatilityBenchmarkConfig(rolling_window=10, holdout_size=2)
+        np.arange(30, dtype=float),
+        VolatilityBenchmarkConfig(rolling_window=10, holdout_size=2),
     )
 
     assert result.probability is None
@@ -550,12 +581,16 @@ def test_real_artifact_is_bounded_canonical_and_schema_stable() -> None:
         file_sha256,
     )
 
-    artifact = ROOT / "docs/evidence/regime_switching_quanto_volatility_benchmark_2026-09-03.json"
+    artifact = (
+        ROOT
+        / "docs/evidence/regime_switching_quanto_volatility_benchmark_2026-09-03.json"
+    )
     assert artifact.exists()
     payload = json.loads(artifact.read_text(encoding="utf-8"))
     assert artifact.read_text(encoding="utf-8") == canonical_json(payload) + "\n"
     assert (
-        file_sha256(artifact) == "3ef33542865cc7370bc639b15b60aba207a2be3981ad77b9d1132f5f0e15f9ad"
+        file_sha256(artifact)
+        == "3ef33542865cc7370bc639b15b60aba207a2be3981ad77b9d1132f5f0e15f9ad"
     )
     encoded = json.dumps(payload, sort_keys=True)
     assert "/tmp/" not in encoded

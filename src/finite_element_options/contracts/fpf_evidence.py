@@ -31,7 +31,9 @@ def fpf_solver_result_evidence_contract() -> dict[str, object]:
     }
 
 
-def validate_fpf_solver_result_evidence_payload(payload: Mapping[str, Any]) -> tuple[str, ...]:
+def validate_fpf_solver_result_evidence_payload(
+    payload: Mapping[str, Any],
+) -> tuple[str, ...]:
     """Return schema-contract violations for an FPF solver result evidence payload."""
 
     violations: list[str] = []

@@ -17,6 +17,9 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import least_squares
 
+from . import calibration_values as _values
+
+
 ParameterVector: TypeAlias = Sequence[float] | np.ndarray
 
 
@@ -89,9 +92,13 @@ class CalibrationObjective:
         """Validate objective metadata before an optimizer is allocated."""
 
         if self.residual_units not in _ALLOWED_RESIDUAL_UNITS:
-            raise ValueError(f"residual_units must be one of {sorted(_ALLOWED_RESIDUAL_UNITS)}")
+            raise ValueError(
+                f"residual_units must be one of {sorted(_ALLOWED_RESIDUAL_UNITS)}"
+            )
         if self.weight_policy not in _ALLOWED_WEIGHT_POLICIES:
-            raise ValueError(f"weight_policy must be one of {sorted(_ALLOWED_WEIGHT_POLICIES)}")
+            raise ValueError(
+                f"weight_policy must be one of {sorted(_ALLOWED_WEIGHT_POLICIES)}"
+            )
         if not np.isfinite(self.f_scale) or self.f_scale <= 0.0:
             raise ValueError("f_scale must be finite and strictly positive")
         if not np.isfinite(self.min_scale) or self.min_scale <= 0.0:
@@ -135,7 +142,9 @@ class PricingCalibrationDataset:
         """Coerce and validate all observation arrays."""
 
         if self.quote_units not in _ALLOWED_RESIDUAL_UNITS:
-            raise ValueError(f"quote_units must be one of {sorted(_ALLOWED_RESIDUAL_UNITS)}")
+            raise ValueError(
+                f"quote_units must be one of {sorted(_ALLOWED_RESIDUAL_UNITS)}"
+            )
         shape: tuple[int, ...] | None = None
         for name in ("spot", "strike", "maturity", "rate", "carry", "quote"):
             values = self._coerce_required_array(name, getattr(self, name))
@@ -154,17 +163,16 @@ class PricingCalibrationDataset:
         if np.any(self.maturity <= 0.0):
             raise ValueError("maturity values must be strictly positive")
         for name in ("bid", "ask", "weights", "vega"):
-            optional_values = self._coerce_optional_array(name, getattr(self, name), shape)
+            optional_values = self._coerce_optional_array(
+                name, getattr(self, name), shape
+            )
             object.__setattr__(self, name, optional_values)
 
     @staticmethod
-    def _coerce_required_array(name: str, values: Sequence[float] | np.ndarray) -> np.ndarray:
-        arr = np.asarray(values, dtype=float)
-        if arr.ndim != 1:
-            raise ValueError(f"{name} must be a one-dimensional array")
-        if not np.all(np.isfinite(arr)):
-            raise ValueError(f"{name} values must be finite")
-        return arr.copy()
+    def _coerce_required_array(
+        name: str, values: Sequence[float] | np.ndarray
+    ) -> np.ndarray:
+        return _values._coerce_required_array(name, values)
 
     @staticmethod
     def _coerce_optional_array(
@@ -172,14 +180,7 @@ class PricingCalibrationDataset:
         values: Sequence[float] | np.ndarray | None,
         shape: tuple[int, ...],
     ) -> np.ndarray | None:
-        if values is None:
-            return None
-        arr = np.asarray(values, dtype=float)
-        if arr.shape != shape:
-            raise ValueError(f"{name} must have the same shape as quote")
-        if not np.all(np.isfinite(arr)):
-            raise ValueError(f"{name} values must be finite")
-        return arr.copy()
+        return _values._coerce_optional_array(name, values, shape)
 
     @classmethod
     def from_frame(
@@ -316,8 +317,12 @@ class PricingModelCalibrator:
         fitted_prices = self._evaluate_prices(optimizer_result.x)
         residuals = np.asarray(fitted_prices - self.dataset.quote, dtype=float)
         rank, condition = Calibrator._jacobian_rank_condition(optimizer_result.jac)
-        in_bounds = self._parameters_within_bounds(optimizer_result.x, normalized_bounds)
-        success = bool(optimizer_result.success and in_bounds and self._pricing_failures == 0)
+        in_bounds = self._parameters_within_bounds(
+            optimizer_result.x, normalized_bounds
+        )
+        success = bool(
+            optimizer_result.success and in_bounds and self._pricing_failures == 0
+        )
         if not success and optimizer_result.success and not in_bounds:
             message = "optimizer converged outside declared parameter bounds"
         else:
@@ -378,7 +383,9 @@ class PricingModelCalibrator:
                 self.pricing_function(np.asarray(params, dtype=float), self.dataset),
                 dtype=float,
             )
-        except Exception as exc:  # pragma: no cover - source exception is engine-specific
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - source exception is engine-specific
             self._pricing_failures += 1
             raise CalibrationPricingError(f"pricing engine failed: {exc}") from exc
         self._pricing_evaluations += 1
@@ -423,7 +430,9 @@ class PricingModelCalibrator:
                 raise ValueError("bid_ask weight_policy requires bid and ask columns")
             if np.any(self.dataset.bid >= self.dataset.ask):
                 raise ValueError("bid must be less than ask for bid_ask weights")
-            all_weights = 1.0 / np.maximum(self.dataset.ask - self.dataset.bid, objective.min_scale)
+            all_weights = 1.0 / np.maximum(
+                self.dataset.ask - self.dataset.bid, objective.min_scale
+            )
         elif policy == "vega":
             if self.dataset.vega is None:
                 raise ValueError("vega weight_policy requires a vega column")
@@ -452,7 +461,10 @@ class PricingModelCalibrator:
         bounds: tuple[np.ndarray, np.ndarray],
     ) -> bool:
         lower, upper = bounds
-        return bool(np.all(parameters >= lower - 1.0e-10) and np.all(parameters <= upper + 1.0e-10))
+        return bool(
+            np.all(parameters >= lower - 1.0e-10)
+            and np.all(parameters <= upper + 1.0e-10)
+        )
 
     def _diagnostics(
         self,
@@ -470,7 +482,9 @@ class PricingModelCalibrator:
         train_residuals = residuals[train_mask]
         holdout_residuals = residuals[holdout_mask]
         holdout_rmse = (
-            None if holdout_residuals.size == 0 else float(np.sqrt(np.mean(holdout_residuals**2)))
+            None
+            if holdout_residuals.size == 0
+            else float(np.sqrt(np.mean(holdout_residuals**2)))
         )
         return {
             "objective": objective.as_dict(),
@@ -485,7 +499,9 @@ class PricingModelCalibrator:
                 "training_rmse": float(np.sqrt(np.mean(train_residuals**2))),
                 "holdout_rmse": holdout_rmse,
                 "max_abs_residual": float(np.max(np.abs(residuals))),
-                "weighted_training_norm": float(np.linalg.norm(weighted_training_residuals)),
+                "weighted_training_norm": float(
+                    np.linalg.norm(weighted_training_residuals)
+                ),
             },
             "pricing_engine": {
                 "pricing_evaluations": int(self._pricing_evaluations),
@@ -531,7 +547,9 @@ class Calibrator(ABC):
         self.maturities = df["maturity"].to_numpy()
         self.prices = df["price"].to_numpy()
         if not (self.strikes.shape == self.maturities.shape == self.prices.shape):
-            raise ValueError("strike, maturity and price arrays must have matching shape")
+            raise ValueError(
+                "strike, maturity and price arrays must have matching shape"
+            )
 
     @abstractmethod
     def model_prices(self, params: ParameterVector) -> np.ndarray:
@@ -649,38 +667,11 @@ class Calibrator(ABC):
         bounds: tuple[Sequence[float] | float, Sequence[float] | float] | None,
         shape: tuple[int, ...],
     ) -> tuple[np.ndarray, np.ndarray]:
-        if bounds is None:
-            return (
-                np.full(shape, -np.inf, dtype=float),
-                np.full(shape, np.inf, dtype=float),
-            )
-        lower, upper = bounds
-        lower_arr = np.broadcast_to(np.asarray(lower, dtype=float), shape).copy()
-        upper_arr = np.broadcast_to(np.asarray(upper, dtype=float), shape).copy()
-        if np.any(lower_arr > upper_arr):
-            raise ValueError("lower calibration bounds must not exceed upper bounds")
-        return lower_arr, upper_arr
+        return _values._normalize_bounds(bounds, shape)
 
     def _normalize_weights(self, weights: Sequence[float] | None) -> np.ndarray | None:
-        if weights is None:
-            return None
-        weights_array = np.asarray(weights, dtype=float)
-        if weights_array.shape != self.prices.shape:
-            raise ValueError("weights must have the same shape as market prices")
-        if np.any(weights_array < 0):
-            raise ValueError("weights must be non-negative")
-        return weights_array
+        return _values._normalize_weights(weights, self.prices.shape)
 
     @staticmethod
     def _jacobian_rank_condition(jacobian: np.ndarray) -> tuple[int, float]:
-        jac = np.asarray(jacobian, dtype=float)
-        if jac.ndim != 2 or jac.size == 0:
-            return 0, np.inf
-        singular_values = np.linalg.svd(jac, compute_uv=False)
-        if singular_values.size == 0 or singular_values[0] == 0:
-            return 0, np.inf
-        tolerance = np.finfo(float).eps * max(jac.shape) * singular_values[0]
-        rank = int(np.sum(singular_values > tolerance))
-        if rank < min(jac.shape) or singular_values[-1] <= tolerance:
-            return rank, np.inf
-        return rank, float(singular_values[0] / singular_values[-1])
+        return _values._jacobian_rank_condition(jacobian)

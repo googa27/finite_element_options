@@ -10,12 +10,19 @@ def _normal_cdf(value: float) -> float:
 
 
 def _d1_d2(
-    spot: float, strike: float, rate: float, carry: float, volatility: float, maturity: float
+    spot: float,
+    strike: float,
+    rate: float,
+    carry: float,
+    volatility: float,
+    maturity: float,
 ) -> tuple[float, float]:
     scale = volatility * math.sqrt(maturity)
     if scale <= 0.0:
         raise ValueError("analytical oracle requires positive volatility and maturity")
-    d1 = (math.log(spot / strike) + (rate - carry + 0.5 * volatility**2) * maturity) / scale
+    d1 = (
+        math.log(spot / strike) + (rate - carry + 0.5 * volatility**2) * maturity
+    ) / scale
     return d1, d1 - scale
 
 
@@ -41,13 +48,20 @@ def one_state_price(
 
     discount = math.exp(-domestic_rate * maturity)
     composite_spot = equity_spot * fx_spot
-    composite_variance = equity_vol**2 + fx_vol**2 + 2.0 * correlation * equity_vol * fx_vol
+    composite_variance = (
+        equity_vol**2 + fx_vol**2 + 2.0 * correlation * equity_vol * fx_vol
+    )
     composite_vol = math.sqrt(max(composite_variance, 0.0))
     if kind in {"composite_call", "composite_put", "composite_digital"}:
         if strike is None:
             raise ValueError("strike is required")
         d1, d2 = _d1_d2(
-            composite_spot, strike, domestic_rate, dividend_yield, composite_vol, maturity
+            composite_spot,
+            strike,
+            domestic_rate,
+            dividend_yield,
+            composite_vol,
+            maturity,
         )
         forward_leg = composite_spot * math.exp(-dividend_yield * maturity)
         strike_leg = strike * discount
@@ -60,7 +74,10 @@ def one_state_price(
         if strike is None or fixed_fx is None:
             raise ValueError("strike and fixed_fx are required")
         effective_dividend = (
-            dividend_yield + domestic_rate - foreign_rate + correlation * equity_vol * fx_vol
+            dividend_yield
+            + domestic_rate
+            - foreign_rate
+            + correlation * equity_vol * fx_vol
         )
         d1, d2 = _d1_d2(
             equity_spot,
@@ -82,18 +99,23 @@ def one_state_price(
         except ModuleNotFoundError as exc:
             raise ImportError("dual-trigger analytical oracle requires SciPy") from exc
         equity_drift = (
-            foreign_rate - dividend_yield - correlation * equity_vol * fx_vol - 0.5 * equity_vol**2
+            foreign_rate
+            - dividend_yield
+            - correlation * equity_vol * fx_vol
+            - 0.5 * equity_vol**2
         )
         fx_drift = domestic_rate - foreign_rate - 0.5 * fx_vol**2
-        z_equity = (math.log(equity_barrier / equity_spot) - equity_drift * maturity) / (
-            equity_vol * math.sqrt(maturity)
-        )
+        z_equity = (
+            math.log(equity_barrier / equity_spot) - equity_drift * maturity
+        ) / (equity_vol * math.sqrt(maturity))
         z_fx = (math.log(fx_barrier / fx_spot) - fx_drift * maturity) / (
             fx_vol * math.sqrt(maturity)
         )
         joint_lower = float(
             multivariate_normal.cdf(  # type: ignore[arg-type]
-                [z_equity, z_fx], mean=[0.0, 0.0], cov=[[1.0, correlation], [correlation, 1.0]]
+                [z_equity, z_fx],
+                mean=[0.0, 0.0],
+                cov=[[1.0, correlation], [correlation, 1.0]],
             )
         )
         probability = _normal_cdf(z_equity) - joint_lower

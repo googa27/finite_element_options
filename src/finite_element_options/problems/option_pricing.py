@@ -5,8 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from finite_element_options.core.dynamics_black_scholes import DynamicsParametersBlackScholes
-from finite_element_options.core.interfaces import BoundaryCondition, DynamicsModel, Payoff
+from finite_element_options.core.dynamics_black_scholes import (
+    DynamicsParametersBlackScholes,
+)
+from finite_element_options.core.interfaces import (
+    BoundaryCondition,
+    DynamicsModel,
+    Payoff,
+)
 from finite_element_options.core.market import Market
 from finite_element_options.core.vanilla_bs import EuropeanOptionBs
 from finite_element_options.space.boundary import DirichletBC

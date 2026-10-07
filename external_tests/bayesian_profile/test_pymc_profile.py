@@ -6,7 +6,9 @@ try:
     import arviz as _arviz  # noqa: F401
     import pymc as _pymc  # noqa: F401
 except ImportError as exc:  # pragma: no cover - selected profile must fail, never skip
-    raise RuntimeError("install the locked bayesian profile; this test never skips") from exc
+    raise RuntimeError(
+        "install the locked bayesian profile; this test never skips"
+    ) from exc
 
 from finite_element_options.estimation.bayesian_profile import (
     BayesianSmokeConfig,
@@ -26,7 +28,9 @@ def test_pymc_posterior_and_predictive_diagnostics() -> None:
     assert result["divergences"] == 0
     assert result["rhat"] <= config.maximum_rhat
     assert result["ess_bulk"] >= config.minimum_bulk_ess
-    assert abs(result["posterior_mean"] - exact["mean"]) <= config.posterior_mean_tolerance
+    assert (
+        abs(result["posterior_mean"] - exact["mean"]) <= config.posterior_mean_tolerance
+    )
     assert (
         abs(result["posterior_predictive_sd"] - exact["posterior_predictive_sd"])
         <= config.predictive_sd_tolerance

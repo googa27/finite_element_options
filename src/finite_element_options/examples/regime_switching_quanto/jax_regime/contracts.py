@@ -9,8 +9,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 SCHEMA_VERSION = "feo-jax-regime-study-v2"
-EXPECTED_LEVELS_SHA256 = "aa7ab317266bf37463e27aba9a4e990fa349bb0a6e0aefb5741e93480e0f79f4"
-EXPECTED_ARCHIVE_SHA256 = "ca2debc4fcbf9bd6fb958a5cfcb986a3e8080c7923418c9d2367fcd2d9a99721"
+EXPECTED_LEVELS_SHA256 = (
+    "aa7ab317266bf37463e27aba9a4e990fa349bb0a6e0aefb5741e93480e0f79f4"
+)
+EXPECTED_ARCHIVE_SHA256 = (
+    "ca2debc4fcbf9bd6fb958a5cfcb986a3e8080c7923418c9d2367fcd2d9a99721"
+)
 PUBLICATION_MIN_CHAINS = 2
 PUBLICATION_MIN_DRAWS_PER_CHAIN = 200
 PUBLICATION_MAX_RHAT = 1.05
@@ -208,7 +212,9 @@ class JaxRegimeStudyConfig:
         }
         integers = {"seed": self.seed, **positive}
         for integer_name, integer_value in integers.items():
-            if isinstance(integer_value, bool) or not isinstance(integer_value, Integral):
+            if isinstance(integer_value, bool) or not isinstance(
+                integer_value, Integral
+            ):
                 raise ValueError(f"{integer_name} must be an integer")
             object.__setattr__(self, integer_name, int(integer_value))
         if not 0 <= self.seed <= MAX_BASE_SEED:
@@ -237,12 +243,16 @@ class JaxRegimeStudyConfig:
         }
         for rate_name, rate_value in rate_settings.items():
             if abs(rate_value) > MAX_ABS_RATE:
-                raise ValueError(f"{rate_name} must lie in [-{MAX_ABS_RATE}, {MAX_ABS_RATE}]")
+                raise ValueError(
+                    f"{rate_name} must lie in [-{MAX_ABS_RATE}, {MAX_ABS_RATE}]"
+                )
         for name, value in positive.items():
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
         if self.pricing_paths < 2:
-            raise ValueError("pricing_paths must be at least 2 for finite sample diagnostics")
+            raise ValueError(
+                "pricing_paths must be at least 2 for finite sample diagnostics"
+            )
         if self.em_iters < MIN_STUDY_EM_ITERATIONS:
             raise ValueError(
                 f"em_iters must be at least {MIN_STUDY_EM_ITERATIONS} for study evidence"
@@ -267,7 +277,9 @@ class JaxRegimeStudyConfig:
             if positive[name] > maximum:
                 raise ValueError(f"{name} must not exceed {maximum:,}")
         if self.num_states not in {2, 3, 4}:
-            raise ValueError("num_states must be one of the evaluated candidates: 2, 3, or 4")
+            raise ValueError(
+                "num_states must be one of the evaluated candidates: 2, 3, or 4"
+            )
         if not 0.05 <= self.holdout_fraction <= 0.4:
             raise ValueError("holdout_fraction must lie in [0.05, 0.4]")
         if self.maturity_years <= 0.0:
@@ -279,9 +291,15 @@ class JaxRegimeStudyConfig:
         raw_pricing_steps = self.maturity_years * self.steps_per_year
         pricing_steps = self.pricing_steps
         if pricing_steps < 1:
-            raise ValueError("maturity_years must produce at least one daily pricing step")
-        if not math.isclose(raw_pricing_steps, pricing_steps, rel_tol=0.0, abs_tol=1.0e-12):
-            raise ValueError("maturity_years must represent a whole number of daily pricing steps")
+            raise ValueError(
+                "maturity_years must produce at least one daily pricing step"
+            )
+        if not math.isclose(
+            raw_pricing_steps, pricing_steps, rel_tol=0.0, abs_tol=1.0e-12
+        ):
+            raise ValueError(
+                "maturity_years must represent a whole number of daily pricing steps"
+            )
         if pricing_steps > MAX_PRICING_STEPS:
             raise ValueError(
                 f"maturity_years must not produce more than {MAX_PRICING_STEPS:,} pricing steps"
@@ -297,7 +315,9 @@ class JaxRegimeStudyConfig:
             or self.market_calibrated is not False
             or self.production_ready is not False
         ):
-            raise ValueError("JAX regime profile is research-only and not market calibrated")
+            raise ValueError(
+                "JAX regime profile is research-only and not market calibrated"
+            )
 
     @property
     def pricing_steps(self) -> int:
@@ -337,11 +357,20 @@ class PDPPreprocessingAudit:
             self.invalid_fx_rows,
         )
         if self.source_level_rows <= 0 or any(count < 0 for count in counts):
-            raise ValueError("preprocessing row counts must be nonnegative with a positive source")
+            raise ValueError(
+                "preprocessing row counts must be nonnegative with a positive source"
+            )
         if sum(counts) != self.source_level_rows:
-            raise ValueError("preprocessing row counts must partition source_level_rows")
-        if len(self.quarantined_rows) != self.invalid_equity_rows + self.invalid_fx_rows:
-            raise ValueError("quarantined rows must enumerate all invalid finite-level exclusions")
+            raise ValueError(
+                "preprocessing row counts must partition source_level_rows"
+            )
+        if (
+            len(self.quarantined_rows)
+            != self.invalid_equity_rows + self.invalid_fx_rows
+        ):
+            raise ValueError(
+                "quarantined rows must enumerate all invalid finite-level exclusions"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe counts, reasons, and return-construction policy."""
@@ -350,7 +379,8 @@ class PDPPreprocessingAudit:
             **asdict(self),
             "excluded_level_rows": self.source_level_rows - self.valid_level_rows,
             "quarantined_rows": [
-                {"date": date, "reason": reason} for date, reason in self.quarantined_rows
+                {"date": date, "reason": reason}
+                for date, reason in self.quarantined_rows
             ],
         }
 

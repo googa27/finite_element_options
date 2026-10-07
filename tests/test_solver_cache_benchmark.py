@@ -45,9 +45,14 @@ def test_solver_cache_report_records_unsupported_optional_routes() -> None:
         case=SolverCacheBenchmarkCase(refinement_level=4, time_steps=20, repeats=1)
     )
     payload = report.to_public_dict()
-    unsupported_names = {route["name"] for route in payload["unsupported_solver_routes"]}
+    unsupported_names = {
+        route["name"] for route in payload["unsupported_solver_routes"]
+    }
 
     assert payload["contract_version"] == "solver-cache-benchmark/v1"
     assert payload["route"]["linear_solver"] == "scipy_direct"
     assert {"scipy_banded", "amg", "petsc"} <= unsupported_names
-    assert all(route["status"] == "unsupported" for route in payload["unsupported_solver_routes"])
+    assert all(
+        route["status"] == "unsupported"
+        for route in payload["unsupported_solver_routes"]
+    )

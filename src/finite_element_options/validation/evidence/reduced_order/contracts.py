@@ -8,7 +8,9 @@ from typing import Any
 
 import numpy as np
 
-from finite_element_options.validation.evidence.serialization import canonical_json_sha256
+from finite_element_options.validation.evidence.serialization import (
+    canonical_json_sha256,
+)
 
 
 SCHEMA_VERSION = "pymor-black-scholes-rom/v1"
@@ -101,7 +103,9 @@ class PymorBlackScholesConfig:
                 "over the full time interval"
             )
         if self.refinement_level < 1 or self.time_steps < 2:
-            raise ValueError("refinement_level and time_steps must define a non-trivial FOM")
+            raise ValueError(
+                "refinement_level and time_steps must define a non-trivial FOM"
+            )
         if not 0.5 <= self.theta <= 1.0:
             raise ValueError("theta must lie in [0.5, 1.0]")
         if self.snapshot_stride < 1 or self.max_basis_size < 1:
@@ -109,11 +113,15 @@ class PymorBlackScholesConfig:
         if not isfinite(self.pod_rtol) or self.pod_rtol < 0.0:
             raise ValueError("pod_rtol must be finite and non-negative")
         if self.benchmark_repeats < 3 or self.benchmark_warmups < 1:
-            raise ValueError("benchmark timing requires at least three repeats and one warmup")
+            raise ValueError(
+                "benchmark timing requires at least three repeats and one warmup"
+            )
         if self.maximum_ten_x_amortization_solves < 1:
             raise ValueError("maximum_ten_x_amortization_solves must be positive")
         if self.minimum_online_speedup < 10.0:
-            raise ValueError("minimum_online_speedup cannot weaken the fixed 10x policy")
+            raise ValueError(
+                "minimum_online_speedup cannot weaken the fixed 10x policy"
+            )
         if self.maximum_ten_x_amortization_solves > 1000:
             raise ValueError(
                 "maximum_ten_x_amortization_solves cannot weaken the fixed 1000-query policy"
@@ -121,18 +129,25 @@ class PymorBlackScholesConfig:
         training = tuple(float(value) for value in self.training_volatilities)
         holdout = tuple(float(value) for value in self.holdout_volatilities)
         if len(training) < 3 or len(holdout) < 3:
-            raise ValueError("training and holdout domains each require at least three values")
+            raise ValueError(
+                "training and holdout domains each require at least three values"
+            )
         if len(set(training)) != len(training) or len(set(holdout)) != len(holdout):
             raise ValueError("training and holdout volatility values must be unique")
         if set(training) & set(holdout):
             raise ValueError("training and holdout volatility values must be disjoint")
         if min(training) != self.volatility_min or max(training) != self.volatility_max:
-            raise ValueError("training values must include both declared envelope bounds")
+            raise ValueError(
+                "training values must include both declared envelope bounds"
+            )
         if any(
-            not isfinite(value) or not self.volatility_min <= value <= self.volatility_max
+            not isfinite(value)
+            or not self.volatility_min <= value <= self.volatility_max
             for value in training + holdout
         ):
-            raise ValueError("all volatility values must lie inside the declared envelope")
+            raise ValueError(
+                "all volatility values must lie inside the declared envelope"
+            )
         if not self.greek_bump < min(self.spot, self.domain_max - self.spot):
             raise ValueError("greek_bump must remain inside the spatial domain")
         object.__setattr__(self, "training_volatilities", training)
@@ -186,7 +201,9 @@ class FullOrderSolution:
         """Require an auditable finite residual and non-empty sparse solve."""
 
         if not isfinite(self.residual_linf) or self.residual_linf < 0.0:
-            raise FloatingPointError("full-order residual must be finite and non-negative")
+            raise FloatingPointError(
+                "full-order residual must be finite and non-negative"
+            )
         if self.linear_solves < 1 or self.operator_nnz < 1:
             raise ValueError("full-order diagnostics require solves and nonzeros")
 

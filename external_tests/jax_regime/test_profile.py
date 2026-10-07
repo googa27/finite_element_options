@@ -66,7 +66,9 @@ def test_forward_likelihood_matches_dynamax() -> None:
     initial, transition, means, covariances = _fixture()
     observations = jr.multivariate_normal(jr.key(1), means[0], covariances[0], (64,))
     ours = gaussian_hmm_log_prob(observations, initial, transition, means, covariances)
-    theirs = dynamax_marginal_log_prob(observations, initial, transition, means, covariances)
+    theirs = dynamax_marginal_log_prob(
+        observations, initial, transition, means, covariances
+    )
     np.testing.assert_allclose(ours, theirs, atol=1.0e-9, rtol=1.0e-9)
 
 
@@ -84,9 +86,13 @@ def test_dynamax_synthetic_fit_is_lawful_and_ordered() -> None:
     # Deliberately concatenate calm/crisis blocks: this is a fit-law smoke, not a recovery claim.
     first = jr.multivariate_normal(jr.key(2), means[0], covariances[0], (180,))
     second = jr.multivariate_normal(jr.key(3), means[1], covariances[1], (80,))
-    result = fit_dynamax_hmm(jnp.concatenate([first, second]), num_states=2, seed=7, em_iters=25)
+    result = fit_dynamax_hmm(
+        jnp.concatenate([first, second]), num_states=2, seed=7, em_iters=25
+    )
     params = result["parameters"]
-    np.testing.assert_allclose(np.sum(params["transition_matrix"], axis=1), 1.0, atol=1.0e-10)
+    np.testing.assert_allclose(
+        np.sum(params["transition_matrix"], axis=1), 1.0, atol=1.0e-10
+    )
     assert np.all(np.linalg.eigvalsh(params["covariances"]) > 0.0)
     assert np.diff(result["annualized_composite_volatility"]).min() > 0.0
     assert result["finite"]
@@ -198,8 +204,12 @@ def test_diffrax_matches_exact_aligned_log_sde_pathwise() -> None:
             [[0.3, 0.0], [-0.04, 0.2]],
         ]
     )
-    diffrax_states = simulate_diffrax_terminal_states(regimes, increments, drift, diffusion, 1.0)
-    exact_states = simulate_exact_terminal_states(regimes, increments, drift, diffusion, 1.0)
+    diffrax_states = simulate_diffrax_terminal_states(
+        regimes, increments, drift, diffusion, 1.0
+    )
+    exact_states = simulate_exact_terminal_states(
+        regimes, increments, drift, diffusion, 1.0
+    )
     np.testing.assert_allclose(diffrax_states, exact_states, atol=1.0e-12, rtol=1.0e-12)
     refinement = refinement_invariance(regimes, increments, drift, diffusion, 1.0)
     assert refinement["passed"] is True

@@ -30,7 +30,8 @@ def martingale_checks(
         "foreign_equity_in_domestic_currency": discount * terminal_equity * terminal_fx,
     }
     targets = {
-        "foreign_currency": fx_spot * jnp.exp(-config.foreign_rate * config.maturity_years),
+        "foreign_currency": fx_spot
+        * jnp.exp(-config.foreign_rate * config.maturity_years),
         "foreign_equity_in_domestic_currency": equity_spot
         * fx_spot
         * jnp.exp(-config.dividend_yield * config.maturity_years),

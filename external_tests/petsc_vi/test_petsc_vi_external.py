@@ -40,7 +40,9 @@ def test_petsc_snes_vi_matches_projected_sor_on_coupled_lcp() -> None:
         obstacle=np.array([1.0, 0.0]),
     )
     reference = ProjectedSORSolver(
-        ProjectedSORSolverSettings(tolerance=1.0e-10, max_iterations=500, relaxation=1.0)
+        ProjectedSORSolverSettings(
+            tolerance=1.0e-10, max_iterations=500, relaxation=1.0
+        )
     ).solve(problem)
     result = PetscVISolver(PetscVISolverSettings(tolerance=1.0e-10)).solve(problem)
 

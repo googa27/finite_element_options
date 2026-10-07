@@ -11,9 +11,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from hashlib import sha256
-from math import exp, isfinite, sqrt
+from math import isfinite
 import json
-from statistics import NormalDist
 from typing import Any, Literal
 
 from finite_element_options.contracts.backend_capabilities import (
@@ -24,6 +23,13 @@ from finite_element_options.contracts.backend_capabilities import (
     diagnose_unsupported_route,
 )
 from finite_element_options.space.domain import DomainAxis
+
+from finite_element_options.space.domain import (
+    _spot_upper as _spot_upper,
+    _variance_upper as _variance_upper,
+    _ui_mesh_topology_counts as _ui_mesh_topology_counts,
+)
+
 
 UiModelName = Literal["black_scholes", "heston"]
 ExerciseStyle = Literal["european", "american"]
@@ -255,7 +261,9 @@ class ValidatedUiProblem:
                 "dimension": len(self.domain_axes),
                 "axes": [axis.to_public_dict() for axis in self.domain_axes],
                 "boundary_facets": [
-                    label for axis in self.domain_axes for label in (axis.min_label, axis.max_label)
+                    label
+                    for axis in self.domain_axes
+                    for label in (axis.min_label, axis.max_label)
                 ],
             },
             "work_estimate": self.work_estimate.to_public_dict(),
@@ -289,11 +297,15 @@ class ValidatedUiProblem:
                 "contract_version": DEFAULT_FEM_CAPABILITY_MANIFEST.contract_version,
                 "capability_maturity": DEFAULT_FEM_CAPABILITY_MANIFEST.status.value,
             },
-            "benchmark_ids": list(DEFAULT_RELEASED_FEM_SOLVER_CONTRACT.public_fixture_ids),
+            "benchmark_ids": list(
+                DEFAULT_RELEASED_FEM_SOLVER_CONTRACT.public_fixture_ids
+            ),
             "approximation_status": {
                 "model": self.model.model,
                 "mesh_family": request.mesh_family if request else "analytical_limit",
-                "element_family": request.element_family if request else "analytical_limit",
+                "element_family": request.element_family
+                if request
+                else "analytical_limit",
                 "exercise_style": self.solver.exercise_style,
                 "theta": self.solver.theta,
                 "mesh_refine": self.grid.mesh_refine,
@@ -393,7 +405,9 @@ def validate_ui_problem(
     return result
 
 
-def estimate_ui_work(dimension: int, mesh_refine: int, time_steps: int) -> UiWorkEstimate:
+def estimate_ui_work(
+    dimension: int, mesh_refine: int, time_steps: int
+) -> UiWorkEstimate:
     """Estimate node, DOF, and sparse matrix cost without creating a mesh."""
 
     refine = max(0, int(mesh_refine))
@@ -411,18 +425,6 @@ def estimate_ui_work(dimension: int, mesh_refine: int, time_steps: int) -> UiWor
         estimated_matrix_bytes=matrix_bytes,
         solve_count=max(0, int(time_steps) - 1),
     )
-
-
-def _ui_mesh_topology_counts(dimension: int, intervals: int) -> tuple[int, int, int]:
-    """Return element/node/stencil estimates aligned with ``space.mesh.create_mesh``."""
-
-    if dimension == 1:
-        return intervals, 2 * intervals + 1, 5  # ElementLineP2
-    if dimension == 2:
-        return 2 * intervals**2, (2 * intervals + 1) ** 2, 25  # ElementTriP2
-    if dimension == 3:
-        return 6 * intervals**3, (intervals + 1) ** 3, 81  # ElementTetP1
-    return 6 * intervals**3, (intervals + 1) ** 3, 81
 
 
 def ui_problem_from_shareable(payload: Mapping[str, Any]) -> ValidatedUiProblem:
@@ -503,7 +505,9 @@ def _validate_scalar_inputs(
             _require_nonnegative("vol_of_variance", model.vol_of_variance, diagnostics)
         else:
             _require_nonnegative("kappa", model.kappa, diagnostics)
-            _require_nonnegative("long_run_variance", model.long_run_variance, diagnostics)
+            _require_nonnegative(
+                "long_run_variance", model.long_run_variance, diagnostics
+            )
             _require_nonnegative("vol_of_variance", model.vol_of_variance, diagnostics)
         if model.correlation is None or not isfinite(float(model.correlation)):
             diagnostics.append(_finite_diag("correlation", model.correlation))
@@ -528,7 +532,9 @@ def _validate_work_estimate(
     if estimate.estimated_dofs > limits.max_dofs:
         breaches.append(f"dofs {estimate.estimated_dofs:,} > {limits.max_dofs:,}")
     if estimate.time_steps > limits.max_time_steps:
-        breaches.append(f"time_steps {estimate.time_steps:,} > {limits.max_time_steps:,}")
+        breaches.append(
+            f"time_steps {estimate.time_steps:,} > {limits.max_time_steps:,}"
+        )
     if estimate.estimated_matrix_bytes > limits.max_matrix_bytes:
         breaches.append(
             f"matrix_bytes {estimate.estimated_matrix_bytes:,} > {limits.max_matrix_bytes:,}"
@@ -550,7 +556,9 @@ def _validate_work_estimate(
     return diagnostics
 
 
-def _route_request(model: UiModelSpec, dimension: int, solver: UiSolverOptions) -> FEMRouteRequest:
+def _route_request(
+    model: UiModelSpec, dimension: int, solver: UiSolverOptions
+) -> FEMRouteRequest:
     terms: tuple[str, ...]
     if model.model == "black_scholes":
         mesh_family = "line_uniform"
@@ -668,29 +676,13 @@ def _domain_axes(
     return tuple(axes)
 
 
-def _spot_upper(model: UiModelSpec, alpha_tail: float) -> float:
-    volatility = max(float(model.volatility), sqrt(max(float(model.long_run_variance or 0.0), 0.0)))
-    maturity = max(float(model.maturity), 1.0e-12)
-    drift = abs(float(model.rate - model.carry)) * maturity
-    bounded_tail = max(min(float(alpha_tail), 0.5 - 1.0e-12), 1.0e-6)
-    z_score = NormalDist().inv_cdf(1.0 - bounded_tail)
-    diffusion = z_score * max(volatility, 1.0e-12) * sqrt(maturity)
-    return model.strike * (1.0 + exp(drift + diffusion))
-
-
-def _variance_upper(model: UiModelSpec) -> float:
-    if model.variance_upper is not None:
-        return float(model.variance_upper)
-    base = max(float(model.long_run_variance or 0.0), float(model.volatility) ** 2)
-    vol_of_variance = max(float(model.vol_of_variance or 0.0), 0.0)
-    return max(5.0 * base + 2.0 * vol_of_variance * sqrt(max(model.maturity, 0.0)), 1.0e-10)
-
-
 def _analytical_limit_reason(model: UiModelSpec) -> str | None:
     if float(model.maturity) == 0.0:
         return "zero maturity uses the intrinsic payoff path; no mesh or time solve is allocated"
     if model.model == "black_scholes" and float(model.volatility) == 0.0:
-        return "zero Black-Scholes volatility uses a deterministic discounted payoff path"
+        return (
+            "zero Black-Scholes volatility uses a deterministic discounted payoff path"
+        )
     if (
         model.model == "heston"
         and float(model.long_run_variance or 0.0) == 0.0

@@ -113,7 +113,9 @@ def _payoff(rate: float = 0.03) -> EuropeanOptionBs:
 def test_discount_field_is_assembled_from_quadrature_state_and_time() -> None:
     dynamics = _LinearCoefficientDynamics()
     mesh, config = create_mesh([1.0], refine=2)
-    space = SpaceSolver(mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config)
+    space = SpaceSolver(
+        mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config
+    )
 
     operator_t0 = space.operator_matrix(0.0)
     operator_t1 = space.operator_matrix(1.0)
@@ -122,14 +124,18 @@ def test_discount_field_is_assembled_from_quadrature_state_and_time() -> None:
     assert operator_t0.shape == space.mass.shape
     assert operator_t1.shape == space.mass.shape
     assert np.max(np.abs((operator_t1 - operator_t0).toarray())) > 0.0
-    assert np.max(np.abs((operator_t0 - constant_frozen_operator).toarray())) == pytest.approx(0.0)
+    assert np.max(
+        np.abs((operator_t0 - constant_frozen_operator).toarray())
+    ) == pytest.approx(0.0)
     assert space.last_coefficient_diagnostics["discount_field"] == "callable"
 
 
 def test_source_field_is_assembled_as_time_dependent_cell_load() -> None:
     dynamics = _LinearCoefficientDynamics()
     mesh, config = create_mesh([1.0], refine=2)
-    space = SpaceSolver(mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config)
+    space = SpaceSolver(
+        mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config
+    )
 
     load_t0 = space.boundary_term(0.0)
     load_t1 = space.boundary_term(1.0)
@@ -143,22 +149,30 @@ def test_source_field_is_assembled_as_time_dependent_cell_load() -> None:
 def test_theta_scheme_refreshes_time_dependent_operators_per_endpoint() -> None:
     dynamics = _LinearCoefficientDynamics()
     mesh, config = create_mesh([1.0], refine=2)
-    space = SpaceSolver(mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config)
+    space = SpaceSolver(
+        mesh, dynamics, _payoff(dynamics.r), is_call=True, config=config
+    )
     stepper = ThetaScheme(theta=0.5)
 
     stepper.solve([0.0, 0.25, 1.0], space)
 
     assert space.matrix_time_calls == pytest.approx([(0.0, 0.25), (0.25, 1.0)])
-    assert len({round(item, 12) for pair in space.matrix_time_calls for item in pair}) == 3
+    assert (
+        len({round(item, 12) for pair in space.matrix_time_calls for item in pair}) == 3
+    )
     assert stepper.last_solve_diagnostics.solve_count == 2
 
 
-def test_crank_nicolson_time_dependent_reaction_source_converges_quadratically() -> None:
+def test_crank_nicolson_time_dependent_reaction_source_converges_quadratically() -> (
+    None
+):
     errors = []
     final_time = 1.0
     for steps in (20, 40, 80):
         space = _ManufacturedScalarSpace()
-        solution = ThetaScheme(theta=0.5).solve(np.linspace(0.0, final_time, steps + 1), space)
+        solution = ThetaScheme(theta=0.5).solve(
+            np.linspace(0.0, final_time, steps + 1), space
+        )
         errors.append(abs(float(solution[-1, 0]) - space.exact(final_time)))
 
     assert errors[1] < errors[0] / 3.5
@@ -185,7 +199,9 @@ def test_heston3d_discount_uses_short_rate_state_coordinate() -> None:
         ]
     )
 
-    np.testing.assert_allclose(dynamics.discount(state, time=0.5), np.array([0.01, 0.07]))
+    np.testing.assert_allclose(
+        dynamics.discount(state, time=0.5), np.array([0.01, 0.07])
+    )
 
 
 def test_heston3d_constant_rate_discount_matches_2d_heston_limit() -> None:

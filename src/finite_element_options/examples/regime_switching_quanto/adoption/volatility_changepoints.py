@@ -63,7 +63,9 @@ def detect_volatility_changepoints(
         .predict(pen=float(penalty))
     )
     feature_start = window - 1
-    regime_dates = regime_transition_dates(frame, high_volatility_probability, threshold)
+    regime_dates = regime_transition_dates(
+        frame, high_volatility_probability, threshold
+    )
     all_breakpoints: list[VolatilityChangepoint] = []
     for point in raw_breaks:
         if point >= len(features):

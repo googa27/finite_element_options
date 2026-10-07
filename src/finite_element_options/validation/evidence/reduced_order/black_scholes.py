@@ -92,7 +92,9 @@ class AffineBlackScholesSystem:
             lhs_interior=lhs_ii,
             rhs_interior=sps.csc_matrix(rhs_operator[interior][:, interior]),
             lhs_right=np.asarray(lhs[interior, self.right_boundary].toarray()).ravel(),
-            rhs_right=np.asarray(rhs_operator[interior, self.right_boundary].toarray()).ravel(),
+            rhs_right=np.asarray(
+                rhs_operator[interior, self.right_boundary].toarray()
+            ).ravel(),
             factorized=spla.splu(lhs_ii),
         )
 
@@ -105,7 +107,9 @@ class AffineBlackScholesSystem:
         """Solve one cold full-order query including assembly and factorization."""
 
         started = perf_counter()
-        solution = self.prepare_full_order(volatility).solve(capture_snapshots=capture_snapshots)
+        solution = self.prepare_full_order(volatility).solve(
+            capture_snapshots=capture_snapshots
+        )
         return FullOrderSolution(
             outputs=solution.outputs,
             final_interior=solution.final_interior,
@@ -120,20 +124,30 @@ class AffineBlackScholesSystem:
         """Return analytical Black--Scholes price, Delta, and Gamma references."""
 
         sigma = self._validated_volatility(volatility, require_envelope=False)
-        option = EuropeanOptionBs(k=self.config.strike, q=0.0, mkt=Market(r=self.config.rate))
-        variance = sigma * sigma
-        gamma = spst.norm.pdf(option.d1(self.config.maturity, self.config.spot, variance)) / (
-            self.config.spot * sigma * np.sqrt(self.config.maturity)
+        option = EuropeanOptionBs(
+            k=self.config.strike, q=0.0, mkt=Market(r=self.config.rate)
         )
+        variance = sigma * sigma
+        gamma = spst.norm.pdf(
+            option.d1(self.config.maturity, self.config.spot, variance)
+        ) / (self.config.spot * sigma * np.sqrt(self.config.maturity))
         return OptionOutputs(
-            price=float(option.call_from_volatility(self.config.maturity, self.config.spot, sigma)),
+            price=float(
+                option.call_from_volatility(
+                    self.config.maturity, self.config.spot, sigma
+                )
+            ),
             delta=float(
-                option.call_delta_from_volatility(self.config.maturity, self.config.spot, sigma)
+                option.call_delta_from_volatility(
+                    self.config.maturity, self.config.spot, sigma
+                )
             ),
             gamma=float(gamma),
         )
 
-    def _validated_volatility(self, volatility: float, *, require_envelope: bool) -> float:
+    def _validated_volatility(
+        self, volatility: float, *, require_envelope: bool
+    ) -> float:
         return _validated_volatility(
             self.config,
             volatility,
@@ -166,7 +180,9 @@ class PreparedFullOrderSolver:
             self.system.coordinates[self.system.interior] - config.strike,
             0.0,
         )
-        snapshots: list[np.ndarray] | None = [current.copy()] if capture_snapshots else None
+        snapshots: list[np.ndarray] | None = (
+            [current.copy()] if capture_snapshots else None
+        )
         last_rhs = np.empty_like(current)
         for index in range(config.time_steps):
             start = index * dt
@@ -181,7 +197,8 @@ class PreparedFullOrderSolver:
                 snapshots.append(current.copy())
         boundary = np.array([0.0, self.system._right_boundary_value(config.maturity)])
         values = (
-            self.system.output_weights @ current + self.system.output_boundary_weights @ boundary
+            self.system.output_weights @ current
+            + self.system.output_boundary_weights @ boundary
         )
         return FullOrderSolution(
             outputs=OptionOutputs(*np.asarray(values, dtype=float)),
@@ -251,7 +268,9 @@ class TrainedPymorROM:
             + sigma * sigma * projection.reduced_operator_variance
         )
         lhs = projection.reduced_mass - config.theta * dt * reduced_operator
-        rhs_operator = projection.reduced_mass + (1.0 - config.theta) * dt * reduced_operator
+        rhs_operator = (
+            projection.reduced_mass + (1.0 - config.theta) * dt * reduced_operator
+        )
         lhs_right = projection.reduced_mass_boundary - config.theta * dt * (
             projection.reduced_constant_boundary
             + sigma * sigma * projection.reduced_variance_boundary
@@ -273,7 +292,10 @@ class TrainedPymorROM:
             )
             current = sla.lu_solve(factorized, last_rhs)
         boundary = np.array([0.0, _right_boundary_value(config, config.maturity)])
-        values = projection.reduced_outputs @ current + self.output_boundary_weights @ boundary
+        values = (
+            projection.reduced_outputs @ current
+            + self.output_boundary_weights @ boundary
+        )
         return ReducedOrderSolution(
             outputs=OptionOutputs(*np.asarray(values, dtype=float)),
             residual_linf=float(np.max(np.abs(lhs @ current - last_rhs))),
@@ -343,7 +365,9 @@ def train_pymor_rom(
         solution = system.solve_full_order(volatility, capture_snapshots=True)
         if solution.snapshots is None:  # pragma: no cover - guaranteed by call
             raise RuntimeError("training solve did not return snapshots")
-        snapshots.append(np.ascontiguousarray(solution.snapshots[:, :: config.snapshot_stride]))
+        snapshots.append(
+            np.ascontiguousarray(solution.snapshots[:, :: config.snapshot_stride])
+        )
         del solution
     snapshot_matrix = np.column_stack(snapshots)
     training_seconds = perf_counter() - started
@@ -351,9 +375,15 @@ def train_pymor_rom(
     projection = build_pod_projection(
         snapshots=snapshot_matrix,
         mass=sps.csc_matrix(system.mass[interior][:, interior]),
-        operator_constant=sps.csc_matrix(system.operator_constant[interior][:, interior]),
-        operator_variance=sps.csc_matrix(system.operator_variance[interior][:, interior]),
-        mass_boundary=np.asarray(system.mass[interior, system.right_boundary].toarray()).ravel(),
+        operator_constant=sps.csc_matrix(
+            system.operator_constant[interior][:, interior]
+        ),
+        operator_variance=sps.csc_matrix(
+            system.operator_variance[interior][:, interior]
+        ),
+        mass_boundary=np.asarray(
+            system.mass[interior, system.right_boundary].toarray()
+        ).ravel(),
         constant_boundary=np.asarray(
             system.operator_constant[interior, system.right_boundary].toarray()
         ).ravel(),

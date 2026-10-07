@@ -26,8 +26,13 @@ def test_benchmark_registry_module_exports_default_contract() -> None:
 def test_verification_gates_reexports_benchmark_registry_symbols() -> None:
     assert validation.ValidationGateError is benchmark_registry.ValidationGateError
     assert validation.BenchmarkSpec is benchmark_registry.BenchmarkSpec
-    assert validation.default_benchmark_registry is benchmark_registry.default_benchmark_registry
-    assert verification_gates.ValidationGateError is benchmark_registry.ValidationGateError
+    assert (
+        validation.default_benchmark_registry
+        is benchmark_registry.default_benchmark_registry
+    )
+    assert (
+        verification_gates.ValidationGateError is benchmark_registry.ValidationGateError
+    )
     assert verification_gates.BenchmarkSpec is benchmark_registry.BenchmarkSpec
     assert (
         verification_gates.REQUIRED_TOLERANCE_COMPONENTS
@@ -58,5 +63,7 @@ def test_benchmark_spec_validation_keeps_validation_gate_error_type() -> None:
         tolerance_components={"discretization": 1.0e-3},
     )
 
-    with pytest.raises(benchmark_registry.ValidationGateError, match="tolerance components"):
+    with pytest.raises(
+        benchmark_registry.ValidationGateError, match="tolerance components"
+    ):
         incomplete.validate()

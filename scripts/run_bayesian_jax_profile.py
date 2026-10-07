@@ -11,7 +11,10 @@ from finite_element_options.estimation.bayesian_profile import (
     run_bayesian_jax_profile,
     stable_environment_checks,
 )
-from finite_element_options.validation.evidence.serialization import file_sha256, write_atomic_json
+from finite_element_options.validation.evidence.serialization import (
+    file_sha256,
+    write_atomic_json,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,12 +32,16 @@ def main() -> int:
     if args.verify:
         expected = json.loads(args.output.read_text(encoding="utf-8"))
         exact = {
-            "schema_version": report["schema_version"] == expected.get("schema_version"),
+            "schema_version": report["schema_version"]
+            == expected.get("schema_version"),
             "input_hash": report["input_hash"] == expected.get("input_hash"),
             "lock_hash": report["environment_lock"]["sha256"]
             == expected.get("environment_lock", {}).get("sha256"),
-            "decision": report["decision"]["status"] == expected.get("decision", {}).get("status"),
-            **stable_environment_checks(report["environment"], expected.get("environment", {})),
+            "decision": report["decision"]["status"]
+            == expected.get("decision", {}).get("status"),
+            **stable_environment_checks(
+                report["environment"], expected.get("environment", {})
+            ),
         }
         gates = report["decision"]["checks"]
         result = {

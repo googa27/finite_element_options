@@ -59,7 +59,9 @@ def test_default_validation_registry_covers_all_validated_benchmark_ids() -> Non
         }
 
 
-def test_capability_audit_fails_closed_for_missing_production_benchmark_metadata() -> None:
+def test_capability_audit_fails_closed_for_missing_production_benchmark_metadata() -> (
+    None
+):
     incomplete = BenchmarkSpec(
         benchmark_id="MISSING-META",
         model="Black-Scholes",
@@ -102,7 +104,9 @@ def test_manufactured_solution_cases_cover_required_operator_families() -> None:
 
     for case in cases.values():
         for point in case.sample_points:
-            assert abs(case.residual(point)) <= case.residual_tolerance, case.operator_family
+            assert abs(case.residual(point)) <= case.residual_tolerance, (
+                case.operator_family
+            )
 
     unsupported = next(iter(cases.values())).__class__(
         operator_family="not_a_declared_operator",
@@ -114,7 +118,9 @@ def test_manufactured_solution_cases_cover_required_operator_families() -> None:
         unsupported.residual((0.5, 0.25))
 
 
-def test_convergence_study_separates_spatial_temporal_and_domain_error_budgets() -> None:
+def test_convergence_study_separates_spatial_temporal_and_domain_error_budgets() -> (
+    None
+):
     spatial = ConvergenceStudy(
         benchmark_id="FEM-VALIDATION-GATES-V0",
         dimension="spatial",
@@ -299,7 +305,9 @@ def test_arbitrage_gate_accepts_valid_call_surface_and_blocks_violations() -> No
         evaluate_call_arbitrage(mixed_contract, fail_on_error=True)
 
 
-def test_cross_backend_gate_requires_identical_conventions_and_toleranced_values() -> None:
+def test_cross_backend_gate_requires_identical_conventions_and_toleranced_values() -> (
+    None
+):
     scikit = BackendValidationReport(
         benchmark_id="fem-bs-001",
         backend_id="scikit-fem+sparse-direct",
@@ -350,11 +358,15 @@ def test_cross_backend_gate_requires_identical_conventions_and_toleranced_values
 
     with pytest.raises(ValidationGateError, match="invalid tolerance"):
         compare_backend_reports(
-            scikit, fenicsx, tolerances={"price": float("nan"), "delta": 1.0, "gamma": 1.0}
+            scikit,
+            fenicsx,
+            tolerances={"price": float("nan"), "delta": 1.0, "gamma": 1.0},
         )
 
 
-def test_american_lcp_gate_requires_complementarity_and_exercise_front_diagnostics() -> None:
+def test_american_lcp_gate_requires_complementarity_and_exercise_front_diagnostics() -> (
+    None
+):
     diagnostics = LCPDiagnostics(
         success=True,
         iterations=12,
@@ -395,7 +407,9 @@ def test_american_lcp_gate_requires_complementarity_and_exercise_front_diagnosti
         }
     )
     with pytest.raises(ValidationGateError, match="exercise front"):
-        evaluate_american_lcp_gate("FEM-AMERICAN-LCP", (all_exercised,), fail_on_error=True)
+        evaluate_american_lcp_gate(
+            "FEM-AMERICAN-LCP", (all_exercised,), fail_on_error=True
+        )
 
     nonfinite = LCPDiagnostics(
         **{

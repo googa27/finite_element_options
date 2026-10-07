@@ -352,3 +352,30 @@ Startup subdivision must also remain representable: every generated internal
 width must be finite and positive, and each endpoint pair finite and strictly
 increasing. Refuse invalid subdivision before initial conditions or assembly;
 retain representable subnormal steps. Review follow-up: issue157.
+
+
+### Canonical formatting and cohesive owners (issues 166 and 167)
+
+Development and validation profiles, `constraints.txt` and `[tool.ruff]` pin
+Ruff 0.12.12. Use its default 88-column formatting throughout the repository:
+`ruff check .` and `ruff format --check .`. The native CI test job executes
+both commands, and its contract rejects omitted, commented, narrowed or
+failure-suppressed formatting commands. No formatting exclusions or module-size
+exception increases are part of this baseline.
+
+Route-value coercions belong to `contracts.route_mapping`. Calibration numeric
+input ownership and Jacobian diagnostics belong to `estimation.calibration_values`;
+content-addressed Heston-engine admission belongs to `estimation.heston_engine_identity`.
+`space.domain` owns the existing truncation and topology estimates through a
+read-only scalar protocol, without importing UI classes. Public fixture units,
+Pinares metadata and its existing eight-significant-digit publication policy
+belong to `validation.evidence.public_fixture`; the Black-Scholes thirteen-digit
+policy remains separate. American-LCP diagnostic values belong to
+`validation.evidence.american_lcp`, while the public report and error wrapper stay
+in `validation.verification_gates`. The UQ study parameter/input owner is
+`examples.regime_switching_quanto.adoption.uncertainty.study_parameters`.
+
+Public classes and report/function entry points retain their established modules.
+These extractions preserve the numerical bodies, configuration hash inputs,
+packaged reference bytes and scientific qualification boundaries. Source checks
+do not replace normal installed-package or resulting-default verification.

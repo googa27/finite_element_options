@@ -17,12 +17,16 @@ def main() -> None:
 
     parameters = sidebar.Sidebar()
     if not parameters.can_solve:
-        st.warning("This configuration is not supported by the released FEM capability manifest.")
+        st.warning(
+            "This configuration is not supported by the released FEM capability manifest."
+        )
         status = parameters.validated.to_status_dict() if parameters.validated else {}
         st.json(status)
         return
     if not parameters.requires_numerical_solve:
-        st.info("Configuration resolved to an explicit analytical limit; no FEM solve allocated.")
+        st.info(
+            "Configuration resolved to an explicit analytical limit; no FEM solve allocated."
+        )
         status = parameters.validated.to_status_dict() if parameters.validated else {}
         st.json(status)
         return

@@ -13,7 +13,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, help="canonical JSON artifact path")
-    parser.add_argument("--verify", action="store_true", help="regenerate and compare output")
+    parser.add_argument(
+        "--verify", action="store_true", help="regenerate and compare output"
+    )
     args = parser.parse_args(argv)
 
     from finite_element_options.examples.regime_switching_quanto.adoption.quantlib_oracle import (  # noqa: PLC0415

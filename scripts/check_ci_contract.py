@@ -15,7 +15,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
-PINNED_ACTION = re.compile(r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([0-9a-f]{40})\b")
+PINNED_ACTION = re.compile(
+    r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([0-9a-f]{40})\b"
+)
 MUTABLE_ACTION = re.compile(r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)")
 JOB_HEADER = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
 
@@ -41,7 +43,8 @@ REQUIRED_SNIPPETS = {
     "installed wheel README examples": "scripts/check_readme_examples.py README.md",
     "capability doc staleness check": "scripts/generate_capability_docs.py --check",
     "pydocstyle gate": "pydocstyle src/finite_element_options",
-    "ruff gate": "ruff check src tests scripts",
+    "ruff gate": "ruff check .",
+    "whole format gate": "ruff format --check .",
     "type gate": "mypy --ignore-missing-imports",
     "architecture contract": "scripts/check_architecture_contract.py",
     "packaging contract": "tests/test_packaging_contract.py",
@@ -142,7 +145,9 @@ SUPPLY_CHAIN_AUDITED_EXTRAS = (
     "uncertainty",
     "reduction",
 )
-PROJECT_EXTRA_INSTALL = re.compile(r"python -m pip install\b[^\n]*(?:-e\s+)?['\"]?\.\[([^\]\s]+)\]")
+PROJECT_EXTRA_INSTALL = re.compile(
+    r"python -m pip install\b[^\n]*(?:-e\s+)?['\"]?\.\[([^\]\s]+)\]"
+)
 
 
 def _workflow_text() -> str:
@@ -232,7 +237,9 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
             and entry.get("python-version") is not None
         }
         expected_versions = (
-            {"3.12"} if profile in PY312_ONLY_OPTIONAL_PROFILES else NEW_OPTIONAL_PROFILE_PYTHONS
+            {"3.12"}
+            if profile in PY312_ONLY_OPTIONAL_PROFILES
+            else NEW_OPTIONAL_PROFILE_PYTHONS
         )
         missing = sorted(expected_versions - covered)
         unexpected = sorted(covered - expected_versions)
@@ -260,32 +267,46 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
     install_marker = 'elif [ "${PROFILE}" = "jax-regime" ]; then'
     ci_lock = "environments/jax-regime-py312/ci-requirements.lock"
     if jax_marker not in steps_block or install_marker not in steps_block:
-        errors.append("optional_imports must define all jax-regime build/install/test branches")
+        errors.append(
+            "optional_imports must define all jax-regime build/install/test branches"
+        )
     else:
-        build_branch = steps_block.split(jax_marker, 1)[1].split("\n          else", 1)[0]
+        build_branch = steps_block.split(jax_marker, 1)[1].split("\n          else", 1)[
+            0
+        ]
         if (
             ci_lock not in build_branch
             or "--require-hashes" not in build_branch
             or "python -m build --wheel --no-isolation" not in build_branch
         ):
-            errors.append("jax-regime wheel build must use its hash-pinned CI-tool lock")
-        venv_section = steps_block.split("python -m venv /tmp/feo-${PROFILE}-check", 1)[1].split(
-            "WHEEL=", 1
+            errors.append(
+                "jax-regime wheel build must use its hash-pinned CI-tool lock"
+            )
+        venv_section = steps_block.split("python -m venv /tmp/feo-${PROFILE}-check", 1)[
+            1
+        ].split("WHEEL=", 1)[0]
+        bootstrap_branch = venv_section.split(jax_marker, 1)[1].split(
+            "\n          else", 1
         )[0]
-        bootstrap_branch = venv_section.split(jax_marker, 1)[1].split("\n          else", 1)[0]
         if (
             ci_lock not in bootstrap_branch
             or "--require-hashes" not in bootstrap_branch
             or "pip install --upgrade" in bootstrap_branch
         ):
-            errors.append("jax-regime venv bootstrap must install locked CI tools first")
-        install_branch = steps_block.split(install_marker, 1)[1].split("\n          else", 1)[0]
+            errors.append(
+                "jax-regime venv bootstrap must install locked CI tools first"
+            )
+        install_branch = steps_block.split(install_marker, 1)[1].split(
+            "\n          else", 1
+        )[0]
         if ci_lock not in install_branch or "--require-hashes" not in install_branch:
             errors.append("jax-regime venv must install its hash-pinned CI-tool lock")
         jax_branch = steps_block.rsplit(jax_marker, 1)[1].split("\n          fi", 1)[0]
         test_lock = "environments/jax-regime-py312/test-requirements.lock"
         if test_lock not in jax_branch or "--require-hashes" not in jax_branch:
-            errors.append("jax-regime tests must install their hash-pinned test-tool lock")
+            errors.append(
+                "jax-regime tests must install their hash-pinned test-tool lock"
+            )
         if "pip install pytest" in jax_branch:
             errors.append("jax-regime tests must not install unpinned pytest tooling")
 
@@ -295,7 +316,9 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
 def _project_extras_in_pip_installs(job_block: str) -> set[str]:
     extras: set[str] = set()
     for match in PROJECT_EXTRA_INSTALL.finditer(job_block):
-        extras.update(extra.strip() for extra in match.group(1).split(",") if extra.strip())
+        extras.update(
+            extra.strip() for extra in match.group(1).split(",") if extra.strip()
+        )
     return extras
 
 
@@ -352,11 +375,49 @@ def _check_supply_chain_audit(blocks: dict[str, str]) -> list[str]:
             errors.append(f"{label} must enforce lock hashes")
         if build_command not in audited:
             errors.append(f"{label} must build the release wheel reproducibly")
-        if "python -m pip install --no-deps dist/finite_element_options-*.whl" not in audited:
+        if (
+            "python -m pip install --no-deps dist/finite_element_options-*.whl"
+            not in audited
+        ):
             errors.append(f"{label} must install the release wheel before its SBOM")
-        if "python -m pip_audit" not in audited or "cyclonedx-py environment" not in audited:
+        if (
+            "python -m pip_audit" not in audited
+            or "cyclonedx-py environment" not in audited
+        ):
             errors.append(f"{label} must run vulnerability and SBOM gates")
     return errors
+
+
+def _check_static_analysis_gates(blocks: dict[str, str]) -> list[str]:
+    match = re.search(
+        r"^      - name: Static, docstring, and type gates\n(.*?)(?=^      - |\Z)",
+        blocks.get("test", ""),
+        re.MULTILINE | re.DOTALL,
+    )
+    if match is None:
+        return ["test job must contain its enforced static analysis step"]
+    step = match.group(1)
+    if re.search(r"^        (?:if|shell|working-directory):", step, re.MULTILINE):
+        return [
+            "static analysis step must retain ordinary repository-root execution defaults"
+        ]
+    marker = "        run: |\n"
+    if marker not in step or "continue-on-error:" in step:
+        return ["static analysis step must be an enforced ordinary run block"]
+    actual = [
+        line.strip() for line in step.split(marker, 1)[1].splitlines() if line.strip()
+    ]
+    expected = [
+        "ruff check .",
+        "ruff format --check .",
+        "pydocstyle src/finite_element_options",
+        "mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation src/finite_element_options/estimation/bayesian_profile scripts/check_ci_contract.py scripts/run_bayesian_jax_profile.py",
+    ]
+    if actual != expected:
+        return [
+            "static analysis step must execute the exact whole-tree lint/format, docstring and type gates"
+        ]
+    return []
 
 
 def check_ci_contract() -> list[str]:
@@ -376,7 +437,11 @@ def check_ci_contract() -> list[str]:
         if not re.fullmatch(r"[0-9a-f]{40}", ref):
             errors.append(f"action {action}@{ref} is not pinned to a full commit SHA")
     pinned = {action for action, _ in PINNED_ACTION.findall(text)}
-    for expected in {"actions/checkout", "actions/setup-python", "actions/upload-artifact"}:
+    for expected in {
+        "actions/checkout",
+        "actions/setup-python",
+        "actions/upload-artifact",
+    }:
         if expected not in pinned:
             errors.append(f"missing pinned {expected} usage")
 
@@ -390,6 +455,7 @@ def check_ci_contract() -> list[str]:
         if "runs-on:" not in block:
             errors.append(f"job {name} must declare runs-on")
 
+    errors.extend(_check_static_analysis_gates(blocks))
     errors.extend(_check_optional_import_matrix(blocks))
     errors.extend(_check_supply_chain_audit(blocks))
 

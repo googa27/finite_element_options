@@ -73,8 +73,12 @@ def run_volatility_benchmark(
     response = joint_response(returns)
     boundaries = rolling_boundaries(len(response), cfg)
     candidates = [
-        _fit_arch_candidate(returns, response, boundaries, cfg, "GJR-GARCH", "student-t"),
-        _fit_arch_candidate(returns, response, boundaries, cfg, "GJR-GARCH", "skewed-t"),
+        _fit_arch_candidate(
+            returns, response, boundaries, cfg, "GJR-GARCH", "student-t"
+        ),
+        _fit_arch_candidate(
+            returns, response, boundaries, cfg, "GJR-GARCH", "skewed-t"
+        ),
         _fit_arch_candidate(returns, response, boundaries, cfg, "EGARCH", "student-t"),
         _fit_arch_candidate(returns, response, boundaries, cfg, "EGARCH", "skewed-t"),
     ]
@@ -98,7 +102,8 @@ def run_volatility_benchmark(
         train_end=dates[first.train_end - 1],
         holdout_start=dates[first.holdout_start],
         holdout_end=dates[boundaries[-1].holdout_end - 1],
-        fit_count=sum(candidate.fit_count for candidate in candidates) + markov.fit_count,
+        fit_count=sum(candidate.fit_count for candidate in candidates)
+        + markov.fit_count,
         metric_definitions=_metric_definitions(),
         config=cfg.to_dict(),
         data_quality=_summarize_data_quality(quality),
@@ -171,7 +176,9 @@ def _fit_arch_candidate(
             )
             mean = np.asarray(forecast.mean["h.1"].iloc[1 : horizon + 1], dtype=float)
             variance = np.maximum(
-                np.asarray(forecast.residual_variance["h.1"].iloc[1 : horizon + 1], dtype=float),
+                np.asarray(
+                    forecast.residual_variance["h.1"].iloc[1 : horizon + 1], dtype=float
+                ),
                 1.0e-12,
             )
             holdout = response[boundary.holdout_start : boundary.holdout_end]
@@ -184,7 +191,9 @@ def _fit_arch_candidate(
             means.extend(float(item) for item in mean)
             variances.extend(float(item) for item in variance)
             log_scores.extend(float(item) for item in np.asarray(loglike, dtype=float))
-            var_values.extend(float(item) for item in mean + np.sqrt(variance) * quantile)
+            var_values.extend(
+                float(item) for item in mean + np.sqrt(variance) * quantile
+            )
     except Exception as exc:  # pragma: no cover - numeric optimizer fallback
         return CandidateBenchmarkResult(
             family,
@@ -222,7 +231,9 @@ def _promotion_decision(
 ) -> PromotionDecision:
     successful = [c for c in candidates if c.failure is None and c.qlike is not None]
     if not successful:
-        return PromotionDecision("reject", None, ["all challenger candidates failed closed"])
+        return PromotionDecision(
+            "reject", None, ["all challenger candidates failed closed"]
+        )
     best = min(successful, key=lambda c: cast(float, c.qlike))
     label = f"{best.family}/{best.distribution}"
     if markov.failure is not None or not markov.converged:
@@ -239,8 +250,14 @@ def _promotion_decision(
             ],
         )
     reasons: list[str] = []
-    if markov.qlike is None or markov.mean_predictive_log_score is None or markov.var is None:
-        reasons.append("invalid Markov AR(2) baseline metrics; no promotion comparison is valid")
+    if (
+        markov.qlike is None
+        or markov.mean_predictive_log_score is None
+        or markov.var is None
+    ):
+        reasons.append(
+            "invalid Markov AR(2) baseline metrics; no promotion comparison is valid"
+        )
     else:
         if cast(float, best.qlike) >= 0.95 * markov.qlike:
             reasons.append(
@@ -250,15 +267,21 @@ def _promotion_decision(
             best.mean_predictive_log_score is None
             or best.mean_predictive_log_score <= markov.mean_predictive_log_score + 0.05
         ):
-            reasons.append("best challenger log score did not beat Markov baseline by 0.05")
+            reasons.append(
+                "best challenger log score did not beat Markov baseline by 0.05"
+            )
         if best.var is None or best.var.coverage_error > markov.var.coverage_error:
-            reasons.append("best challenger VaR coverage error exceeded Markov baseline")
+            reasons.append(
+                "best challenger VaR coverage error exceeded Markov baseline"
+            )
     stability = best.parameter_stability.get("l1_relative_first_last")
     if stability is None or float(stability) > 2.0:
         reasons.append("best challenger parameter stability gate failed")
     if reasons:
         return PromotionDecision("reject", label, reasons)
-    return PromotionDecision("promote", label, ["best challenger passed all hold-out gates"])
+    return PromotionDecision(
+        "promote", label, ["best challenger passed all hold-out gates"]
+    )
 
 
 def _metric_definitions() -> dict[str, str]:
@@ -276,7 +299,9 @@ def _summarize_data_quality(quality: dict[str, Any]) -> dict[str, Any]:
     """Return bounded data-quality diagnostics for public benchmark artifacts."""
 
     bridged = list(quality.get("bridged_return_gaps", []))
-    max_gap = max((int(item.get("calendar_gap_days", 0)) for item in bridged), default=0)
+    max_gap = max(
+        (int(item.get("calendar_gap_days", 0)) for item in bridged), default=0
+    )
     return {
         "input_rows": quality.get("input_rows"),
         "valid_level_rows": quality.get("valid_level_rows"),

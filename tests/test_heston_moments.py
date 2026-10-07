@@ -120,10 +120,9 @@ def test_cir_conditional_variance_matches_closed_form_and_limits() -> None:
     tau = 0.8
     variance_seed = np.array([0.01, 0.05, 0.2])
     decay = math.exp(-kappa * tau)
-    expected = (
-        variance_seed * sigma**2 * decay * (1.0 - decay) / kappa
-        + theta * sigma**2 * (1.0 - decay) ** 2 / (2.0 * kappa)
-    )
+    expected = variance_seed * sigma**2 * decay * (
+        1.0 - decay
+    ) / kappa + theta * sigma**2 * (1.0 - decay) ** 2 / (2.0 * kappa)
 
     actual = cir_conditional_variance(
         kappa=kappa,

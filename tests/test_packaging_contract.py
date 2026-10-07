@@ -44,15 +44,21 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
 
     assert any(name.startswith("finite_element_options/") for name in names)
     assert "finite_element_options/py.typed" in names
-    assert not any(name == "src/__init__.py" or name.startswith("src/") for name in names)
+    assert not any(
+        name == "src/__init__.py" or name.startswith("src/") for name in names
+    )
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
     with zipfile.ZipFile(wheels[0]) as wheel:
         for filename in ("problem_spec.json", "result_export.json"):
-            packaged = "finite_element_options/validation/evidence/reference_data/fem_bs_001/" + filename
-            assert wheel.read(packaged) == (
-                ROOT / "tests/fixtures/fem_bs_001" / filename
-            ).read_bytes()
+            packaged = (
+                "finite_element_options/validation/evidence/reference_data/fem_bs_001/"
+                + filename
+            )
+            assert (
+                wheel.read(packaged)
+                == (ROOT / "tests/fixtures/fem_bs_001" / filename).read_bytes()
+            )
 
 
 def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) -> None:
@@ -120,7 +126,9 @@ def test_wheel_registers_exactly_one_canonical_haircut_backend_entry_point(
 
     with zipfile.ZipFile(wheel) as archive:
         entry_point_files = [
-            name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
+            name
+            for name in archive.namelist()
+            if name.endswith(".dist-info/entry_points.txt")
         ]
         assert len(entry_point_files) == 1
         entry_points = archive.read(entry_point_files[0]).decode("utf-8")
@@ -140,7 +148,9 @@ def _requires_dist() -> list[str]:
     return metadata.metadata("finite-element-options").get_all("Requires-Dist") or []
 
 
-def _has_extra_dependency(requires_dist: list[str], extra: str, dependency: str) -> bool:
+def _has_extra_dependency(
+    requires_dist: list[str], extra: str, dependency: str
+) -> bool:
     expected = canonicalize_name(dependency)
     for item in requires_dist:
         requirement = Requirement(item)
@@ -179,11 +189,14 @@ def test_base_metadata_keeps_optional_stacks_out_of_core_dependencies() -> None:
     offenders = []
     for item in requires_dist:
         requirement = Requirement(item)
-        applies_to_base = requirement.marker is None or requirement.marker.evaluate({"extra": ""})
+        applies_to_base = requirement.marker is None or requirement.marker.evaluate(
+            {"extra": ""}
+        )
         if canonicalize_name(requirement.name) in forbidden_names and applies_to_base:
             offenders.append(item)
     assert not offenders, (
-        f"Optional stacks leaked into core dependencies: {offenders}\n" + "\n".join(requires_dist)
+        f"Optional stacks leaked into core dependencies: {offenders}\n"
+        + "\n".join(requires_dist)
     )
 
 
@@ -247,7 +260,9 @@ def test_purpose_specific_adoption_extras_are_advertised() -> None:
     assert not _has_extra_dependency(requires_dist, "petsc", "petsc4py"), (
         "PETSc must remain an explicit matched external environment, not a portable extra"
     )
-    provides_extras = metadata.metadata("finite-element-options").get_all("Provides-Extra") or []
+    provides_extras = (
+        metadata.metadata("finite-element-options").get_all("Provides-Extra") or []
+    )
     assert "petsc" not in {extra.lower() for extra in provides_extras}
     prd = (ROOT / "docs/PRD.md").read_text(encoding="utf-8")
     assert "| `bayesian` |" in prd
@@ -271,7 +286,9 @@ def test_jax_regime_extra_uses_the_exact_evidenced_stack() -> None:
         canonicalize_name(requirement.name): str(requirement.specifier)
         for requirement in map(Requirement, _requires_dist())
         if requirement.marker is not None
-        and requirement.marker.evaluate({"extra": "jax-regime", "python_version": "3.12"})
+        and requirement.marker.evaluate(
+            {"extra": "jax-regime", "python_version": "3.12"}
+        )
     }
     normalized_expected = {
         canonicalize_name(name): f"=={version}" for name, version in expected.items()
@@ -323,8 +340,12 @@ def test_bayesian_extras_are_bounded_to_python_312() -> None:
         assert {canonicalize_name(item.name) for item in selected} == canonical_names
         for requirement in selected:
             assert requirement.marker is not None
-            assert not requirement.marker.evaluate({"extra": extra, "python_version": "3.11"})
-            assert not requirement.marker.evaluate({"extra": extra, "python_version": "3.13"})
+            assert not requirement.marker.evaluate(
+                {"extra": extra, "python_version": "3.11"}
+            )
+            assert not requirement.marker.evaluate(
+                {"extra": extra, "python_version": "3.13"}
+            )
 
 
 def test_installed_wheel_import_contract_has_no_checkout_path_hack(

@@ -162,8 +162,12 @@ class ProjectedSORSolver:
         )
         for iteration in range(1, self.settings.max_iterations + 1):
             previous[:] = values
-            _projected_sor_sweep(matrix, rhs, obstacle, values, self.settings.relaxation)
-            max_update = float(np.max(np.abs(values - previous))) if values.size else 0.0
+            _projected_sor_sweep(
+                matrix, rhs, obstacle, values, self.settings.relaxation
+            )
+            max_update = (
+                float(np.max(np.abs(values - previous))) if values.size else 0.0
+            )
             diagnostics = _diagnostics(
                 matrix,
                 rhs,
@@ -189,7 +193,9 @@ class ProjectedSORSolver:
                     message="projected SOR converged",
                     solve_time_sec=perf_counter() - started,
                 )
-                return LCPResult(values=values.copy(), success=True, diagnostics=diagnostics)
+                return LCPResult(
+                    values=values.copy(), success=True, diagnostics=diagnostics
+                )
 
         diagnostics = _diagnostics(
             matrix,
@@ -211,7 +217,9 @@ class ProjectedSORSolver:
         return result
 
 
-def _validate_problem(problem: DiscreteLCP) -> tuple[sps.csr_matrix, np.ndarray, np.ndarray]:
+def _validate_problem(
+    problem: DiscreteLCP,
+) -> tuple[sps.csr_matrix, np.ndarray, np.ndarray]:
     matrix = sps.csr_matrix(problem.matrix, dtype=float)
     rhs = np.asarray(problem.rhs, dtype=float)
     obstacle = np.asarray(problem.obstacle, dtype=float)
@@ -343,7 +351,8 @@ def _has_converged(diagnostics: LCPDiagnostics, tolerance: float) -> bool:
         and diagnostics.dual_violation_max <= tolerance
         and diagnostics.complementarity_max <= tolerance
         and diagnostics.projected_residual_max <= tolerance
-        and diagnostics.max_update <= max(1.0, diagnostics.projected_residual_max) * tolerance
+        and diagnostics.max_update
+        <= max(1.0, diagnostics.projected_residual_max) * tolerance
     )
 
 

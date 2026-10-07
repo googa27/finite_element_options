@@ -13,7 +13,9 @@ def stack() -> tuple[Any, Any, Any]:
         import jax.numpy as jnp
         import jax.random as jr
     except ModuleNotFoundError as exc:
-        raise ImportError("JAX regime study requires finite-element-options[jax-regime].") from exc
+        raise ImportError(
+            "JAX regime study requires finite-element-options[jax-regime]."
+        ) from exc
     jax.config.update("jax_enable_x64", True)
     return jax, jnp, jr
 

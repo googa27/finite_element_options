@@ -172,7 +172,9 @@ def test_unused_export_directory_is_not_silently_accepted(
         parity.run_public_black_scholes_parity_fixture(export_directory=tmp_path)
 
 
-@pytest.mark.parametrize("controls", [{}, {"refinement_levels": (4, 5), "time_steps": 40}])
+@pytest.mark.parametrize(
+    "controls", [{}, {"refinement_levels": (4, 5), "time_steps": 40}]
+)
 def test_paired_exports_resolve_current_result_after_relocation(
     tmp_path: Path, controls: dict
 ) -> None:
@@ -189,9 +191,12 @@ def test_paired_exports_resolve_current_result_after_relocation(
     assert result_path.resolve() == (relocated / "result_export.json").resolve()
     assert result == report.export_payload()
     contract_id = spec.pop("contract_id")
-    assert contract_id == sha256(
-        json.dumps(spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    assert (
+        contract_id
+        == sha256(
+            json.dumps(spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    )
     assert spec == parity.build_public_fem_bs_oracle_problem_spec(
         refinement_levels=report.mesh_metadata.refinement_levels,
         time_steps=report.time_metadata.time_steps,

@@ -72,7 +72,9 @@ def test_base_and_adoption_modules_import_with_adoption_dependencies_blocked() -
 
 
 @pytest.mark.parametrize("module_name,expected", OPTIONAL_DEPENDENCIES.items())
-def test_missing_extra_errors_are_actionable(module_name: str, expected: tuple[str, str]) -> None:
+def test_missing_extra_errors_are_actionable(
+    module_name: str, expected: tuple[str, str]
+) -> None:
     """Each optional dependency error must name the exact extra to install."""
 
     extra, _dependency = expected
@@ -116,10 +118,14 @@ def test_exact_missing_top_level_dependency_is_actionable(
 ) -> None:
     """Only an exact missing optional top-level module gets an install hint."""
 
-    from finite_element_options.examples.regime_switching_quanto.adoption import optional
+    from finite_element_options.examples.regime_switching_quanto.adoption import (
+        optional,
+    )
 
     def missing_top_level_import(name: str) -> ModuleType:
-        raise ModuleNotFoundError(f"simulated missing optional dependency: {name}", name=name)
+        raise ModuleNotFoundError(
+            f"simulated missing optional dependency: {name}", name=name
+        )
 
     monkeypatch.setattr(optional, "import_module", missing_top_level_import)
 
@@ -142,7 +148,9 @@ def test_same_top_level_missing_submodule_preserves_original_error(
 ) -> None:
     """Missing extensions under installed packages are not missing-extra errors."""
 
-    from finite_element_options.examples.regime_switching_quanto.adoption import optional
+    from finite_element_options.examples.regime_switching_quanto.adoption import (
+        optional,
+    )
 
     original = ModuleNotFoundError(
         f"simulated missing imported extension: {missing_name}", name=missing_name
@@ -160,7 +168,9 @@ def test_same_top_level_missing_submodule_preserves_original_error(
     assert exc_info.value is original
 
 
-def test_registry_is_json_safe_immutable_and_contracts_do_not_expose_quantlib_types() -> None:
+def test_registry_is_json_safe_immutable_and_contracts_do_not_expose_quantlib_types() -> (
+    None
+):
     """The public adoption registry and result/domain contracts expose plain data only."""
 
     probe = _run_import_probe(

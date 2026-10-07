@@ -129,25 +129,28 @@ class DynamicsParametersHeston(
     #             )
 
     def A(self, x, y) -> list[list]:
-        '''
+        """
         Covariance matrix appearing in feynman kac formula.
-        '''
-        return [[x**2*y, self.rho*self.sig*x*y],
-                [self.rho*self.sig*x*y, self.sig**2*y]]
+        """
+        return [
+            [x**2 * y, self.rho * self.sig * x * y],
+            [self.rho * self.sig * x * y, self.sig**2 * y],
+        ]
 
     def dA(self, x, y) -> list:
-        '''
+        """
         Divergence of A
-        '''
-        return [2*x*y + self.rho*self.sig*x,
-                self.rho*self.sig*y + self.sig**2]
+        """
+        return [
+            2 * x * y + self.rho * self.sig * x,
+            self.rho * self.sig * y + self.sig**2,
+        ]
 
     def b(self, x, y) -> list:
-        '''
+        """
         Drift vector in feynman kac formula
-        '''
-        return [(self.r - self.q)*x,
-                self.kappa*(self.theta - y)]
+        """
+        return [(self.r - self.q) * x, self.kappa * (self.theta - y)]
 
     def discount(self, state, time):  # pylint: disable=unused-argument
         """Return the constant short-rate reaction coefficient."""

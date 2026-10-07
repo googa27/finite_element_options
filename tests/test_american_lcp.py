@@ -137,7 +137,9 @@ def test_projected_sor_returns_failed_result_and_can_raise_on_nonconvergence() -
         rhs=np.array([0.0, 0.0]),
         obstacle=np.array([1.0, 0.0]),
     )
-    solver = ProjectedSORSolver(ProjectedSORSolverSettings(tolerance=1.0e-14, max_iterations=1))
+    solver = ProjectedSORSolver(
+        ProjectedSORSolverSettings(tolerance=1.0e-14, max_iterations=1)
+    )
 
     result = solver.solve(problem, fail_on_nonconvergence=False)
 
@@ -198,5 +200,7 @@ def test_rannacher_startup_schedule_is_reported_for_american_lcp_solves() -> Non
 
     stepper.solve([0.0, 0.2, 0.5], _AmericanTwoNodeSpace(), is_american=True)
 
-    assert stepper.last_time_grid_diagnostics["theta_schedule"] == pytest.approx((1.0, 1.0, 0.5))
+    assert stepper.last_time_grid_diagnostics["theta_schedule"] == pytest.approx(
+        (1.0, 1.0, 0.5)
+    )
     assert len(stepper.last_lcp_diagnostics) == 3
