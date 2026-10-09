@@ -9,11 +9,11 @@ permissions:
 
 jobs:
   policy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install pinned governance tools
@@ -24,5 +24,11 @@ jobs:
         run: python3 scripts/check_ai_hierarchy_policy.py
       - name: Adversarially self-test governance gate
         run: python3 scripts/selftest_ai_hierarchy_policy.py
+      - name: Enforce reviewed Actions runtime and runner
+        run: |
+          python3 scripts/check_actions_runtime_contract.py
+          python3 scripts/selftest_actions_runtime_contract.py
+      - name: Check immutable action pins without mutation
+        run: go run github.com/suzuki-shunsuke/pinact/v4/cmd/pinact@v4.1.0 run -fix=false -no-api
       - name: Run Zizmor workflow audit
         run: zizmor --offline --min-severity medium .

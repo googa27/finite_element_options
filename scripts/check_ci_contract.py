@@ -430,6 +430,19 @@ def check_ci_contract() -> list[str]:
         if snippet not in text:
             errors.append(f"missing {label}: {snippet!r}")
 
+    policy = (ROOT / ".github/workflows/ai-hierarchy-policy.yml").read_text()
+    gate = (
+        r"^      - name: Enforce reviewed Actions runtime and runner\n"
+        r"        run: \|\n"
+        r"          python3 scripts/check_actions_runtime_contract.py\n"
+        r"          python3 scripts/selftest_actions_runtime_contract.py\n"
+        r"(?=      - |\Z)"
+    )
+    if len(re.findall(gate, policy, re.MULTILINE)) != 1:
+        errors.append("runtime checker/self-test must remain an enforced policy step")
+    if re.search(r"^    (?:if|continue-on-error):", policy, re.MULTILINE):
+        errors.append("runtime policy job must not be conditional or failure-waived")
+
     actions = MUTABLE_ACTION.findall(text)
     if not actions:
         errors.append("workflow must use pinned third-party actions")

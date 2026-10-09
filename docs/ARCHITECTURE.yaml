@@ -729,7 +729,43 @@
           "finding": "Pinact resolves action tags to immutable full-length commit SHAs and verifies pinned references."
         }
       ],
-      "write_permission_exceptions": []
+      "write_permission_exceptions": [],
+      "runtime_contract": {
+        "issue": 173,
+        "reviewed_at": "2026-10-09",
+        "runner_label": "ubuntu-24.04",
+        "minimum_runner_version": "2.327.1",
+        "maximum_job_minutes": 30,
+        "workflows": [
+          ".github/workflows/ai-hierarchy-policy.yml",
+          ".github/workflows/ci.yml",
+          ".github/workflows/portfolio-architecture.yml"
+        ],
+        "actions": {
+          "actions/checkout": {
+            "release": "v7.0.1",
+            "sha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "runtime": "node24",
+            "release_url": "https://github.com/actions/checkout/releases/tag/v7.0.1"
+          },
+          "actions/setup-python": {
+            "release": "v7.0.0",
+            "sha": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "runtime": "node24",
+            "release_url": "https://github.com/actions/setup-python/releases/tag/v7.0.0"
+          },
+          "actions/upload-artifact": {
+            "release": "v7.0.2",
+            "sha": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+            "runtime": "node24",
+            "release_url": "https://github.com/actions/upload-artifact/releases/tag/v7.0.2"
+          }
+        },
+        "compatibility": "GitHub.com hosted Ubuntu24.04 only; checkout Docker authenticated-Git >=2.329.0 route is unused. setup-python pip-install input removed and unused. Uploads retain default ZIP semantics. Ubuntu26.04, self-hosted, GHES, Windows and macOS are unexercised.",
+        "runner_evidence": "https://github.com/actions/runner-images/issues/14748",
+        "checker": "python3 scripts/check_actions_runtime_contract.py",
+        "selftest": "python3 scripts/selftest_actions_runtime_contract.py"
+      }
     }
   },
   "exceptions": [

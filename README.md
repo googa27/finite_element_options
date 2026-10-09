@@ -216,3 +216,12 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for development guidelines and prompt tem
 ## License
 
 MIT. This project is provided as-is without warranty.
+
+## Reviewed CI runtime (issue173)
+
+The selected action identities and hosted runner are owned by
+`governance.github_actions.runtime_contract` in
+[the architecture contract](docs/ARCHITECTURE.yaml).
+The required policy workflow checks every actual workflow and executes adversarial
+controls before the non-mutating Pinact and offline Zizmor gates.
+See [the runner compatibility procedure](docs/ARCHITECTURE.md#reviewed-actions-runtime-and-runner-issue173).

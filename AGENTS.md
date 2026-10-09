@@ -400,3 +400,17 @@ compiler.v0 solve and public manufactured/convergence benchmark. Original price,
 Delta and Gamma budgets remain 0.002, 0.001 and 2e-5; existing evidence validation
 retains its spatial/time orders, residual, perturbation and no-arbitrage gates.
 No source overlay, new dependency or compiler.v1/scientific promotion is implied.
+
+## Reviewed Actions runtime and runner (issue173)
+
+`governance.github_actions.runtime_contract` owns the immutable Node24 action
+selections, exact Ubuntu24.04 runner label, workflow inventory and timeout budget.
+After installing `requirements-architecture.txt`, run
+`python3 scripts/check_actions_runtime_contract.py` and
+`python3 scripts/selftest_actions_runtime_contract.py`, then retain the existing
+AI self-test, non-mutating Pinact and offline Zizmor gates.
+The policy workflow invokes Pinact4.1.0 with `-fix=false -no-api` via its exact
+Go module version (minimum Go1.26.4; automatic toolchain resolution may apply).
+Do not replace actual image/profile/installed-package evidence with static checks.
+Ubuntu26.04 and other unexercised platforms remain explicit limits; runtime
+override variables must not conceal obsolete action metadata.
