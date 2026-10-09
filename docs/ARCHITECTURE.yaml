@@ -86,6 +86,26 @@
         "tests/test_validation_gates.py",
         "tests/test_pinares_fem_proxy.py"
       ]
+    },
+    "compiled_fixture_ownership": {
+      "owner": "src/finite_element_options/validation/compiled_weak_form_golden.py",
+      "private_cache": "immutable decompressed JSON bytes only",
+      "public_factory": "fresh caller-owned dictionary with independent nested objects on each call",
+      "screening_authority": "package bytes; caller mutations cannot replace exact expected subobjects",
+      "fitness_test": "tests/validation/test_public_golden_ownership.py",
+      "issue": "https://github.com/googa27/finite_element_options/issues/165",
+      "scope": "Unchanged compiler.v0 fixture bytes, screening diagnostics, solver and numerical tolerances; compiler.v1 remains issue164",
+      "installed_release_gate": {
+        "workflow": ".github/workflows/ci.yml",
+        "python_minors": [
+          "3.11",
+          "3.12"
+        ],
+        "ownership_command": "/tmp/feo-wheel-check/bin/python -I -B \"${GITHUB_WORKSPACE}/tests/validation/test_public_golden_ownership.py\"",
+        "identity": "All package members equal built wheel and reviewed source before/after execution; every loaded package module originates under the isolated normal-wheel prefix",
+        "numerical": "Unchanged compiler.v0 solve, independently recomputed result hash and original absolute price/Delta/Gamma budgets 0.002/0.001/2e-5; public run_verification_benchmark plus validate_evidence",
+        "limits": "Public-synthetic compiler.v0 only; no compiler.v1, new calibration or market-science acceptance"
+      }
     }
   },
   "source_layout": {

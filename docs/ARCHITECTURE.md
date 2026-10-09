@@ -692,3 +692,24 @@ Public classes and report/function entry points retain their established modules
 These extractions preserve the numerical bodies, configuration hash inputs,
 packaged reference bytes and scientific qualification boundaries. Source checks
 do not replace normal installed-package or resulting-default verification.
+
+## Compiled fixture ownership (issue165)
+
+`validation.compiled_weak_form_golden.packaged_golden_fixture()` returns a fresh,
+caller-owned dictionary, including nested records and lists, on every call.
+Only immutable decompressed package bytes are privately cached. A caller's
+mutation cannot replace the screening authority: modified route parameters,
+compiled expressions and unknown fields are refused before numerical work,
+while the untouched golden record remains accepted. The compressed literal,
+compiler.v0 identity, screening diagnostics, solver, numerical tolerances and
+public no-argument factory signature remain unchanged. This ownership repair
+does not add compiler.v1 admission (issue164) or promote scientific maturity.
+Verify `pytest -q tests/validation/test_public_golden_ownership.py --no-cov`
+and repeat the controls and unchanged public solve from a normal installed wheel.
+The CI package jobs run the ownership unittest with the installed interpreter's
+isolated mode on Python 3.11 and 3.12. They also compare every installed package
+member with the built wheel and reviewed source before and after the untouched
+compiler.v0 solve and public manufactured/convergence benchmark. Original price,
+Delta and Gamma budgets remain 0.002, 0.001 and 2e-5; existing evidence validation
+retains its spatial/time orders, residual, perturbation and no-arbitrage gates.
+No source overlay, new dependency or compiler.v1/scientific promotion is implied.

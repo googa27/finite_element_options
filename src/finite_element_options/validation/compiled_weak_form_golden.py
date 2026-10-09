@@ -77,11 +77,16 @@ _GOLDEN_FIXTURE_ZLIB_BASE64 = (
 
 
 @lru_cache(maxsize=1)
-def packaged_golden_fixture() -> dict[str, Any]:
-    """Return the exact public Black-Scholes compiled weak-form golden fixture."""
+def _packaged_golden_fixture_bytes() -> bytes:
+    """Cache immutable package data without exposing mutable screening authority."""
 
-    raw = zlib.decompress(base64.b64decode(_GOLDEN_FIXTURE_ZLIB_BASE64))
-    loaded = json.loads(raw.decode("utf-8"))
+    return zlib.decompress(base64.b64decode(_GOLDEN_FIXTURE_ZLIB_BASE64))
+
+
+def packaged_golden_fixture() -> dict[str, Any]:
+    """Return a caller-owned copy of the exact compiled weak-form golden fixture."""
+
+    loaded = json.loads(_packaged_golden_fixture_bytes().decode("utf-8"))
     if not isinstance(loaded, dict):  # defensive guard for corrupted package data
         raise TypeError("compiled weak-form golden fixture must decode to an object")
     return loaded

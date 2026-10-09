@@ -60,6 +60,94 @@ jobs:
           PY
       - name: Execute README examples from installed wheel
         run: /tmp/feo-wheel-check/bin/python scripts/check_readme_examples.py README.md
+      - name: Verify installed fixture ownership
+        run: |
+          cd /tmp
+          /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_public_golden_ownership.py"
+      - name: Verify installed compiled solve and numerical evidence
+        run: |
+          cd /tmp
+          /tmp/feo-wheel-check/bin/python -I -B - "${GITHUB_WORKSPACE}" "${GITHUB_WORKSPACE}"/dist/*.whl <<'PY'
+          import hashlib
+          import importlib.metadata as md
+          import importlib.util
+          import json
+          import math
+          from pathlib import Path
+          import sys
+          import zipfile
+
+          import finite_element_options as fem
+          from finite_element_options.validation import (
+              run_verification_benchmark,
+              validate_evidence,
+          )
+          from finite_element_options.validation.compiled_weak_form_adapter import (
+              solve_compiled_weak_form,
+          )
+          from finite_element_options.validation.compiled_weak_form_golden import (
+              packaged_golden_fixture,
+          )
+          from finite_element_options.validation.evidence.public_fixture import (
+              build_fixture_config_hash,
+          )
+
+          assert sys.flags.isolated
+          source, wheel = map(Path, sys.argv[1:])
+          prefix = Path(sys.prefix).resolve()
+          assert Path(fem.__file__).resolve().is_relative_to(prefix)
+          assert importlib.util.find_spec("src") is None
+          assert importlib.util.find_spec("financial_problem_formulations") is None
+          dist = md.distribution("finite-element-options")
+          direct = json.loads(dist.read_text("direct_url.json"))
+          assert direct["url"] == wheel.as_uri()
+          assert not direct.get("dir_info", {}).get("editable", False)
+          with zipfile.ZipFile(wheel) as archive:
+              members = {
+                  name: archive.read(name)
+                  for name in archive.namelist()
+                  if name.startswith("finite_element_options/") and not name.endswith("/")
+              }
+          assert members
+
+
+          def verify_members():
+              for name, data in members.items():
+                  installed = Path(dist.locate_file(name)).resolve()
+                  assert installed.is_relative_to(prefix), name
+                  assert installed.read_bytes() == data == (source / "src" / name).read_bytes(), name
+              for name, module in tuple(sys.modules.items()):
+                  if name == "finite_element_options" or name.startswith("finite_element_options."):
+                      filename = getattr(module, "__file__", None)
+                      if filename:
+                          assert Path(filename).resolve().is_relative_to(prefix), (name, filename)
+
+
+          verify_members()
+          result = solve_compiled_weak_form(packaged_golden_fixture())
+          assert result["status"] == "converged"
+          without_hash = dict(result)
+          claimed = without_hash.pop("result_hash")
+          assert claimed == build_fixture_config_hash(without_hash)
+          for metric, budget in (
+              ("price_absolute_error", 0.002),
+              ("delta_absolute_error", 0.001),
+              ("gamma_absolute_error", 2.0e-5),
+          ):
+              error = result["summary"][metric]
+              assert math.isfinite(error) and 0.0 <= error <= budget, (metric, error, budget)
+          evidence = run_verification_benchmark()
+          validate_evidence(evidence)
+          assert evidence["accepted"] is True and evidence["status"] == "accepted"
+          verify_members()
+          print(json.dumps({
+              "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              "normal_installed_members": len(members),
+              "compiled_solve": result,
+              "numerical_evidence": evidence,
+              "scope": "compiler.v0/public-synthetic; no compiler.v1 or market calibration",
+          }, sort_keys=True))
+          PY
       - name: Upload package artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
