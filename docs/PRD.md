@@ -448,3 +448,10 @@ public no-argument factory signature remain unchanged. This ownership repair
 does not add compiler.v1 admission (issue164) or promote scientific maturity.
 Verify `pytest -q tests/validation/test_public_golden_ownership.py --no-cov`
 and repeat the controls and unchanged public solve from a normal installed wheel.
+The CI package jobs run the ownership unittest with the installed interpreter's
+isolated mode on Python 3.11 and 3.12. They also compare every installed package
+member with the built wheel and reviewed source before and after the untouched
+compiler.v0 solve and public manufactured/convergence benchmark. Original price,
+Delta and Gamma budgets remain 0.002, 0.001 and 2e-5; existing evidence validation
+retains its spatial/time orders, residual, perturbation and no-arbitrage gates.
+No source overlay, new dependency or compiler.v1/scientific promotion is implied.
