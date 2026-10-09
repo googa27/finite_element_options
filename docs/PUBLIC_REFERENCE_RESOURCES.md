@@ -94,3 +94,55 @@ PSF license) and existing setuptools
 ([package-data configuration](https://setuptools.pypa.io/en/latest/userguide/datafiles.html),
 MIT license). No resource backport, new runtime dependency or source-checkout
 path injection is needed for supported Python3.11/3.12 installations.
+
+
+## Installed Pinares references (issue170)
+
+All five public Pinares `*_PATH` constants in
+`finite_element_options.validation.pinares_fixed_price_proxy` are read-only
+Traversable references backed by package data. Both problem-spec consumer copies,
+the result, provider manifest and unsupported full-deal request preserve their
+original bytes, eight significant digits, units and hashes. Read them directly
+or use `as_file` only inside its context, as shown above.
+
+All five `write_public_pinares_*` functions require an explicit caller-owned
+file path. Missing destinations and package/reference destinations are refused
+before payload generation or solving. Existing result/manifest/unsupported files
+remain unchanged with `refresh=False`. The library never regenerates its package
+references.
+
+For a complete caller-owned bundle:
+
+```python
+from finite_element_options.validation.pinares_fixed_price_proxy import (
+    run_public_pinares_fixed_price_proxy_fixture,
+)
+
+report = run_public_pinares_fixed_price_proxy_fixture(
+    refresh_exports=True, export_directory="artifacts/pinares"
+)
+```
+
+The five destinations are validated before numerical work. The bundle deliberately
+retains `tests/fixtures/fem_pinares_fixed_price_proxy_v1` and
+`tests/fixtures/quant_problem_specs` beneath the chosen root. Resolve the
+unchanged provider manifest's `fixture_refs` relative to that root. Moving the
+whole bundle preserves those links without rewriting canonical JSON or hashes.
+The spec itself has no result-export URI. For separately located standalone
+writer outputs, consumers must retain or explicitly map the historical
+manifest-relative references; the writers do not invent new link semantics.
+`export_directory` without `refresh_exports=True` is refused before work.
+
+Maintainers must choose one policy:
+
+```bash
+python scripts/export_pinares_fixed_price_proxy_fixture.py --output-dir /tmp/pinares-export
+python scripts/export_pinares_fixed_price_proxy_fixture.py --publish-canonical
+```
+
+The first exports an independent bundle. Only the second deliberately refreshes
+all five checkout fixtures and all five packaged mirrors. No-argument invocation
+refuses before a solve. Verify source and ordinary installed-wheel tests on both
+supported minors, plus wheel/sdist byte identities and the analytical/hash/
+unsupported-route controls. Public references do not establish full-family,
+ROFR, legal/tax, live-data or scientific calibration acceptance.

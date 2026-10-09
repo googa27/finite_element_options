@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 import importlib.metadata as metadata
 import os
 import subprocess
@@ -18,6 +19,14 @@ import pytest
 pytestmark = pytest.mark.packaging
 
 ROOT = Path(__file__).resolve().parents[1]
+
+PINARES_REFERENCE_HASHES = {
+    "fem_pinares_fixed_price_proxy_v1/problem_spec.json": "f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092",
+    "fem_pinares_fixed_price_proxy_v1/result_export.json": "984e01a10d17693400b269a1fd935851abda34e253caeb2b36fd217d037698c1",
+    "fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json": "96c5d506eb3540e19a95a2679cd2c1645276ef936560d95e64f54ad7f87463ba",
+    "fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json": "02bd2bd3440dd14a76ab22b2732c6f673e239a014846da2bc918ba032bfbc1d3",
+    "quant_problem_specs/pinares_fixed_price_proxy.json": "f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092",
+}
 
 
 def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> str:
@@ -59,6 +68,53 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
                 wheel.read(packaged)
                 == (ROOT / "tests/fixtures/fem_bs_001" / filename).read_bytes()
             )
+
+        for relative, digest in PINARES_REFERENCE_HASHES.items():
+            packaged = (
+                "finite_element_options/validation/evidence/reference_data/" + relative
+            )
+            data = wheel.read(packaged)
+            assert sha256(data).hexdigest() == digest
+            assert data == (ROOT / "tests/fixtures" / relative).read_bytes()
+
+    code = textwrap.dedent(
+        """
+        from hashlib import sha256
+        from importlib.resources import as_file
+        import sys
+        sys.path.insert(0, sys.argv[1])
+        from finite_element_options.validation import pinares_fixed_price_proxy as proxy
+        assert ".whl/" in proxy.__file__, proxy.__file__
+        names = (
+            "PINARES_FEM_PROXY_PROBLEM_SPEC_PATH",
+            "PINARES_FEM_PROXY_RESULT_EXPORT_PATH",
+            "PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH",
+            "PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH",
+            "PINARES_QPS_FIXTURE_PATH",
+        )
+        digests = ["f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092","984e01a10d17693400b269a1fd935851abda34e253caeb2b36fd217d037698c1","96c5d506eb3540e19a95a2679cd2c1645276ef936560d95e64f54ad7f87463ba","02bd2bd3440dd14a76ab22b2732c6f673e239a014846da2bc918ba032bfbc1d3","f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092"]
+        for name, digest in zip(names, digests):
+            reference = getattr(proxy, name)
+            assert reference.is_file()
+            assert sha256(reference.read_bytes()).hexdigest() == digest
+            with as_file(reference) as temporary_path:
+                assert temporary_path.is_file()
+                assert sha256(temporary_path.read_bytes()).hexdigest() == digest
+            assert not temporary_path.exists()
+            try:
+                proxy.write_public_pinares_fixed_price_problem_spec(reference)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("ZIP reference accepted as writable destination")
+        print("five ZIP resources and bounded as_file lifetimes verified")
+        """
+    )
+    _run(
+        [sys.executable, "-I", "-B", "-c", code, str(wheels[0])],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": ""},
+    )
 
 
 def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) -> None:
@@ -114,6 +170,23 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
     }
     with tarfile.open(sdist, mode="r:gz") as archive:
         members = {name.split("/", 1)[1] for name in archive.getnames() if "/" in name}
+
+        for relative, digest in PINARES_REFERENCE_HASHES.items():
+            for prefix in (
+                "tests/fixtures/",
+                "src/finite_element_options/validation/evidence/reference_data/",
+            ):
+                suffix = prefix + relative
+                member = next(
+                    item
+                    for item in archive.getmembers()
+                    if item.name.endswith("/" + suffix)
+                )
+                stream = archive.extractfile(member)
+                assert stream is not None
+                data = stream.read()
+                assert sha256(data).hexdigest() == digest
+                assert data == (ROOT / suffix).read_bytes()
     assert required <= members
 
 

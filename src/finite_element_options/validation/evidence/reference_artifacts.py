@@ -1,4 +1,4 @@
-"""Packaged Black--Scholes references and explicit caller-owned artifact I/O."""
+"""Packaged public references and explicit caller-owned artifact I/O."""
 
 from __future__ import annotations
 
@@ -22,6 +22,39 @@ FEM_BS_001_PROBLEM_SPEC_PATH: Traversable = FIXTURE_ROOT.joinpath("problem_spec.
 FEM_BS_001_RESULT_EXPORT_PATH: Traversable = FIXTURE_ROOT.joinpath("result_export.json")
 
 
+PINARES_FEM_PROXY_FIXTURE_ROOT: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1")
+
+PINARES_FEM_PROXY_PROBLEM_SPEC_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1", "problem_spec.json")
+
+PINARES_FEM_PROXY_RESULT_EXPORT_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1", "result_export.json")
+
+PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath(
+    "reference_data",
+    "fem_pinares_fixed_price_proxy_v1",
+    "provider_evidence_manifest.json",
+)
+
+PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath(
+    "reference_data",
+    "fem_pinares_fixed_price_proxy_v1",
+    "unsupported_full_deal_problem_spec.json",
+)
+
+PINARES_QPS_FIXTURE_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "quant_problem_specs", "pinares_fixed_price_proxy.json")
+
+
 def artifact_destination(path: Path | str | None) -> Path:
     """Validate an explicit output file without creating directories or computing."""
     if path is None:
@@ -41,7 +74,15 @@ def artifact_destination(path: Path | str | None) -> Path:
     if target.exists():
         if not target.is_file():
             raise ValueError("output path must identify a file")
-        for reference in (FEM_BS_001_PROBLEM_SPEC_PATH, FEM_BS_001_RESULT_EXPORT_PATH):
+        for reference in (
+            FEM_BS_001_PROBLEM_SPEC_PATH,
+            FEM_BS_001_RESULT_EXPORT_PATH,
+            PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
+            PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
+            PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+            PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
+            PINARES_QPS_FIXTURE_PATH,
+        ):
             if isinstance(reference, Path) and target.samefile(reference):
                 raise ValueError("output path must not alias a packaged reference")
     return target
@@ -58,6 +99,38 @@ def export_destinations(directory: Path | str | None) -> tuple[Path, Path]:
         artifact_destination(root / "problem_spec.json"),
         artifact_destination(root / "result_export.json"),
     )
+
+
+def pinares_export_destinations(directory: Path | str | None) -> tuple[Path, ...]:
+    """Validate the complete legacy-relative Pinares bundle before any work."""
+    if directory is None or not isinstance(directory, (str, Path)):
+        raise ValueError("refresh_exports requires an explicit export_directory")
+    root = Path(directory)
+    if root.exists() and not root.is_dir():
+        raise ValueError("export_directory must identify a directory")
+    fixture = root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1"
+    destinations = tuple(
+        artifact_destination(path)
+        for path in (
+            fixture / "problem_spec.json",
+            fixture / "result_export.json",
+            fixture / "provider_evidence_manifest.json",
+            fixture / "unsupported_full_deal_problem_spec.json",
+            root / "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
+        )
+    )
+
+    for index, target in enumerate(destinations):
+        if any(parent.exists() and not parent.is_dir() for parent in target.parents):
+            raise ValueError("export destination ancestors must identify directories")
+        for previous in destinations[:index]:
+            if target.resolve() == previous.resolve() or (
+                target.exists() and previous.exists() and target.samefile(previous)
+            ):
+                raise ValueError(
+                    "distinct export destinations must not alias each other"
+                )
+    return destinations
 
 
 def write_oracle_spec(

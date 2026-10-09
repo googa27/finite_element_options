@@ -88,7 +88,7 @@ compatibility benchmark, not a family-contract/legal/tax valuation. Refresh the
 published JSON artifacts with:
 
 ```bash
-python scripts/export_pinares_fixed_price_proxy_fixture.py
+python scripts/export_pinares_fixed_price_proxy_fixture.py --publish-canonical
 ```
 
 The script writes:

@@ -122,7 +122,12 @@
     ],
     "allowed_non_python_files": [
       "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/problem_spec.json",
-      "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/result_export.json"
+      "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/result_export.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/result_export.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json"
     ],
     "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved.",
     "hierarchy_policy": {
@@ -881,6 +886,26 @@
     "issue": "https://github.com/googa27/finite_element_options/issues/155",
     "scope": "Unchanged canonical public-synthetic bytes and numerical/hash/class identity; no additional solver support",
     "paired_result_export_uri": "result_export.json",
-    "configuration_hash_owner": "src/finite_element_options/validation/evidence/public_fixture.py"
+    "configuration_hash_owner": "src/finite_element_options/validation/evidence/public_fixture.py",
+    "pinares": {
+      "resource_directory": "src/finite_element_options/validation/evidence/reference_data",
+      "checkout_mirrors": [
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/result_export.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+        "tests/fixtures/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+        "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json"
+      ],
+      "export_layout": "bundle_root/tests/fixtures",
+      "fixture_refs_base": "bundle_root; original manifest-relative paths and bytes unchanged",
+      "maintainer_command": "python scripts/export_pinares_fixed_price_proxy_fixture.py --publish-canonical",
+      "fitness_tests": [
+        "tests/validation/test_pinares_reference_resources.py",
+        "tests/test_pinares_fem_proxy.py",
+        "tests/test_packaging_contract.py"
+      ],
+      "issue": "https://github.com/googa27/finite_element_options/issues/170",
+      "scope": "Five immutable public-synthetic references; explicit outputs; no numerical/hash/scientific promotion"
+    }
   }
 }

@@ -455,3 +455,16 @@ compiler.v0 solve and public manufactured/convergence benchmark. Original price,
 Delta and Gamma budgets remain 0.002, 0.001 and 2e-5; existing evidence validation
 retains its spatial/time orders, residual, perturbation and no-arbitrage gates.
 No source overlay, new dependency or compiler.v1/scientific promotion is implied.
+
+
+### Installed Pinares reference acceptance (issue170)
+
+FR-FEM-001/FR-FEM-011 include normal-wheel availability of all five unchanged
+public Pinares reference resources on Python3.11/3.12, independent of checkout
+and working directory. Read-only Traversable references are distinct from
+explicit caller-owned generated outputs. Missing/invalid/package/alias
+destinations must be refused before generation or numerical work; complete
+bundles preserve original manifest-relative paths and canonical hashes.
+Only deliberate maintainer publication refreshes checkout/package mirrors.
+The numerical proxy, units, significant digits, unsupported full-deal routes,
+price1UF/Delta1e-3/Gamma5e-6 budgets and scientific maturity do not change.

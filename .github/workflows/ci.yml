@@ -64,6 +64,10 @@ jobs:
         run: |
           cd /tmp
           /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_public_golden_ownership.py"
+      - name: Verify installed Pinares reference resources
+        run: |
+          cd /tmp
+          /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_pinares_reference_resources.py"
       - name: Verify installed compiled solve and numerical evidence
         run: |
           cd /tmp

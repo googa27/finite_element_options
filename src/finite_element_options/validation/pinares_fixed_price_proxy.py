@@ -41,6 +41,17 @@ from .evidence.public_fixture import (
 )
 
 
+from .evidence.reference_artifacts import (
+    PINARES_FEM_PROXY_FIXTURE_ROOT as PINARES_FEM_PROXY_FIXTURE_ROOT,
+    PINARES_FEM_PROXY_PROBLEM_SPEC_PATH as PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
+    PINARES_FEM_PROXY_RESULT_EXPORT_PATH as PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
+    PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH as PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+    PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH as PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
+    PINARES_QPS_FIXTURE_PATH as PINARES_QPS_FIXTURE_PATH,
+    artifact_destination,
+    pinares_export_destinations,
+)
+
 PINARES_FEM_FIXED_PRICE_PROXY_BENCHMARK_ID = "PINARES-FEM-FIXED-PRICE-PROXY-V0"
 PINARES_QPS_CONTRACT_BENCHMARK_ID = "PINARES-QPS-FIXED-PRICE-PROXY-V0"
 PINARES_FEM_FAIL_CLOSED_BENCHMARK_ID = "PINARES-FEM-FAIL-CLOSED-V0"
@@ -61,31 +72,6 @@ PINARES_FEM_FIXED_PRICE_PROXY_SCHEMA_VERSION = (
 )
 PINARES_FEM_PROXY_REFINEMENT_LEVELS = (5, 6, 7)
 PINARES_FEM_PROXY_TIME_STEPS = 160
-PINARES_FEM_PROXY_FIXTURE_ROOT = (
-    Path(__file__).resolve().parents[3]
-    / "tests"
-    / "fixtures"
-    / "fem_pinares_fixed_price_proxy_v1"
-)
-PINARES_FEM_PROXY_PROBLEM_SPEC_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "problem_spec.json"
-)
-PINARES_FEM_PROXY_RESULT_EXPORT_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "result_export.json"
-)
-PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "provider_evidence_manifest.json"
-)
-PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH = (
-    PINARES_FEM_PROXY_FIXTURE_ROOT / "unsupported_full_deal_problem_spec.json"
-)
-PINARES_QPS_FIXTURE_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "tests"
-    / "fixtures"
-    / "quant_problem_specs"
-    / "pinares_fixed_price_proxy.json"
-)
 
 
 @dataclass(frozen=True)
@@ -576,10 +562,18 @@ def build_pinares_fem_proxy_hash(payload: dict[str, Any]) -> str:
 
 
 def run_public_pinares_fixed_price_proxy_fixture(
-    *, case: PinaresFixedPriceProxyCase | None = None, refresh_exports: bool = False
+    *,
+    case: PinaresFixedPriceProxyCase | None = None,
+    refresh_exports: bool = False,
+    export_directory: Path | str | None = None,
 ) -> PinaresFEMProxyReport:
     """Run the public-synthetic Pinares fixed-price weak-form proxy fixture."""
 
+    if not refresh_exports and export_directory is not None:
+        raise ValueError("export_directory is only valid with refresh_exports=True")
+    destinations = (
+        pinares_export_destinations(export_directory) if refresh_exports else ()
+    )
     case = case or PinaresFixedPriceProxyCase()
     rows = tuple(
         _run_row(case, refinement_level=level) for level in case.refinement_levels
@@ -618,22 +612,26 @@ def run_public_pinares_fixed_price_proxy_fixture(
         **{**report.__dict__, "config_hash": _config_hash(report)}
     )
     if refresh_exports:
-        write_public_pinares_fixed_price_problem_spec(report=report)
-        write_public_pinares_fixed_price_result_export(report=report, refresh=True)
-        write_public_pinares_provider_evidence_manifest(report=report, refresh=True)
-        write_public_pinares_unsupported_problem_spec(refresh=True)
-        write_public_pinares_quant_problem_spec(report=report)
+        write_public_pinares_fixed_price_problem_spec(destinations[0], report=report)
+        write_public_pinares_fixed_price_result_export(
+            destinations[1], report=report, refresh=True
+        )
+        write_public_pinares_provider_evidence_manifest(
+            destinations[2], report=report, refresh=True
+        )
+        write_public_pinares_unsupported_problem_spec(destinations[3], refresh=True)
+        write_public_pinares_quant_problem_spec(destinations[4], report=report)
     return report
 
 
 def write_public_pinares_fixed_price_problem_spec(
-    path: Path | str = PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
+    path: Path | str | None = None,
     *,
     report: PinaresFEMProxyReport | None = None,
 ) -> Path:
     """Write the public-synthetic Pinares FEM problem spec."""
 
-    target = Path(path)
+    target = artifact_destination(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
@@ -644,14 +642,14 @@ def write_public_pinares_fixed_price_problem_spec(
 
 
 def write_public_pinares_fixed_price_result_export(
-    path: Path | str = PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
+    path: Path | str | None = None,
     *,
     refresh: bool = False,
     report: PinaresFEMProxyReport | None = None,
 ) -> Path:
     """Run and write the Pinares FEM result export in a stable public artifact shape."""
 
-    target = Path(path)
+    target = artifact_destination(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
         if report is None:
@@ -767,14 +765,14 @@ def build_pinares_fem_provider_evidence_manifest(
 
 
 def write_public_pinares_provider_evidence_manifest(
-    path: Path | str = PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+    path: Path | str | None = None,
     *,
     refresh: bool = False,
     report: PinaresFEMProxyReport | None = None,
 ) -> Path:
     """Write the public-synthetic Pinares FEM provider evidence manifest."""
 
-    target = Path(path)
+    target = artifact_destination(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
         if report is None:
@@ -792,11 +790,11 @@ def write_public_pinares_provider_evidence_manifest(
 
 
 def write_public_pinares_unsupported_problem_spec(
-    path: Path | str = PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH, *, refresh: bool = False
+    path: Path | str | None = None, *, refresh: bool = False
 ) -> Path:
     """Write the unsupported full-deal public-synthetic request fixture."""
 
-    target = Path(path)
+    target = artifact_destination(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if (not target.exists()) or refresh:
         payload = public_pinares_full_deal_unsupported_problem_spec()
@@ -807,13 +805,13 @@ def write_public_pinares_unsupported_problem_spec(
 
 
 def write_public_pinares_quant_problem_spec(
-    path: Path | str = PINARES_QPS_FIXTURE_PATH,
+    path: Path | str | None = None,
     *,
     report: PinaresFEMProxyReport | None = None,
 ) -> Path:
     """Write the shared QuantProblemSpec consumer fixture for adapter tests."""
 
-    target = Path(path)
+    target = artifact_destination(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     case = report.case if report is not None else PinaresFixedPriceProxyCase()
     payload = public_pinares_fixed_price_problem_spec(case=case)
