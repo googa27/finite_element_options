@@ -260,6 +260,46 @@ class PinaresReferenceResources(unittest.TestCase):
                     REFERENCE_DIGESTS["PINARES_QPS_FIXTURE_PATH"],
                 )
 
+    def test_distinct_refresh_outputs_must_not_alias_each_other(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("aliased refresh outputs reached numerical work")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1"
+            fixture.mkdir(parents=True)
+            spec = fixture / "problem_spec.json"
+            result = fixture / "result_export.json"
+            spec.write_bytes(b"caller-owned shared inode")
+            os.link(spec, result)
+            with patch.object(proxy, "_run_row", unexpected):
+                with self.assertRaises(ValueError):
+                    proxy.run_public_pinares_fixed_price_proxy_fixture(
+                        refresh_exports=True, export_directory=root
+                    )
+            self.assertEqual(spec.read_bytes(), b"caller-owned shared inode")
+            self.assertEqual(result.read_bytes(), b"caller-owned shared inode")
+            self.assertFalse((fixture / "provider_evidence_manifest.json").exists())
+
+    def test_invalid_last_output_parent_refused_before_numerical_work(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("invalid refresh parent reached numerical work")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            blocked = root / "tests/fixtures/quant_problem_specs"
+            blocked.parent.mkdir(parents=True)
+            blocked.write_bytes(b"caller-owned ancestor file")
+            with patch.object(proxy, "_run_row", unexpected):
+                with self.assertRaises(ValueError):
+                    proxy.run_public_pinares_fixed_price_proxy_fixture(
+                        refresh_exports=True, export_directory=root
+                    )
+            self.assertEqual(blocked.read_bytes(), b"caller-owned ancestor file")
+            self.assertFalse(
+                (root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1").exists()
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
