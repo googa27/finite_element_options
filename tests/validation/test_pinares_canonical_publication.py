@@ -88,7 +88,9 @@ class CanonicalPublicationOwnership(unittest.TestCase):
                     module.main(["--publish-canonical"])
                 solve.assert_not_called()
                 self.assertEqual(victim.read_bytes(), original)
-                self.assertEqual({path: path.read_bytes() for path in checkout}, checkout)
+                self.assertEqual(
+                    {path: path.read_bytes() for path in checkout}, checkout
+                )
                 self.assertFalse(
                     (resource_root / "fem_pinares_fixed_price_proxy_v1").exists()
                 )
@@ -111,7 +113,9 @@ class CanonicalPublicationOwnership(unittest.TestCase):
             ),
         ):
             with self.subTest(name=name):
-                self.assertEqual(root.joinpath(name).read_bytes(), reference.read_bytes())
+                self.assertEqual(
+                    root.joinpath(name).read_bytes(), reference.read_bytes()
+                )
 
 
 if __name__ == "__main__":
