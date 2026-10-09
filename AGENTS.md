@@ -414,3 +414,17 @@ Go module version (minimum Go1.26.4; automatic toolchain resolution may apply).
 Do not replace actual image/profile/installed-package evidence with static checks.
 Ubuntu26.04 and other unexercised platforms remain explicit limits; runtime
 override variables must not conceal obsolete action metadata.
+
+
+## Installed Pinares references (issue170)
+
+Read public Pinares reference constants as Traversable resources; use
+`importlib.resources.as_file` only within its context for Path-only consumers.
+Library writers require explicit caller-owned destinations. Full refresh requires
+`refresh_exports=True, export_directory=...` and preflights all five files before
+solving. The exported bundle preserves its original `tests/fixtures` layout and
+manifest-relative paths. The maintainer script requires `--output-dir` or
+`--publish-canonical`; only explicit publication refreshes both sets of mirrors.
+Follow `docs/PUBLIC_REFERENCE_RESOURCES.md`, test complete wheel/sdist bytes and
+repeat installed controls on both supported minors. Do not change numerical/hash
+semantics or scientific claims to satisfy resource-availability tests.

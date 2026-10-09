@@ -758,3 +758,27 @@ unknown action identities, timeout removal, credential persistence, permission
 escalation, runtime override variables, removed inputs and artifact semantic drift.
 These controls do not authenticate an arbitrary newly selected upstream commit;
 primary upstream review and actual hosted execution remain separate requirements.
+
+
+## Installed Pinares reference ownership (issue170)
+
+The existing `validation.evidence.reference_artifacts` owner also holds all
+five immutable Pinares Traversable references and preflight of their complete
+caller-owned export bundle. The public Pinares facade re-exports the established
+names and retains its report classes, numerical kernels and configuration hash
+bodies. Package data and sdist metadata include both identical problem-spec
+consumer copies. No runtime dependency or fan-out/module-size exception is added.
+
+All library writers require explicit destinations. Refresh validates all five
+paths before numerical work. The independent bundle keeps the historical
+`tests/fixtures` layout beneath its caller-chosen root so original manifest
+references, JSON bytes and hashes remain coherent after relocation.
+Only the explicit maintainer `--publish-canonical` command refreshes both
+checkout and packaged mirrors; `--output-dir` never publishes references.
+See [migration and ownership](PUBLIC_REFERENCE_RESOURCES.md#installed-pinares-references-issue170).
+
+Run `tests/validation/test_pinares_reference_resources.py` with the ordinary
+installed wheel interpreter's `-I -B` from an unrelated directory on Python3.11
+and3.12. Source analytical/hash/no-arbitrage/unsupported controls, complete
+wheel/sdist resource identities and all existing CI gates remain required.
+Original Pinares budgets1UF/Delta1e-3/Gamma5e-6 and scientific limitations remain.

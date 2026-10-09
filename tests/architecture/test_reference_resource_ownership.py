@@ -31,7 +31,11 @@ def test_packaged_reference_snapshots_equal_checkout_mirrors() -> None:
     config = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert config["tool"]["setuptools"]["package-data"][
         "finite_element_options.validation.evidence"
-    ] == ["reference_data/fem_bs_001/*.json"]
+    ] == [
+        "reference_data/fem_bs_001/*.json",
+        "reference_data/fem_pinares_fixed_price_proxy_v1/*.json",
+        "reference_data/quant_problem_specs/*.json",
+    ]
 
 
 def _script():
@@ -70,4 +74,21 @@ def test_maintainer_canonical_publish_updates_both_owned_mirrors(
     for name in ("problem_spec.json", "result_export.json"):
         assert (tmp_path / RESOURCE_DIRECTORY / name).read_bytes() == (
             tmp_path / "tests/fixtures/fem_bs_001" / name
+        ).read_bytes()
+
+
+def test_pinares_packaged_snapshots_equal_all_five_checkout_mirrors() -> None:
+    ownership = json.loads((ROOT / "docs/ARCHITECTURE.yaml").read_text())[
+        "public_reference_resources"
+    ]["pinares"]
+    assert ownership["export_layout"] == "bundle_root/tests/fixtures"
+    for relative in (
+        "fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+        "fem_pinares_fixed_price_proxy_v1/result_export.json",
+        "fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+        "fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+        "quant_problem_specs/pinares_fixed_price_proxy.json",
+    ):
+        assert (ROOT / ownership["resource_directory"] / relative).read_bytes() == (
+            ROOT / "tests/fixtures" / relative
         ).read_bytes()

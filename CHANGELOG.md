@@ -59,3 +59,10 @@
 - Package the unchanged `fem-bs-001` problem/result snapshots for installed consumers. The existing `*_PATH` names support Traversable reads; use `importlib.resources.as_file` within its context for Path-only APIs.
 - Omitted library export paths now raise `ValueError` before generation. Pass an explicit path; `refresh_exports=True` additionally requires `export_directory`. Reference/package destinations are refused.
 - Maintainers use `--publish-canonical` to refresh both canonical mirrors; `--output-dir` remains a caller-owned export. Numerical/reference schema/hash/class identities are unchanged.
+
+
+### Unreleased: installed Pinares references (issue170)
+
+- Package all five unchanged Pinares reference snapshots for ordinary wheel/sdist consumers. Existing public constants expose Traversable reads; use `as_file` within its context for concrete paths.
+- Pinares writers now require explicit caller-owned destinations. Refresh additionally requires `export_directory`; its complete bundle preserves original manifest-relative paths beneath that root.
+- Maintainer regeneration requires `--output-dir` or deliberate `--publish-canonical`. No implicit reference writes, new dependencies, numerical/hash changes or scientific promotion.

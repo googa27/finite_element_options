@@ -1,4 +1,4 @@
-"""Packaged Black--Scholes references and explicit caller-owned artifact I/O."""
+"""Packaged public references and explicit caller-owned artifact I/O."""
 
 from __future__ import annotations
 
@@ -20,6 +20,39 @@ FIXTURE_ROOT: Traversable = files(
 ).joinpath("reference_data", "fem_bs_001")
 FEM_BS_001_PROBLEM_SPEC_PATH: Traversable = FIXTURE_ROOT.joinpath("problem_spec.json")
 FEM_BS_001_RESULT_EXPORT_PATH: Traversable = FIXTURE_ROOT.joinpath("result_export.json")
+
+
+PINARES_FEM_PROXY_FIXTURE_ROOT: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1")
+
+PINARES_FEM_PROXY_PROBLEM_SPEC_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1", "problem_spec.json")
+
+PINARES_FEM_PROXY_RESULT_EXPORT_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "fem_pinares_fixed_price_proxy_v1", "result_export.json")
+
+PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath(
+    "reference_data",
+    "fem_pinares_fixed_price_proxy_v1",
+    "provider_evidence_manifest.json",
+)
+
+PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath(
+    "reference_data",
+    "fem_pinares_fixed_price_proxy_v1",
+    "unsupported_full_deal_problem_spec.json",
+)
+
+PINARES_QPS_FIXTURE_PATH: Traversable = files(
+    "finite_element_options.validation.evidence"
+).joinpath("reference_data", "quant_problem_specs", "pinares_fixed_price_proxy.json")
 
 
 def artifact_destination(path: Path | str | None) -> Path:
@@ -57,6 +90,26 @@ def export_destinations(directory: Path | str | None) -> tuple[Path, Path]:
     return (
         artifact_destination(root / "problem_spec.json"),
         artifact_destination(root / "result_export.json"),
+    )
+
+
+def pinares_export_destinations(directory: Path | str | None) -> tuple[Path, ...]:
+    """Validate the complete legacy-relative Pinares bundle before any work."""
+    if directory is None or not isinstance(directory, (str, Path)):
+        raise ValueError("refresh_exports requires an explicit export_directory")
+    root = Path(directory)
+    if root.exists() and not root.is_dir():
+        raise ValueError("export_directory must identify a directory")
+    fixture = root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1"
+    return tuple(
+        artifact_destination(path)
+        for path in (
+            fixture / "problem_spec.json",
+            fixture / "result_export.json",
+            fixture / "provider_evidence_manifest.json",
+            fixture / "unsupported_full_deal_problem_spec.json",
+            root / "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
+        )
     )
 
 

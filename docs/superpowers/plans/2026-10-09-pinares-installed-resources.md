@@ -42,7 +42,7 @@
 
 **Interfaces:** Re-export the five existing public resource names as Traversable objects. All five writers accept explicit Path|string|None destinations and reject None/package/alias destinations before work. run_public_pinares_fixed_price_proxy_fixture accepts export_directory only with refresh_exports=True.
 
-- [ ] Add behavioral missing-destination, package/alias and refresh preflight tests; observe RED against the old writer defaults without changing canonical references.
+- [x] Add behavioral missing-destination, package/alias and refresh preflight tests; observe RED against the old writer defaults without changing canonical references.
 - [ ] Extend the cohesive existing resource owner and shared output guards; preserve numerical function ASTs and canonical bytes.
 - [ ] Run resource/writer tests and the unchanged Pinares analytical, hash, no-arbitrage and unsupported-route controls in normal installations on both minors.
 - [ ] Verify every resource byte in wheel and sdist, including both deliberately identical problem-spec consumer copies.
@@ -65,3 +65,5 @@
 - [ ] Verify actual resulting-default source, wheel/sdist bytes and supported-minor installed behaviors.
 - [ ] Only then close170 and set existing active Project memberships Done/Verified; retire only the useful integrated owned branch.
 - [ ] Keep the full portfolio/scientific program active and preserve storage/SSD holds.
+
+Current staged repair follows genuine installed RED at4947bbc6c46614bfdc9225b7307c14ea35e028f5/run37994023170: package jobs114035286205/114035286208 each18assertion failures/exit1. The new hardlink-alias control is deliberately awaiting its own real RED; no alias-protection acceptance is claimed yet. Numerical and full default acceptance remain pending.

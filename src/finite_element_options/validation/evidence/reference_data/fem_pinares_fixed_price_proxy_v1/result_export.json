@@ -1,0 +1,163 @@
+{
+  "backend_capability_status": {
+    "backend_id": "finite_element_options.fem_backend.v0",
+    "cache_scope": "per invariant theta-system solve; invalidated by mesh, dt, theta, operator or boundary-dof changes",
+    "factorization_reuse": true,
+    "linear_solver": "scipy_direct",
+    "linear_solver_status": "validated",
+    "manifest_status": "validated"
+  },
+  "benchmark_id": "PINARES-FEM-FIXED-PRICE-PROXY-V0",
+  "boundary_conditions": [
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "0",
+      "location": "S=0"
+    },
+    {
+      "condition_type": "dirichlet",
+      "enforced_nodes": 1,
+      "expression": "linear_growth_call_far_field",
+      "location": "S=S_max",
+      "s_max_uf": 12000.0
+    }
+  ],
+  "config_hash": "7b43e297a018fc4bdf17002ee092aa0f25077bf3370819fbb955dbc59c41dfbb",
+  "diagnostics": {
+    "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+    "degrees_of_freedom": 257,
+    "deterministic_seed": "not_applicable",
+    "element_family": "lagrange_p2",
+    "linear_solver": "scikit_fem_scipy_direct",
+    "maturity_years": 1.0,
+    "mesh_family": "line_uniform",
+    "refinement_level": 7,
+    "risk_free_rate": 0.015,
+    "route_id": "fem.pinares_fixed_price_proxy.weak_form_p2_theta",
+    "scope": "fixed-price proxy only; full family contract remains fail-closed",
+    "source_issue": "googa27/finite_element_options#104",
+    "spot_uf": 6000.0,
+    "strike_uf": 6200.0,
+    "survival_probability": 0.97,
+    "time_integrator": "theta_crank_nicolson",
+    "time_steps": 160,
+    "volatility": 0.12,
+    "weak_form_sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms"
+  },
+  "format_version": "fem-pinares-fixed-price-proxy-result-v1",
+  "measure": "Q*",
+  "mesh_metadata": {
+    "domain_max": 1.9354839,
+    "domain_min": 0.0,
+    "element_family": "lagrange_p2",
+    "mesh_family": "line_uniform",
+    "refinement_levels": [
+      5,
+      6,
+      7
+    ],
+    "solver_backing": "scikit-fem+sparse-direct",
+    "spatial_domain": "[0, 1.93548387097] normalized spot S/K"
+  },
+  "no_arbitrage": {
+    "delta_lower_bound_ok": true,
+    "delta_upper_bound_ok": true,
+    "gamma_non_negative_ok": true,
+    "survival_scale_ok": true,
+    "upper_bound_ok": true,
+    "upper_gap_uf": 5588.2142,
+    "value_bound_ok": true,
+    "value_minus_intrinsic_uf": 231.78576
+  },
+  "numeraire": "UF_money_market_account_proxy",
+  "privacy_class": "public_synthetic",
+  "problem_hash": "publicsyntheticpinares001",
+  "problem_id": "pinares.fixed_price_option_proxy.v1",
+  "route_id": "fem.pinares_fixed_price_proxy.weak_form_p2_theta",
+  "rows": [
+    {
+      "absolute_error_uf": 0.7515816,
+      "degrees_of_freedom": 65,
+      "delta_absolute_error": 0.00052553858,
+      "expected_delta": 0.45089439,
+      "expected_gamma": 0.00053537514,
+      "expected_price_uf": 231.79949,
+      "gamma_absolute_error": 1.1843915e-05,
+      "observed_delta": 0.45036885,
+      "observed_gamma": 0.00052353123,
+      "observed_price_uf": 231.04791,
+      "refinement_level": 5,
+      "relative_error": 0.0032423781,
+      "time_steps": 160
+    },
+    {
+      "absolute_error_uf": 0.038531329,
+      "degrees_of_freedom": 129,
+      "delta_absolute_error": 0.00011955778,
+      "expected_delta": 0.45089439,
+      "expected_gamma": 0.00053537514,
+      "expected_price_uf": 231.79949,
+      "gamma_absolute_error": 3.2738866e-06,
+      "observed_delta": 0.45077483,
+      "observed_gamma": 0.00053210126,
+      "observed_price_uf": 231.76096,
+      "refinement_level": 6,
+      "relative_error": 0.00016622698,
+      "time_steps": 160
+    },
+    {
+      "absolute_error_uf": 0.013734133,
+      "degrees_of_freedom": 257,
+      "delta_absolute_error": 3.1728918e-05,
+      "expected_delta": 0.45089439,
+      "expected_gamma": 0.00053537514,
+      "expected_price_uf": 231.79949,
+      "gamma_absolute_error": 8.1432621e-07,
+      "observed_delta": 0.45086266,
+      "observed_gamma": 0.00053456082,
+      "observed_price_uf": 231.78576,
+      "refinement_level": 7,
+      "relative_error": 5.9250057e-05,
+      "time_steps": 160
+    }
+  ],
+  "status": "converged",
+  "summary": {
+    "delta_absolute_error": 3.1728918e-05,
+    "delta_tolerance_absolute": 0.001,
+    "expected_delta": 0.45089439,
+    "expected_gamma": 0.00053537514,
+    "expected_price_uf": 231.79949,
+    "gamma_absolute_error": 8.1432621e-07,
+    "gamma_tolerance_absolute": 5e-06,
+    "observed_delta": 0.45086266,
+    "observed_gamma": 0.00053456082,
+    "observed_price_uf": 231.78576,
+    "price_absolute_error_uf": 0.013734133,
+    "price_relative_error": 5.9250057e-05,
+    "price_tolerance_absolute_uf": 1.0
+  },
+  "time_metadata": {
+    "end_time": 1.0,
+    "integrator": "theta_crank_nicolson",
+    "start_time": 0.0,
+    "theta": 0.5,
+    "time_domain": "[0, 1]",
+    "time_steps": 160
+  },
+  "units": {
+    "S": "UF",
+    "rate": "1/year",
+    "time": "year",
+    "underlying": "UF",
+    "value": "UF"
+  },
+  "weak_form": {
+    "coordinate_transform": "normalized_spot_x_equals_S_over_K",
+    "equation_id": "pinares_fixed_price_proxy_black_scholes_weak_form",
+    "payoff_scaling": "UF value = survival_probability * K_uf * normalized_call_value",
+    "sign_convention": "existing_forward_tau_identity_transform_black_scholes_forms",
+    "time_transformation": "tau = T - t"
+  }
+}

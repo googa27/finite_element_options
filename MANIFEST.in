@@ -12,3 +12,6 @@ recursive-include scripts *.py
 recursive-include tests *.md *.py
 
 recursive-include tests/fixtures/fem_bs_001 *.json
+
+recursive-include tests/fixtures/fem_pinares_fixed_price_proxy_v1 *.json
+include tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json

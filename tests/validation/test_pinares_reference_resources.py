@@ -6,7 +6,7 @@ from hashlib import sha256
 import importlib.metadata as metadata
 import importlib.util
 import json
-import importlib.util
+from importlib.resources import as_file
 import os
 from pathlib import Path
 import sys
@@ -155,6 +155,79 @@ class PinaresReferenceResources(unittest.TestCase):
             except TypeError as error:
                 self.fail(f"maintainer output-policy parser is missing: {error}")
             self.assertEqual(refusal.exception.code, 2)
+
+    def test_reference_hardlink_aliases_refused_before_generation(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError(
+                "generation preceded immutable reference alias refusal"
+            )
+
+        before = {name: getattr(proxy, name).read_bytes() for name in REFERENCE_DIGESTS}
+        with tempfile.TemporaryDirectory() as directory:
+            for name in REFERENCE_DIGESTS:
+                with self.subTest(reference=name):
+                    reference = getattr(proxy, name)
+                    with as_file(reference) as path:
+                        alias = Path(directory) / (name + ".json")
+                        os.link(path, alias)
+                        with patch.object(
+                            proxy, "public_pinares_fixed_price_problem_spec", unexpected
+                        ):
+                            with self.assertRaises(ValueError):
+                                proxy.write_public_pinares_fixed_price_problem_spec(
+                                    alias
+                                )
+        self.assertEqual(
+            before, {name: getattr(proxy, name).read_bytes() for name in before}
+        )
+
+    def test_real_generated_bundle_preserves_bytes_and_relocates(self) -> None:
+        before = {name: getattr(proxy, name).read_bytes() for name in REFERENCE_DIGESTS}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "bundle"
+            report = proxy.run_public_pinares_fixed_price_proxy_fixture(
+                refresh_exports=True, export_directory=root
+            )
+            self.assertTrue(report.converged)
+            self.assertLessEqual(report.price_absolute_error_uf, 1.0)
+            self.assertLessEqual(report.delta_absolute_error, 1e-3)
+            self.assertLessEqual(report.gamma_absolute_error, 5e-6)
+            moved = Path(directory) / "relocated"
+            root.rename(moved)
+            manifest = json.loads(
+                (
+                    moved
+                    / "tests/fixtures/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json"
+                ).read_bytes()
+            )
+            expected = dict(
+                zip(
+                    (
+                        "problem_spec",
+                        "result_export",
+                        "provider_evidence_manifest",
+                        "unsupported_problem_spec",
+                        "quant_problem_spec",
+                    ),
+                    REFERENCE_DIGESTS,
+                )
+            )
+            for key, name in expected.items():
+                data = (moved / manifest["fixture_refs"][key]).read_bytes()
+                self.assertEqual(sha256(data).hexdigest(), REFERENCE_DIGESTS[name])
+            result = moved / manifest["fixture_refs"]["result_export"]
+            result.write_bytes(b"caller-owned result retained")
+            proxy.write_public_pinares_fixed_price_result_export(result)
+            self.assertEqual(result.read_bytes(), b"caller-owned result retained")
+            proxy.write_public_pinares_fixed_price_result_export(
+                result, report=report, refresh=True
+            )
+            self.assertEqual(
+                result.read_bytes(), before["PINARES_FEM_PROXY_RESULT_EXPORT_PATH"]
+            )
+        self.assertEqual(
+            before, {name: getattr(proxy, name).read_bytes() for name in before}
+        )
 
 
 if __name__ == "__main__":
