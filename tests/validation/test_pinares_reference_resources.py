@@ -31,6 +31,26 @@ REFERENCE_DIGESTS = {
 
 
 class PinaresReferenceResources(unittest.TestCase):
+    def test_existing_fixture_root_remains_a_public_traversable(self) -> None:
+        root = proxy.PINARES_FEM_PROXY_FIXTURE_ROOT
+        self.assertTrue(root.is_dir())
+        for name, reference in (
+            ("problem_spec.json", proxy.PINARES_FEM_PROXY_PROBLEM_SPEC_PATH),
+            ("result_export.json", proxy.PINARES_FEM_PROXY_RESULT_EXPORT_PATH),
+            (
+                "provider_evidence_manifest.json",
+                proxy.PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+            ),
+            (
+                "unsupported_full_deal_problem_spec.json",
+                proxy.PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
+            ),
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    root.joinpath(name).read_bytes(), reference.read_bytes()
+                )
+
     def test_original_public_reference_bytes_read_from_unrelated_directory(
         self,
     ) -> None:
