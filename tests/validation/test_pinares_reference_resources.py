@@ -6,6 +6,7 @@ from hashlib import sha256
 import importlib.metadata as metadata
 import importlib.util
 import json
+import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -88,6 +89,72 @@ class PinaresReferenceResources(unittest.TestCase):
         with patch.object(proxy, "_run_row", unexpected):
             with self.assertRaises(ValueError):
                 proxy.run_public_pinares_fixed_price_proxy_fixture(refresh_exports=True)
+
+    def test_package_destinations_are_refused_before_generation(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("generation preceded package destination refusal")
+
+        writers = (
+            proxy.write_public_pinares_fixed_price_problem_spec,
+            proxy.write_public_pinares_fixed_price_result_export,
+            proxy.write_public_pinares_provider_evidence_manifest,
+            proxy.write_public_pinares_unsupported_problem_spec,
+            proxy.write_public_pinares_quant_problem_spec,
+        )
+        destination = Path(proxy.__file__).parent / "forbidden-output.json"
+        with (
+            patch.object(proxy, "public_pinares_fixed_price_problem_spec", unexpected),
+            patch.object(
+                proxy, "run_public_pinares_fixed_price_proxy_fixture", unexpected
+            ),
+            patch.object(
+                proxy, "public_pinares_full_deal_unsupported_problem_spec", unexpected
+            ),
+        ):
+            for writer in writers:
+                with self.subTest(writer=writer.__name__):
+                    with self.assertRaises(ValueError):
+                        writer(destination)
+        self.assertFalse(destination.exists())
+
+    def test_unused_export_directory_refused_before_numerical_work(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("numerical work preceded unused destination refusal")
+
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "must-not-be-created"
+            with patch.object(proxy, "_run_row", unexpected):
+                try:
+                    with self.assertRaises(ValueError):
+                        proxy.run_public_pinares_fixed_price_proxy_fixture(
+                            export_directory=destination
+                        )
+                except TypeError as error:
+                    self.fail(f"explicit export_directory contract is missing: {error}")
+            self.assertFalse(destination.exists())
+
+    def test_maintainer_requires_output_policy_before_solve(self) -> None:
+        script_path = (
+            Path(__file__).resolve().parents[2]
+            / "scripts/export_pinares_fixed_price_proxy_fixture.py"
+        )
+        spec = importlib.util.spec_from_file_location("pinares_maintainer", script_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        def unexpected(*args, **kwargs):
+            raise AssertionError("maintainer started solving without output policy")
+
+        with patch.object(
+            module, "run_public_pinares_fixed_price_proxy_fixture", unexpected
+        ):
+            try:
+                with self.assertRaises(SystemExit) as refusal:
+                    module.main([])
+            except TypeError as error:
+                self.fail(f"maintainer output-policy parser is missing: {error}")
+            self.assertEqual(refusal.exception.code, 2)
 
 
 if __name__ == "__main__":
