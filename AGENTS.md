@@ -428,3 +428,10 @@ manifest-relative paths. The maintainer script requires `--output-dir` or
 Follow `docs/PUBLIC_REFERENCE_RESOURCES.md`, test complete wheel/sdist bytes and
 repeat installed controls on both supported minors. Do not change numerical/hash
 semantics or scientific claims to satisfy resource-availability tests.
+
+Deliberate Pinares publication preflights its five fixed packaged mirrors before
+any solve or checkout write. Preserve refusal of symlink traversal, hardlinked
+or non-file targets and non-directory ancestors; run
+`tests/validation/test_pinares_canonical_publication.py` with the source suite.
+Keep the existing `PINARES_FEM_PROXY_FIXTURE_ROOT` read-only Traversable directory
+for compatibility. Do not claim atomic protection against concurrent replacement.

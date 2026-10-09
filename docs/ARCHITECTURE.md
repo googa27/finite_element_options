@@ -782,3 +782,12 @@ installed wheel interpreter's `-I -B` from an unrelated directory on Python3.11
 and3.12. Source analytical/hash/no-arbitrage/unsupported controls, complete
 wheel/sdist resource identities and all existing CI gates remain required.
 Original Pinares budgets1UF/Delta1e-3/Gamma5e-6 and scientific limitations remain.
+
+The deliberate maintainer command preflights a fixed five-file packaged-mirror
+allowlist before solving or changing checkout fixtures. It rejects symlink
+traversal, multiply-linked or non-file targets, and non-directory ancestors;
+only admitted destinations receive bytes. This check does not claim atomicity
+against concurrent replacement. Source controls in
+`tests/validation/test_pinares_canonical_publication.py` preserve unrelated and
+checkout bytes on refusal. The established `PINARES_FEM_PROXY_FIXTURE_ROOT`
+facade name remains a read-only Traversable directory for compatibility.

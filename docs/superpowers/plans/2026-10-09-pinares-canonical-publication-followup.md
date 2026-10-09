@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supported Python3.11/3.12 standard-library pathlib, os and unittest; existing hosted source and normal-wheel CI. No new dependency.
 
-**Spec:** Existing issue170; PR179 comments4235014183 and4235014188; docs/PRD.md FR-FEM-001/011 and docs/PUBLIC_REFERENCE_RESOURCES.md.
+**Spec:** Existing issue170; PR179 comments4235014183 and4235014188; docs/PRD.md FR-FEM-001/011 and docs/PUBLIC_REFERENCE_RESOURCES.md. Keep AGENTS.md, docs/PRD.md and both architecture contracts coherent.
 
 ## Global constraints
 
@@ -31,11 +31,26 @@
 
 **Interfaces:** main(["--publish-canonical"]) validates the fixed five mirror paths before the existing solve and writers. Existing --output-dir, library writers and resource names retain their contracts.
 
-- [ ] Commit real temporary-filesystem negative controls first, plus the existing-root compatibility positive control.
-- [ ] Observe genuine native RED caused by the missing mirror preflight, retaining exact head/run/log and the original victim/checkouts.
-- [ ] Add the fixed allowlist and refuse symlink traversal, multiply-linked/non-file targets and invalid ancestors before work; copy only to those admitted targets.
-- [ ] Document the deliberate publication preflight and pre-existing PINARES_FEM_PROXY_FIXTURE_ROOT convenience import without widening top-level exports.
+- [x] Commit real temporary-filesystem negative controls first, plus the existing-root compatibility positive control.
+- [x] Observe genuine native RED caused by the missing mirror preflight, retaining exact head/run/log and the original victim/checkouts.
+- [x] Add the fixed allowlist and refuse symlink traversal, multiply-linked/non-file targets and invalid ancestors before work; copy only to those admitted targets.
+- [x] Document the deliberate publication preflight and pre-existing PINARES_FEM_PROXY_FIXTURE_ROOT convenience import without widening top-level exports.
 - [ ] Run the unchanged full source/static/type/architecture/packaging suite, real temporary dual-mirror publication and both normal installed profiles; verify source/resource identities.
 - [ ] Perform dedicated honest authoring-root review; give both original external findings concrete native dispositions.
 - [ ] Refresh actual head/base/rules/findings and ordinarily integrate; verify actual default before closing170/ProjectDone or retiring the useful owned branches.
 - [ ] Preserve all REDs, histories, storage holds and broader ACTIVE incomplete portfolio/scientific scope.
+
+## Test-first evidence
+
+Initial head69eddb6eaa2fa1318e076398cc1c4e01a7122c2b stopped at pinned
+Ruff formatting before tests; it is not behavioral RED. Formatting-only normal
+successor5f4eb1b28726d0f2e791299898616c01a6b995cb preserves the test AST.
+Its genuine CI38000752457/source job114057946350 passed static, architecture
+and packaging gates, then returned1 with five named unsafe-mirror subtest
+failures,607 passes,29 qualified skips and26 warnings in237.29s. Every refusal
+case reached the solver spy before the missing preflight. Raw full log154909B
+SHA256aba7bb6ebb8e873abce2d583c06d4fda50abe2ca7b9a28d81b1e7c189ffd4cbb.
+The solver was stopped before generation; no actual unrelated overwrite or
+concurrent race was exercised. The initial CLI escape-presentation refusal is
+separate from that genuine native failure. Green candidate/default verification,
+final review, issue closure and branch retirement remain pending.

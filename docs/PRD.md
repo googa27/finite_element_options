@@ -468,3 +468,10 @@ bundles preserve original manifest-relative paths and canonical hashes.
 Only deliberate maintainer publication refreshes checkout/package mirrors.
 The numerical proxy, units, significant digits, unsupported full-deal routes,
 price1UF/Delta1e-3/Gamma5e-6 budgets and scientific maturity do not change.
+
+Deliberate Pinares publication must preflight all five fixed packaged mirrors
+before the solve or any checkout write, refusing symlink traversal, hardlinked
+or non-file targets and non-directory ancestors. Ordinary publication still
+reproduces all ten unchanged reference files. The existing public fixture-root
+Traversable remains compatible. Concurrent filesystem replacement is outside
+this preflight guarantee.
