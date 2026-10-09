@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from finite_element_options.validation import pinares_fixed_price_proxy as proxy
 
@@ -54,6 +55,39 @@ class PinaresReferenceResources(unittest.TestCase):
                         self.assertIsInstance(json.loads(contents), dict)
             finally:
                 os.chdir(original_cwd)
+
+    def test_writers_require_explicit_destinations_before_generation(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("payload generation preceded destination validation")
+
+        writers = (
+            proxy.write_public_pinares_fixed_price_problem_spec,
+            proxy.write_public_pinares_fixed_price_result_export,
+            proxy.write_public_pinares_provider_evidence_manifest,
+            proxy.write_public_pinares_unsupported_problem_spec,
+            proxy.write_public_pinares_quant_problem_spec,
+        )
+        with (
+            patch.object(proxy, "public_pinares_fixed_price_problem_spec", unexpected),
+            patch.object(
+                proxy, "run_public_pinares_fixed_price_proxy_fixture", unexpected
+            ),
+            patch.object(
+                proxy, "public_pinares_full_deal_unsupported_problem_spec", unexpected
+            ),
+        ):
+            for writer in writers:
+                with self.subTest(writer=writer.__name__):
+                    with self.assertRaises(ValueError):
+                        writer()
+
+    def test_refresh_requires_destination_before_numerical_work(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("numerical work preceded destination validation")
+
+        with patch.object(proxy, "_run_row", unexpected):
+            with self.assertRaises(ValueError):
+                proxy.run_public_pinares_fixed_price_proxy_fixture(refresh_exports=True)
 
 
 if __name__ == "__main__":

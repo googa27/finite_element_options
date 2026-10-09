@@ -32,9 +32,9 @@
 
 **Interfaces:** Existing five public Pinares resource constants support is_file/read_bytes/read_text. The installed interpreter runs the unittest with -I -B from /tmp.
 
-- [ ] Add the original five literal SHA256 read oracles.
-- [ ] Run both normal-wheel package jobs and retain genuine failures caused by missing public references before changing runtime code.
-- [ ] Preserve this failing commit and native logs; do not call source-fixture success installed acceptance.
+- [x] Add the original five literal SHA256 read oracles.
+- [x] Run both normal-wheel package jobs and retain genuine failures caused by missing public references before changing runtime code.
+- [x] Preserve failing commit db77f1f9be8a3437b9edd2fe717edf0faa31780a and native run37992893136: package3.11/job114031359857 and package3.12/job114031359948 each report five missing-reference assertion failures/exit1. No repair acceptance.
 
 ### Task2: Package immutable references and explicit output ownership
 
