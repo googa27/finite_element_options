@@ -54,3 +54,11 @@ The solver was stopped before generation; no actual unrelated overwrite or
 concurrent race was exercised. The initial CLI escape-presentation refusal is
 separate from that genuine native failure. Green candidate/default verification,
 final review, issue closure and branch retirement remain pending.
+
+Dedicated source review relocated the already passing fixture-root positive
+characterization into tests/validation/test_pinares_reference_resources.py.
+Both existing normal-wheel jobs therefore execute it alongside the original13
+controls. The positive method AST and all original13 method ASTs are unchanged;
+the five negative subtest bodies remain unchanged in the maintainer source suite.
+No runtime implementation changed in this coverage-only successor. Exact-head
+full source and both installed profiles still require genuine GREEN.

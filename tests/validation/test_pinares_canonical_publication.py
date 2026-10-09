@@ -9,8 +9,6 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from finite_element_options.validation import pinares_fixed_price_proxy as proxy
-
 RELATIVE_FILES = (
     "fem_pinares_fixed_price_proxy_v1/problem_spec.json",
     "fem_pinares_fixed_price_proxy_v1/result_export.json",
@@ -96,26 +94,6 @@ class CanonicalPublicationOwnership(unittest.TestCase):
                 )
                 if kind == "symlink-parent":
                     self.assertEqual((outside / target.name).read_bytes(), original)
-
-    def test_existing_fixture_root_remains_a_public_traversable(self) -> None:
-        root = proxy.PINARES_FEM_PROXY_FIXTURE_ROOT
-        self.assertTrue(root.is_dir())
-        for name, reference in (
-            ("problem_spec.json", proxy.PINARES_FEM_PROXY_PROBLEM_SPEC_PATH),
-            ("result_export.json", proxy.PINARES_FEM_PROXY_RESULT_EXPORT_PATH),
-            (
-                "provider_evidence_manifest.json",
-                proxy.PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
-            ),
-            (
-                "unsupported_full_deal_problem_spec.json",
-                proxy.PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
-            ),
-        ):
-            with self.subTest(name=name):
-                self.assertEqual(
-                    root.joinpath(name).read_bytes(), reference.read_bytes()
-                )
 
 
 if __name__ == "__main__":
