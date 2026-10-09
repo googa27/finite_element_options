@@ -27,7 +27,7 @@
 
 ### Task1: Test, guard and review deliberate publication
 
-**Files:** Create tests/validation/test_pinares_canonical_publication.py; modify scripts/export_pinares_fixed_price_proxy_fixture.py and docs/PUBLIC_REFERENCE_RESOURCES.md.
+**Files:** Create tests/validation/test_pinares_canonical_publication.py; update tests/validation/test_pinares_reference_resources.py, scripts/export_pinares_fixed_price_proxy_fixture.py, docs/PUBLIC_REFERENCE_RESOURCES.md, docs/PRD.md, docs/ARCHITECTURE.md, docs/ARCHITECTURE.yaml and AGENTS.md.
 
 **Interfaces:** main(["--publish-canonical"]) validates the fixed five mirror paths before the existing solve and writers. Existing --output-dir, library writers and resource names retain their contracts.
 
@@ -39,6 +39,9 @@
 - [ ] Perform dedicated honest authoring-root review; give both original external findings concrete native dispositions.
 - [ ] Refresh actual head/base/rules/findings and ordinarily integrate; verify actual default before closing170/ProjectDone or retiring the useful owned branches.
 - [ ] Preserve all REDs, histories, storage holds and broader ACTIVE incomplete portfolio/scientific scope.
+
+The checklist records candidate publication state; final reviewed-head and
+resulting-default acceptance is recorded in issue170 after actual execution.
 
 ## Test-first evidence
 

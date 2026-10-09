@@ -51,7 +51,6 @@ class PinaresReferenceResources(unittest.TestCase):
                     root.joinpath(name).read_bytes(), reference.read_bytes()
                 )
 
-
     def test_original_public_reference_bytes_read_from_unrelated_directory(
         self,
     ) -> None:
