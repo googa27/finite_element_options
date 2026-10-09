@@ -109,7 +109,7 @@ def pinares_export_destinations(directory: Path | str | None) -> tuple[Path, ...
     if root.exists() and not root.is_dir():
         raise ValueError("export_directory must identify a directory")
     fixture = root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1"
-    return tuple(
+    destinations = tuple(
         artifact_destination(path)
         for path in (
             fixture / "problem_spec.json",
@@ -119,6 +119,18 @@ def pinares_export_destinations(directory: Path | str | None) -> tuple[Path, ...
             root / "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json",
         )
     )
+
+    for index, target in enumerate(destinations):
+        if any(parent.exists() and not parent.is_dir() for parent in target.parents):
+            raise ValueError("export destination ancestors must identify directories")
+        for previous in destinations[:index]:
+            if target.resolve() == previous.resolve() or (
+                target.exists() and previous.exists() and target.samefile(previous)
+            ):
+                raise ValueError(
+                    "distinct export destinations must not alias each other"
+                )
+    return destinations
 
 
 def write_oracle_spec(

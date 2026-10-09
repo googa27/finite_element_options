@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from hashlib import sha256
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 import io
 import importlib.metadata as metadata
 import importlib.util
 import json
 from importlib.resources import as_file
 import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -299,6 +300,90 @@ class PinaresReferenceResources(unittest.TestCase):
             self.assertFalse(
                 (root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1").exists()
             )
+
+    def test_real_maintainer_cli_exports_only_caller_bundle(self) -> None:
+        script = (
+            Path(__file__).resolve().parents[2]
+            / "scripts/export_pinares_fixed_price_proxy_fixture.py"
+        )
+        before = {name: getattr(proxy, name).read_bytes() for name in REFERENCE_DIGESTS}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "independent"
+            result = subprocess.run(
+                [sys.executable, "-I", "-B", str(script), "--output-dir", str(root)],
+                cwd=directory,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            receipt = json.loads(result.stdout)
+            self.assertTrue(receipt["converged"])
+            self.assertEqual(len(receipt["generated"]), 5)
+            self.assertFalse((root / "src").exists())
+            for item in receipt["generated"]:
+                path = Path(item["path"])
+                self.assertTrue(path.is_relative_to(root))
+                self.assertEqual(sha256(path.read_bytes()).hexdigest(), item["sha256"])
+                self.assertIn(item["sha256"], REFERENCE_DIGESTS.values())
+        self.assertEqual(
+            before, {name: getattr(proxy, name).read_bytes() for name in before}
+        )
+
+    def test_explicit_maintainer_publication_updates_both_temporary_mirrors(
+        self,
+    ) -> None:
+        script = (
+            Path(__file__).resolve().parents[2]
+            / "scripts/export_pinares_fixed_price_proxy_fixture.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "pinares_maintainer_publication", script
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        before = {name: getattr(proxy, name).read_bytes() for name in REFERENCE_DIGESTS}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = io.StringIO()
+            with patch.object(module, "REPO_ROOT", root), redirect_stdout(output):
+                module.main(["--publish-canonical"])
+            receipt = json.loads(output.getvalue())
+            self.assertTrue(receipt["converged"])
+            self.assertEqual(len(receipt["generated"]), 10)
+            for relative, digest in (
+                (
+                    "fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+                    REFERENCE_DIGESTS["PINARES_FEM_PROXY_PROBLEM_SPEC_PATH"],
+                ),
+                (
+                    "fem_pinares_fixed_price_proxy_v1/result_export.json",
+                    REFERENCE_DIGESTS["PINARES_FEM_PROXY_RESULT_EXPORT_PATH"],
+                ),
+                (
+                    "fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+                    REFERENCE_DIGESTS["PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH"],
+                ),
+                (
+                    "fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+                    REFERENCE_DIGESTS["PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH"],
+                ),
+                (
+                    "quant_problem_specs/pinares_fixed_price_proxy.json",
+                    REFERENCE_DIGESTS["PINARES_QPS_FIXTURE_PATH"],
+                ),
+            ):
+                checkout = root / "tests/fixtures" / relative
+                packaged = (
+                    root
+                    / "src/finite_element_options/validation/evidence/reference_data"
+                    / relative
+                )
+                self.assertEqual(checkout.read_bytes(), packaged.read_bytes())
+                self.assertEqual(sha256(packaged.read_bytes()).hexdigest(), digest)
+        self.assertEqual(
+            before, {name: getattr(proxy, name).read_bytes() for name in before}
+        )
 
 
 if __name__ == "__main__":

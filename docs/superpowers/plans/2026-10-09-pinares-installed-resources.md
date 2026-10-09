@@ -43,7 +43,7 @@
 **Interfaces:** Re-export the five existing public resource names as Traversable objects. All five writers accept explicit Path|string|None destinations and reject None/package/alias destinations before work. run_public_pinares_fixed_price_proxy_fixture accepts export_directory only with refresh_exports=True.
 
 - [x] Add behavioral missing-destination, package/alias and refresh preflight tests; observe RED against the old writer defaults without changing canonical references.
-- [ ] Extend the cohesive existing resource owner and shared output guards; preserve numerical function ASTs and canonical bytes.
+- [x] Extend the cohesive existing resource owner and shared output guards; preserve numerical function ASTs and canonical bytes.
 - [ ] Run resource/writer tests and the unchanged Pinares analytical, hash, no-arbitrage and unsupported-route controls in normal installations on both minors.
 - [ ] Verify every resource byte in wheel and sdist, including both deliberately identical problem-spec consumer copies.
 
@@ -54,8 +54,8 @@
 **Interfaces:** Maintainer --output-dir exports independently; --publish-canonical alone deliberately regenerates both package and checkout mirrors. No-argument invocation refuses before solve.
 
 - [ ] Add real CLI refusal/export/publication tests and independent byte oracles.
-- [ ] Document Traversable/as_file lifetime, explicit library destinations, preserved standalone-reference semantics and the intentional migration from implicit writes.
-- [ ] Update canonical resource ownership and fitness commands without widening runtime exceptions.
+- [x] Document Traversable/as_file lifetime, explicit library destinations, preserved standalone-reference semantics and the intentional migration from implicit writes.
+- [x] Update canonical resource ownership and fitness commands without widening runtime exceptions.
 - [ ] Run full source, architecture, packaging, type, lint, workflow/security and normal installed-profile gates; preserve actual optional/audit qualifications.
 
 ### Task4: Review, ordinary integration and resulting-default acceptance
@@ -69,3 +69,5 @@
 Current staged repair follows genuine installed RED at4947bbc6c46614bfdc9225b7307c14ea35e028f5/run37994023170: package jobs114035286205/114035286208 each18assertion failures/exit1. The new hardlink-alias control is deliberately awaiting its own real RED; no alias-protection acceptance is claimed yet. Numerical and full default acceptance remain pending.
 
 Actual14ceec4f installed3.12/job114038022309 reproduced precisely five hardlink-alias failures while the original18 controls and real numerical/relocated bundle passed. Extend only the shared alias registry after this genuine RED. Original architecture source-entry registration failure is retained; register the five exact immutable JSON assets in the existing allowed_non_python_files contract without adding exceptions or weakening hierarchy rules. Final candidate/default gates remain pending.
+
+Actual97292150/run37995287323 job114040043348(3.11)/114040043399(3.12) each proves two real remaining preflight failures: distinct caller outputs sharing an inode and an existing file blocking the fifth output parent. Both are refused before numerical work in the successor. Final tests additionally exercise the actual maintainer export CLI, deliberate dual-mirror publication in a temporary repository and ZIP-resource/as_file lifetime through a built wheel. Final full source, complete artifacts, dedicated review and ordinary resulting-default acceptance remain pending.
