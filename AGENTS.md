@@ -435,3 +435,7 @@ or non-file targets and non-directory ancestors; run
 `tests/validation/test_pinares_canonical_publication.py` with the source suite.
 Keep the existing `PINARES_FEM_PROXY_FIXTURE_ROOT` read-only Traversable directory
 for compatibility. Do not claim atomic protection against concurrent replacement.
+
+The repository location is trusted and canonicalized first; a location alias
+is allowed. Symlink refusal applies to mirror destinations and their ancestors
+beneath that canonical root. It is not a policy for aliases above the root.

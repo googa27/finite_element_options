@@ -899,7 +899,7 @@
       "export_layout": "bundle_root/tests/fixtures",
       "fixture_refs_base": "bundle_root; original manifest-relative paths and bytes unchanged",
       "maintainer_command": "python scripts/export_pinares_fixed_price_proxy_fixture.py --publish-canonical",
-      "maintainer_preflight": "Five fixed package mirrors; reject symlink traversal, hardlinked/non-file targets and invalid ancestors before solve or checkout writes; no concurrent-replacement guarantee",
+      "maintainer_preflight": "Trusted repository-location aliases normalized; preflight five fixed package mirrors and descendants for symlink traversal, hardlinked/non-file targets and invalid ancestors before solve or checkout writes; no concurrent-replacement guarantee",
       "fixture_root": "Existing PINARES_FEM_PROXY_FIXTURE_ROOT facade remains a read-only Traversable directory",
       "fitness_tests": [
         "tests/validation/test_pinares_reference_resources.py",

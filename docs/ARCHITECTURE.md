@@ -791,3 +791,7 @@ against concurrent replacement. Source controls in
 `tests/validation/test_pinares_canonical_publication.py` preserve unrelated and
 checkout bytes on refusal. The established `PINARES_FEM_PROXY_FIXTURE_ROOT`
 facade name remains a read-only Traversable directory for compatibility.
+
+The repository location is trusted and canonicalized first; a location alias
+is allowed. Symlink refusal applies to mirror destinations and their ancestors
+beneath that canonical root. It is not a policy for aliases above the root.

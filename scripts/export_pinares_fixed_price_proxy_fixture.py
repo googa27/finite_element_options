@@ -24,7 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _canonical_mirror_destinations(root: Path) -> tuple[Path, ...]:
-    """Preflight the fixed package mirrors before any deliberate publication."""
+    """Preflight mirrors below the trusted canonical repository root.
+
+    Repository-location aliases are normalized; descendants are checked.
+    Concurrent replacement after this check is not prevented.
+    """
     root = root.resolve()
     resource_root = (
         root / "src/finite_element_options/validation/evidence/reference_data"

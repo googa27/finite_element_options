@@ -475,3 +475,7 @@ or non-file targets and non-directory ancestors. Ordinary publication still
 reproduces all ten unchanged reference files. The existing public fixture-root
 Traversable remains compatible. Concurrent filesystem replacement is outside
 this preflight guarantee.
+
+The repository location is trusted and canonicalized first; a location alias
+is allowed. Symlink refusal applies to mirror destinations and their ancestors
+beneath that canonical root. It is not a policy for aliases above the root.

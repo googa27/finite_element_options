@@ -158,3 +158,7 @@ The existing `PINARES_FEM_PROXY_FIXTURE_ROOT` name remains available from
 `finite_element_options.validation.pinares_fixed_price_proxy` as a read-only
 Traversable directory for consumers that enumerate or join its four reference
 files. It is not a promised filesystem Path or a writable export directory.
+
+The repository location is trusted and canonicalized first; a location alias
+is allowed. Symlink refusal applies to mirror destinations and their ancestors
+beneath that canonical root. It is not a policy for aliases above the root.

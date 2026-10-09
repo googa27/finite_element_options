@@ -65,3 +65,23 @@ controls. The positive method AST and all original13 method ASTs are unchanged;
 the five negative subtest bodies remain unchanged in the maintainer source suite.
 No runtime implementation changed in this coverage-only successor. Exact-head
 full source and both installed profiles still require genuine GREEN.
+
+## Exact-ef8 acceptance and external follow-up
+
+Exact ef8c7b54cf50a947ed1ae1e0141cd565814ecc8b CI38001948774 completed
+all28 jobs successfully. Source607 passes/29 qualified skips; both normal
+Python3.11/3.12 profiles execute14 Pinares tests and5 ownership tests. Native
+JUnit and both wheel/sdist artifacts independently bind this exact source.
+
+Kilo comments4235307736/4235307740/4235307746/4235307748 were fully read.
+The trusted repository-location alias differs from descendant mirror aliases;
+the runtime docstring and all ownership records now state that boundary and
+the concurrent-replacement limit. The existing five late-mirror scenarios are
+expanded to every mirror position (25 combinations), with an independent real
+root-alias/descendant-symlink control. The original numerical/writer behavior
+and strict copy-length guard remain unchanged. This is additional coverage
+and clarification, not a newly demonstrated runtime or race defect.
+
+The new candidate needs exact-head full source, both normal-wheel jobs and
+current review reconciliation again. Older ef8 passes do not certify a new
+head; ordinary integration and actual-default acceptance are still required.
