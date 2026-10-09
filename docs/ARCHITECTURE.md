@@ -713,3 +713,48 @@ compiler.v0 solve and public manufactured/convergence benchmark. Original price,
 Delta and Gamma budgets remain 0.002, 0.001 and 2e-5; existing evidence validation
 retains its spatial/time orders, residual, perturbation and no-arbitrage gates.
 No source overlay, new dependency or compiler.v1/scientific promotion is implied.
+
+## Reviewed Actions runtime and runner (issue173)
+
+Reviewed2026-10-09: the canonical selection is
+`governance.github_actions.runtime_contract` in `docs/ARCHITECTURE.yaml`.
+It covers every workflow, immutable action commit, explicit Ubuntu24.04 image,
+read-only token, non-persistent checkout credentials and bounded job timeout.
+The existing source, normal-wheel, optional-profile, supply-chain and exact
+PNG/PDF byte gates retain their commands, Python versions and numerical floors.
+
+The selected official releases are [checkout7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1),
+[setup-python7.0.0](https://github.com/actions/setup-python/releases/tag/v7.0.0) and
+[upload-artifact7.0.2](https://github.com/actions/upload-artifact/releases/tag/v7.0.2).
+Their exact reviewed action.yml files declare Node24. Checkout and setup-python
+require Actions Runner2.327.1 or later. Checkout's authenticated Docker Git route
+requires2.329.0 and is unused here. No privileged pull_request_target/workflow_run
+trigger or removed setup-python pip-install input is used. Artifact ZIP semantics,
+names and paths are retained; this repository uses GitHub.com, not GHES.
+
+The [announced ubuntu-latest migration](https://github.com/actions/runner-images/issues/14748)
+starts2026-10-19 and targets completion2026-11-19. Pinning Ubuntu24.04 keeps the
+actually exercised numerical/profile and byte-reproducibility baseline explicit.
+Ubuntu26.04, self-hosted runners, Windows and macOS remain unexercised; no future
+image compatibility is inferred. Re-selecting the image requires current
+runner/action review and the same full source and normal-installed profile gates.
+
+Reproduce the runtime/security policy gates after installing the pinned governance
+requirements (PyYAML6.0.3); these commands complement the full CI suite:
+
+```bash
+python3 -m pip install -r requirements-architecture.txt
+python3 scripts/check_actions_runtime_contract.py
+python3 scripts/selftest_actions_runtime_contract.py
+python3 scripts/selftest_ai_hierarchy_policy.py
+go run github.com/suzuki-shunsuke/pinact/v4/cmd/pinact@v4.1.0 run -fix=false -no-api
+zizmor --offline --min-severity medium .
+```
+
+Pinact4.1.0 requires Go1.26.4 or later; automatic Go toolchain resolution may
+download the matched toolchain on the hosted runner. Fixing and API resolution
+are disabled. Real parsed-workflow controls reject runner drift, old/mutable or
+unknown action identities, timeout removal, credential persistence, permission
+escalation, runtime override variables, removed inputs and artifact semantic drift.
+These controls do not authenticate an arbitrary newly selected upstream commit;
+primary upstream review and actual hosted execution remain separate requirements.
