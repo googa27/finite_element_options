@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from contextlib import redirect_stderr
+import io
 import importlib.metadata as metadata
 import importlib.util
 import json
@@ -150,7 +152,10 @@ class PinaresReferenceResources(unittest.TestCase):
             module, "run_public_pinares_fixed_price_proxy_fixture", unexpected
         ):
             try:
-                with self.assertRaises(SystemExit) as refusal:
+                with (
+                    redirect_stderr(io.StringIO()),
+                    self.assertRaises(SystemExit) as refusal,
+                ):
                     module.main([])
             except TypeError as error:
                 self.fail(f"maintainer output-policy parser is missing: {error}")
@@ -228,6 +233,32 @@ class PinaresReferenceResources(unittest.TestCase):
         self.assertEqual(
             before, {name: getattr(proxy, name).read_bytes() for name in before}
         )
+
+    def test_fifth_refresh_alias_is_refused_before_solve_or_other_writes(self) -> None:
+        def unexpected(*args, **kwargs):
+            raise AssertionError("partial refresh admission started numerical work")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            last = (
+                root
+                / "tests/fixtures/quant_problem_specs/pinares_fixed_price_proxy.json"
+            )
+            last.parent.mkdir(parents=True)
+            with as_file(proxy.PINARES_QPS_FIXTURE_PATH) as reference:
+                os.link(reference, last)
+                with patch.object(proxy, "_run_row", unexpected):
+                    with self.assertRaises(ValueError):
+                        proxy.run_public_pinares_fixed_price_proxy_fixture(
+                            refresh_exports=True, export_directory=root
+                        )
+                self.assertFalse(
+                    (root / "tests/fixtures/fem_pinares_fixed_price_proxy_v1").exists()
+                )
+                self.assertEqual(
+                    sha256(reference.read_bytes()).hexdigest(),
+                    REFERENCE_DIGESTS["PINARES_QPS_FIXTURE_PATH"],
+                )
 
 
 if __name__ == "__main__":

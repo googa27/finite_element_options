@@ -122,7 +122,12 @@
     ],
     "allowed_non_python_files": [
       "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/problem_spec.json",
-      "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/result_export.json"
+      "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/result_export.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/problem_spec.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/result_export.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
+      "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
+      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json"
     ],
     "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved.",
     "hierarchy_policy": {

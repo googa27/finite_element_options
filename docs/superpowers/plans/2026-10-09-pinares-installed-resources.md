@@ -67,3 +67,5 @@
 - [ ] Keep the full portfolio/scientific program active and preserve storage/SSD holds.
 
 Current staged repair follows genuine installed RED at4947bbc6c46614bfdc9225b7307c14ea35e028f5/run37994023170: package jobs114035286205/114035286208 each18assertion failures/exit1. The new hardlink-alias control is deliberately awaiting its own real RED; no alias-protection acceptance is claimed yet. Numerical and full default acceptance remain pending.
+
+Actual14ceec4f installed3.12/job114038022309 reproduced precisely five hardlink-alias failures while the original18 controls and real numerical/relocated bundle passed. Extend only the shared alias registry after this genuine RED. Original architecture source-entry registration failure is retained; register the five exact immutable JSON assets in the existing allowed_non_python_files contract without adding exceptions or weakening hierarchy rules. Final candidate/default gates remain pending.

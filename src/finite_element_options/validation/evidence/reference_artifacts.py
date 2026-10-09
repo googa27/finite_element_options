@@ -74,7 +74,15 @@ def artifact_destination(path: Path | str | None) -> Path:
     if target.exists():
         if not target.is_file():
             raise ValueError("output path must identify a file")
-        for reference in (FEM_BS_001_PROBLEM_SPEC_PATH, FEM_BS_001_RESULT_EXPORT_PATH):
+        for reference in (
+            FEM_BS_001_PROBLEM_SPEC_PATH,
+            FEM_BS_001_RESULT_EXPORT_PATH,
+            PINARES_FEM_PROXY_PROBLEM_SPEC_PATH,
+            PINARES_FEM_PROXY_RESULT_EXPORT_PATH,
+            PINARES_FEM_PROVIDER_EVIDENCE_MANIFEST_PATH,
+            PINARES_FEM_PROXY_UNSUPPORTED_SPEC_PATH,
+            PINARES_QPS_FIXTURE_PATH,
+        ):
             if isinstance(reference, Path) and target.samefile(reference):
                 raise ValueError("output path must not alias a packaged reference")
     return target
