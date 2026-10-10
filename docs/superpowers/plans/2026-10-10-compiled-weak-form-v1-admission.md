@@ -38,7 +38,7 @@ scikit-fem/SciPy and existing pinned GitHub Actions.
   Local ledgers remain frozen; native coordination66 is the continuation ledger.
 - Retain genuine FPF205 billing-start refusals. A working FEM producer-provenance
   runner is not FPF205 hosted success. No paid CI, spending change or protection bypass.
--164 remains blocked by OPEN165/coordination53. Preparing source does not close those
+- Issue164 remains blocked by OPEN165/coordination53. Preparing source does not close those
   prerequisites; closure requires the actual full acceptance contract.
 
 ## Review focus
@@ -52,22 +52,24 @@ scikit-fem/SciPy and existing pinned GitHub Actions.
 
 ## Task 1: Capture genuine normal-installed producer provenance
 
-**Files:** tests/provenance/export_fpf_compiler_v1.py;
-.github/workflows/compiler-v1-provenance.yml; this plan.
+**Files:** FEM tests/provenance/export_fpf_compiler_v1.py and this plan;
+producer execution workflow in the private FPF repository.
 
 **Produces:** Actual accepted compiler result, unchanged source IR input, normal wheel
 and full provenance/RECORD/package-byte identities. **Consumes:** Exact FPF205 source
 input and historical v0 record; no FEM runtime behavior changes.
 
-- [ ] Build the declared normal FPF wheel on a hosted runner, install it in a separate
+- [ ] Build the declared normal FPF wheel inside its private repository, install it in a separate
   noneditable environment without dependencies and execute pip check.
 - [ ] Execute the public compiler with isolated Python outside producer source. Verify
   direct wheel origin, every wheel RECORD entry and all source/wheel/installed package
   members before and after. No source-import fallback.
 - [ ] Independently check the complete compiled canonical hash, source IR hash,
   historical bytes and exactly two changed normalized expression identities.
-- [ ] Read complete actual logs/annotations and digest-verify the retained artifact
-  and contained wheel in bounded memory before committing any consumer fixture.
+- [ ] Keep the normal wheel and full package identities in private FPF artifacts. Read
+  complete actual logs/annotations and digest-verify that artifact in bounded memory.
+  Only reviewed public-synthetic compiler/source-IR output may become a FEM fixture;
+  never transfer private producer source or its wheel to this public repository.
 - [ ] Record real commands/results/head/producer/wheel/artifact evidence in native164/66.
   No Task1-complete assertion is allowed before actual output verification.
 
@@ -95,9 +97,8 @@ implementing; record any necessary interface ruling.
   and all declared architecture/static/profile/packaging gates.
 - [ ] Execute fresh normal installed public screen/solve/relocation controls on both
   minors, with source unavailable and FPF absent; retain complete byte identities.
-- [ ] Before integration, retire this temporary branch-push provenance workflow in an
-  ordinary successor, or replace it with a useful manual-only contract. Never leave a
-  stale task branch trigger in the delivered default.
+- [ ] Keep the producer workflow private and retire its temporary branch trigger in an
+  ordinary successor or use a useful manual-only contract before final integration.
 - [ ] Perform dedicated honest complete authoring-root review; refresh actual head/base,
   every review/finding/check/status/job/annotation, effective rules and prerequisites.
 - [ ] Ordinary integration and actual resulting-default source/installed acceptance,
@@ -118,3 +119,16 @@ Initial scope: test-only observer/workflow/plan, no FEM runtime change or accept
 Two earlier in-memory composition attempts failed before stores/writes (JavaScript
 template interpolation syntax/reference errors). Their output is retained in the task
 transcript; no Git/source/product mutation occurred or was repeated.
+
+Task1 investigation2026-10-10: initial476b9bf governance run38018686054 genuinely
+failed because the added workflow was absent from the reviewed inventory and used a
+conditional artifact step. Producer run38018686038 genuinely failed before Python/build:
+the public FEM repository token cannot fetch private FPF (git128); no source, wheel or
+compiler artifact was exported. Full native logs remain retained. This is an access
+boundary, not billing or a compiler failure. Ordinary successor removes the public
+workflow, leaving runtime and the existing workflow inventory/policy unchanged.
+Ruling: execute the observer in private FPF with its own repository-scoped token and
+keep the normal wheel private; only reviewed public-synthetic result data may cross
+into FEM. Cost if wrong: producer provenance stays blocked rather than widening access.
+Task1 is NOT complete. A private FPF billing refusal, if observed, remains explicit;
+no token/secret/security-policy change or local/SSD override is authorized by this plan.
