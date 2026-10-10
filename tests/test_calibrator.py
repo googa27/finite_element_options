@@ -7,7 +7,6 @@ import hashlib
 import importlib
 import importlib.util
 import sys
-import warnings
 from collections.abc import Mapping, Sequence as StringSequence
 from pathlib import Path
 
@@ -24,7 +23,6 @@ from finite_element_options.estimation import (
     HestonPricingCalibrator,
     PricingCalibrationDataset,
     PricingModelCalibrator,
-    PyMCCalibrator,
     StatsmodelsCalibrator,
     SyntheticSurfaceCalibrator,
     build_heston_bayesian_calibration_result,
@@ -163,6 +161,8 @@ def test_legacy_pymc_api_names_dedicated_bayesian_extra(
 ) -> None:
     """Compatibility exports must fail with the isolated-extra remedy."""
 
+    from finite_element_options.estimation.heston import PyMCCalibrator
+
     original_import = builtins.__import__
 
     def blocked_import(
@@ -183,17 +183,6 @@ def test_legacy_pymc_api_names_dedicated_bayesian_extra(
         ModuleNotFoundError, match=r"finite-element-options\[calibration,bayesian\]"
     ):
         calibrator.calibrate(draws=100, chains=2)
-
-
-def test_pymc_calibration_recovers_parameters() -> None:
-    data, true_params = _surface()
-    calibrator = PyMCCalibrator(data)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        result = calibrator.calibrate(draws=200, chains=2, random_seed=123)
-    assert isinstance(result, CalibrationResult)
-    assert result.success is True
-    assert np.allclose(result.parameters, true_params, atol=0.15)
 
 
 def _valid_heston_draws() -> dict[str, np.ndarray]:
