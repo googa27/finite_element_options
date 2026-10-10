@@ -319,3 +319,30 @@ def test_wheel_consumer_excludes_parent_user_site(
         cwd=tmp_path,
     )
     assert result.strip() == "True"
+
+
+def test_installed_authority_rejects_foreign_namespace(tmp_path: Path) -> None:
+    import test_packaging_contract as consumer
+
+    consumer.test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path)
+    wheel = next((tmp_path / "dist").glob("finite_element_options-*.whl"))
+    python = (
+        tmp_path / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    )
+    code = """
+import importlib.machinery
+import sys
+import types
+
+name = "finite_element_options.foreign_namespace"
+module = types.ModuleType(name)
+module.__path__ = [str(Path.cwd() / "foreign-namespace")]
+module.__spec__ = importlib.machinery.ModuleSpec(name, loader=None, is_package=True)
+module.__spec__.submodule_search_locations = module.__path__
+sys.modules[name] = module
+"""
+    with pytest.raises(AssertionError) as failure:
+        consumer._run_installed(python, wheel, code, cwd=tmp_path)
+    record = json.loads(str(failure.value))
+    assert record["returncode"] == 1
+    assert "finite_element_options.foreign_namespace" in record["stderr"]

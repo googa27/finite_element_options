@@ -107,7 +107,17 @@ def _assert_normal_authority(report):
     for name, module in list(sys.modules.items()):
         if name == "finite_element_options" or name.startswith("finite_element_options."):
             origin = getattr(module, "__file__", None)
-            assert origin and Path(origin).resolve().is_relative_to(prefix), (name, origin)
+            if origin is not None:
+                assert Path(origin).resolve().is_relative_to(prefix), (name, origin)
+            else:
+                paths = [Path(p).resolve() for p in getattr(module, "__path__", [])]
+                relative = name.replace(".", "/")
+                expected = Path(dist.locate_file(relative)).resolve()
+                assert paths == [expected] and expected.is_relative_to(prefix), name
+                assert any(member.startswith(relative + "/") for member in members), name
+                spec = module.__spec__
+                assert spec is not None and spec.origin is None, name
+                assert spec.submodule_search_locations is not None, name
     if report:
         print(json.dumps({"normal_members": len(members),
                           "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
