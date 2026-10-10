@@ -36,7 +36,9 @@ def test_children_reject_ambient_checkout_paths(
         "'distribution': any(d.metadata['Name'] == 'fem-observer-poison' "
         "for d in md.distributions())}))"
     )
-    observed = json.loads(_run([sys.executable, "-B", "-c", code], cwd=tmp_path, env=env))
+    observed = json.loads(
+        _run([sys.executable, "-B", "-c", code], cwd=tmp_path, env=env)
+    )
     assert observed == {"module": False, "distribution": False}
     assert env == before
     assert os.environ["PYTHONPATH"] == str(poison)
@@ -117,4 +119,163 @@ def test_real_ensurepip_refusal_retains_original_diagnostics(tmp_path: Path) -> 
     record = _failure_record(command, tmp_path)
     assert record["returncode"] == 2
     assert record["stdout"] == ""
-    assert "unrecognized arguments: --fem-observer-bootstrap-refusal" in record["stderr"]
+    assert (
+        "unrecognized arguments: --fem-observer-bootstrap-refusal" in record["stderr"]
+    )
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_children_clear_unrelated_virtual_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, explicit: bool
+) -> None:
+    monkeypatch.setenv("VIRTUAL_ENV", str(tmp_path / "unrelated-active-environment"))
+    env = dict(os.environ) if explicit else None
+    result = _run(
+        [sys.executable, "-B", "-c", "import os; print('VIRTUAL_ENV' in os.environ)"],
+        cwd=tmp_path,
+        env=env,
+    )
+    assert result.strip() == "False"
+    assert os.environ["VIRTUAL_ENV"] == str(tmp_path / "unrelated-active-environment")
+
+
+def _actual_factory():
+    import test_packaging_contract as consumer
+
+    factory = getattr(consumer, "_create_venv", None)
+    assert callable(factory), (
+        "packaging consumer has no explicit diagnostic venv factory"
+    )
+    return factory
+
+
+def test_factory_preserves_actual_ensurepip_failure(tmp_path: Path) -> None:
+    target = tmp_path / "failed-bootstrap"
+    with pytest.raises(AssertionError) as failure:
+        _actual_factory()(
+            target,
+            cwd=tmp_path,
+            ensurepip_args=("--fem-observer-bootstrap-refusal",),
+        )
+    try:
+        record = json.loads(str(failure.value))
+    except json.JSONDecodeError:
+        pytest.fail("factory did not expose its original ensurepip failure record")
+    python = target / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    assert record["argv"] == [
+        str(python),
+        "-I",
+        "-B",
+        "-m",
+        "ensurepip",
+        "--fem-observer-bootstrap-refusal",
+    ]
+    assert record["cwd"] == str(tmp_path)
+    assert record["returncode"] == 2
+    assert record["stdout"] == ""
+    assert (
+        "unrecognized arguments: --fem-observer-bootstrap-refusal" in record["stderr"]
+    )
+    assert (target / "pyvenv.cfg").is_file()
+    result = _run(
+        [
+            str(python),
+            "-I",
+            "-B",
+            "-c",
+            "import importlib.util; print(importlib.util.find_spec('pip') is None)",
+        ],
+        cwd=tmp_path,
+    )
+    assert result.strip() == "True"
+    print("actual factory bootstrap refusal:", json.dumps(record, sort_keys=True))
+
+
+def test_factory_bootstraps_an_isolated_target(tmp_path: Path) -> None:
+    target = tmp_path / "successful-bootstrap"
+    python = _actual_factory()(target, cwd=tmp_path)
+    result = _run(
+        [
+            str(python),
+            "-I",
+            "-B",
+            "-c",
+            "import json, pip, sys; print(json.dumps([sys.prefix, pip.__file__]))",
+        ],
+        cwd=tmp_path,
+    )
+    prefix, pip_file = json.loads(result)
+    assert Path(prefix).resolve() == target.resolve()
+    assert Path(pip_file).resolve().is_relative_to(target.resolve())
+    assert "include-system-site-packages = false" in (target / "pyvenv.cfg").read_text()
+
+
+def test_same_version_checkout_cannot_satisfy_normal_wheel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tomllib
+
+    import test_packaging_contract as consumer
+
+    project = tomllib.loads((consumer.ROOT / "pyproject.toml").read_text())
+    version = project["project"]["version"]
+    poison = tmp_path / "same-version-checkout"
+    poison.mkdir()
+    package = poison / "finite_element_options"
+    package.mkdir()
+    (package / "__init__.py").write_text("POISON_CHECKOUT = True\n")
+    metadata = poison / f"finite_element_options-{version}.dist-info"
+    metadata.mkdir()
+    (metadata / "METADATA").write_text(
+        f"Metadata-Version: 2.1\nName: finite-element-options\nVersion: {version}\n"
+    )
+    monkeypatch.setenv("PYTHONPATH", str(poison))
+    consumer.test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path)
+
+    wheel = next((tmp_path / "dist").glob("finite_element_options-*.whl"))
+    python = (
+        tmp_path / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    )
+    code = """
+import hashlib
+import importlib.metadata as md
+import importlib.util
+import json
+from pathlib import Path
+import sys
+import zipfile
+
+import finite_element_options as fem
+
+wheel = Path(sys.argv[1]).resolve()
+target = Path(sys.argv[2]).resolve()
+assert sys.flags.isolated
+assert Path(sys.prefix).resolve() == target
+assert Path(fem.__file__).resolve().is_relative_to(target)
+assert not hasattr(fem, "POISON_CHECKOUT")
+assert importlib.util.find_spec("src") is None
+dist = md.distribution("finite-element-options")
+direct = json.loads(dist.read_text("direct_url.json"))
+assert direct["url"] == wheel.as_uri()
+assert not direct.get("dir_info", {}).get("editable", False)
+with zipfile.ZipFile(wheel) as archive:
+    members = [n for n in archive.namelist()
+               if n.startswith("finite_element_options/") and not n.endswith("/")]
+    assert members
+    for name in members:
+        actual = Path(dist.locate_file(name)).resolve()
+        assert actual.is_relative_to(target), name
+        assert actual.read_bytes() == archive.read(name), name
+print(json.dumps({"normal_members": len(members),
+                  "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+                  "isolated": True}))
+"""
+    observed = json.loads(
+        _run(
+            [str(python), "-I", "-B", "-c", code, str(wheel), str(tmp_path / "venv")],
+            cwd=tmp_path,
+        )
+    )
+    assert observed["normal_members"] > 0
+    assert observed["isolated"] is True
+    print("poisoned same-version consumer normal authority:", json.dumps(observed))
