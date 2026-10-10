@@ -279,3 +279,35 @@ print(json.dumps({"normal_members": len(members),
     assert observed["normal_members"] > 0
     assert observed["isolated"] is True
     print("poisoned same-version consumer normal authority:", json.dumps(observed))
+
+
+def test_wheel_consumer_excludes_parent_user_site(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import test_packaging_contract as consumer
+
+    monkeypatch.setenv("PYTHONUSERBASE", str(tmp_path / "parent-user-base"))
+    user_site = Path(
+        _run(
+            [sys.executable, "-B", "-c", "import site; print(site.getusersitepackages())"],
+            cwd=tmp_path,
+        ).strip()
+    )
+    assert user_site.is_relative_to(tmp_path)
+    user_site.mkdir(parents=True)
+    (user_site / "fem_parent_user_poison.py").write_text("PARENT_ONLY = True\n")
+    consumer.test_installed_wheel_import_contract_has_no_checkout_path_hack(tmp_path)
+    python = (
+        tmp_path / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    )
+    result = _run(
+        [
+            str(python),
+            "-B",
+            "-c",
+            "import importlib.util; "
+            "print(importlib.util.find_spec('fem_parent_user_poison') is None)",
+        ],
+        cwd=tmp_path,
+    )
+    assert result.strip() == "True"

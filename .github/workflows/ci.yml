@@ -293,7 +293,10 @@ jobs:
       - name: Static, docstring, and type gates
         run: |
           ruff check .
-          ruff format --check .
+          if ! ruff format --check .; then
+            ruff format --diff .
+            exit 1
+          fi
           pydocstyle src/finite_element_options
           mypy --ignore-missing-imports --follow-imports=silent src/finite_element_options/contracts src/finite_element_options/validation src/finite_element_options/estimation/bayesian_profile scripts/check_ci_contract.py scripts/run_bayesian_jax_profile.py
       - name: Architecture contract
