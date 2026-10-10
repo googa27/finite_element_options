@@ -1,0 +1,68 @@
+name: Compiler v1 producer provenance
+
+on:
+  push:
+    branches: [codex/fem164-compiler-v1-admission-20261010]
+    paths:
+      - .github/workflows/compiler-v1-provenance.yml
+      - tests/provenance/export_fpf_compiler_v1.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compiler-v1-provenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  normal-producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out verification source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out exact public producer candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: googa27/financial_problem_formulations
+          ref: 968780defc687cd9296badf980811459e7c14b28
+          path: producer-source
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build and install a normal producer wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -I -B -m pip wheel --no-deps \
+            --wheel-dir "${RUNNER_TEMP}/fpf164-wheelhouse" \
+            "${GITHUB_WORKSPACE}/producer-source"
+          python -I -B -m venv "${RUNNER_TEMP}/fpf164-normal"
+          WHEEL=$(realpath "${RUNNER_TEMP}"/fpf164-wheelhouse/financial_problem_formulations-*.whl)
+          "${RUNNER_TEMP}/fpf164-normal/bin/python" -I -B -m pip install --no-deps "${WHEEL}"
+          "${RUNNER_TEMP}/fpf164-normal/bin/python" -I -B -m pip check
+      - name: Export source-free public compiler provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEEL=$(realpath "${RUNNER_TEMP}"/fpf164-wheelhouse/financial_problem_formulations-*.whl)
+          cd "${RUNNER_TEMP}"
+          env -u PYTHONPATH -u PYTHONHOME -u VIRTUAL_ENV \
+            "${RUNNER_TEMP}/fpf164-normal/bin/python" -I -B \
+            "${GITHUB_WORKSPACE}/tests/provenance/export_fpf_compiler_v1.py" \
+            "${GITHUB_WORKSPACE}/producer-source" "${WHEEL}" \
+            "${RUNNER_TEMP}/fpf164-provenance"
+      - name: Retain exact producer output and wheel
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fpf164-normal-compiler-v1-provenance
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/fpf164-provenance
+            ${{ runner.temp }}/fpf164-wheelhouse/*.whl
