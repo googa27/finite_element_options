@@ -64,9 +64,7 @@ def core_requirements(wheel: Path) -> list[str]:
     """Read the reviewed wheel's active base requirements, without any extras."""
     with zipfile.ZipFile(wheel) as archive:
         names = [
-            name
-            for name in archive.namelist()
-            if name.endswith(".dist-info/METADATA")
+            name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
         ]
         assert len(names) == 1, names
         message = message_from_bytes(archive.read(names[0]))
