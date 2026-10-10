@@ -657,7 +657,8 @@
       "bootstrap": "isolated venv --without-pip, then explicit target ensurepip with actual failure diagnostics",
       "normal_authority": "normal direct_url, prefix/module origins and all wheel package bytes before/after original consumers",
       "failure_policy": "retain original argv/cwd/returncode/stdout/stderr and partial target; no retry/force reinstall/ignore-installed",
-      "scope": "test observer only; unchanged runtime, numerical and scientific contracts"
+      "scope": "test observer only; unchanged runtime, numerical and scientific contracts",
+      "complete_source_command": "python -m pytest -q -o addopts='' tests/architecture tests/test_packaging_contract.py"
     }
   },
   "data": {
