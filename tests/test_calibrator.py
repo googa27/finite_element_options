@@ -185,7 +185,6 @@ def test_legacy_pymc_api_names_dedicated_bayesian_extra(
         calibrator.calibrate(draws=100, chains=2)
 
 
-
 def _valid_heston_draws() -> dict[str, np.ndarray]:
     return {
         "v0": np.array([0.040, 0.045, 0.050]),
