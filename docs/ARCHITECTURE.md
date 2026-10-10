@@ -488,6 +488,20 @@ Ownership cleanup #50 remains the successor for retiring FD/application duplicat
 
 Python 3.11-only CI and one all-dependencies environment are insufficient evidence of support. The issue #59 workflow intentionally exercises clean wheels and optional profiles separately so skipped optional-backend tests cannot masquerade as production support.
 
+Issue168: `tests/packaging_support.py` owns checked child execution, explicit
+venv/ensurepip bootstrap, base wheel requirements and normal installation authority.
+Copy child environments, remove only PYTHONPATH/PYTHONHOME/VIRTUAL_ENV selectors,
+and preserve private cache, temp, index and certificate configuration. Both normal
+consumers use isolated targets and `-I -B` probes from unrelated directories;
+verify normal direct_url, prefix/module origins and every wheel package byte
+before and after the original consumer assertions. Install the first wheel once
+with `--no-deps` after its declared core requirements; never force reinstall,
+ignore existing installations or retry bootstrap. A failure must retain actual
+argv, cwd, exit, stdout and stderr, including explicit ensurepip errors and partial
+target artifacts. Run `pytest -q -s tests/test_packaging_subprocesses.py --no-cov`
+alongside the unchanged packaging/architecture suites on Python3.11/3.12.
+These are test-observer contracts; runtime/numerical/scientific maturity is unchanged.
+
 ## 22. Compatibility and deprecation policy
 
 This policy maps #57 to its successor issues: #44 creates the replacement namespace and package metadata, #50 retires duplicate ownership and predecessor modules, and #49 connects the Haircut adapter only through the replacement public API after those gates pass.

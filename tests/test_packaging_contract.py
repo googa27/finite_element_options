@@ -5,7 +5,6 @@ from __future__ import annotations
 from hashlib import sha256
 import importlib.metadata as metadata
 import os
-import subprocess
 import sys
 import tarfile
 import textwrap
@@ -15,6 +14,11 @@ from pathlib import Path
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 import pytest
+
+from packaging_support import core_requirements as _core_requirements
+from packaging_support import create_venv as _create_venv
+from packaging_support import run_checked as _run
+from packaging_support import run_installed as _run_installed
 
 pytestmark = pytest.mark.packaging
 
@@ -27,19 +31,6 @@ PINARES_REFERENCE_HASHES = {
     "fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json": "02bd2bd3440dd14a76ab22b2732c6f673e239a014846da2bc918ba032bfbc1d3",
     "quant_problem_specs/pinares_fixed_price_proxy.json": "f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092",
 }
-
-
-def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> str:
-    result = subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-    return result.stdout + result.stderr
 
 
 def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> None:
@@ -429,14 +420,16 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
+    python = _create_venv(venv, cwd=tmp_path)
     _run(
-        [sys.executable, "-m", "venv", "--system-site-packages", str(venv)],
+        [str(python), "-I", "-B", "-m", "pip", "install", *_core_requirements(wheel)],
         cwd=tmp_path,
     )
-    python = venv / "bin" / "python"
-    _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=tmp_path)
+    _run(
+        [str(python), "-I", "-B", "-m", "pip", "install", "--no-deps", str(wheel)],
+        cwd=tmp_path,
+    )
 
-    env = {**os.environ, "PYTHONPATH": ""}
     code = textwrap.dedent(
         """
         import importlib.metadata as md
@@ -459,7 +452,7 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(
         print('installed wheel import contract OK')
         """
     )
-    _run([str(python), "-c", code], cwd=tmp_path, env=env)
+    _run_installed(python, wheel, code, cwd=tmp_path)
 
 
 def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies(
@@ -472,11 +465,12 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
-    _run([sys.executable, "-m", "venv", str(venv)], cwd=tmp_path)
-    python = venv / "bin" / "python"
-    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=tmp_path)
+    python = _create_venv(venv, cwd=tmp_path)
+    _run(
+        [str(python), "-I", "-B", "-m", "pip", "install", str(wheel)],
+        cwd=tmp_path,
+    )
 
-    env = {**os.environ, "PYTHONPATH": ""}
     code = textwrap.dedent(
         f"""
         import importlib
@@ -532,4 +526,4 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         print('installed wheel blocked adoption optionals OK')
         """
     )
-    _run([str(python), "-c", code], cwd=tmp_path, env=env)
+    _run_installed(python, wheel, code, cwd=tmp_path)
