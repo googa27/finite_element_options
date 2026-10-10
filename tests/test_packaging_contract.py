@@ -15,7 +15,10 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 import pytest
 
+from packaging_support import core_requirements as _core_requirements
+from packaging_support import create_venv as _create_venv
 from packaging_support import run_checked as _run
+from packaging_support import run_installed as _run_installed
 
 pytestmark = pytest.mark.packaging
 
@@ -417,14 +420,16 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
+    python = _create_venv(venv, cwd=tmp_path)
     _run(
-        [sys.executable, "-m", "venv", "--system-site-packages", str(venv)],
+        [str(python), "-I", "-B", "-m", "pip", "install", *_core_requirements(wheel)],
         cwd=tmp_path,
     )
-    python = venv / "bin" / "python"
-    _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=tmp_path)
+    _run(
+        [str(python), "-I", "-B", "-m", "pip", "install", "--no-deps", str(wheel)],
+        cwd=tmp_path,
+    )
 
-    env = {**os.environ, "PYTHONPATH": ""}
     code = textwrap.dedent(
         """
         import importlib.metadata as md
@@ -447,7 +452,7 @@ def test_installed_wheel_import_contract_has_no_checkout_path_hack(
         print('installed wheel import contract OK')
         """
     )
-    _run([str(python), "-c", code], cwd=tmp_path, env=env)
+    _run_installed(python, wheel, code, cwd=tmp_path)
 
 
 def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies(
@@ -460,11 +465,12 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
     _run([sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)], cwd=ROOT)
     wheel = next(outdir.glob("finite_element_options-*.whl"))
 
-    _run([sys.executable, "-m", "venv", str(venv)], cwd=tmp_path)
-    python = venv / "bin" / "python"
-    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=tmp_path)
+    python = _create_venv(venv, cwd=tmp_path)
+    _run(
+        [str(python), "-I", "-B", "-m", "pip", "install", str(wheel)],
+        cwd=tmp_path,
+    )
 
-    env = {**os.environ, "PYTHONPATH": ""}
     code = textwrap.dedent(
         f"""
         import importlib
@@ -520,4 +526,4 @@ def test_installed_wheel_base_imports_do_not_load_adoption_optional_dependencies
         print('installed wheel blocked adoption optionals OK')
         """
     )
-    _run([str(python), "-c", code], cwd=tmp_path, env=env)
+    _run_installed(python, wheel, code, cwd=tmp_path)

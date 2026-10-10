@@ -630,6 +630,34 @@
       "sampler_owner": "external_tests/bayesian_profile/test_pymc_profile.py",
       "sampler_profile": "hash-pinned bayesian Python3.12",
       "limits": "Synthetic diagnostics and installed package contracts; no Heston/market calibration promotion"
+    },
+    "packaging_observer": {
+      "owner": "tests/packaging_support.py",
+      "consumers": [
+        "tests/test_packaging_contract.py"
+      ],
+      "regression_suite": "tests/test_packaging_subprocesses.py",
+      "python_minors": [
+        "3.11",
+        "3.12"
+      ],
+      "command": "pytest -q -s tests/test_packaging_subprocesses.py --no-cov",
+      "child_selectors_removed": [
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "VIRTUAL_ENV"
+      ],
+      "private_configuration_preserved": [
+        "PIP_CACHE_DIR",
+        "TMPDIR",
+        "PIP_INDEX_URL",
+        "PIP_CERT",
+        "SSL_CERT_FILE"
+      ],
+      "bootstrap": "isolated venv --without-pip, then explicit target ensurepip with actual failure diagnostics",
+      "normal_authority": "normal direct_url, prefix/module origins and all wheel package bytes before/after original consumers",
+      "failure_policy": "retain original argv/cwd/returncode/stdout/stderr and partial target; no retry/force reinstall/ignore-installed",
+      "scope": "test observer only; unchanged runtime, numerical and scientific contracts"
     }
   },
   "data": {

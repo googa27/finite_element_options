@@ -173,6 +173,20 @@ Evaluate a dependency by API stability, maintenance, platform support, transitiv
 
 Issue155: public Black–Scholes reference constants are read-only `importlib.resources` Traversables. Writers require explicit caller-owned paths; `refresh_exports=True` requires `export_directory` and writes a relocatable pair with `result_export_uri="result_export.json"` relative to the spec (issue161). Standalone spec writer URI defaults remain unchanged. Only the maintainer command `python scripts/export_arxiv_lab_black_scholes_fixture.py --publish-canonical` updates both packaged and checkout snapshots. `--output-dir` exports independently. See [resource ownership and migration](docs/PUBLIC_REFERENCE_RESOURCES.md); run `pytest -q tests/validation/test_public_reference_resources.py tests/architecture/test_reference_resource_ownership.py --no-cov`.
 
+Issue168: `tests/packaging_support.py` owns checked child execution, explicit
+venv/ensurepip bootstrap, base wheel requirements and normal installation authority.
+Copy child environments, remove only PYTHONPATH/PYTHONHOME/VIRTUAL_ENV selectors,
+and preserve private cache, temp, index and certificate configuration. Both normal
+consumers use isolated targets and `-I -B` probes from unrelated directories;
+verify normal direct_url, prefix/module origins and every wheel package byte
+before and after the original consumer assertions. Install the first wheel once
+with `--no-deps` after its declared core requirements; never force reinstall,
+ignore existing installations or retry bootstrap. A failure must retain actual
+argv, cwd, exit, stdout and stderr, including explicit ensurepip errors and partial
+target artifacts. Run `pytest -q -s tests/test_packaging_subprocesses.py --no-cov`
+alongside the unchanged packaging/architecture suites on Python3.11/3.12.
+These are test-observer contracts; runtime/numerical/scientific maturity is unchanged.
+
 ## 13. Performance
 
 Optimization order:

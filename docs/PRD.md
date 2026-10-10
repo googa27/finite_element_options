@@ -281,6 +281,20 @@ The current single `requirements.txt` combines core, FD, UI, calibration, datafr
 
 Do not depend on `scikit-fem[all]` in the minimal profile. The development lock reproduces CI; wheel metadata uses compatible runtime ranges. Minimum-supported and latest-compatible profiles are tested separately.
 
+Issue168: `tests/packaging_support.py` owns checked child execution, explicit
+venv/ensurepip bootstrap, base wheel requirements and normal installation authority.
+Copy child environments, remove only PYTHONPATH/PYTHONHOME/VIRTUAL_ENV selectors,
+and preserve private cache, temp, index and certificate configuration. Both normal
+consumers use isolated targets and `-I -B` probes from unrelated directories;
+verify normal direct_url, prefix/module origins and every wheel package byte
+before and after the original consumer assertions. Install the first wheel once
+with `--no-deps` after its declared core requirements; never force reinstall,
+ignore existing installations or retry bootstrap. A failure must retain actual
+argv, cwd, exit, stdout and stderr, including explicit ensurepip errors and partial
+target artifacts. Run `pytest -q -s tests/test_packaging_subprocesses.py --no-cov`
+alongside the unchanged packaging/architecture suites on Python3.11/3.12.
+These are test-observer contracts; runtime/numerical/scientific maturity is unchanged.
+
 ## 8. Release, compatibility and deprecation
 
 - Distribution and solver-contract versions are independent.

@@ -74,9 +74,12 @@ def test_children_preserve_private_configuration(tmp_path: Path) -> None:
         + repr(list(values))
         + "}))"
     )
-    assert json.loads(
-        _run([sys.executable, "-I", "-B", "-c", code], cwd=tmp_path, env=env)
-    ) == values
+    assert (
+        json.loads(
+            _run([sys.executable, "-I", "-B", "-c", code], cwd=tmp_path, env=env)
+        )
+        == values
+    )
     assert env == before
 
 
@@ -289,7 +292,12 @@ def test_wheel_consumer_excludes_parent_user_site(
     monkeypatch.setenv("PYTHONUSERBASE", str(tmp_path / "parent-user-base"))
     user_site = Path(
         _run(
-            [sys.executable, "-B", "-c", "import site; print(site.getusersitepackages())"],
+            [
+                sys.executable,
+                "-B",
+                "-c",
+                "import site; print(site.getusersitepackages())",
+            ],
             cwd=tmp_path,
         ).strip()
     )
