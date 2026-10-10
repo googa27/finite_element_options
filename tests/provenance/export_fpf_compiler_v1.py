@@ -2,6 +2,7 @@
 
 This is a test-only producer observer, not FEM admission or scientific evidence.
 """
+
 from __future__ import annotations
 
 import base64
@@ -25,7 +26,11 @@ HISTORY_BYTES = "2071b2f2a1651cf1e4f97b09f05e6b6a09c6af9a2e6758b1fc6b53bdc15757a
 
 def encoded(value: object) -> bytes:
     return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
     ).encode()
 
 
@@ -49,9 +54,7 @@ def main() -> None:
     prefix = Path(sys.prefix).resolve()
     assert not Path.cwd().resolve().is_relative_to(source)
     assert all(
-        not Path(item).resolve().is_relative_to(source)
-        for item in sys.path
-        if item
+        not Path(item).resolve().is_relative_to(source) for item in sys.path if item
     )
     assert importlib.util.find_spec("src") is None
     assert git(source, "rev-parse", "HEAD") == PRODUCER_HEAD
@@ -81,7 +84,11 @@ def main() -> None:
         if name == record_names[0]:
             assert digest == size == ""
         else:
-            actual = base64.urlsafe_b64encode(hashlib.sha256(value).digest()).rstrip(b"=").decode()
+            actual = (
+                base64.urlsafe_b64encode(hashlib.sha256(value).digest())
+                .rstrip(b"=")
+                .decode()
+            )
             assert digest == "sha256=" + actual
             assert int(size) == len(value)
 
@@ -99,7 +106,9 @@ def main() -> None:
                 assert Path(module.__file__).resolve().is_relative_to(prefix)
 
     verify_installed()
-    from financial_problem_formulations.algebra.pde_ir.compiler import compile_pde_ir_json
+    from financial_problem_formulations.algebra.pde_ir.compiler import (
+        compile_pde_ir_json,
+    )
 
     source_path = source / "tests/fixtures/pde_ir/black_scholes_call_v0.json"
     source_bytes = source_path.read_bytes()
@@ -108,22 +117,36 @@ def main() -> None:
     source_identity = {
         key: value for key, value in source_payload.items() if key != "canonical_hash"
     }
-    assert "sha256:" + hashlib.sha256(encoded(identity(source_identity))).hexdigest() == SOURCE_IR
+    assert (
+        "sha256:" + hashlib.sha256(encoded(identity(source_identity))).hexdigest()
+        == SOURCE_IR
+    )
     current = compile_pde_ir_json(source_path).to_dict()
     assert current == compile_pde_ir_json(source_path).to_dict()
     assert current["accepted"] is True
     compiled = current["compiled_operator"]
     assert compiled["compiled_hash"] == COMPILED_V1
     assert compiled["source_ir_canonical_hash"] == SOURCE_IR
-    assert compiled["compiler_evidence"]["compiler_version"] == "pde_ir_symbolic_compiler.v1"
+    assert (
+        compiled["compiler_evidence"]["compiler_version"]
+        == "pde_ir_symbolic_compiler.v1"
+    )
     assert compiled["compiler_evidence"]["grammar_version"] == "restricted_math_ast.v0"
     unhashed = {key: value for key, value in compiled.items() if key != "compiled_hash"}
-    assert "sha256:" + hashlib.sha256(encoded(identity(unhashed))).hexdigest() == COMPILED_V1
-    history_path = source / "tests/fixtures/compiler_history/v0/black_scholes_call_v0.json"
+    assert (
+        "sha256:" + hashlib.sha256(encoded(identity(unhashed))).hexdigest()
+        == COMPILED_V1
+    )
+    history_path = (
+        source / "tests/fixtures/compiler_history/v0/black_scholes_call_v0.json"
+    )
     history_bytes = history_path.read_bytes()
     assert hashlib.sha256(history_bytes).hexdigest() == HISTORY_BYTES
     old = json.loads(history_bytes)["compiled_operator"]
-    assert old["compiled_hash"] == "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e"
+    assert (
+        old["compiled_hash"]
+        == "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e"
+    )
     excluded = {"compiled_hash", "compiler_evidence", "expressions"}
     assert {key: value for key, value in old.items() if key not in excluded} == {
         key: value for key, value in compiled.items() if key not in excluded

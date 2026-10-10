@@ -132,3 +132,12 @@ keep the normal wheel private; only reviewed public-synthetic result data may cr
 into FEM. Cost if wrong: producer provenance stays blocked rather than widening access.
 Task1 is NOT complete. A private FPF billing refusal, if observed, remains explicit;
 no token/secret/security-policy change or local/SSD override is authorized by this plan.
+
+Task1 initial full CI38018730469 source job114114770821 passed Ruff lint but
+refused observer formatting (1file/249alreadyformatted). Source is formatted through
+an existing internal Ruff stdin/stdout-only process with cache disabled; Python AST
+identity is checked. This is no environment install or local file write, and its
+Ruff0.15.21 result still needs the repository's hosted0.12.12 formatter acceptance.
+The5072f81 publication succeeded before an immediate stale PR-head readback assertion1;
+subsequent independent native ref/PR/tree readback proves5072f81 and exactly2added paths.
+No successful commit/ref mutation was repeated. Native logs retain actual failures.
