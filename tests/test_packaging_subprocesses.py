@@ -1,4 +1,9 @@
-"""Real child-process regressions for the packaging observer (issue168)."""
+"""Real child-process regressions for the packaging observer (issue168).
+
+Each poisoned consumer scenario builds its own wheel and bootstraps a fresh
+target. This intentional build/bootstrap cost preserves independent installation
+authority; sharing a mutable target would couple the negative controls.
+"""
 
 from __future__ import annotations
 

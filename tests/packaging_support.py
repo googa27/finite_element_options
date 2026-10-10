@@ -110,6 +110,7 @@ def _assert_normal_authority(report):
             if origin is not None:
                 assert Path(origin).resolve().is_relative_to(prefix), (name, origin)
             else:
+                # This contract admits one wheel-owned namespace portion only.
                 paths = [Path(p).resolve() for p in getattr(module, "__path__", [])]
                 relative = name.replace(".", "/")
                 expected = Path(dist.locate_file(relative)).resolve()
@@ -127,7 +128,11 @@ _assert_normal_authority(False)
 
 
 def run_installed(python: Path, wheel: Path, code: str, *, cwd: Path) -> str:
-    """Keep the original consumer assertions between full byte/origin checks."""
+    """Run argument-free consumers between full normal-wheel authority checks.
+
+    sys.argv[1:3] is reserved for the wheel and target prefix. A future
+    argument-taking consumer needs a separate, explicit argument interface.
+    """
     return run_checked(
         [
             str(python),

@@ -658,7 +658,10 @@
       "normal_authority": "normal direct_url, prefix/module origins and all wheel package bytes before/after original consumers",
       "failure_policy": "retain original argv/cwd/returncode/stdout/stderr and partial target; no retry/force reinstall/ignore-installed",
       "scope": "test observer only; unchanged runtime, numerical and scientific contracts",
-      "complete_source_command": "python -m pytest -q -o addopts='' tests/architecture tests/test_packaging_contract.py"
+      "complete_source_command": "python -m pytest -q -o addopts='' tests/architecture tests/test_packaging_contract.py",
+      "consumer_arguments": "argument-free consumers; sys.argv[1:3] is reserved for the wheel and target prefix; future consumer arguments require an explicit separate interface",
+      "namespace_portions": "exactly one wheel-owned namespace portion within the normal target; multi-distribution namespaces require a separately reviewed contract",
+      "scenario_isolation": "each poisoned consumer scenario independently builds a wheel and bootstraps a fresh target; intentional runtime cost avoids shared mutable installation authority"
     }
   },
   "data": {
