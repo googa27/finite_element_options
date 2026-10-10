@@ -5,7 +5,6 @@ from __future__ import annotations
 from hashlib import sha256
 import importlib.metadata as metadata
 import os
-import subprocess
 import sys
 import tarfile
 import textwrap
@@ -15,6 +14,8 @@ from pathlib import Path
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 import pytest
+
+from packaging_support import run_checked as _run
 
 pytestmark = pytest.mark.packaging
 
@@ -27,19 +28,6 @@ PINARES_REFERENCE_HASHES = {
     "fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json": "02bd2bd3440dd14a76ab22b2732c6f673e239a014846da2bc918ba032bfbc1d3",
     "quant_problem_specs/pinares_fixed_price_proxy.json": "f7e48be4f88c572f6c4f11c0a3fdb12741dfaeebfe71a2da1762202096e6a092",
 }
-
-
-def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> str:
-    result = subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-    return result.stdout + result.stderr
 
 
 def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> None:

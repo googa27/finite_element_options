@@ -68,3 +68,6 @@
 - Plan self-review: all issue168 acceptance requirements map to Tasks1-3; no numerical or scientific promotion is included.
 - Initial base: master4f18785af418d241242baf013fb053dba78fcf32.
 - No repair, new installed acceptance or merge is established by this plan.
+
+- Task1 RED: exact6ad8e276, hosted CI38010993449 package3.11 job114090707003 6failed/1passed0.29s nativeexit1 raw217285B/SHA5d8e0b9d1381d7211c23a4775889ec064c78fda27858682ead420cd4e4377367; package3.12 job114090707124 6failed/1passed0.42s nativeexit1 raw216034B/SHAef6058368ea6d29235962525dd06ae741b2d7d61dc8fb29cd9682c738d1d4f74. Both source-poison cases observed module/distributionTrue; both invalid-home cases failed real startup; both diagnostic controls lacked context. Private configuration positive passed. Actual bootstrap direct refusal is separate from the pending factory path.
+- Task1 repair: only copied-env PYTHONPATH/PYTHONHOME isolation and actual child diagnostic context. VIRTUAL_ENV selection and factory/normal-wheel authority remain Task2; no Task1 GREEN or owner completion claimed yet.
