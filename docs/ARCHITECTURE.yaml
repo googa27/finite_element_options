@@ -614,7 +614,23 @@
       "adoption_closeout": "pytest -q tests/validation/test_adoption_sequence_closeout.py"
     },
     "ci_workflow": ".github/workflows/portfolio-architecture.yml",
-    "mirror_source": "where pertinent"
+    "mirror_source": "where pertinent",
+    "deterministic_calibration": {
+      "owner_issue": 169,
+      "source_suite": "tests/test_calibrator.py",
+      "normal_profiles": [
+        "core",
+        "calibration"
+      ],
+      "supported_python": [
+        "3.11",
+        "3.12"
+      ],
+      "actual_absence_control": "external_tests/calibration/test_pymc_absence.py",
+      "sampler_owner": "external_tests/bayesian_profile/test_pymc_profile.py",
+      "sampler_profile": "hash-pinned bayesian Python3.12",
+      "limits": "Synthetic diagnostics and installed package contracts; no Heston/market calibration promotion"
+    }
   },
   "data": {
     "consumes_data": true,

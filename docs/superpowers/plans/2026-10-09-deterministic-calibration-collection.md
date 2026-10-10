@@ -32,8 +32,8 @@
 
 **Interfaces:** Existing calibration facade and legacy PyMCCalibrator.calibrate remain unchanged. The new unittest script executes directly under a normal core or calibration wheel and asserts actual PyMC absence plus the named legacy facade refusal.
 
-- [ ] Commit a genuine normal calibration3.11/3.12 collection gate before changing the unconditional PyMCCalibrator import. Build/install ordinary wheels with declared calibration+validation extras, assert PyMC absent and run the original selected suite from an unrelated directory with isolated Python, pytest importlib mode and -c /dev/null.
-- [ ] Observe the real collection exit2 at the named legacy missing-extra guard. Keep any preceding governance/bootstrap refusal separate; do not label it behavioral RED.
+- [x] Commit a genuine normal calibration3.11/3.12 collection gate before changing the unconditional PyMCCalibrator import. Build/install ordinary wheels with declared calibration+validation extras, assert PyMC absent and run the original selected suite from an unrelated directory with isolated Python, pytest importlib mode and -c /dev/null.
+- [x] Observe the real collection exit2 at the named legacy missing-extra guard. Keep any preceding governance/bootstrap refusal separate; do not label it behavioral RED.
 - [ ] Remove only the optional facade import from deterministic collection; acquire the real class locally from estimation.heston in the existing blocked-import refusal test.
 - [ ] Move the original sampler function and its surface helper, preserving their AST/values, into the never-skipping locked Python3.12 Bayesian profile. Keep its existing300/300 posterior smoke unchanged.
 - [ ] Add the actual-absence unittest facade controls to both existing normal core jobs and both calibration jobs. Assert no PyMC import occurs and retain the exact named remedy.
@@ -45,3 +45,6 @@
 Self-review: one test-ownership change owns all five review-focus cases. The deterministic runtime and numerical contracts are unchanged. First publication adds only this plan and the genuine normal-calibration collection gates; the unconditional import remains until the observed RED. No task is accepted yet.
 
 Ruling: user-authorized remote authoring and hosted checks replace local worktree/scratch execution while the installed reserve is breached. All source is tied to an immutable branch head/current actual master, with native receipts in issue169 and coordination66. No local source/Git/cache/environment/log/SSD writes are permitted. Root works alone and labels the eventual dedicated source review honestly; no worker or personal approval request.
+
+
+Execution ledger: test-first9b12d08 added only plan/workflow. Native CI38006707535 jobs114077049707/114077049725 actually refuse collection2 at the missing-PyMC compatibility guard, with157normal members unchanged before/after. The named3.11 transcript also contains later3.12 environment lines, so no unqualified3.11 execution claim is inferred from it; final jobs explicitly assert/print their runtime minor. This successor removes only the collection import, moves the unchanged sampler/helper ASTs and retains all15 deterministic assertions plus the independent300/300 smoke. Actual GREEN/full-source/installed/review/default acceptance remains pending. Original observer404/SyntaxError/output truncation are not product failures.

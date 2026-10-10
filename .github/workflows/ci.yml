@@ -60,6 +60,10 @@ jobs:
           PY
       - name: Execute README examples from installed wheel
         run: /tmp/feo-wheel-check/bin/python scripts/check_readme_examples.py README.md
+      - name: Verify core missing-extra refusal
+        run: |
+          cd /tmp
+          /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/external_tests/calibration/test_pymc_absence.py" --profile core
       - name: Verify installed fixture ownership
         run: |
           cd /tmp
@@ -163,6 +167,8 @@ jobs:
     name: normal calibration (${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      EXPECTED_PYTHON: ${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -185,6 +191,10 @@ jobs:
           /tmp/feo-calibration-check/bin/python -m pip install --upgrade pip 'setuptools>=83'
           WHEEL=$(realpath dist/finite_element_options-*.whl)
           /tmp/feo-calibration-check/bin/python -m pip install "${WHEEL}[calibration,validation]" -c constraints.txt
+      - name: Verify calibration missing-extra refusal
+        run: |
+          cd /tmp
+          /tmp/feo-calibration-check/bin/python -I -B "${GITHUB_WORKSPACE}/external_tests/calibration/test_pymc_absence.py" --profile calibration
       - name: Run deterministic calibration with PyMC absent
         run: |
           cd /tmp
@@ -193,6 +203,7 @@ jobs:
           import importlib.metadata as md
           import importlib.util
           import json
+          import os
           from pathlib import Path
           import sys
           import zipfile
@@ -203,6 +214,7 @@ jobs:
           source, wheel = map(Path, sys.argv[1:])
           prefix = Path(sys.prefix).resolve()
           assert sys.flags.isolated
+          assert sys.version_info[:2] == tuple(map(int, os.environ["EXPECTED_PYTHON"].split(".")))
           assert not Path.cwd().is_relative_to(source)
           assert Path(fem.__file__).resolve().is_relative_to(prefix)
           assert importlib.util.find_spec("src") is None
@@ -233,6 +245,7 @@ jobs:
               assert importlib.util.find_spec("pymc") is None
               print(json.dumps({
                   "phase": phase,
+                  "python": list(sys.version_info[:3]),
                   "normal_installed_members": len(members),
                   "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
                   "pymc_absent": True,

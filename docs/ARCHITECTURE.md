@@ -795,3 +795,26 @@ facade name remains a read-only Traversable directory for compatibility.
 The repository location is trusted and canonicalized first; a location alias
 is allowed. Symlink refusal applies to mirror destinations and their ancestors
 beneath that canonical root. It is not a policy for aliases above the root.
+
+
+### Deterministic calibration collection (issue 169)
+
+The lightweight `calibration` profile must run all fifteen deterministic tests
+in `tests/test_calibrator.py` with PyMC genuinely absent. Normal wheel jobs on
+Python 3.11 and 3.12 use isolated Python, an unrelated working directory,
+pytest importlib mode and an empty configuration; all package-member bytes and
+loaded package origins are checked before and after. The retained source-text
+inspection in that suite is a source check, separate from installed behavior.
+
+`external_tests/calibration/test_pymc_absence.py` runs in both normal core and
+calibration profiles: it checks actual pandas/PyMC presence and the legacy
+facade's named `finite-element-options[calibration,bayesian]` refusal before
+loading Heston. The existing blocked-import method-refusal control remains in
+the deterministic suite and acquires its real class only inside that test.
+
+The original synthetic sampler and surface helper live in the locked Python
+3.12 `external_tests/bayesian_profile/test_pymc_profile.py`: retain 200 draws,
+two chains, seed 123 and parameter tolerance 0.15. Keep its existing independent
+300-draw/300-warmup posterior diagnostic control unchanged. These are synthetic
+test and packaging contracts, not validated Heston or market calibration.
+No runtime dependency, numerical tolerance or capability maturity changes.
