@@ -7,7 +7,11 @@ from .numpyro_smoke import (
     run_numpyro_smoke,
 )
 from .oracle import exact_normal_posterior
-from .profile import run_bayesian_jax_profile, stable_environment_checks
+from .profile import (
+    profile_lock_checks,
+    run_bayesian_jax_profile,
+    stable_environment_checks,
+)
 from .pymc_smoke import run_pymc_smoke
 
 __all__ = [
@@ -15,6 +19,7 @@ __all__ = [
     "exact_normal_posterior",
     "jax_fem_differentiation_status",
     "require_jax_fem_differentiation",
+    "profile_lock_checks",
     "run_bayesian_jax_profile",
     "run_numpyro_smoke",
     "run_pymc_smoke",

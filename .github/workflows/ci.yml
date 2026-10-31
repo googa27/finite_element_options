@@ -74,6 +74,7 @@ jobs:
         run: |
           cd /tmp
           /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_public_golden_ownership.py"
+          /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_compiler_versions.py"
       - name: Verify installed Pinares reference resources
         run: |
           cd /tmp
@@ -374,6 +375,10 @@ jobs:
             python-version: '3.11'
             dependency: streamlit
             imports: finite_element_options.sidebar
+          - profile: ui
+            python-version: '3.12'
+            dependency: streamlit
+            imports: finite_element_options.sidebar
           - profile: volatility
             python-version: '3.11'
             dependency: arch
@@ -484,6 +489,10 @@ jobs:
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
               -r "${GITHUB_WORKSPACE}/environments/jax-regime-py312/requirements.lock"
             /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
+          elif [ "${PROFILE}" = "ui" ] || [ "${PROFILE}" = "viz" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/ui-py311-py312/requirements.lock"
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --no-deps "${WHEEL}"
           else
             /tmp/feo-${PROFILE}-check/bin/python -m pip install "${WHEEL}[${PROFILE}]"
           fi
@@ -526,6 +535,13 @@ jobs:
               assert settings.evaluationDate == original
               print('QuantLib evaluation date restoration OK')
           PY
+          if [ "${PROFILE}" = "ui" ]; then
+            /tmp/feo-${PROFILE}-check/bin/python -m pip install --require-hashes \
+              -r "${GITHUB_WORKSPACE}/environments/ui-py311-py312/test-requirements.lock"
+            /tmp/feo-${PROFILE}-check/bin/python -I -B -m pytest \
+              --import-mode=importlib -c /dev/null -q \
+              "${GITHUB_WORKSPACE}/external_tests/ui/test_profile.py" --no-cov
+          fi
           if [ "${PROFILE}" = "quantlib" ]; then
             /tmp/feo-${PROFILE}-check/bin/python -m pip install pytest pytest-cov -c "${GITHUB_WORKSPACE}/constraints.txt"
             /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
@@ -585,7 +601,7 @@ jobs:
           fi
 
   visual_reproducibility:
-    name: JAX regime visual byte reproducibility
+    name: JAX regime current visual byte reproducibility
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -600,15 +616,18 @@ jobs:
       - name: Install hash-pinned renderer
         run: |
           python -m pip install --require-hashes \
-            -r environments/jax-regime-visual-py312/requirements.lock
+            -r environments/jax-regime-visual-current-py312/requirements.lock
       - name: Regenerate and compare exact PNG/PDF bytes
         run: |
           mkdir -p /tmp/feo-jax-regime-visual /tmp/feo-mpl-cache
           MPLCONFIGDIR=/tmp/feo-mpl-cache python scripts/generate_jax_regime_plot.py \
+            --visual-profile current \
             --qa-layout \
-            --output /tmp/feo-jax-regime-visual/jax_regime_study_2026-09-07.png
+            --output /tmp/feo-jax-regime-visual/jax_regime_study_2026-09-07_current_2026-10-31.png
           cd /tmp/feo-jax-regime-visual
-          sha256sum -c "${GITHUB_WORKSPACE}/docs/images/jax_regime_study_2026-09-07.sha256"
+          sha256sum -c "${GITHUB_WORKSPACE}/docs/images/jax_regime_study_2026-09-07_current_2026-10-31.sha256"
+          cd "${GITHUB_WORKSPACE}/docs/images"
+          sha256sum -c jax_regime_study_2026-09-07.sha256
 
   supply_chain:
     name: supply chain audit and SBOM

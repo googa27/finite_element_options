@@ -106,6 +106,30 @@
         "numerical": "Unchanged compiler.v0 solve, independently recomputed result hash and original absolute price/Delta/Gamma budgets 0.002/0.001/2e-5; public run_verification_benchmark plus validate_evidence",
         "limits": "Public-synthetic compiler.v0 only; no compiler.v1, new calibration or market-science acceptance"
       }
+    },
+    "compiled_fixture_versions": {
+      "issue": "https://github.com/googa27/finite_element_options/issues/164",
+      "owner": "src/finite_element_options/validation/compiled_weak_form_golden.py",
+      "selection": "Exact registered compiler-version/hash pairs; historical no-argument v0 default unchanged",
+      "authority": "Immutable v0 serialized bytes and genuine normal-installed producer v1 packaged JSON; fresh public decode per call",
+      "producer_head": "968780defc687cd9296badf980811459e7c14b28",
+      "producer_tree": "95edd8dd36e1b0a10d2b0414c87f1215e52ad936",
+      "fitness_tests": [
+        "tests/test_compiled_weak_form_versions.py",
+        "tests/validation/test_compiler_versions.py"
+      ],
+      "scope": "Existing public-synthetic Black-Scholes scikit-fem/SciPy route; unchanged mathematical budgets and capability maturity"
+    },
+    "manufactured_assembly": {
+      "owner": "src/finite_element_options/validation/evidence/manufactured.py",
+      "selected": "Existing scikit-fem>=12.0.2,<13; SciPy sparse LU",
+      "boundary": "P1 mesh/basis, maintained mass/laplace, LinearForm source and Functional error norms; sparse throughout",
+      "quadrature": "degree5/three Gauss points, shared per-solve basis",
+      "custom_code_reason": "Independent SymPy manufactured PDE/exact solution, coefficients, time/boundary algebra and acceptance perturbations remain domain validation semantics",
+      "evidence": "docs/evidence/manufactured_scikit_fem_migration_2026-10-31.json",
+      "fitness_test": "tests/validation/test_manufactured_solutions.py",
+      "compatibility": "Same mathematical/error contracts; floating-point evidence may differ, historical hashes remain immutable",
+      "primary_api": "https://scikit-fem.readthedocs.io/en/stable/api.html"
     }
   },
   "source_layout": {
@@ -127,7 +151,8 @@
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/result_export.json",
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
-      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json"
+      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json",
+      "src/finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json"
     ],
     "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved.",
     "hierarchy_policy": {
@@ -408,6 +433,7 @@
       },
       {
         "capability": "isolated Bayesian and JAX-native research profiles",
+        "security_lock_update": "2026-10-31: isolated hash locks update only filelock4.2.1, Pillow13.0.0 and setuptools84.1.0. Current execution binds the exact current lock; replay references allow only that lock or the original historical identity. Dated evidence and scientific controls remain unchanged; see docs/BAYESIAN_JAX_PROFILE.md.",
         "selected": [
           "PyMC 5.26.1 + ArviZ 0.23.4",
           "NumPyro 0.21.0 + JAX/jaxlib 0.9.2",
@@ -437,6 +463,8 @@
       },
       {
         "capability": "JAX-native bivariate regime inference and SDE pricing study",
+        "current_visual_security_profile": "Issue184: environments/jax-regime-visual-current-py312 locks Matplotlib3.10.3, NumPy2.4.6 and Pillow13.0.0; explicit current profile refuses historical canonical publication. Actual current replay preserves every PNG/PDF byte and layout while historical locks/evidence/figures remain unchanged; see docs/UI_VISUAL_SECURITY_MIGRATION.md and docs/evidence/ui_visual_security_2026-10-31.json. Maintained UI/viz lock supports actual normal Python3.11/3.12 AppTest checks. No scientific maturity or all-profile security claim.",
+        "security_lock_update": "2026-10-31: CI-tool lock updates only certifi2026.10.19, filelock4.2.1, msgpack1.2.3 and setuptools84.1.0. Scientific/runtime/test/visual locks and historical research artifacts remain unchanged; see environments/jax-regime-py312/README.md.",
         "selected": [
           "DYNAMAX 1.0.2 for Gaussian-HMM EM/filter/smoother",
           "NumPyro 0.21.0 for NUTS over continuous HMM parameters with latent states marginalized",
@@ -464,7 +492,8 @@
           "tests/architecture/test_jax_regime_boundary.py",
           "tests/validation/test_jax_regime_study_evidence.py",
           "scripts/run_jax_regime_study.py --synthetic --warmup 75 --samples 75 --chains 2 --pricing-paths 32 --verify",
-          "environments/jax-regime-visual-py312/requirements.lock + CI byte comparison"
+          "environments/jax-regime-visual-current-py312/requirements.lock + current CI byte comparison; original visual lock/figures retained as historical evidence",
+          "external_tests/ui/test_profile.py + environments/ui-py311-py312/requirements.lock"
         ],
         "maturity": "experimental-research-only"
       },

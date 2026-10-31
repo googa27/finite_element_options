@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Test profiles bound pytest to `>=9,<9.2` while pytest-benchmark 5.3.0 uses
+  the removed private `_nodeid` attribute. Reassess when an upstream compatible
+  plugin is released; retain actual benchmark execution. Runtime dependencies
+  and numerical tolerances are unchanged.
+- Admit exact registered compiler.v1 public Black-Scholes output with explicit
+  version selection while preserving historical compiler.v0 defaults and bytes.
+- Use maintained sparse scikit-fem P1 assembly and quadrature in manufactured
+  validation, retaining the independent SymPy PDE and existing error budgets.
+
 - **Breaking in 0.2.0:** the deterministic `calibration` extra no longer installs
   PyMC or ArviZ. Migrate Bayesian calibration and posterior workflows to Python
   3.12 and install `finite-element-options[bayesian]`; add `[bayesian-jax]` only

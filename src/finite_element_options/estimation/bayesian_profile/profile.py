@@ -25,7 +25,10 @@ from .pymc_smoke import run_pymc_smoke
 PREDECESSOR_PATH = "docs/evidence/petsc_vi_assessment_2026-09-05.json"
 PREDECESSOR_SHA256 = "f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368"
 LOCK_PATH = "environments/bayesian-jax-py312/requirements.lock"
-LOCK_SHA256 = "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
+LOCK_SHA256 = "e2fcda612575f991f1b820eeb4597ff27931076d808732e780a0e57ec6a88428"
+HISTORICAL_LOCK_SHA256 = (
+    "1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f"
+)
 LOCKED_VERSION_KEYS = (
     "arviz",
     "finite_element_options",
@@ -60,6 +63,18 @@ def stable_environment_checks(
         == (3, 12),
         "implementation": observed.get("implementation")
         == expected.get("implementation"),
+    }
+
+
+def profile_lock_checks(
+    observed: Mapping[str, object], expected: Mapping[str, object]
+) -> dict[str, bool]:
+    """Bind current execution while preserving one exact historical reference."""
+
+    return {
+        "lock_hash": observed.get("sha256") == LOCK_SHA256,
+        "reference_lock_hash": expected.get("sha256")
+        in (HISTORICAL_LOCK_SHA256, LOCK_SHA256),
     }
 
 
@@ -287,10 +302,12 @@ def _lock_evidence(root: str | Path | None) -> dict[str, Any]:
 
 
 __all__ = [
+    "HISTORICAL_LOCK_SHA256",
     "LOCK_PATH",
     "LOCK_SHA256",
     "PREDECESSOR_PATH",
     "PREDECESSOR_SHA256",
     "run_bayesian_jax_profile",
+    "profile_lock_checks",
     "stable_environment_checks",
 ]

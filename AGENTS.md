@@ -233,6 +233,13 @@ CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel pac
 - Replay issue #150 only in the hash-pinned Python 3.12 `jax-regime` wheel profile from `environments/jax-regime-py312/requirements.lock`, `environments/jax-regime-py312/test-requirements.lock`, and `environments/jax-regime-py312/ci-requirements.lock`; install all three with `--require-hashes`. Use `JAX_PLATFORMS` set to `cpu`, `JAX_ENABLE_X64` set to `1`, and `XLA_FLAGS` containing `--xla_force_host_platform_device_count` with value `2`, run `external_tests/jax_regime/test_profile.py`, then `scripts/run_jax_regime_study.py --input "$PDP_ARCHIVE" --output /tmp/jax-regime-replay.json --verify`. The caller supplies the content-addressed PDP export; only an explicit exact-config `--publish-canonical` run may replace canonical evidence. Historical transition reuse under constrained domestic `Qd` is research policy, not market calibration.
 - Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 
+Issue184: current UI/viz normal consumers use `environments/ui-py311-py312/requirements.lock`
+and real `external_tests/ui/test_profile.py` AppTest controls on both supported
+Python minors. Current visual CI uses `environments/jax-regime-visual-current-py312/requirements.lock`
+and `generate_jax_regime_plot.py --visual-profile current --qa-layout`; that
+profile refuses historical canonical publication. Preserve every original
+dated figure/evidence/lock byte. See `docs/UI_VISUAL_SECURITY_MIGRATION.md`.
+
 ## 15. Evidence by change type
 
 | Change | Minimum evidence |
@@ -476,3 +483,71 @@ two chains, seed 123 and parameter tolerance 0.15. Keep its existing independent
 300-draw/300-warmup posterior diagnostic control unchanged. These are synthetic
 test and packaging contracts, not validated Heston or market calibration.
 No runtime dependency, numerical tolerance or capability maturity changes.
+
+
+## Registered compiler versions (issue164)
+
+The public compiled weak-form adapter admits exactly the registered compiler.v0
+and compiler.v1 Black-Scholes records. `packaged_golden_fixture()` retains the
+original v0 compressed bytes and default; the additive keyword
+`compiler_version="pde_ir_symbolic_compiler.v1"` selects fresh caller-owned JSON
+from an immutable packaged v1 resource. Screening selects version-specific exact
+compiled expressions and hashes; unknown or inconsistent version/hash pairs,
+rehashed expression/unit changes, source/route/boundary changes and private or
+unknown fields remain refused before numerical work. No optional dependency or
+scientific capability is promoted.
+
+V1 is genuine output of normal-installed FPF producer
+`968780defc687cd9296badf980811459e7c14b28` (tree
+`95edd8dd36e1b0a10d2b0414c87f1215e52ad936`), with compiled identity
+`sha256:b449647e7f8deea870b0e8fbe0cfd4355040a53b9853d69c17443f0b3a6d9cb2`.
+The source IR and FEM route are unchanged. Only reviewed public-synthetic result
+data cross this boundary; private producer sources/wheels stay private.
+`tests/fixtures/compiled_weak_form/compiler_v1_provenance.json` records the new
+producer observation separately from historical release evidence. The exact
+complete producer checkout and all 129 package files were verified against
+source/wheel/installed bytes before and after execution.
+
+Run `pytest -q tests/test_compiled_weak_form_versions.py
+tests/validation/test_compiler_versions.py tests/validation/test_public_golden_ownership.py
+tests/test_compiled_weak_form_adapter.py --no-cov` and execute the standalone
+version controls using normal installed isolated Python on both supported minors.
+Keep original price/Delta/Gamma budgets 0.002/0.001/2e-5, residual/convergence gates,
+normal wheel/package-byte checks and the public manufactured benchmark. Full
+producer release acceptance, prerequisite issue disposition and resulting-default
+verification remain separate integration obligations.
+
+
+## Manufactured FEM library ownership
+
+`validation.evidence.manufactured` uses scikit-fem `MeshLine`, `ElementLineP1`,
+`Basis`, maintained mass/Laplacian forms, `LinearForm` and `Functional` for sparse
+assembly, loads and L2/H1-seminorm error integration. Degree-five quadrature retains
+the original three-Gauss-point integration policy. One basis is reused per solve;
+assembled operators remain sparse through boundary elimination and SciPy LU.
+The independent SymPy strong-form residual, exact solution and derivative, PDE
+coefficients/signs, Crank-Nicolson scheme, essential boundary/RHS algebra and
+negative perturbations remain explicit domain/validation semantics.
+
+This replaces the former hand-assembled dense tridiagonals, element shape functions
+and quadrature loops. Original convergence/residual/error budgets remain unchanged;
+newly computed evidence can differ in floating-point rounding. Historical evidence
+and hashes must not be overwritten or relabeled. New comparisons against the
+pre-migration implementation at16/64 elements are recorded separately in
+`docs/evidence/manufactured_scikit_fem_migration_2026-10-31.json`. Test polynomial
+integral oracles and linear sparse nonzero growth at up to1024 elements, then run
+`tests/validation/test_manufactured_solutions.py`, Black-Scholes convergence and
+the public verification benchmark. This is validation-kernel ownership repair,
+without a capability-maturity change.
+
+Primary maintained API reference:
+https://scikit-fem.readthedocs.io/en/stable/api.html (scikit-fem12.0.2).
+The already-required BSD-3-Clause-licensed scikit-fem owns assembly; SciPy owns sparse LU.
+No new runtime dependency or competing generic FEM implementation is introduced.
+
+
+Successful packaging observer children return stdout unchanged to their consumer;
+successful stderr is emitted separately as a retained diagnostic. Failure receipts
+still preserve exact argv/cwd/status/stdout/stderr. A warning on stderr must not
+corrupt a successful JSON stdout record. The real-child regression is
+`tests/test_packaging_subprocesses.py::test_successful_child_keeps_json_separate_from_stderr`.

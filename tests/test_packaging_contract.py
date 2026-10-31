@@ -50,6 +50,13 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
     with zipfile.ZipFile(wheels[0]) as wheel:
+        versioned = "finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json"
+        assert (
+            wheel.read(versioned)
+            == (
+                ROOT / "tests/fixtures/compiled_weak_form/black_scholes_call_v1.json"
+            ).read_bytes()
+        )
         for filename in ("problem_spec.json", "result_export.json"):
             packaged = (
                 "finite_element_options/validation/evidence/reference_data/fem_bs_001/"
@@ -116,6 +123,9 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
     sdist = next(outdir.glob("finite_element_options-*.tar.gz"))
     required = {
         "docs/PUBLIC_REFERENCE_RESOURCES.md",
+        "tests/fixtures/compiled_weak_form/black_scholes_call_v1.json",
+        "tests/fixtures/compiled_weak_form/compiler_v1_provenance.json",
+        "src/finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json",
         "tests/fixtures/fem_bs_001/problem_spec.json",
         "tests/fixtures/fem_bs_001/result_export.json",
         "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/problem_spec.json",
@@ -148,13 +158,22 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
         "environments/jax-regime-visual-py312/requirements.in",
         "environments/jax-regime-visual-py312/requirements.lock",
         "environments/jax-regime-visual-py312/README.md",
+        "environments/jax-regime-visual-current-py312/requirements.in",
+        "environments/jax-regime-visual-current-py312/requirements.lock",
+        "environments/jax-regime-visual-current-py312/README.md",
+        "environments/ui-py311-py312/requirements.lock",
+        "environments/ui-py311-py312/test-requirements.in",
+        "environments/ui-py311-py312/test-requirements.lock",
+        "environments/ui-py311-py312/README.md",
         "external_tests/jax_regime/test_profile.py",
         "external_tests/bayesian_profile/test_pymc_profile.py",
         "external_tests/bayesian_profile/test_numpyro_profile.py",
+        "external_tests/ui/test_profile.py",
         "scripts/generate_adoption_sequence_closeout.py",
         "scripts/run_bayesian_jax_profile.py",
         "scripts/run_jax_regime_study.py",
         "scripts/generate_jax_regime_plot.py",
+        "scripts/jax_regime_visual_profiles.json",
         "tests/validation/test_adoption_sequence_closeout.py",
         "tests/validation/test_bayesian_jax_profile_evidence.py",
         "tests/validation/test_jax_regime_study_evidence.py",

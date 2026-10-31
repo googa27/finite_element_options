@@ -1,0 +1,4 @@
+# Current renderer; original dated renderer remains immutable and historical.
+matplotlib==3.10.3
+numpy==2.4.6
+pillow==13.0.0

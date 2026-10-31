@@ -1,6 +1,6 @@
 # Isolated Python 3.12 Bayesian/JAX Research Profile
 
-## Decision
+## Historical decision (2026-09-05)
 
 **Adopt two isolated research extras—`bayesian` and `bayesian-jax`—without expanding the base wheel or claiming automatic differentiation through FEM.**
 
@@ -19,18 +19,29 @@
 
 This is an environment and diagnostic capability only. It is not market calibration, a production Bayesian model, or a capability-matrix maturity upgrade.
 
-## Evidence
+## Historical evidence (2026-09-05)
 
 - Artifact: [`evidence/bayesian_jax_profile_2026-09-05.json`](evidence/bayesian_jax_profile_2026-09-05.json)
 - Artifact SHA-256: `3a4fde478b4f8b43c8eed31774f2086638105249f2029239ab7cb25d49d2c876`
 - Study-input SHA-256: `4271c962f2bc9ab0d4844ac9d27557868e0dcc6eb62a8f4539198352c5d6b6bf`
 - Synthetic-data SHA-256: `1f5474034d123b0ee9fd7e67f3ae9c0e37e7ea8babe61e5090f56e6f83c364b3`
 - Combined lock: [`../environments/bayesian-jax-py312/requirements.lock`](../environments/bayesian-jax-py312/requirements.lock)
-- Combined lock SHA-256: `1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f`
+- Historical combined lock SHA-256: `1f97148d8501965688e450aff6563abd0172c7098c622cf50bd9a0848d9e1f7f`
 - PyMC-only lock: [`../environments/bayesian-py312/requirements.lock`](../environments/bayesian-py312/requirements.lock)
-- PyMC-only lock SHA-256: `86ef1f8939370f48573bc9ddf2733536c91c58b2ce8d78e2e727ec0b1628004d`
+- Historical PyMC-only lock SHA-256: `86ef1f8939370f48573bc9ddf2733536c91c58b2ce8d78e2e727ec0b1628004d`
 - Predecessor PETSc artifact SHA-256: `f81d29c63625138fd5c1a2ee124c4398b578db80b1a603f113859a0db7dc1368`
 - Privacy: `public_synthetic`
+
+The dated artifact and its historical lock identities remain unchanged. The
+2026-10-31 transitive security repair changes only filelock to 4.2.1, Pillow to
+13.0.0 and setuptools to 84.1.0. Current combined lock SHA-256 is
+`e2fcda612575f991f1b820eeb4597ff27931076d808732e780a0e57ec6a88428`;
+current PyMC-only lock SHA-256 is
+`7a08fdadb0164e2a9f0b0c19a72ace8e2e10dbc549135789e05499f28d5c5e20`.
+All sampler, scientific-library, data, seed and diagnostic controls are unchanged.
+The original lock bytes remain in published commit
+`acc77c552178c25b09ea58c51102815bdbbeaefe`; current profile checks do not relabel
+that source or its results as freshly verified.
 
 ## Dependency split
 
@@ -74,6 +85,11 @@ XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   --output "$REPO/docs/evidence/bayesian_jax_profile_2026-09-05.json" --verify
 ```
 
+With `--verify`, `--output` selects the existing comparison reference and is
+read-only. To write a separate current report, omit `--verify` and choose a
+caller-owned output such as `/tmp/bayesian-jax-current-replay.json`; keep the
+dated canonical artifact unchanged.
+
 The verified wheel resolved:
 
 | Package | Version |
@@ -87,7 +103,7 @@ The verified wheel resolved:
 | NumPy | `2.5.1` |
 | SciPy | `1.18.0` |
 
-The lock is generated from `uv.lock` with:
+The original locks were generated from the historical universal `uv.lock` with:
 
 ```bash
 uv export --frozen --extra bayesian-jax --no-dev --no-emit-project \
@@ -98,7 +114,49 @@ uv export --frozen --extra bayesian --no-dev --no-emit-project \
   --output-file environments/bayesian-py312/requirements.lock
 ```
 
-`--verify` is semantic: it reruns both stochastic engines and checks stable input/lock/package-version/decision identities, Python major/minor, the documented CPU backend with two host devices, and current diagnostics. Python patch and host platform remain provenance rather than equality gates, so equivalent Python 3.12 CI hosts replay portably. Exact artifact bytes include timing observations and are independently pinned by the ordinary static evidence test.
+For the security repair, compile the isolated profiles from `pyproject.toml` and
+`environments/bayesian-py312/security-constraints.in`, using the committed profile
+lock to retain all unaffected versions and artifact hashes:
+
+```bash
+uv pip compile pyproject.toml --extra bayesian-jax --python-version 3.12 \
+  --universal --generate-hashes \
+  -c environments/bayesian-py312/security-constraints.in \
+  --output-file environments/bayesian-jax-py312/requirements.lock
+uv pip compile pyproject.toml --extra bayesian --python-version 3.12 \
+  --universal --generate-hashes \
+  -c environments/bayesian-py312/security-constraints.in \
+  --output-file environments/bayesian-py312/requirements.lock
+```
+
+The universal lock also serves unrelated UI extras: its older Streamlit requires
+Pillow below 13. It is not the installation authority for these repaired isolated
+profiles. Its selected dependency graph and artifact records remain unchanged;
+only the project metadata is synchronized to the already published pytest cap.
+The universal/UI and historical visual profiles retain their older Pillow pins
+and are outside this security acceptance. They require separate coherent
+dependency/lifecycle and visual-reproduction review; this repair does not label
+all profiles secure. The separate migration and visual replay are owned by
+[issue 184](https://github.com/googa27/finite_element_options/issues/184).
+
+The targeted releases retain the supported Python 3.12 platform and introduce no
+scientific API changes. Their primary release metadata identifies filelock 4.2.1
+as MIT, Pillow 13.0.0 as MIT-CMU and setuptools 84.1.0 as MIT. See the
+[filelock release](https://github.com/tox-dev/py-filelock/releases/tag/4.2.1),
+[Pillow 13 release notes](https://pillow.readthedocs.io/en/latest/releasenotes/13.0.0.html),
+and [setuptools release metadata](https://pypi.org/pypi/setuptools/84.1.0/json).
+The current profile tests exercise native PyTensor compilation and both PyMC
+and NumPyro inference; this repair changes only their supporting transitive
+packages, not their sampler implementations or scientific configuration.
+
+`--verify` reruns both stochastic engines and binds observed execution to the
+exact current combined lock. It permits only the registered current or original
+historical lock identity as the comparison reference; any other reference fails.
+The report still records the actual current lock. Stable scientific-package,
+input and decision identities, Python major/minor, CPU/two-device checks and all
+current posterior/predictive diagnostics remain required. Python patch and host
+platform remain provenance. Historical artifact bytes are independently pinned
+by the static evidence test and are never rewritten by verification.
 
 ## Identifiable synthetic model
 

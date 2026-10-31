@@ -1,6 +1,12 @@
-# Deterministic JAX-regime visual environment
+# Historical deterministic JAX-regime visual environment
 
 This Python 3.12 profile is deliberately separate from the lean inference lock. It owns only byte-reproducible regeneration of `docs/images/jax_regime_study_2026-09-07.{png,pdf}`.
+
+This immutable historical reference contains Pillow 12.3.0, for which the actual
+2026-10-31 audit reports 39 advisory entries. It is no longer the current CI or
+recommended installation cohort. Use the [maintained current renderer](../jax-regime-visual-current-py312/README.md)
+for a patched installation. Preserve this lock and the dated figure hashes as
+the provenance of their original execution; do not change them into new success.
 
 ```bash
 uv venv --python 3.12 /tmp/feo-jax-regime-visual

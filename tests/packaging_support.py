@@ -41,7 +41,9 @@ def run_checked(
                 sort_keys=True,
             )
         )
-    return result.stdout + result.stderr
+    if result.stderr:
+        sys.stderr.write(result.stderr)
+    return result.stdout
 
 
 def create_venv(

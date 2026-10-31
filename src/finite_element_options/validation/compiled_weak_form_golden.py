@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import base64
 from functools import lru_cache
+from importlib.resources import files
 import json
 import zlib
 from typing import Any
+
+from .compiled_weak_form_contract import PUBLIC_BS_COMPILER_V0, PUBLIC_BS_COMPILER_V1
 
 _GOLDEN_FIXTURE_ZLIB_BASE64 = (
     "eNrtXFtv3MYVfvevILYPkVuvNBzeE6RAmwtQ2EETyFUfDIeYGyVWXJIhubK3gfvbe2Z4HS53Ra1k"
@@ -83,10 +86,33 @@ def _packaged_golden_fixture_bytes() -> bytes:
     return zlib.decompress(base64.b64decode(_GOLDEN_FIXTURE_ZLIB_BASE64))
 
 
-def packaged_golden_fixture() -> dict[str, Any]:
-    """Return a caller-owned copy of the exact compiled weak-form golden fixture."""
+@lru_cache(maxsize=1)
+def _packaged_v1_fixture_bytes() -> bytes:
+    """Cache genuine registered producer output as immutable resource bytes."""
 
-    loaded = json.loads(_packaged_golden_fixture_bytes().decode("utf-8"))
+    return (
+        files("finite_element_options.validation")
+        .joinpath(
+            "evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json"
+        )
+        .read_bytes()
+    )
+
+
+def packaged_golden_fixture(
+    *, compiler_version: str = PUBLIC_BS_COMPILER_V0
+) -> dict[str, Any]:
+    """Return a fresh exact registered fixture; the historical v0 is the default."""
+
+    if compiler_version == PUBLIC_BS_COMPILER_V0:
+        data = _packaged_golden_fixture_bytes()
+    elif compiler_version == PUBLIC_BS_COMPILER_V1:
+        data = _packaged_v1_fixture_bytes()
+    else:
+        raise ValueError(
+            f"unknown compiled weak-form compiler version: {compiler_version}"
+        )
+    loaded = json.loads(data.decode("utf-8"))
     if not isinstance(loaded, dict):  # defensive guard for corrupted package data
         raise TypeError("compiled weak-form golden fixture must decode to an object")
     return loaded

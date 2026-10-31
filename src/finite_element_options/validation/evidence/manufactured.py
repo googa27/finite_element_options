@@ -6,8 +6,10 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import numpy as np
-from scipy.sparse import csc_matrix, diags
+from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import splu
+from skfem import Basis, ElementLineP1, Functional, LinearForm, MeshLine, asm
+from skfem.models.poisson import laplace, mass
 import sympy as sp
 
 VerificationPerturbation = Literal[
@@ -99,11 +101,12 @@ def run_manufactured_case(config: ManufacturedRunConfig) -> ManufacturedRunResul
     dt = 1.0 / config.time_steps
     diffusion = -1.0e-4 if config.perturbation == "operator_sign" else 0.28
     reaction = -0.03 if config.perturbation == "reaction" else 0.03
-    mass = _assemble_mass(config.elements, h)
-    stiffness = _assemble_stiffness(config.elements, h)
-    operator = diffusion * stiffness + reaction * mass
-    left_matrix = mass + 0.5 * dt * operator
-    right_matrix = mass - 0.5 * dt * operator
+    basis = _p1_basis(nodes)
+    mass_matrix = _assemble_mass(config.elements, h, basis=basis)
+    stiffness = _assemble_stiffness(config.elements, h, basis=basis)
+    operator = diffusion * stiffness + reaction * mass_matrix
+    left_matrix = mass_matrix + 0.5 * dt * operator
+    right_matrix = mass_matrix - 0.5 * dt * operator
     interior = np.arange(1, config.elements)
     boundary_dofs = np.asarray([0, config.elements], dtype=np.intp)
     boundary_positions = np.asarray([0, -1], dtype=np.intp)
@@ -118,8 +121,8 @@ def run_manufactured_case(config: ManufacturedRunConfig) -> ManufacturedRunResul
             0.5
             * dt
             * (
-                _load_vector(nodes, tau0, config.perturbation)
-                + _load_vector(nodes, tau1, config.perturbation)
+                _load_vector(nodes, tau0, config.perturbation, basis=basis)
+                + _load_vector(nodes, tau1, config.perturbation, basis=basis)
             )
         )
         rhs = right_matrix @ solution + load
@@ -145,7 +148,7 @@ def run_manufactured_case(config: ManufacturedRunConfig) -> ManufacturedRunResul
             float(np.max(np.abs(next_solution[boundary_positions] - exact_boundary))),
         )
         solution = next_solution
-    l2, h1 = _error_norms(nodes, solution, 1.0)
+    l2, h1 = _error_norms(nodes, solution, 1.0, basis=basis)
     payoff_error = abs(
         float(np.interp(0.5, nodes, solution))
         - float(_exact_u(np.array([0.5]), 1.0)[0])
@@ -172,18 +175,24 @@ def run_manufactured_case(config: ManufacturedRunConfig) -> ManufacturedRunResul
     )
 
 
-def _assemble_mass(elements: int, h: float) -> np.ndarray:
-    diagonal = np.full(elements + 1, 2.0 * h / 3.0)
-    diagonal[0] = diagonal[-1] = h / 3.0
-    off = np.full(elements, h / 6.0)
-    return diags((off, diagonal, off), offsets=(-1, 0, 1)).toarray()
+def _p1_basis(nodes: np.ndarray) -> Basis:
+    """Use maintained P1 shapes and degree-five (three-point) quadrature."""
+
+    return Basis(MeshLine(nodes), ElementLineP1(), intorder=5)
 
 
-def _assemble_stiffness(elements: int, h: float) -> np.ndarray:
-    diagonal = np.full(elements + 1, 2.0 / h)
-    diagonal[0] = diagonal[-1] = 1.0 / h
-    off = np.full(elements, -1.0 / h)
-    return diags((off, diagonal, off), offsets=(-1, 0, 1)).toarray()
+def _assemble_mass(
+    elements: int, h: float, *, basis: Basis | None = None
+) -> csr_matrix:
+    selected = basis if basis is not None else _p1_basis(np.arange(elements + 1) * h)
+    return asm(mass, selected).tocsr()
+
+
+def _assemble_stiffness(
+    elements: int, h: float, *, basis: Basis | None = None
+) -> csr_matrix:
+    selected = basis if basis is not None else _p1_basis(np.arange(elements + 1) * h)
+    return asm(laplace, selected).tocsr()
 
 
 def _exact_u(x: np.ndarray, tau: float) -> np.ndarray:
@@ -201,41 +210,44 @@ def _source(x: np.ndarray, tau: float) -> np.ndarray:
 
 
 def _load_vector(
-    nodes: np.ndarray, tau: float, perturbation: VerificationPerturbation
+    nodes: np.ndarray,
+    tau: float,
+    perturbation: VerificationPerturbation,
+    *,
+    basis: Basis | None = None,
 ) -> np.ndarray:
-    load = np.zeros_like(nodes)
-    xi = np.array([-np.sqrt(3.0 / 5.0), 0.0, np.sqrt(3.0 / 5.0)])
-    weights = np.array([5.0 / 9.0, 8.0 / 9.0, 5.0 / 9.0])
-    for left, right in zip(nodes[:-1], nodes[1:]):
-        h = right - left
-        xq = 0.5 * (left + right) + 0.5 * h * xi
-        fq = _source(xq, tau)
+    selected = basis if basis is not None else _p1_basis(nodes)
+
+    @LinearForm
+    def source_load(v, w):
+        fq = _source(w.x[0], tau)
         if perturbation == "source":
             fq = 0.8 * fq
-        phi_l = (right - xq) / h
-        phi_r = (xq - left) / h
-        contrib_l = 0.5 * h * float(np.dot(weights, fq * phi_l))
-        contrib_r = 0.5 * h * float(np.dot(weights, fq * phi_r))
-        i = int(round(left / h)) if h > 0 else 0
-        load[i] += contrib_l
-        load[i + 1] += contrib_r
-    return load
+        return fq * v
+
+    return np.asarray(asm(source_load, selected), dtype=float)
 
 
 def _error_norms(
-    nodes: np.ndarray, solution: np.ndarray, tau: float
+    nodes: np.ndarray,
+    solution: np.ndarray,
+    tau: float,
+    *,
+    basis: Basis | None = None,
 ) -> tuple[float, float]:
-    l2 = 0.0
-    h1 = 0.0
-    xi = np.array([-np.sqrt(3.0 / 5.0), 0.0, np.sqrt(3.0 / 5.0)])
-    weights = np.array([5.0 / 9.0, 8.0 / 9.0, 5.0 / 9.0])
-    for idx, (left, right) in enumerate(zip(nodes[:-1], nodes[1:])):
-        h = right - left
-        xq = 0.5 * (left + right) + 0.5 * h * xi
-        uh = solution[idx] * (right - xq) / h + solution[idx + 1] * (xq - left) / h
-        du = (solution[idx + 1] - solution[idx]) / h
-        l2 += 0.5 * h * float(np.dot(weights, (uh - _exact_u(xq, tau)) ** 2))
-        h1 += 0.5 * h * float(np.dot(weights, (du - _exact_ux(xq, tau)) ** 2))
+    selected = basis if basis is not None else _p1_basis(nodes)
+    field = selected.interpolate(solution)
+
+    @Functional
+    def l2_error(w):
+        return (w.solution - _exact_u(w.x[0], tau)) ** 2
+
+    @Functional
+    def h1_error(w):
+        return (w.solution.grad[0] - _exact_ux(w.x[0], tau)) ** 2
+
+    l2 = asm(l2_error, selected, solution=field)
+    h1 = asm(h1_error, selected, solution=field)
     return float(np.sqrt(l2)), float(np.sqrt(h1))
 
 

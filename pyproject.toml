@@ -87,7 +87,7 @@ validation = [
     "pydocstyle>=6,<7",
     "ruff==0.12.12",
     "mypy>=1.10,<2",
-    "pytest>=9,<10",
+    "pytest>=9,<9.2",
     "pytest-benchmark>=4,<6",
     "pytest-cov>=5,<8",
 ]
@@ -110,7 +110,7 @@ dev = [
     "mypy>=1.10,<2",
     "pyarrow>=23,<24",
     "pymc>=5,<6",
-    "pytest>=9,<10",
+    "pytest>=9,<9.2",
     "pytest-benchmark>=4,<6",
     "pytest-cov>=5,<8",
     "statsmodels>=0.14,<1",
@@ -142,6 +142,7 @@ exclude = ["src*"]
 [tool.setuptools.package-data]
 finite_element_options = ["py.typed"]
 "finite_element_options.validation.evidence" = [
+    "reference_data/compiled_weak_form/*.json",
     "reference_data/fem_bs_001/*.json",
     "reference_data/fem_pinares_fixed_price_proxy_v1/*.json",
     "reference_data/quant_problem_specs/*.json",

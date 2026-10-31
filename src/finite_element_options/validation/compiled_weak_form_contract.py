@@ -22,6 +22,11 @@ PUBLIC_BS_SOURCE_HASH = (
 PUBLIC_BS_COMPILED_HASH = (
     "sha256:970088e5dcb16535edfd230bfe992ea7eb68aede901c7b543682b39f1a5ac32e"
 )
+PUBLIC_BS_COMPILER_V0 = "pde_ir_symbolic_compiler.v0"
+PUBLIC_BS_COMPILER_V1 = "pde_ir_symbolic_compiler.v1"
+PUBLIC_BS_COMPILED_V1_HASH = (
+    "sha256:b449647e7f8deea870b0e8fbe0cfd4355040a53b9853d69c17443f0b3a6d9cb2"
+)
 
 ALLOWED_TOP_LEVEL_FIELDS = frozenset(
     {

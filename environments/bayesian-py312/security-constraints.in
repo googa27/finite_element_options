@@ -1,0 +1,6 @@
+# Security-only transitive constraints for the isolated Python 3.12 Bayesian locks.
+# The universal uv.lock also serves unrelated UI extras whose older Streamlit
+# caps Pillow below 13; do not upgrade that UI stack as part of this repair.
+filelock==4.2.1
+pillow==13.0.0
+setuptools==84.1.0

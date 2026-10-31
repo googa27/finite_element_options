@@ -20,6 +20,8 @@ from .compiled_weak_form_contract import (
     FIXTURE_SCHEMA_VERSION,
     PDE_IR_SCHEMA_VERSION,
     PUBLIC_BS_COMPILED_HASH,
+    PUBLIC_BS_COMPILER_V0,
+    PUBLIC_BS_COMPILER_V1,
     PUBLIC_BS_FIXTURE_ID,
     PUBLIC_BS_FORMULATION_ID,
     PUBLIC_BS_SOURCE_HASH,
@@ -109,7 +111,16 @@ def screen_compiled_weak_form(payload: Any) -> CompiledWeakFormScreen:
             request={},
         )
 
-    golden = packaged_golden_fixture()
+    compiled = as_mapping(payload.get("compiled_operator"))
+    compiler_version = as_mapping(compiled.get("compiler_evidence")).get(
+        "compiler_version"
+    )
+    selected_version = (
+        compiler_version
+        if compiler_version in (PUBLIC_BS_COMPILER_V0, PUBLIC_BS_COMPILER_V1)
+        else PUBLIC_BS_COMPILER_V0
+    )
+    golden = packaged_golden_fixture(compiler_version=selected_version)
     reject_private_markers(payload, diagnostics)
     unknown = sorted(set(payload) - ALLOWED_TOP_LEVEL_FIELDS)
     for key in unknown:
@@ -122,7 +133,6 @@ def screen_compiled_weak_form(payload: Any) -> CompiledWeakFormScreen:
         )
 
     pde_ir = as_mapping(payload.get("pde_ir"))
-    compiled = as_mapping(payload.get("compiled_operator"))
     route = as_mapping(payload.get("fem_route"))
     operator = as_mapping(pde_ir.get("operator"))
     golden_pde_ir = as_mapping(golden.get("pde_ir"))
@@ -219,8 +229,15 @@ def screen_compiled_weak_form(payload: Any) -> CompiledWeakFormScreen:
         diagnostics,
     )
     expect_field(
+        compiler_version,
+        selected_version,
+        "compiled_operator.compiler_evidence.compiler_version",
+        "compiled_weak_form.compiler_version",
+        diagnostics,
+    )
+    expect_field(
         compiled.get("compiled_hash"),
-        PUBLIC_BS_COMPILED_HASH,
+        golden_compiled.get("compiled_hash"),
         "compiled_operator.compiled_hash",
         "compiled_weak_form.compiled_hash",
         diagnostics,

@@ -1,0 +1,83 @@
+{
+  "scope": "Public synthetic manufactured FEM assembly migration; no historical evidence replacement or scientific maturity promotion",
+  "reference_commit": "14082e6",
+  "python": "3.12.14",
+  "scikit_fem": "12.0.2",
+  "quadrature": "P1 line basis, degree5 (three Gauss points)",
+  "rows": [
+    {
+      "before": {
+        "elements": 16,
+        "time_steps": 64,
+        "h": 0.0625,
+        "dt": 0.015625,
+        "dofs": 17,
+        "l2_error": 0.000392646225988644,
+        "h1_error": 0.015932174580105363,
+        "payoff_relevant_error": 0.00012387742899093446,
+        "algebraic_residual_inf": 6.938893903907228e-18,
+        "boundary_residual_inf": 0.0,
+        "accepted": true
+      },
+      "after": {
+        "elements": 16,
+        "time_steps": 64,
+        "h": 0.0625,
+        "dt": 0.015625,
+        "dofs": 17,
+        "l2_error": 0.00039264622598851286,
+        "h1_error": 0.015932174580105356,
+        "payoff_relevant_error": 0.00012387742899068466,
+        "algebraic_residual_inf": 6.938893903907228e-18,
+        "boundary_residual_inf": 0.0,
+        "accepted": true
+      },
+      "absolute_differences": {
+        "h": 0.0,
+        "dt": 0.0,
+        "l2_error": 1.3113425276212176e-16,
+        "h1_error": 6.938893903907228e-18,
+        "payoff_relevant_error": 2.498001805406602e-16,
+        "algebraic_residual_inf": 0.0,
+        "boundary_residual_inf": 0.0
+      }
+    },
+    {
+      "before": {
+        "elements": 64,
+        "time_steps": 128,
+        "h": 0.015625,
+        "dt": 0.0078125,
+        "dofs": 65,
+        "l2_error": 2.4612624499637042e-05,
+        "h1_error": 0.0039824522706468175,
+        "payoff_relevant_error": 7.829210358328842e-06,
+        "algebraic_residual_inf": 1.0842021724855044e-17,
+        "boundary_residual_inf": 0.0,
+        "accepted": true
+      },
+      "after": {
+        "elements": 64,
+        "time_steps": 128,
+        "h": 0.015625,
+        "dt": 0.0078125,
+        "dofs": 65,
+        "l2_error": 2.4612624500480623e-05,
+        "h1_error": 0.0039824522706468305,
+        "payoff_relevant_error": 7.82921035959172e-06,
+        "algebraic_residual_inf": 9.974659986866641e-18,
+        "boundary_residual_inf": 0.0,
+        "accepted": true
+      },
+      "absolute_differences": {
+        "h": 0.0,
+        "dt": 0.0,
+        "l2_error": 8.435804409612918e-16,
+        "h1_error": 1.3010426069826053e-17,
+        "payoff_relevant_error": 1.2628786905111156e-15,
+        "algebraic_residual_inf": 8.673617379884035e-19,
+        "boundary_residual_inf": 0.0
+      }
+    }
+  ]
+}
