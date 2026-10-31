@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from finite_element_options.estimation.bayesian_profile import (
+    profile_lock_checks,
     run_bayesian_jax_profile,
     stable_environment_checks,
 )
@@ -35,8 +36,9 @@ def main() -> int:
             "schema_version": report["schema_version"]
             == expected.get("schema_version"),
             "input_hash": report["input_hash"] == expected.get("input_hash"),
-            "lock_hash": report["environment_lock"]["sha256"]
-            == expected.get("environment_lock", {}).get("sha256"),
+            **profile_lock_checks(
+                report["environment_lock"], expected.get("environment_lock", {})
+            ),
             "decision": report["decision"]["status"]
             == expected.get("decision", {}).get("status"),
             **stable_environment_checks(

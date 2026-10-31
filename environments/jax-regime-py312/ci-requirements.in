@@ -4,7 +4,12 @@ cyclonedx-bom==7.3.1
 packaging==26.2
 pip==26.2.1
 pip-audit==2.10.1
-setuptools==84.0.0
+setuptools==84.1.0
 wheel==0.48.0
 # CI HTTP tooling security floor; PYSEC-2026-4175/4176/4177 (issue172).
 urllib3==2.8.0
+# Remediate the executed 2026-10-31 optional-profile audit without changing
+# numerical/runtime/test profiles or weakening the audit.
+certifi==2026.10.19
+filelock==4.2.1
+msgpack==1.2.3

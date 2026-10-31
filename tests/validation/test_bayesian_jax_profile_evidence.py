@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from finite_element_options.estimation.bayesian_profile import stable_environment_checks
+from finite_element_options.estimation.bayesian_profile.profile import LOCK_SHA256
 from finite_element_options.validation.evidence.serialization import (
     canonical_json_sha256,
     file_sha256,
@@ -30,11 +31,38 @@ def test_documented_jax_runtime_is_a_decision_gate() -> None:
     assert payload["decision"]["checks"]["jax_device_count"] is True
 
 
+def test_security_lock_replay_accepts_only_current_observation_and_known_reference() -> (
+    None
+):
+    """A transitive security update must not loosen lock or historical identity."""
+
+    from finite_element_options.estimation.bayesian_profile.profile import (
+        HISTORICAL_LOCK_SHA256,
+        LOCK_SHA256,
+        profile_lock_checks,
+    )
+
+    assert LOCK_SHA256 != HISTORICAL_LOCK_SHA256
+    for reference in (HISTORICAL_LOCK_SHA256, LOCK_SHA256):
+        assert all(
+            profile_lock_checks({"sha256": LOCK_SHA256}, {"sha256": reference}).values()
+        )
+    for observed, reference in (
+        (HISTORICAL_LOCK_SHA256, HISTORICAL_LOCK_SHA256),
+        ("0" * 64, HISTORICAL_LOCK_SHA256),
+        (LOCK_SHA256, "0" * 64),
+        (LOCK_SHA256, None),
+    ):
+        assert not all(
+            profile_lock_checks({"sha256": observed}, {"sha256": reference}).values()
+        )
+
+
 def test_bayesian_jax_profile_artifact_is_hash_bound_and_passed() -> None:
     """Keep the wheel/lock, diagnostics, seeds, and fail-closed scope synchronized."""
 
     assert file_sha256(ARTIFACT) == EXPECTED_SHA256
-    assert file_sha256(LOCK) == EXPECTED_LOCK_SHA256
+    assert file_sha256(LOCK) == LOCK_SHA256
     payload = json.loads(ARTIFACT.read_text(encoding="utf-8"))
     assert canonical_json_sha256(payload["input"]) == payload["input_hash"]
     assert payload["environment_lock"]["sha256"] == EXPECTED_LOCK_SHA256
