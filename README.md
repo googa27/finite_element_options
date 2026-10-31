@@ -55,6 +55,14 @@ fem-options qps solve tests/fixtures/compiled_weak_form/black_scholes_call_v0.js
 fem-options validation run-benchmark fem-bs-001 --out /tmp/fem-bs-001-evidence.json
 ```
 
+The exact registered `pde_ir_symbolic_compiler.v1` output is also admitted using
+`black_scholes_call_v1.json` with the same CLI. Python callers explicitly select
+`packaged_golden_fixture(compiler_version="pde_ir_symbolic_compiler.v1")` from
+`finite_element_options.validation.compiled_weak_form_golden`. The no-argument
+factory retains the historical compiler.v0 record. Unknown versions, mixed
+version/hash pairs and rehashed mutations are refused. New producer provenance
+is recorded in `tests/fixtures/compiled_weak_form/compiler_v1_provenance.json`.
+
 ## Capability matrix
 
 Public capability claims are generated from `finite_element_options.contracts.capability_matrix` and checked in CI. The full matrix is in [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md). A module or demo is not automatically a validated capability.

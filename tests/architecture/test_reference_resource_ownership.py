@@ -32,6 +32,7 @@ def test_packaged_reference_snapshots_equal_checkout_mirrors() -> None:
     assert config["tool"]["setuptools"]["package-data"][
         "finite_element_options.validation.evidence"
     ] == [
+        "reference_data/compiled_weak_form/*.json",
         "reference_data/fem_bs_001/*.json",
         "reference_data/fem_pinares_fixed_price_proxy_v1/*.json",
         "reference_data/quant_problem_specs/*.json",

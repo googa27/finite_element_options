@@ -74,6 +74,7 @@ jobs:
         run: |
           cd /tmp
           /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_public_golden_ownership.py"
+          /tmp/feo-wheel-check/bin/python -I -B "${GITHUB_WORKSPACE}/tests/validation/test_compiler_versions.py"
       - name: Verify installed Pinares reference resources
         run: |
           cd /tmp

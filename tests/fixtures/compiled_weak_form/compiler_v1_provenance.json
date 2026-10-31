@@ -1,0 +1,37 @@
+{
+  "compiled_hash": "sha256:b449647e7f8deea870b0e8fbe0cfd4355040a53b9853d69c17443f0b3a6d9cb2",
+  "distribution_version": "0.5.0",
+  "expression_changes": [
+    {
+      "new_expression_hash": "sha256:2f370a31a49c5ba46b40acb5ae509136622515d9d1c22c2cf422e104629b938d",
+      "new_normalized": "asymptotic(V, (S - (K * exp(((-r) * (T - t))))))",
+      "old_expression_hash": "sha256:0d959036a057eade5213ac6677966d38bd44a1b82ee93ba9fa2a46bb14bf2f24",
+      "old_normalized": "asymptotic(V, (S - (K * exp((-r * (T - t))))))",
+      "path": "boundary_conditions[1].expression"
+    },
+    {
+      "new_expression_hash": "sha256:f99fcfc16489c1d4b5dffe9b8c6b5a134e6c2732239ef3b1b69741325b8bedd6",
+      "new_normalized": "((-r) * V)",
+      "old_expression_hash": "sha256:d6cdba59a64d30fb6f2406034673bc5a010055487779af4e50075dba613e17fa",
+      "old_normalized": "(-r * V)",
+      "path": "operator.terms[1].expression"
+    }
+  ],
+  "historical_result_sha256": "2071b2f2a1651cf1e4f97b09f05e6b6a09c6af9a2e6758b1fc6b53bdc15757a9",
+  "installed_source_wheel_pre_post_identity": true,
+  "package_members": 129,
+  "privacy": "public-synthetic",
+  "producer_head": "968780defc687cd9296badf980811459e7c14b28",
+  "producer_repository": "googa27/financial_problem_formulations",
+  "producer_tree": "95edd8dd36e1b0a10d2b0414c87f1215e52ad936",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "record_rows": 134,
+  "result_sha256": "88de7622123f40e44649d3d27a86550751d1b4c3bd4b0a996ebc4700c8456f10",
+  "scope": "Exact normal-installed producer output; FEM envelope retains the historical source IR and route. No producer release, calibration or scientific promotion.",
+  "source_free_execution": true,
+  "source_input_sha256": "e254d018459933abc1fa0f2955f1807645831e7194e9ba790589c17d635e6b85",
+  "source_ir_canonical_hash": "sha256:5ab53779a5e322284a6cb18b22302c119f22bc740659aedf1c07823529d68a47",
+  "wheel_members": 134,
+  "wheel_name": "financial_problem_formulations-0.5.0-py3-none-any.whl",
+  "wheel_sha256": "f4aa2526dc87ad6e821fdd27e30f88e3548e41550485a3f5d7c7f25361b371a7"
+}

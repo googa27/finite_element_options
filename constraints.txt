@@ -16,3 +16,7 @@ ruff==0.12.12
 iminuit>=2.32,<3
 # Issue #134 OpenTURNS adapter is exercised through the optional uncertainty extra.
 openturns>=1.27,<2
+
+# pytest-benchmark 5.3.0 reads private node._nodeid removed in pytest 9.2.
+# Reassess after an upstream plugin release uses the public nodeid API.
+pytest>=9,<9.2

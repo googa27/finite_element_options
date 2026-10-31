@@ -393,13 +393,13 @@ def check_compiled_expressions(
         stringify(as_mapping(item).get("path")): as_mapping(item)
         for item in as_sequence(golden_compiled.get("expressions"))
     }
-    required = {
-        "operator.terms[0].expression": "(((0.5 * (sigma ^ 2)) * (S ^ 2)) * d2V_dS2)",
-        "operator.terms[1].expression": "(-r * V)",
-        "operator.terms[2].expression": "((r * S) * dV_dS)",
-        "terminal_condition.expression": "max((S - K), 0)",
-    }
-    for path, normalized in required.items():
+    required = (
+        "operator.terms[0].expression",
+        "operator.terms[1].expression",
+        "operator.terms[2].expression",
+        "terminal_condition.expression",
+    )
+    for path in required:
         if path not in paths:
             append_diagnostic(
                 diagnostics,
@@ -411,7 +411,7 @@ def check_compiled_expressions(
             continue
         actual = paths[path]
         expected = expected_paths.get(path, {})
-        if actual.get("normalized") != normalized:
+        if actual.get("normalized") != expected.get("normalized"):
             append_diagnostic(
                 diagnostics,
                 "compiled_weak_form.expression",

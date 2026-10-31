@@ -141,3 +141,35 @@ Ruff0.15.21 result still needs the repository's hosted0.12.12 formatter acceptan
 The5072f81 publication succeeded before an immediate stale PR-head readback assertion1;
 subsequent independent native ref/PR/tree readback proves5072f81 and exactly2added paths.
 No successful commit/ref mutation was repeated. Native logs retain actual failures.
+
+### Authorized workspace continuation, 2026-10-31
+
+The current user-authorized isolated workspace permits local source/build/verification
+work; the earlier host's disk-reserve hold above is historical evidence, not the
+state of this environment. Original branch commits476b9bf/5072f81/2792442 remain
+ancestors. No remote mutation, hosted-success claim or paid CI is part of this work.
+
+Task1 now has a real normal-installed producer observation. The private producer
+owner recovered complete exact checkout968780d/tree95edd8d, including its original
+binary documentation image, verified the normal wheel RECORD and all129 package
+members against source and installation before/after, and ran the unmodified
+observer with isolated Python3.12.14 from /tmp. The source IR matches FEM's
+historical source exactly. Output SHA256 is
+88de7622123f40e44649d3d27a86550751d1b4c3bd4b0a996ebc4700c8456f10;
+wheel SHA256 is f4aa2526dc87ad6e821fdd27e30f88e3548e41550485a3f5d7c7f25361b371a7.
+Private wheel/source remain outside this public repository. Only public-synthetic
+compiled data and compact provenance (without private package member inventory)
+are retained in fixtures. This is not full producer-release acceptance.
+
+Task2 meaningful RED: genuine v1 fixture refused on unmodified consumer with
+compiled_hash/compiled_operator_exact/expression/expression_hash diagnostics.
+Implementation now selects exact immutable versioned authority, retaining old
+compressed v0 bytes/default/API behavior and fresh caller ownership. Source tests
+cover both exact records, unknown/mixed pairs, rehashed mutations, private/unknown
+fields, source/route/boundary changes and refusal before the numerical runner.
+The standalone tests also perform unchanged price/Delta/Gamma solves per version
+from installed wheels. Initial focused source result:51passed/20subtests; expanded
+version controls:6passed/24subtests. Baseline ownership/adapter/manufactured/
+convergence suite:60passed. Architecture/CI contract, full pinned Ruff lint/format,
+mypy37files and pydocstyle passed. Required broad package/profile/minor/default
+verification remains in progress and must be reported with its actual outcome.

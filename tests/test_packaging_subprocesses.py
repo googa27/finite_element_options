@@ -19,6 +19,17 @@ from test_packaging_contract import _run
 pytestmark = pytest.mark.packaging
 
 
+def test_successful_child_keeps_json_separate_from_stderr(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Successful diagnostic output must not corrupt a consumer's JSON stream."""
+
+    code = "import sys; print('{\"ok\": true}'); print('child diagnostic', file=sys.stderr)"
+    observed = _run([sys.executable, "-I", "-B", "-c", code], cwd=tmp_path)
+    assert json.loads(observed) == {"ok": True}
+    assert capsys.readouterr().err == "child diagnostic\n"
+
+
 @pytest.mark.parametrize("explicit", [False, True])
 def test_children_reject_ambient_checkout_paths(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, explicit: bool

@@ -106,6 +106,30 @@
         "numerical": "Unchanged compiler.v0 solve, independently recomputed result hash and original absolute price/Delta/Gamma budgets 0.002/0.001/2e-5; public run_verification_benchmark plus validate_evidence",
         "limits": "Public-synthetic compiler.v0 only; no compiler.v1, new calibration or market-science acceptance"
       }
+    },
+    "compiled_fixture_versions": {
+      "issue": "https://github.com/googa27/finite_element_options/issues/164",
+      "owner": "src/finite_element_options/validation/compiled_weak_form_golden.py",
+      "selection": "Exact registered compiler-version/hash pairs; historical no-argument v0 default unchanged",
+      "authority": "Immutable v0 serialized bytes and genuine normal-installed producer v1 packaged JSON; fresh public decode per call",
+      "producer_head": "968780defc687cd9296badf980811459e7c14b28",
+      "producer_tree": "95edd8dd36e1b0a10d2b0414c87f1215e52ad936",
+      "fitness_tests": [
+        "tests/test_compiled_weak_form_versions.py",
+        "tests/validation/test_compiler_versions.py"
+      ],
+      "scope": "Existing public-synthetic Black-Scholes scikit-fem/SciPy route; unchanged mathematical budgets and capability maturity"
+    },
+    "manufactured_assembly": {
+      "owner": "src/finite_element_options/validation/evidence/manufactured.py",
+      "selected": "Existing scikit-fem>=12.0.2,<13; SciPy sparse LU",
+      "boundary": "P1 mesh/basis, maintained mass/laplace, LinearForm source and Functional error norms; sparse throughout",
+      "quadrature": "degree5/three Gauss points, shared per-solve basis",
+      "custom_code_reason": "Independent SymPy manufactured PDE/exact solution, coefficients, time/boundary algebra and acceptance perturbations remain domain validation semantics",
+      "evidence": "docs/evidence/manufactured_scikit_fem_migration_2026-10-31.json",
+      "fitness_test": "tests/validation/test_manufactured_solutions.py",
+      "compatibility": "Same mathematical/error contracts; floating-point evidence may differ, historical hashes remain immutable",
+      "primary_api": "https://scikit-fem.readthedocs.io/en/stable/api.html"
     }
   },
   "source_layout": {
@@ -127,7 +151,8 @@
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/result_export.json",
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/provider_evidence_manifest.json",
       "src/finite_element_options/validation/evidence/reference_data/fem_pinares_fixed_price_proxy_v1/unsupported_full_deal_problem_spec.json",
-      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json"
+      "src/finite_element_options/validation/evidence/reference_data/quant_problem_specs/pinares_fixed_price_proxy.json",
+      "src/finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json"
     ],
     "future_rule": "Any new Python package uses a src layout unless an evidence-backed exception is approved.",
     "hierarchy_policy": {

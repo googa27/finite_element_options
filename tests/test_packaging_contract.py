@@ -50,6 +50,13 @@ def test_wheel_exports_namespaced_package_and_no_src_package(tmp_path: Path) -> 
     assert "finite_element_options/time_integration/stepper.py" in names
     assert "finite_element_options/time/stepper.py" not in names
     with zipfile.ZipFile(wheels[0]) as wheel:
+        versioned = "finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json"
+        assert (
+            wheel.read(versioned)
+            == (
+                ROOT / "tests/fixtures/compiled_weak_form/black_scholes_call_v1.json"
+            ).read_bytes()
+        )
         for filename in ("problem_spec.json", "result_export.json"):
             packaged = (
                 "finite_element_options/validation/evidence/reference_data/fem_bs_001/"
@@ -116,6 +123,9 @@ def test_sdist_contains_profile_replay_and_evidence_contracts(tmp_path: Path) ->
     sdist = next(outdir.glob("finite_element_options-*.tar.gz"))
     required = {
         "docs/PUBLIC_REFERENCE_RESOURCES.md",
+        "tests/fixtures/compiled_weak_form/black_scholes_call_v1.json",
+        "tests/fixtures/compiled_weak_form/compiler_v1_provenance.json",
+        "src/finite_element_options/validation/evidence/reference_data/compiled_weak_form/black_scholes_call_v1.json",
         "tests/fixtures/fem_bs_001/problem_spec.json",
         "tests/fixtures/fem_bs_001/result_export.json",
         "src/finite_element_options/validation/evidence/reference_data/fem_bs_001/problem_spec.json",
