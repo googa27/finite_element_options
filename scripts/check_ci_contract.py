@@ -88,12 +88,16 @@ REQUIRED_SNIPPETS = {
     "JAX regime synthetic CI verification": "--synthetic --warmup 75 --samples 75",
     "JAX regime supply-chain artifact": "supply-chain-jax-regime-evidence",
     "JAX regime visual hash-pinned lock": (
-        "environments/jax-regime-visual-py312/requirements.lock"
+        "environments/jax-regime-visual-current-py312/requirements.lock"
     ),
     "JAX regime visual layout QA": "--qa-layout",
     "JAX regime visual exact byte comparison": (
-        'sha256sum -c "${GITHUB_WORKSPACE}/docs/images/jax_regime_study_2026-09-07.sha256"'
+        'sha256sum -c "${GITHUB_WORKSPACE}/docs/images/jax_regime_study_2026-09-07_current_2026-10-31.sha256"'
     ),
+    "historical visual bytes retained": "sha256sum -c jax_regime_study_2026-09-07.sha256",
+    "current visual profile explicit": "--visual-profile current",
+    "normal installed UI behavior": "external_tests/ui/test_profile.py",
+    "UI hash-pinned profile": "environments/ui-py311-py312/requirements.lock",
     "audited release wheel install": (
         "python -m pip install --no-deps dist/finite_element_options-*.whl"
     ),

@@ -7,12 +7,18 @@
 **Python 3.12 test-tool lock SHA-256:** `ab7d270889b7d1b74e7723668d972173b86e2e5d763d6385ad6566d5ac418af0`<br>
 **Current Python 3.12 CI-tool lock SHA-256:** `faa3ac74a6d187a494962c2ff5dc922befa51bf2c59bad6a22b16eb8fd9e1f99`<br>
 **Historical 2026-09-07 CI-tool lock SHA-256:** `5dbd4f3f15dce41e455b4cde0cb453c23782379cc4b37fef0db526ec75e0580b`<br>
-**Visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
+**Historical visual lock SHA-256:** `8110cfc79dcaffaf734730272ae5db84174a25a3304241a964422de2988891b6`<br>
 **PNG/PDF SHA-256:** `46e3e795c5bf693d117550a0e1b57b5bc77c7e05792120d9e750ede56df1df24` / `06d0e5d298e00cdbd3aee83248baec0f53c8ca4c4ca8882dc7a16a7d66585646`
 
 <p align="center">
   <img src="images/jax_regime_study_2026-09-07.png" alt="Four-state DYNAMAX, NumPyro, and Diffrax regime study results" width="100%" />
 </p>
+
+The separately registered [current secure renderer](../environments/jax-regime-visual-current-py312/README.md)
+replays this already public derived report with Pillow13 and reproduces every
+PNG/PDF byte. Its new lock, filenames and actual execution receipt are described
+in [issue184's migration](UI_VISUAL_SECURITY_MIGRATION.md); this dated research
+evidence, original figures and historical lock remain unchanged.
 
 ## Result in one sentence
 

@@ -8,7 +8,14 @@ jax==0.9.*
 numpyro==0.21.*
 # Supply-chain audit floors for Streamlit/UI transitive dependencies.
 cryptography>=50.0.0
-GitPython>=3.1.59
+# GitPython is no longer a dependency of the maintained Streamlit cohort.
+# Issue184 current UI/security cohort; Streamlit1.66 permits patched Pillow13.
+streamlit>=1.66.1,<2
+pillow>=13,<14
+certifi>=2026.10.19
+filelock>=4.2.1
+setuptools>=84.1.0
+urllib3>=2.8.0
 # Ruff 0.13+ expands default lint enforcement for the historical source tree;
 # keep CI deterministic until the repository intentionally adopts that rule set.
 ruff==0.12.12

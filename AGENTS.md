@@ -233,6 +233,13 @@ CI must keep third-party Actions pinned to full commit SHAs, run clean-wheel pac
 - Replay issue #150 only in the hash-pinned Python 3.12 `jax-regime` wheel profile from `environments/jax-regime-py312/requirements.lock`, `environments/jax-regime-py312/test-requirements.lock`, and `environments/jax-regime-py312/ci-requirements.lock`; install all three with `--require-hashes`. Use `JAX_PLATFORMS` set to `cpu`, `JAX_ENABLE_X64` set to `1`, and `XLA_FLAGS` containing `--xla_force_host_platform_device_count` with value `2`, run `external_tests/jax_regime/test_profile.py`, then `scripts/run_jax_regime_study.py --input "$PDP_ARCHIVE" --output /tmp/jax-regime-replay.json --verify`. The caller supplies the content-addressed PDP export; only an explicit exact-config `--publish-canonical` run may replace canonical evidence. Historical transition reuse under constrained domestic `Qd` is research policy, not market calibration.
 - Do not report an unconfigured or unrun gate as passing. Record the gap and owner issue.
 
+Issue184: current UI/viz normal consumers use `environments/ui-py311-py312/requirements.lock`
+and real `external_tests/ui/test_profile.py` AppTest controls on both supported
+Python minors. Current visual CI uses `environments/jax-regime-visual-current-py312/requirements.lock`
+and `generate_jax_regime_plot.py --visual-profile current --qa-layout`; that
+profile refuses historical canonical publication. Preserve every original
+dated figure/evidence/lock byte. See `docs/UI_VISUAL_SECURITY_MIGRATION.md`.
+
 ## 15. Evidence by change type
 
 | Change | Minimum evidence |

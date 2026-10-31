@@ -1,0 +1,4 @@
+# Reuse the already exercised isolated-profile test versions on both UI minors.
+packaging==26.2
+pytest==9.0.3
+pytest-cov==7.0.0

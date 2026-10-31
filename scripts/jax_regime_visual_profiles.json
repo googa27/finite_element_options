@@ -1,0 +1,27 @@
+{
+  "stacks": {
+    "historical": {"matplotlib": "3.10.3", "numpy": "2.4.6", "pillow": "12.3.0"},
+    "current": {"matplotlib": "3.10.3", "numpy": "2.4.6", "pillow": "13.0.0"}
+  },
+  "assumption_match_keys": [
+    "dividend_yield", "domestic_rate", "equity_spot", "foreign_rate", "fx_spot", "maturity"
+  ],
+  "canonical_config": {
+    "chains": 2,
+    "dividend_yield": 0.0,
+    "domestic_rate": 0.045,
+    "em_iters": 250,
+    "foreign_rate": 0.0439,
+    "holdout_fraction": 0.15,
+    "market_calibrated": false,
+    "maturity_years": 0.5,
+    "num_states": 4,
+    "posterior_samples": 300,
+    "pricing_paths": 4096,
+    "production_ready": false,
+    "research_only": true,
+    "seed": 20260907,
+    "steps_per_year": 252,
+    "warmup": 300
+  }
+}

@@ -12,12 +12,13 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 
-EXPECTED_VISUAL_STACK = {
-    "matplotlib": "3.10.3",
-    "numpy": "2.4.6",
-    "pillow": "12.3.0",
-}
 ROOT = Path(__file__).resolve().parents[1]
+VISUAL_PROFILES = json.loads(
+    Path(__file__)
+    .with_name("jax_regime_visual_profiles.json")
+    .read_text(encoding="utf-8")
+)
+EXPECTED_VISUAL_STACK = VISUAL_PROFILES["stacks"]["historical"]
 CANONICAL_INPUT = ROOT / "docs/evidence/jax_regime_study_2026-09-07.json"
 CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(
     CANONICAL_INPUT.suffix + ".sha256"
@@ -25,35 +26,23 @@ CANONICAL_INPUT_SIDECAR = CANONICAL_INPUT.with_suffix(
 EXPECTED_EVIDENCE_SHA256 = (
     "2faf09c5316d59ebdeec31e26c85483c87cee5f92be786f563923d6e11a9a854"
 )
-EXPECTED_CANONICAL_CONFIG = {
-    "chains": 2,
-    "dividend_yield": 0.0,
-    "domestic_rate": 0.045,
-    "em_iters": 250,
-    "foreign_rate": 0.0439,
-    "holdout_fraction": 0.15,
-    "market_calibrated": False,
-    "maturity_years": 0.5,
-    "num_states": 4,
-    "posterior_samples": 300,
-    "pricing_paths": 4_096,
-    "production_ready": False,
-    "research_only": True,
-    "seed": 20_260_907,
-    "steps_per_year": 252,
-    "warmup": 300,
-}
-EXPECTED_ASSUMPTION_MATCH_KEYS = {
-    "dividend_yield",
-    "domestic_rate",
-    "equity_spot",
-    "foreign_rate",
-    "fx_spot",
-    "maturity",
-}
+EXPECTED_CANONICAL_CONFIG = VISUAL_PROFILES["canonical_config"]
+EXPECTED_ASSUMPTION_MATCH_KEYS = set(VISUAL_PROFILES["assumption_match_keys"])
 CANONICAL_OUTPUT = ROOT / "docs/images/jax_regime_study_2026-09-07.png"
 CANONICAL_PDF = CANONICAL_OUTPUT.with_suffix(".pdf")
 DEFAULT_OUTPUT = Path("/tmp/jax_regime_study_2026-09-07.png")
+
+
+def _expected_visual_stack(profile: str, *, publish_canonical: bool) -> dict[str, str]:
+    """Admit an exact encoder cohort without relabeling historical publication."""
+
+    if profile not in VISUAL_PROFILES["stacks"]:
+        raise ValueError("unknown visual profile")
+    if profile == "current" and publish_canonical:
+        raise ValueError(
+            "current visual profile cannot replace historical canonical figures"
+        )
+    return dict(VISUAL_PROFILES["stacks"][profile])
 
 
 def _aliases_existing_protected_file(target: Path, protected: Path) -> bool:
@@ -256,6 +245,9 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--visual-profile", choices=("historical", "current"), default="historical"
+    )
+    parser.add_argument(
         "--input",
         type=Path,
         default=CANONICAL_INPUT,
@@ -280,6 +272,9 @@ def main() -> int:
         CANONICAL_OUTPUT if args.publish_canonical else DEFAULT_OUTPUT
     )
     try:
+        expected_stack = _expected_visual_stack(
+            args.visual_profile, publish_canonical=args.publish_canonical
+        )
         args.output, pdf = _validated_output_paths(
             args.output, publish_canonical=args.publish_canonical
         )
@@ -300,10 +295,10 @@ def main() -> int:
         "numpy": np.__version__,
         "pillow": PIL.__version__,
     }
-    if actual_stack != EXPECTED_VISUAL_STACK:
+    if actual_stack != expected_stack:
         raise RuntimeError(
-            f"visual stack drift: expected {EXPECTED_VISUAL_STACK}, received {actual_stack}; "
-            "install environments/jax-regime-visual-py312/requirements.lock"
+            f"visual stack drift: expected {expected_stack}, received {actual_stack}; "
+            "install the documented exact lock for the selected visual profile"
         )
 
     candidates = payload["hmm"]["candidate_comparison"]
@@ -599,6 +594,7 @@ def main() -> int:
                 "png": str(args.output),
                 "pdf": str(pdf),
                 "stack": actual_stack,
+                "visual_profile": args.visual_profile,
                 "layout_qa": layout_qa,
                 "historical_markers_shown": show_historical,
             }

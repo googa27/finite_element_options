@@ -463,6 +463,7 @@
       },
       {
         "capability": "JAX-native bivariate regime inference and SDE pricing study",
+        "current_visual_security_profile": "Issue184: environments/jax-regime-visual-current-py312 locks Matplotlib3.10.3, NumPy2.4.6 and Pillow13.0.0; explicit current profile refuses historical canonical publication. Actual current replay preserves every PNG/PDF byte and layout while historical locks/evidence/figures remain unchanged; see docs/UI_VISUAL_SECURITY_MIGRATION.md and docs/evidence/ui_visual_security_2026-10-31.json. Maintained UI/viz lock supports actual normal Python3.11/3.12 AppTest checks. No scientific maturity or all-profile security claim.",
         "security_lock_update": "2026-10-31: CI-tool lock updates only certifi2026.10.19, filelock4.2.1, msgpack1.2.3 and setuptools84.1.0. Scientific/runtime/test/visual locks and historical research artifacts remain unchanged; see environments/jax-regime-py312/README.md.",
         "selected": [
           "DYNAMAX 1.0.2 for Gaussian-HMM EM/filter/smoother",
@@ -491,7 +492,8 @@
           "tests/architecture/test_jax_regime_boundary.py",
           "tests/validation/test_jax_regime_study_evidence.py",
           "scripts/run_jax_regime_study.py --synthetic --warmup 75 --samples 75 --chains 2 --pricing-paths 32 --verify",
-          "environments/jax-regime-visual-py312/requirements.lock + CI byte comparison"
+          "environments/jax-regime-visual-current-py312/requirements.lock + current CI byte comparison; original visual lock/figures retained as historical evidence",
+          "external_tests/ui/test_profile.py + environments/ui-py311-py312/requirements.lock"
         ],
         "maturity": "experimental-research-only"
       },
