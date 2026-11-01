@@ -23,7 +23,7 @@ Verify from the repository root:
 JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 \
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 /tmp/feo-jax-regime/bin/python -m pytest -q \
-  external_tests/jax_regime/test_profile.py --no-cov
+  external_tests/jax_regime/ --no-cov
 
 JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 \
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
@@ -56,3 +56,10 @@ The universal/UI and historical visual locks are outside this repair's audited
 cohorts. Their separate migration and actual visual replay are owned by
 [issue 184](https://github.com/googa27/finite_element_options/issues/184);
 historical lock and figure bytes remain evidence of their original execution.
+
+## Scalar likelihood ownership
+
+Current NumPyro and chronological scalar likelihoods use the already locked TFP JAX `HiddenMarkovModel.log_prob` through a lazy adapter; no dependency or lock changes accompany this boundary. The original scalar recursion lives only in `external_tests/jax_regime/test_hmm_likelihood.py`. Run that suite alongside the existing profile tests. It preserves the existing1e-300 input-probability floor and checks the strict-interior tail/gradient case that rejects direct DYNAMAX1.0.2 likelihood reuse. Explicit one-state parameters work for this likelihood, independently of the separate DYNAMAX prior-fit initializer limitation. The pricing filter and historical numerical evidence remain unchanged.
+
+
+The scalar likelihood seam uses public JAX inexact/common dtype promotion for integer and mixed real emission arrays. Covariance promotion follows the original linalg route; homogeneous float32/float64 return precision is retained, and mixed arithmetic is compared within its input-precision budget. The canonical float64 NumPyro model, priors, and probability floor are unchanged. The external likelihood suite checks all54 admitted real-storage combinations against the independent original derivation.

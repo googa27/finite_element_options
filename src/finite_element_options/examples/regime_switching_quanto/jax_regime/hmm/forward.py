@@ -1,8 +1,10 @@
-"""JAX forward algorithm for Gaussian-HMM parity and NumPyro likelihoods."""
+"""HMM likelihood compatibility, research filtering, and forecast composition."""
 
 from __future__ import annotations
 
 from typing import Any
+
+from .tfp_adapter import tfp_marginal_log_prob
 
 
 def _jax() -> tuple[Any, Any, Any]:
@@ -43,25 +45,11 @@ def gaussian_hmm_log_prob(
     means: Any,
     covariances: Any,
 ) -> Any:
-    """Marginalize all discrete states with a scaled log-space forward scan."""
+    """Delegate scalar marginalization to the maintained TFP log-space owner."""
 
-    jax, jnp, logsumexp = _jax()
-    emissions = gaussian_emission_log_prob(observations, means, covariances)
-    log_initial = jnp.log(jnp.clip(jnp.asarray(initial_probs), min=1.0e-300))
-    log_transition = jnp.log(jnp.clip(jnp.asarray(transition_matrix), min=1.0e-300))
-    unnormalized = log_initial + emissions[0]
-    first_scale = logsumexp(unnormalized)
-    initial_alpha = unnormalized - first_scale
-
-    def step(log_alpha: Any, emission: Any) -> tuple[Any, Any]:
-        prediction = logsumexp(log_alpha[:, None] + log_transition, axis=0)
-        current = prediction + emission
-        scale = logsumexp(current)
-        return current - scale, scale
-
-    final_alpha, scales = jax.lax.scan(step, initial_alpha, emissions[1:])
-    del final_alpha
-    return first_scale + jnp.sum(scales)
+    return tfp_marginal_log_prob(
+        observations, initial_probs, transition_matrix, means, covariances
+    )
 
 
 def gaussian_hmm_filter_probs(
