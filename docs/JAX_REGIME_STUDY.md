@@ -30,9 +30,10 @@ These are historical-return research results. They do not identify option-implie
 
 | Concern | Maintained library or boundary | Exact role |
 |---|---|---|
-| Gaussian HMM | DYNAMAX 1.0.2 | Full-covariance EM, filtering, smoothing, sampling, and marginal-likelihood oracle |
+| Gaussian HMM | DYNAMAX 1.0.2 | Full-covariance EM, filtering, smoothing, sampling, and ordinary-fixture likelihood comparator |
 | Bayesian inference | NumPyro 0.21.0 | NUTS over continuous HMM parameters; categorical states are analytically marginalized |
-| Array/autodiff runtime | JAX/JAXLIB 0.11.1 | Log-space forward recursion, exact simulation, diagnostics, and pricing arrays |
+| Scalar likelihood | already locked TFP JAX 0.26.0.dev20260907 | Public HiddenMarkovModel log-space marginalization; independent external-test oracle |
+| Array/autodiff runtime | JAX/JAXLIB 0.11.1 | Research pricing filter, exact simulation, diagnostics, and pricing arrays |
 | SDE abstraction | Diffrax 0.7.2 | Euler solve forced to each daily regime boundary and checked pathwise against the exact log update |
 | Deterministic comparator | statsmodels 0.14.6 | VAR(1) fit and chronological sequential holdout score on the same bivariate split |
 | Input data | Immutable PDP export | Caller-supplied, content-addressed public-research observations; no PDP internal imports |
@@ -75,7 +76,9 @@ For bivariate return observation $y_t$ and discrete state $z_t$, the fitted phys
 \end{aligned}}
 ```
 
-NumPyro does not sample the discrete path. A pure-JAX log-space forward recursion integrates it out and contributes the scalar marginal likelihood through `numpyro.factor`. Repository and DYNAMAX marginal log likelihoods agree to an absolute error of `1.09e-11`.
+NumPyro does not sample the discrete path. The original published run used a pure-JAX log-space forward recursion and recorded DYNAMAX parity error `1.09e-11`; that historical evidence remains unchanged. Current scalar marginalization delegates to TFP JAX `HiddenMarkovModel.log_prob` through the existing likelihood entry point and contributes it through `numpyro.factor`. TFP is already pinned in this optional profile. The original scalar derivation is retained as an external-test oracle, while the separate research pricing-filter recursion remains unchanged.
+
+Direct DYNAMAX 1.0.2 likelihood reuse was rejected: its intermediate `1e-15` positive-weight floor changes a strictly positive Gaussian-HMM tail log likelihood from `-51.1447298858494` to `-35.683506280760085` and the simplex-logit likelihood gradient from `[-0.5, 0.5]` to zero. TFP uses maintained log-space reduction and preserves the existing `1e-300` input-probability floor, including zero-probability compatibility. External controls compare one-state and zero-probability values, JIT, Gaussian-parameter gradients, actual NumPyro constrained joint gradients and real NUTS behavior. This library ownership change does not rerun or republish the historical market-data study.
 
 ### Chronological model selection
 
@@ -196,7 +199,7 @@ uv pip install --python /tmp/feo-jax-regime/bin/python --no-deps \
 JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 \
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
 /tmp/feo-jax-regime/bin/python -m pytest -q \
-  external_tests/jax_regime/test_profile.py --no-cov
+  external_tests/jax_regime/ --no-cov
 
 JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 \
 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
@@ -228,3 +231,6 @@ MPLCONFIGDIR=/tmp/feo-mpl-cache \
 6. Diffrax is a verified extension boundary, not an accuracy improvement over the conditionally exact aligned log update.
 7. The prior three-state scikit-fem/NumPy study remains a rollback and matched-parameter numerical oracle; its failed discontinuous-payoff FEM results are not promoted by this JAX experiment.
 8. The artifact is `research_only=true`, `market_calibrated=false`, and `production_ready=false`.
+
+
+The scalar likelihood seam uses public JAX inexact/common dtype promotion for integer and mixed real emission arrays. Covariance promotion follows the original linalg route; homogeneous float32/float64 return precision is retained, and mixed arithmetic is compared within its input-precision budget. The canonical float64 NumPyro model, priors, and probability floor are unchanged. The external likelihood suite checks all54 admitted real-storage combinations against the independent original derivation.

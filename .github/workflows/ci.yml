@@ -593,7 +593,7 @@ jobs:
             cd "${GITHUB_WORKSPACE}"
             JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
               /tmp/feo-${PROFILE}-check/bin/python -m pytest -q \
-              external_tests/jax_regime/test_profile.py --no-cov
+              external_tests/jax_regime/ --no-cov
             JAX_PLATFORMS=cpu JAX_ENABLE_X64=1 XLA_FLAGS=--xla_force_host_platform_device_count=2 \
               /tmp/feo-${PROFILE}-check/bin/python scripts/run_jax_regime_study.py \
               --synthetic --warmup 75 --samples 75 --chains 2 --pricing-paths 32 \

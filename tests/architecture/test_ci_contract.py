@@ -245,3 +245,33 @@ def test_ci_contract_refuses_static_step_execution_overrides(
     workflow.write_text(mutated, encoding="utf-8")
     monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)
     assert any("static" in error for error in check_ci_contract())
+
+
+@pytest.mark.parametrize(
+    "selector",
+    [
+        "external_tests/jax_regime/test_profile.py --no-cov",
+        "external_tests/jax_regime/ --no-cov -k 'not admitted_real_dtypes'",
+        "external_tests/jax_regime/ --no-cov --ignore=external_tests/jax_regime/test_hmm_likelihood.py",
+        "external_tests/jax_regime/ --no-cov || true",
+        "# external_tests/jax_regime/ --no-cov",
+        "python-line-filter",
+    ],
+)
+def test_jax_regime_ci_rejects_narrowed_or_suppressed_likelihood_suite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, selector: str
+) -> None:
+    """The installed profile must execute the complete likelihood regressions."""
+    text = (ROOT / ".github/workflows/ci.yml").read_text()
+    if selector == "python-line-filter":
+        mutated = text.replace(
+            "/tmp/feo-${PROFILE}-check/bin/python -m pytest -q",
+            "/tmp/feo-${PROFILE}-check/bin/python -m pytest -q -k 'not admitted_real_dtypes'",
+        )
+    else:
+        mutated = text.replace("external_tests/jax_regime/ --no-cov", selector)
+    assert mutated != text
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(mutated)
+    monkeypatch.setattr(check_ci_contract_module, "WORKFLOW", workflow)
+    assert any("complete JAX regime" in error for error in check_ci_contract())

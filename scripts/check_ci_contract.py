@@ -20,6 +20,9 @@ PINNED_ACTION = re.compile(
 )
 MUTABLE_ACTION = re.compile(r"uses:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([^\s#]+)")
 JOB_HEADER = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+JAX_PROFILE_TEST = re.compile(
+    r"(?m)^\s*/tmp/feo-\$\{PROFILE\}-check/bin/python -m pytest -q \\\n\s+external_tests/jax_regime/ --no-cov$"
+)
 
 REQUIRED_JOBS = {
     "package",
@@ -83,7 +86,6 @@ REQUIRED_SNIPPETS = {
     "Bayesian hash-pinned lock install": "environments/bayesian-py312/requirements.lock",
     "Bayesian/JAX require hashes": "--require-hashes",
     "Bayesian/JAX supply-chain artifact": "supply-chain-bayesian-jax-evidence",
-    "JAX regime focused installed-wheel tests": "external_tests/jax_regime/test_profile.py",
     "JAX regime hash-pinned wheel profile": "environments/jax-regime-py312/requirements.lock",
     "JAX regime synthetic CI verification": "--synthetic --warmup 75 --samples 75",
     "JAX regime supply-chain artifact": "supply-chain-jax-regime-evidence",
@@ -311,6 +313,8 @@ def _check_optional_import_matrix(blocks: dict[str, str]) -> list[str]:
             errors.append(
                 "jax-regime tests must install their hash-pinned test-tool lock"
             )
+        if len(JAX_PROFILE_TEST.findall(jax_branch)) != 1:
+            errors.append("complete JAX regime suite must stay enforced")
         if "pip install pytest" in jax_branch:
             errors.append("jax-regime tests must not install unpinned pytest tooling")
 
