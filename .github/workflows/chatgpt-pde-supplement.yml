@@ -58,7 +58,8 @@ jobs:
           "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py validate "$EVIDENCE/original/report.json"
           conda list --prefix "$NATIVE_PREFIX" --explicit --md5 > "$EVIDENCE/conda-explicit.txt"
           git rev-parse HEAD 'HEAD^{tree}' > "$EVIDENCE/source.txt"
-          "$NATIVE_PREFIX/bin/conda-pack" --prefix "$NATIVE_PREFIX" --output "$RUNNER_TEMP/native-runtime.tar.gz"
+          "$NATIVE_PREFIX/bin/conda-pack" --prefix "$NATIVE_PREFIX" --output "$RUNNER_TEMP/native-runtime.tar.gz" 2>&1 | tee "$EVIDENCE/status.txt"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py archive-info "$RUNNER_TEMP/native-runtime.tar.gz" "$EVIDENCE"
           sha256sum "$RUNNER_TEMP/native-runtime.tar.gz" > "$EVIDENCE/conda-pack.sha256"
           conda deactivate
           mv "$NATIVE_PREFIX" "$RUNNER_TEMP/native-producer-disabled"
@@ -75,6 +76,12 @@ jobs:
           "$CONSUMER_PREFIX/bin/python" -I validate_native_pde.py solve --backend fenicsx --output "$EVIDENCE/relocated" --phase relocated --expected-prefix "$CONSUMER_PREFIX"
           "$CONSUMER_PREFIX/bin/python" -I validate_native_pde.py compare "$EVIDENCE/original/report.json" "$EVIDENCE/relocated/report.json"
           "$CONSUMER_PREFIX/bin/python" -c 'import shutil; assert shutil.disk_usage(".").free > 1024**3, "relocation must preserve 1GiB free"'
+          RUNTIME_EXPORT="$GITHUB_WORKSPACE/artifacts/native-runtime"
+          mkdir "$RUNTIME_EXPORT"
+          mv "$RUNNER_TEMP/native-runtime.tar.gz" "$RUNTIME_EXPORT/native-runtime.tar.gz"
+          cp "$EVIDENCE/archive-manifest.json" "$EVIDENCE/conda-explicit.txt" "$EVIDENCE/SHA256SUMS" "$RUNTIME_EXPORT/"
+          cp "$EVIDENCE/README-runtime.md" "$RUNTIME_EXPORT/README.md"
+          (cd "$RUNTIME_EXPORT" && sha256sum --check SHA256SUMS)
       - name: Retain actual producer and relocated-consumer evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -82,3 +89,46 @@ jobs:
           path: artifacts/relocation/
           if-no-files-found: error
           retention-days: 7
+      - name: Deliver the exact tested native archive within the measured cap
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fenicsx-conda-env-${{ github.run_id }}
+          path: artifacts/native-runtime/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
+
+  wheels:
+    name: Acquire all six auxiliary CPython 3.13 wheels
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact acquisition source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify and install the immutable conda-forge bootstrap
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          BOOTSTRAP="$RUNNER_TEMP/Miniforge3.sh"
+          curl --proto '=https' --tlsv1.2 --fail --location --connect-timeout 10 --max-time 180 --max-filesize 136314880 --output "$BOOTSTRAP" https://github.com/conda-forge/miniforge/releases/download/26.9.4-1/Miniforge3-26.9.4-1-Linux-x86_64.sh
+          printf '%s  %s\n' '571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc' "$BOOTSTRAP" | sha256sum --check
+          bash "$BOOTSTRAP" -b -p "$RUNNER_TEMP/native-bootstrap"
+      - name: Fail closed unless every requested wheel and release hash is present
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          source "$RUNNER_TEMP/native-bootstrap/etc/profile.d/conda.sh"
+          WHEEL_PREFIX="$RUNNER_TEMP/wheel-acquisition"
+          EVIDENCE="$GITHUB_WORKSPACE/artifacts/auxiliary-wheels"
+          conda create --yes --prefix "$WHEEL_PREFIX" --override-channels --strict-channel-priority -c conda-forge python=3.13 pip packaging
+          conda activate "$WHEEL_PREFIX"
+          ulimit -f 102400
+          "$WHEEL_PREFIX/bin/python" -I scripts/collect_pde_wheels.py --output "$EVIDENCE"
+          conda list --prefix "$WHEEL_PREFIX" --explicit --md5 > "$EVIDENCE/acquisition-runtime.txt"
+      - name: Deliver all six verified wheels and exact acquisition provenance
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pde-supplement-wheels-py313-${{ github.run_id }}
+          path: artifacts/auxiliary-wheels/
+          if-no-files-found: error
+          retention-days: 1

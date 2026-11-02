@@ -61,12 +61,14 @@ jobs:
           NATIVE_PREFIX="$RUNNER_TEMP/native-$NATIVE_BACKEND"
           EVIDENCE="$GITHUB_WORKSPACE/artifacts/native-$NATIVE_BACKEND"
           python -c 'import shutil; assert shutil.disk_usage(".").free > 8*1024**3, "native install needs 8GiB free"'
-          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge "python=$NATIVE_PYTHON" "$NATIVE_PACKAGE"
+          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge "python=$NATIVE_PYTHON" "$NATIVE_PACKAGE" matplotlib-base=3.11.2
           conda activate "$NATIVE_PREFIX"
           "$NATIVE_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
           export XDG_CACHE_HOME="$RUNNER_TEMP/native-cache-$NATIVE_BACKEND"
           "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py solve --backend "$NATIVE_BACKEND" --output "$EVIDENCE" --phase original --expected-prefix "$NATIVE_PREFIX"
           "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py validate "$EVIDENCE/report.json"
+          export MPLCONFIGDIR="$RUNNER_TEMP/native-mpl-$NATIVE_BACKEND"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py export "$EVIDENCE/report.json"
           conda list --prefix "$NATIVE_PREFIX" --explicit --md5 > "$EVIDENCE/conda-explicit.txt"
           git rev-parse HEAD 'HEAD^{tree}' > "$EVIDENCE/source.txt"
           "$NATIVE_PREFIX/bin/python" -c 'import shutil; assert shutil.disk_usage(".").free > 1024**3, "native evidence must preserve 1GiB free"'

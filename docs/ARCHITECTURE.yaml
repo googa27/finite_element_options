@@ -946,6 +946,59 @@
               "https://conda.github.io/conda-pack/"
             ]
           }
+        },
+        "prototype_output_reconciliation": {
+          "original_heads": {
+            "native": "c2fdae5c2cf731cfe1cbd5b980c67d1a6512c645",
+            "supplement": "d04c12fd2ebeb1cad484c20ba28d84bf5b1a2d7e"
+          },
+          "plots": {
+            "owner": "scripts/validate_native_pde.py export; conda-forge matplotlib-base3.11.2/Agg",
+            "outputs": [
+              "fenicsx_result.npz",
+              "fenicsx_poisson.png",
+              "dedalus_result.npz",
+              "dedalus_heat.png",
+              "export-manifest.json"
+            ],
+            "gate": "Independently validate report/hash/full actual fields before rendering; export identical x/y/u/exact with recomputed nodal RMS, plot6x5/7x4 at150dpi, hash each output and bind original report/data/source identity. No altered or synthetic replacement fields.",
+            "fixture_disposition": "Current64x64 finest P1 and Fourier64/two-mode/40-step heat refinement fixtures intentionally supersede the24x24 P1 and Fourier96/single-mode/dt0.002 prototypes. Original filenames/output purposes are restored; exact old numerical fixture equivalence is not claimed.",
+            "sources": [
+              "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tricontourf.html",
+              "https://conda-forge.org/docs/maintainer/knowledge_base/"
+            ]
+          },
+          "wheels": {
+            "owner": "scripts/collect_pde_wheels.py; separate actualCPython3.13/Linux-x86_64 hosted acquisition",
+            "specs": [
+              "meshio",
+              "pyvista",
+              "scooby",
+              "mpi4py",
+              "gmsh",
+              "fenics-basix==0.11.0"
+            ],
+            "gate": "Isolated pip, explicitHTTPS PyPI index, only-binary/no-deps/no-cache, boundedtimeout/retries; exactlysix regularwheel files,total<=100MiB, compatible filename/WHEEL tags and Requires-Python, exact expected distribution names/versions and internal metadata, non-yanked primary PyPI release file origin/size/SHA256. Record sourceHEAD/tree, actualinterpreter, downloadedmetadata and statuses; failures propagate.",
+            "retention": "pde-supplement-wheels-py313-run artifact,1day. No dependencies are installed from downloaded wheels.",
+            "limits": "Auxiliary wheel seeds preserve original six-package acquisition purpose; no complete offline environment, installed-library compatibility, native runtime or scientific success claim.",
+            "sources": [
+              "https://pip.pypa.io/en/stable/cli/pip_download/",
+              "https://docs.pypi.org/api/json/"
+            ]
+          },
+          "archive": {
+            "owner": "scripts/validate_native_pde.py archive-info and hosted relocated job",
+            "output": "Exact tested native-runtime.tar.gz; filename succeeds historical fenicsx-env.tar.gz purpose. Separate fenicsx-conda-env-run public Actions artifact.",
+            "gate": "Measure regularnonempty archive<=1GiB andSHA256, bind sourceHEAD/tree/platform/package-list/producer report; perform actualunpack/isolated3levelconsumer/full-fieldcomparison with producerprefix unavailable. Only then move exact archive to deliverydirectory and recheckSHA256 before upload. Uploadfailure/capfailure blocks delivery; smallnumeric artifact remains separate.",
+            "retention": "compression-level0,retention-days1,contents:read; no release/settings/billing/protection change.",
+            "reuse": "Retained README gives SHA verification, independent extraction, maintained sanitized unpackbootstrap, activation/MPItransport and exactsource/platform restrictions; preserve explicitpackage list andmanifest.",
+            "limits": "A measured hash or successful same-run replay alone is not retainedarchive delivery; actualupload/artifactreadback is mandatory. Native environment is Linux-x86_64 serial demonstration only.",
+            "sources": [
+              "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
+              "https://conda.github.io/conda-pack/"
+            ]
+          },
+          "ancestry": "Both original prototype refs/commits remain preserved until actual new PNG, allsixwheels, nativearchive delivery and scientific/default acceptance are independently reviewed; no zero-file ancestry bridge in this output change."
         }
       }
     }

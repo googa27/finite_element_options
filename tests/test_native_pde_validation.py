@@ -204,6 +204,85 @@ class NativeValidationTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("replay field differs: u", result.stderr)
 
+    def test_export_preserves_validated_fields_and_renders_both_plots(self):
+        import numpy as np
+        import matplotlib.image as mpimg
+
+        for backend, png, shape in [
+            ("fenicsx", "fenicsx_poisson.png", (750, 900)),
+            ("dedalus", "dedalus_heat.png", (600, 1050)),
+        ]:
+            with self.subTest(backend=backend), tempfile.TemporaryDirectory() as d:
+                path = self.measurement(
+                    Path(d) / "data",
+                    phase="original",
+                    prefix="/native/source",
+                    backend=backend,
+                )
+                result = self.cli("export", str(path))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                with np.load(
+                    path.parent / "values.npz", allow_pickle=False
+                ) as original:
+                    with np.load(
+                        path.parent / f"{backend}_result.npz", allow_pickle=False
+                    ) as exported:
+                        for name in ("x", "y", "u", "exact"):
+                            np.testing.assert_array_equal(
+                                exported[name], original[name]
+                            )
+                        self.assertEqual(float(exported["rms"]), 0.0)
+                pixels = mpimg.imread(path.parent / png)
+                self.assertEqual(pixels.shape[:2], shape)
+                self.assertGreater(float(np.std(pixels)), 0.05)
+                manifest = json.loads(
+                    (path.parent / "export-manifest.json").read_text()
+                )
+                self.assertEqual(
+                    manifest["data_sha256"], json.loads(path.read_text())["data_sha256"]
+                )
+                for item in manifest["exports"]:
+                    self.assertEqual(
+                        hashlib.sha256(
+                            (path.parent / item["name"]).read_bytes()
+                        ).hexdigest(),
+                        item["sha256"],
+                    )
+
+    def test_export_refuses_rehashed_bad_fields_before_writing_outputs(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = self.measurement(
+                Path(d) / "data",
+                phase="original",
+                prefix="/native/source",
+                perturbation=0.1,
+            )
+            result = self.cli("export", str(path))
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertFalse((path.parent / "fenicsx_poisson.png").exists())
+            self.assertFalse((path.parent / "fenicsx_result.npz").exists())
+
+    def test_archive_measurement_refuses_oversize_and_binds_runtime_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self.measurement(
+                root / "original", phase="original", prefix="/native/source"
+            )
+            (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
+            (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture only\n")
+            archive = root / "native-runtime.tar.gz"
+            archive.write_bytes(b"measurement fixture only; not an archive execution")
+            with self.assertRaises(ValueError):
+                self.module().archive_manifest(archive, root, max_bytes=1)
+            self.assertFalse((root / "archive-manifest.json").exists())
+            self.module().archive_manifest(archive, root)
+            report = json.loads((root / "archive-manifest.json").read_text())
+            self.assertEqual(report["bytes"], archive.stat().st_size)
+            self.assertEqual(
+                report["sha256"], hashlib.sha256(archive.read_bytes()).hexdigest()
+            )
+            self.assertEqual(report["source_tree"], "b" * 40)
+
     def test_complete_replay_is_coordinate_aligned_for_both_backends(self):
         for backend in ["fenicsx", "dedalus"]:
             with (
