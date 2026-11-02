@@ -908,6 +908,21 @@
           "owner": "scripts/validate_native_pde.py:lattice_indices",
           "policy": "Map raw finite coordinates to nearest expected lattice index only for node identity/order; keep raw coordinates/fields unchanged. Fixed coordinate distance<=1e-12, fixed node counts4225/64, in-bounds integer indices and one unique index pair per expected point. Reject duplicates, missing and off-lattice points with bounded counts/max-error diagnostics. Raw floating-point np.unique axis cardinality is not mesh identity.",
           "qualification": "One-ULP complete-grid reproduction rejected by prior predicate; prior native solves pass quantitative criteria but old validator rejects, with exact failing subpredicate unavailable. New actual native and relocated validation remains required."
+        },
+        "serial_mpi_transport": {
+          "environment": {
+            "OMPI_MCA_pml": "ob1",
+            "OMPI_MCA_btl": "self,tcp"
+          },
+          "scope": "Workflow-wide, inherited by all native producer and relocated-consumer child processes; serial COMM_SELF public-synthetic fixtures only.",
+          "reason": "Real successor native jobs failed before solve when UCX selected unavailable Azure ud_verbs/mana_0:1 hardware, causing MPI_ERR_OTHER/MPI_ABORT16. Explicit ob1/self,tcp selects maintained non-RDMA OpenMPI transports.",
+          "acceptance": "After each conda activation, isolated Python checks exact env, actual OpenMPI library identity, WORLD/SELF sizes1 and real SELF barrier before running unchanged numerical/relocation gates. Any failure propagates; no retry, skip, stderr suppression or altered PDE/refinement/array budget.",
+          "sources": [
+            "https://docs.open-mpi.org/en/v5.0.x/mca.html",
+            "https://docs.open-mpi.org/en/v5.0.x/release-notes/networks.html",
+            "https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/tcp.html"
+          ],
+          "limits": "No multi-rank, distributed, RDMA performance or native-success claim from local env/static controls; actual exact-head and relocated execution still required."
         }
       }
     }
