@@ -107,6 +107,47 @@ def validate_report(report: dict[str, Any]) -> None:
         raise ValueError("finest analytical L2 error exceeds the reviewed ceiling")
 
 
+def lattice_indices(backend: str, arrays: dict[str, Any]) -> Any:
+    """Identify every expected node without equating raw float representations."""
+    import numpy as np
+
+    x, y = arrays["x"], arrays["y"]
+    poisson = backend == "fenicsx"
+    expected = 65**2 if poisson else 64
+    if x.size != expected:
+        raise ValueError(
+            f"{backend} grid node count: expected {expected}, got {x.size}"
+        )
+    if not poisson and not np.all(y == 0):
+        raise ValueError("dedalus grid must have zero transverse coordinates")
+    coordinates = np.column_stack((x, y)) if poisson else x[:, None]
+    step = np.array([1 / 64, 1 / 64] if poisson else [math.pi / 32])
+    upper = np.array([64, 64] if poisson else [63])
+    outside = (coordinates < -REPLAY_COORDINATE_ATOL) | (
+        coordinates > upper * step + REPLAY_COORDINATE_ATOL
+    )
+    if np.any(outside):
+        raise ValueError(
+            f"{backend} grid bounds: {np.count_nonzero(outside)} coordinates outside"
+        )
+    nearest = np.rint(coordinates / step)
+    if np.any(nearest < 0) or np.any(nearest > upper):
+        raise ValueError(f"{backend} grid lattice indices outside expected bounds")
+    displacement = float(np.max(np.abs(coordinates - nearest * step)))
+    if displacement > REPLAY_COORDINATE_ATOL:
+        raise ValueError(
+            f"{backend} grid off-lattice: max coordinate error {displacement:.6g}, limit 1e-12"
+        )
+    indices = nearest.astype(np.int64)
+    nodes = indices[:, 0] * 65 + indices[:, 1] if poisson else indices[:, 0]
+    unique = np.unique(nodes).size
+    if unique != expected:
+        raise ValueError(
+            f"{backend} grid duplicate/missing nodes: expected {expected}, unique {unique}"
+        )
+    return nodes
+
+
 def validate_pair(original: dict[str, Any], relocated: dict[str, Any]) -> None:
     """Require an independently located consumer with matching measured output."""
     validate_report(original)
@@ -128,9 +169,11 @@ def validate_pair(original: dict[str, Any], relocated: dict[str, Any]) -> None:
     import numpy as np
 
     arrays = [report["measurements"] for report in (original, relocated)]
-    # DOLFINx may number equivalent DOFs differently at a relocated prefix.
-    # Sort complete points, applying each point permutation to every field.
-    orders = [np.lexsort((values["y"], values["x"])) for values in arrays]
+    # Canonical IDs align equivalent DOFs despite mapped-coordinate roundoff.
+    # Raw coordinates and every field remain unmodified and are compared below.
+    orders = [
+        np.argsort(lattice_indices(original["backend"], values)) for values in arrays
+    ]
     for name in ("x", "y", "exact", "u"):
         before, after = [
             values[name][order] for values, order in zip(arrays, orders, strict=True)
@@ -369,23 +412,7 @@ def read_report(path: Path) -> dict[str, Any]:
     if len({a.shape for a in arrays.values()}) != 1:
         raise ValueError("measured array shapes disagree")
     x, y = arrays["x"], arrays["y"]
-    if report["backend"] == "fenicsx":
-        grid = np.linspace(0, 1, 65)
-        if (
-            x.size != 65**2
-            or np.unique(np.column_stack((x, y)), axis=0).shape[0] != 65**2
-            or np.unique(x).size != 65
-            or np.unique(y).size != 65
-            or not np.allclose(np.unique(x), grid, rtol=0, atol=1e-12)
-            or not np.allclose(np.unique(y), grid, rtol=0, atol=1e-12)
-        ):
-            raise ValueError("measured Poisson grid is incomplete or changed")
-    elif (
-        x.size != 64
-        or not np.allclose(np.sort(x), np.arange(64) * math.pi / 32, rtol=0, atol=1e-12)
-        or not np.all(y == 0)
-    ):
-        raise ValueError("measured periodic heat grid is incomplete or changed")
+    lattice_indices(report["backend"], arrays)
     exact = (
         np.sin(math.pi * x) * np.sin(math.pi * y)
         if report["backend"] == "fenicsx"

@@ -148,6 +148,7 @@ class NativeValidationTests(unittest.TestCase):
         backend="fenicsx",
         coordinate_offset=(0.0, 0.0),
         exact_bias=0.0,
+        ulp_coordinates=False,
     ):
         """Write complete synthetic arrays to exercise real artifact comparison."""
         import numpy as np
@@ -164,6 +165,10 @@ class NativeValidationTests(unittest.TestCase):
             exact = np.exp(-0.05) * np.sin(x) + 0.25 * np.exp(-0.2) * np.cos(2 * x)
             values = exact + perturbation * np.sin(2 * x)
         arrays = {"x": x, "y": y, "exact": exact + exact_bias, "u": values}
+        if ulp_coordinates:
+            for name in ("x", "y"):
+                arrays[name][::2] = np.nextafter(arrays[name][::2], np.inf)
+                arrays[name][1::2] = np.nextafter(arrays[name][1::2], -np.inf)
         if reverse:
             arrays = {name: value[::-1] for name, value in arrays.items()}
         data = directory / "values.npz"
@@ -274,6 +279,54 @@ class NativeValidationTests(unittest.TestCase):
             self.module().validate_pair(
                 self.report(), self.report(phase="relocated", prefix="/native/consumer")
             )
+
+    def test_complete_nextafter_grid_preserves_node_identity_and_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            original = self.measurement(
+                Path(directory) / "original", phase="original", prefix="/native/source"
+            )
+            rounded = self.measurement(
+                Path(directory) / "rounded",
+                phase="relocated",
+                prefix="/native/consumer",
+                ulp_coordinates=True,
+                reverse=True,
+            )
+            result = self.cli("validate", str(rounded))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            replay = self.cli("compare", str(original), str(rounded))
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+
+    def test_lattice_admission_rejects_duplicates_missing_nodes_and_off_grid(self):
+        import numpy as np
+
+        for mode, diagnostic in [
+            ("duplicate", "duplicate"),
+            ("missing", "node count"),
+            ("off-grid", "off-lattice"),
+        ]:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                path = self.measurement(
+                    Path(directory) / "data", phase="original", prefix="/native/source"
+                )
+                data = path.parent / "values.npz"
+                with np.load(data, allow_pickle=False) as archive:
+                    arrays = {name: archive[name] for name in ("x", "y", "exact", "u")}
+                if mode == "duplicate":
+                    for name in arrays:
+                        arrays[name][0] = arrays[name][1]
+                    arrays["x"][0] = np.nextafter(arrays["x"][0], np.inf)
+                elif mode == "missing":
+                    arrays = {name: values[:-1] for name, values in arrays.items()}
+                else:
+                    arrays["x"][1] += 1e-8
+                np.savez_compressed(data, **arrays)
+                report = json.loads(path.read_text())
+                report["data_sha256"] = hashlib.sha256(data.read_bytes()).hexdigest()
+                path.write_text(json.dumps(report))
+                result = self.cli("validate", str(path))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(diagnostic, result.stderr)
 
     def test_failed_ksp_or_nonzero_boundary_is_refused(self):
         module = self.module()

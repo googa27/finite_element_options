@@ -890,7 +890,7 @@
         "acceptance": {
           "poisson": "DOLFINx P1 manufactured sine solution;16/32/64 meshes; integrated L2 order>=1.8 on each refinement, finest<=1e-3, positive KSP reason, finite real vectors and zero Dirichlet boundary<=1e-12",
           "heat": "Dedalus Fourier64/RK222, exact two-mode decay atT0.5;10/20/40 steps; temporal L2 order>=1.8, finest<=2e-6, conserved mean<=1e-12 and decaying energy",
-          "relocation": "same-run producer, conda-pack0.8.1, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then canonicalize complete coordinate tuples and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
+          "relocation": "same-run producer, conda-pack0.8.1, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
         },
         "commands": [
           "python -m unittest discover -s tests -p test_native_pde_validation.py -v",
@@ -903,7 +903,12 @@
           "Conda explicit manifests bind actual package builds; only small reports/arrays/manifests are retained, no large historical runtime download or broad cache cleanup.",
           "Standard public hosted compute only; no paid runner, billing/protection change, failure suppression or native-runtime fallback.",
           "Original prototype histories and refs remain unaccepted until actual native-positive/relocation gates and ordinary integration are complete."
-        ]
+        ],
+        "coordinate_identity": {
+          "owner": "scripts/validate_native_pde.py:lattice_indices",
+          "policy": "Map raw finite coordinates to nearest expected lattice index only for node identity/order; keep raw coordinates/fields unchanged. Fixed coordinate distance<=1e-12, fixed node counts4225/64, in-bounds integer indices and one unique index pair per expected point. Reject duplicates, missing and off-lattice points with bounded counts/max-error diagnostics. Raw floating-point np.unique axis cardinality is not mesh identity.",
+          "qualification": "One-ULP complete-grid reproduction rejected by prior predicate; prior native solves pass quantitative criteria but old validator rejects, with exact failing subpredicate unavailable. New actual native and relocated validation remains required."
+        }
       }
     }
   },
