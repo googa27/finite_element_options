@@ -587,6 +587,27 @@
         "api_license_evidence": "Python standard-library PSF license; existing SciPy BSD-3-Clause dependency",
         "adapter_boundary": "core/operator_cache.py stores caller-owned exact keys and operators; space/solver.py and time_integration/stepper.py own numerical identity and lifetime",
         "custom_code_reason": "Small domain adapter provides explicit invalidation, zero retention and immutable event counts; OrderedDict supplies reordering/eviction and SciPy supplies LU. No new dependency or numerical algorithm."
+      },
+      {
+        "capability": "optional native PDE analytical demonstrations and relocated runtime replay",
+        "selected": [
+          "DOLFINx0.11.0",
+          "Dedalus3.0.5",
+          "conda-pack0.8.1"
+        ],
+        "alternatives": [
+          "custom finite-element assembly",
+          "custom spectral integrator",
+          "import-only or archive-only acceptance"
+        ],
+        "evidence": [
+          "https://docs.fenicsproject.org/dolfinx/v0.11.0/python/generated/dolfinx.fem.petsc.html",
+          "https://dedalus-project.readthedocs.io/en/latest/pages/examples/ivp_1d_kdv_burgers.html",
+          "https://conda.github.io/conda-pack/"
+        ],
+        "license": "DOLFINx LGPL-3.0-or-later; Dedalus GPL-3.0-or-later; conda-pack BSD-3-Clause. These CI-only native profiles are not added to the package runtime distribution.",
+        "adapter_boundary": "scripts/validate_native_pde.py only; no src or packaged reference payload change",
+        "custom_code_reason": "Analytical fixture definitions, explicit error/refinement admission, finite measurements and replay provenance; maintained libraries own assembly, linear solve, spectral discretization and time integration."
       }
     ]
   },
@@ -825,7 +846,9 @@
         "workflows": [
           ".github/workflows/ai-hierarchy-policy.yml",
           ".github/workflows/ci.yml",
-          ".github/workflows/portfolio-architecture.yml"
+          ".github/workflows/portfolio-architecture.yml",
+          ".github/workflows/chatgpt-pde-native-solves.yml",
+          ".github/workflows/chatgpt-pde-supplement.yml"
         ],
         "actions": {
           "actions/checkout": {
@@ -851,6 +874,36 @@
         "runner_evidence": "https://github.com/actions/runner-images/issues/14748",
         "checker": "python3 scripts/check_actions_runtime_contract.py",
         "selftest": "python3 scripts/selftest_actions_runtime_contract.py"
+      },
+      "native_pde_validation": {
+        "owner": "scripts/validate_native_pde.py; optional public-synthetic demonstrations outside src",
+        "profiles": {
+          "fenicsx": "Python3.12 / conda-forge fenics-dolfinx0.11.0 with matched MPI/PETSc/UFL/Basix/FFCx",
+          "dedalus": "Python3.13 / conda-forge dedalus3.0.5 with matched MPI/FFTW/HDF5"
+        },
+        "bootstrap": {
+          "miniforge": "26.9.4-1 Linux-x86_64",
+          "installer_sha256": "571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc",
+          "source": "https://github.com/conda-forge/miniforge/releases/tag/26.9.4-1",
+          "validation": "Bounded HTTPS-only download and exact SHA256 verification before executing installer; no unreviewed Action or base-profile initialization."
+        },
+        "acceptance": {
+          "poisson": "DOLFINx P1 manufactured sine solution;16/32/64 meshes; integrated L2 order>=1.8 on each refinement, finest<=1e-3, positive KSP reason, finite real vectors and zero Dirichlet boundary<=1e-12",
+          "heat": "Dedalus Fourier64/RK222, exact two-mode decay atT0.5;10/20/40 steps; temporal L2 order>=1.8, finest<=2e-6, conserved mean<=1e-12 and decaying energy",
+          "relocation": "same-run producer, conda-pack0.8.1, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then canonicalize complete coordinate tuples and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
+        },
+        "commands": [
+          "python -m unittest discover -s tests -p test_native_pde_validation.py -v",
+          "python scripts/validate_native_pde.py --help"
+        ],
+        "runtime_activation": "Native positive execution is mandatory in the public ubuntu-24.04 workflows; local missing native modules fail explicitly, never skip or fabricate numerical output.",
+        "limits": [
+          "Demonstration evidence is not validation of FenicsSolver pricing, market calibration, MPI scaling, distributed execution, other platforms or scientific deployment.",
+          "Metadata unit fixtures are not native-positive evidence. Actual exact-head and resulting-default hosted runs and artifact readback remain required.",
+          "Conda explicit manifests bind actual package builds; only small reports/arrays/manifests are retained, no large historical runtime download or broad cache cleanup.",
+          "Standard public hosted compute only; no paid runner, billing/protection change, failure suppression or native-runtime fallback.",
+          "Original prototype histories and refs remain unaccepted until actual native-positive/relocation gates and ordinary integration are complete."
+        ]
       }
     }
   },
