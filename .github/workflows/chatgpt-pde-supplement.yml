@@ -1,0 +1,84 @@
+name: Native PDE relocated consumer
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master, codex/native-pde-verification-20261102]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Use the same explicit serial MPI profile before and after relocation.
+  OMPI_MCA_pml: ob1
+  OMPI_MCA_btl: self,tcp
+  OMP_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_MAX_THREADS: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  relocated:
+    name: Native FEniCSx same-run conda-pack relocation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact producer source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify and install the immutable conda-forge bootstrap
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          BOOTSTRAP="$RUNNER_TEMP/Miniforge3.sh"
+          curl --proto '=https' --tlsv1.2 --fail --location --connect-timeout 10 --max-time 180 --max-filesize 136314880 --output "$BOOTSTRAP" https://github.com/conda-forge/miniforge/releases/download/26.9.4-1/Miniforge3-26.9.4-1-Linux-x86_64.sh
+          printf '%s  %s\n' '571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc' "$BOOTSTRAP" | sha256sum --check
+          bash "$BOOTSTRAP" -b -p "$RUNNER_TEMP/native-bootstrap"
+      - name: Execute producer then pack and replay at an independent prefix
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          source "$RUNNER_TEMP/native-bootstrap/etc/profile.d/conda.sh"
+          NATIVE_PREFIX="$RUNNER_TEMP/native-producer"
+          CONSUMER_PREFIX="$RUNNER_TEMP/native-consumer"
+          CONSUMER_INPUT="$RUNNER_TEMP/native-consumer-input"
+          EVIDENCE="$GITHUB_WORKSPACE/artifacts/relocation"
+          python -c 'import shutil; assert shutil.disk_usage(".").free > 10*1024**3, "pack/replay needs 10GiB free"'
+          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge python=3.12 fenics-dolfinx=0.11.0 conda-pack=0.9.2
+          conda activate "$NATIVE_PREFIX"
+          "$NATIVE_PREFIX/bin/conda-pack" --version
+          "$NATIVE_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
+          export XDG_CACHE_HOME="$RUNNER_TEMP/producer-jit-cache"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py solve --backend fenicsx --output "$EVIDENCE/original" --phase original --expected-prefix "$NATIVE_PREFIX"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py validate "$EVIDENCE/original/report.json"
+          conda list --prefix "$NATIVE_PREFIX" --explicit --md5 > "$EVIDENCE/conda-explicit.txt"
+          git rev-parse HEAD 'HEAD^{tree}' > "$EVIDENCE/source.txt"
+          "$NATIVE_PREFIX/bin/conda-pack" --prefix "$NATIVE_PREFIX" --output "$RUNNER_TEMP/native-runtime.tar.gz"
+          sha256sum "$RUNNER_TEMP/native-runtime.tar.gz" > "$EVIDENCE/conda-pack.sha256"
+          conda deactivate
+          mv "$NATIVE_PREFIX" "$RUNNER_TEMP/native-producer-disabled"
+          test ! -e "$NATIVE_PREFIX"
+          mkdir "$CONSUMER_PREFIX" "$CONSUMER_INPUT"
+          tar -xzf "$RUNNER_TEMP/native-runtime.tar.gz" -C "$CONSUMER_PREFIX"
+          env -u PYTHONPATH -u PYTHONHOME "$CONSUMER_PREFIX/bin/python" -E -s "$CONSUMER_PREFIX/bin/conda-unpack"
+          cp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
+          cmp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
+          conda activate "$CONSUMER_PREFIX"
+          "$CONSUMER_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
+          export XDG_CACHE_HOME="$RUNNER_TEMP/consumer-jit-cache"
+          cd "$CONSUMER_INPUT"
+          "$CONSUMER_PREFIX/bin/python" -I validate_native_pde.py solve --backend fenicsx --output "$EVIDENCE/relocated" --phase relocated --expected-prefix "$CONSUMER_PREFIX"
+          "$CONSUMER_PREFIX/bin/python" -I validate_native_pde.py compare "$EVIDENCE/original/report.json" "$EVIDENCE/relocated/report.json"
+          "$CONSUMER_PREFIX/bin/python" -c 'import shutil; assert shutil.disk_usage(".").free > 1024**3, "relocation must preserve 1GiB free"'
+      - name: Retain actual producer and relocated-consumer evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-relocation-${{ github.run_id }}
+          path: artifacts/relocation/
+          if-no-files-found: error
+          retention-days: 7

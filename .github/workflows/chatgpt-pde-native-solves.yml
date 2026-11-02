@@ -1,0 +1,79 @@
+name: Native PDE analytical convergence
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master, codex/native-pde-verification-20261102]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # These COMM_SELF demonstrations require no runner RDMA hardware.
+  OMPI_MCA_pml: ob1
+  OMPI_MCA_btl: self,tcp
+  OMP_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_MAX_THREADS: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  native:
+    name: Native ${{ matrix.backend }} analytical refinement
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: fenicsx
+            python: '3.12'
+            package: fenics-dolfinx=0.11.0
+          - backend: dedalus
+            python: '3.13'
+            package: dedalus=3.0.5
+    env:
+      NATIVE_BACKEND: ${{ matrix.backend }}
+      NATIVE_PYTHON: ${{ matrix.python }}
+      NATIVE_PACKAGE: ${{ matrix.package }}
+    steps:
+      - name: Checkout exact workflow source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify and install the immutable conda-forge bootstrap
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          BOOTSTRAP="$RUNNER_TEMP/Miniforge3.sh"
+          curl --proto '=https' --tlsv1.2 --fail --location --connect-timeout 10 --max-time 180 --max-filesize 136314880 --output "$BOOTSTRAP" https://github.com/conda-forge/miniforge/releases/download/26.9.4-1/Miniforge3-26.9.4-1-Linux-x86_64.sh
+          printf '%s  %s\n' '571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc' "$BOOTSTRAP" | sha256sum --check
+          bash "$BOOTSTRAP" -b -p "$RUNNER_TEMP/native-bootstrap"
+      - name: Install native profile and execute all three analytical levels
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          source "$RUNNER_TEMP/native-bootstrap/etc/profile.d/conda.sh"
+          NATIVE_PREFIX="$RUNNER_TEMP/native-$NATIVE_BACKEND"
+          EVIDENCE="$GITHUB_WORKSPACE/artifacts/native-$NATIVE_BACKEND"
+          python -c 'import shutil; assert shutil.disk_usage(".").free > 8*1024**3, "native install needs 8GiB free"'
+          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge "python=$NATIVE_PYTHON" "$NATIVE_PACKAGE"
+          conda activate "$NATIVE_PREFIX"
+          "$NATIVE_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
+          export XDG_CACHE_HOME="$RUNNER_TEMP/native-cache-$NATIVE_BACKEND"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py solve --backend "$NATIVE_BACKEND" --output "$EVIDENCE" --phase original --expected-prefix "$NATIVE_PREFIX"
+          "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py validate "$EVIDENCE/report.json"
+          conda list --prefix "$NATIVE_PREFIX" --explicit --md5 > "$EVIDENCE/conda-explicit.txt"
+          git rev-parse HEAD 'HEAD^{tree}' > "$EVIDENCE/source.txt"
+          "$NATIVE_PREFIX/bin/python" -c 'import shutil; assert shutil.disk_usage(".").free > 1024**3, "native evidence must preserve 1GiB free"'
+      - name: Retain actual native measurements and exact runtime identity
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-${{ matrix.backend }}-${{ github.run_id }}
+          path: artifacts/native-${{ matrix.backend }}/
+          if-no-files-found: error
+          retention-days: 7

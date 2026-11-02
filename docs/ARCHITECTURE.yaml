@@ -587,6 +587,27 @@
         "api_license_evidence": "Python standard-library PSF license; existing SciPy BSD-3-Clause dependency",
         "adapter_boundary": "core/operator_cache.py stores caller-owned exact keys and operators; space/solver.py and time_integration/stepper.py own numerical identity and lifetime",
         "custom_code_reason": "Small domain adapter provides explicit invalidation, zero retention and immutable event counts; OrderedDict supplies reordering/eviction and SciPy supplies LU. No new dependency or numerical algorithm."
+      },
+      {
+        "capability": "optional native PDE analytical demonstrations and relocated runtime replay",
+        "selected": [
+          "DOLFINx0.11.0",
+          "Dedalus3.0.5",
+          "conda-pack0.9.2"
+        ],
+        "alternatives": [
+          "custom finite-element assembly",
+          "custom spectral integrator",
+          "import-only or archive-only acceptance"
+        ],
+        "evidence": [
+          "https://docs.fenicsproject.org/dolfinx/v0.11.0/python/generated/dolfinx.fem.petsc.html",
+          "https://dedalus-project.readthedocs.io/en/latest/pages/examples/ivp_1d_kdv_burgers.html",
+          "https://conda.github.io/conda-pack/"
+        ],
+        "license": "DOLFINx LGPL-3.0-or-later; Dedalus GPL-3.0-or-later; conda-pack BSD-3-Clause. These CI-only native profiles are not added to the package runtime distribution.",
+        "adapter_boundary": "scripts/validate_native_pde.py only; no src or packaged reference payload change",
+        "custom_code_reason": "Analytical fixture definitions, explicit error/refinement admission, finite measurements and replay provenance; maintained libraries own assembly, linear solve, spectral discretization and time integration."
       }
     ]
   },
@@ -825,7 +846,9 @@
         "workflows": [
           ".github/workflows/ai-hierarchy-policy.yml",
           ".github/workflows/ci.yml",
-          ".github/workflows/portfolio-architecture.yml"
+          ".github/workflows/portfolio-architecture.yml",
+          ".github/workflows/chatgpt-pde-native-solves.yml",
+          ".github/workflows/chatgpt-pde-supplement.yml"
         ],
         "actions": {
           "actions/checkout": {
@@ -851,6 +874,79 @@
         "runner_evidence": "https://github.com/actions/runner-images/issues/14748",
         "checker": "python3 scripts/check_actions_runtime_contract.py",
         "selftest": "python3 scripts/selftest_actions_runtime_contract.py"
+      },
+      "native_pde_validation": {
+        "owner": "scripts/validate_native_pde.py; optional public-synthetic demonstrations outside src",
+        "profiles": {
+          "fenicsx": "Python3.12 / conda-forge fenics-dolfinx0.11.0 with matched MPI/PETSc/UFL/Basix/FFCx",
+          "dedalus": "Python3.13 / conda-forge dedalus3.0.5 with matched MPI/FFTW/HDF5"
+        },
+        "bootstrap": {
+          "miniforge": "26.9.4-1 Linux-x86_64",
+          "installer_sha256": "571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc",
+          "source": "https://github.com/conda-forge/miniforge/releases/tag/26.9.4-1",
+          "validation": "Bounded HTTPS-only download and exact SHA256 verification before executing installer; no unreviewed Action or base-profile initialization."
+        },
+        "acceptance": {
+          "poisson": "DOLFINx P1 manufactured sine solution;16/32/64 meshes; integrated L2 order>=1.8 on each refinement, finest<=1e-3, positive KSP reason, finite real vectors and zero Dirichlet boundary<=1e-12",
+          "heat": "Dedalus Fourier64/RK222, exact two-mode decay atT0.5;10/20/40 steps; temporal L2 order>=1.8, finest<=2e-6, conserved mean<=1e-12 and decaying energy",
+          "relocation": "same-run producer, conda-pack0.9.2, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
+        },
+        "commands": [
+          "python -m unittest discover -s tests -p test_native_pde_validation.py -v",
+          "python scripts/validate_native_pde.py --help"
+        ],
+        "runtime_activation": "Native positive execution is mandatory in the public ubuntu-24.04 workflows; local missing native modules fail explicitly, never skip or fabricate numerical output.",
+        "limits": [
+          "Demonstration evidence is not validation of FenicsSolver pricing, market calibration, MPI scaling, distributed execution, other platforms or scientific deployment.",
+          "Metadata unit fixtures are not native-positive evidence. Actual exact-head and resulting-default hosted runs and artifact readback remain required.",
+          "Conda explicit manifests bind actual package builds; only small reports/arrays/manifests are retained, no large historical runtime download or broad cache cleanup.",
+          "Standard public hosted compute only; no paid runner, billing/protection change, failure suppression or native-runtime fallback.",
+          "Original prototype histories and refs remain unaccepted until actual native-positive/relocation gates and ordinary integration are complete."
+        ],
+        "coordinate_identity": {
+          "owner": "scripts/validate_native_pde.py:lattice_indices",
+          "policy": "Map raw finite coordinates to nearest expected lattice index only for node identity/order; keep raw coordinates/fields unchanged. Fixed coordinate distance<=1e-12, fixed node counts4225/64, in-bounds integer indices and one unique index pair per expected point. Reject duplicates, missing and off-lattice points with bounded counts/max-error diagnostics. Raw floating-point np.unique axis cardinality is not mesh identity.",
+          "qualification": "One-ULP complete-grid reproduction rejected by prior predicate; prior native solves pass quantitative criteria but old validator rejects, with exact failing subpredicate unavailable. New actual native and relocated validation remains required."
+        },
+        "serial_mpi_transport": {
+          "environment": {
+            "OMPI_MCA_pml": "ob1",
+            "OMPI_MCA_btl": "self,tcp"
+          },
+          "scope": "Workflow-wide, inherited by all native producer and relocated-consumer child processes; serial COMM_SELF public-synthetic fixtures only.",
+          "reason": "Real successor native jobs failed before solve when UCX selected unavailable Azure ud_verbs/mana_0:1 hardware, causing MPI_ERR_OTHER/MPI_ABORT16. Explicit ob1/self,tcp selects maintained non-RDMA OpenMPI transports.",
+          "acceptance": "After each conda activation, isolated Python checks exact env, actual OpenMPI library identity, WORLD/SELF sizes1 and real SELF barrier before running unchanged numerical/relocation gates. Any failure propagates; no retry, skip, stderr suppression or altered PDE/refinement/array budget.",
+          "sources": [
+            "https://docs.open-mpi.org/en/v5.0.x/mca.html",
+            "https://docs.open-mpi.org/en/v5.0.x/release-notes/networks.html",
+            "https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/tcp.html"
+          ],
+          "limits": "No multi-rank, distributed, RDMA performance or native-success claim from local env/static controls; actual exact-head and relocated execution still required."
+        },
+        "archiving_tool": {
+          "cohort": "conda-forge conda-pack0.9.2, Python3.12; retain current solver-selected setuptools rather than restoring removed pkg_resources or downgrading setuptools.",
+          "reason": "Actual same-run producer passed all native quantitative gates, then conda-pack0.8.1 failed importing pkg_resources under setuptools84.2.1. Setuptools82 removed that module; maintained conda-pack0.9.x uses importlib.resources.",
+          "acceptance": "Run the released conda-pack CLI --version immediately after producer activation; require actual archive creation, hash, independent extraction/unpack, original-prefix unavailability and unchanged full-field native replay comparison. Errors propagate without archive flags that ignore missing/modified files.",
+          "sources": [
+            "https://conda.org/blog/2026-02-03-january-releases/",
+            "https://github.com/conda/conda-pack/releases/tag/0.9.2",
+            "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/core.py",
+            "https://setuptools.pypa.io/en/latest/history.html#v82-0-0",
+            "https://anaconda.org/conda-forge/conda-pack/files?channel=main"
+          ],
+          "limits": "Local import-boundary/static controls do not establish real package CLI execution, successful packing/unpacking or relocated native replay; exact-head hosted acceptance remains mandatory.",
+          "bootstrap": {
+            "entrypoint": "env -u PYTHONPATH -u PYTHONHOME relocated-prefix/bin/python -E -s relocated-prefix/bin/conda-unpack",
+            "reason": "Maintained conda-pack0.9.2 generates conda-unpack and conda_unpack_progress.py side by side in bin. Python-I omits the script directory and prevents its required sibling import. Use the intended script directory only for unpack bootstrap; clear Python path/home environment and exclude user site packages.",
+            "boundary": "This controlled bootstrap exception does not apply to MPI identity, solver, NPZ validation or full-field replay: those later consumer commands retain Python-I, independent cwd/cache and actual-prefix origin checks. No generated source edits, stub helper, sys.path injection, retry or suppressed unpack failure.",
+            "sources": [
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/core.py",
+              "https://docs.python.org/3.12/using/cmdline.html#cmdoption-I",
+              "https://conda.github.io/conda-pack/"
+            ]
+          }
+        }
       }
     }
   },
