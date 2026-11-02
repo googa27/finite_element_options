@@ -49,8 +49,9 @@ jobs:
           CONSUMER_INPUT="$RUNNER_TEMP/native-consumer-input"
           EVIDENCE="$GITHUB_WORKSPACE/artifacts/relocation"
           python -c 'import shutil; assert shutil.disk_usage(".").free > 10*1024**3, "pack/replay needs 10GiB free"'
-          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge python=3.12 fenics-dolfinx=0.11.0 conda-pack=0.8.1
+          conda create --yes --prefix "$NATIVE_PREFIX" --override-channels --strict-channel-priority -c conda-forge python=3.12 fenics-dolfinx=0.11.0 conda-pack=0.9.2
           conda activate "$NATIVE_PREFIX"
+          "$NATIVE_PREFIX/bin/conda-pack" --version
           "$NATIVE_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
           export XDG_CACHE_HOME="$RUNNER_TEMP/producer-jit-cache"
           "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py solve --backend fenicsx --output "$EVIDENCE/original" --phase original --expected-prefix "$NATIVE_PREFIX"

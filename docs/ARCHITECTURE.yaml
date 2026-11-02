@@ -593,7 +593,7 @@
         "selected": [
           "DOLFINx0.11.0",
           "Dedalus3.0.5",
-          "conda-pack0.8.1"
+          "conda-pack0.9.2"
         ],
         "alternatives": [
           "custom finite-element assembly",
@@ -890,7 +890,7 @@
         "acceptance": {
           "poisson": "DOLFINx P1 manufactured sine solution;16/32/64 meshes; integrated L2 order>=1.8 on each refinement, finest<=1e-3, positive KSP reason, finite real vectors and zero Dirichlet boundary<=1e-12",
           "heat": "Dedalus Fourier64/RK222, exact two-mode decay atT0.5;10/20/40 steps; temporal L2 order>=1.8, finest<=2e-6, conserved mean<=1e-12 and decaying energy",
-          "relocation": "same-run producer, conda-pack0.8.1, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
+          "relocation": "same-run producer, conda-pack0.9.2, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
         },
         "commands": [
           "python -m unittest discover -s tests -p test_native_pde_validation.py -v",
@@ -923,6 +923,19 @@
             "https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/tcp.html"
           ],
           "limits": "No multi-rank, distributed, RDMA performance or native-success claim from local env/static controls; actual exact-head and relocated execution still required."
+        },
+        "archiving_tool": {
+          "cohort": "conda-forge conda-pack0.9.2, Python3.12; retain current solver-selected setuptools rather than restoring removed pkg_resources or downgrading setuptools.",
+          "reason": "Actual same-run producer passed all native quantitative gates, then conda-pack0.8.1 failed importing pkg_resources under setuptools84.2.1. Setuptools82 removed that module; maintained conda-pack0.9.x uses importlib.resources.",
+          "acceptance": "Run the released conda-pack CLI --version immediately after producer activation; require actual archive creation, hash, independent extraction/unpack, original-prefix unavailability and unchanged full-field native replay comparison. Errors propagate without archive flags that ignore missing/modified files.",
+          "sources": [
+            "https://conda.org/blog/2026-02-03-january-releases/",
+            "https://github.com/conda/conda-pack/releases/tag/0.9.2",
+            "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/core.py",
+            "https://setuptools.pypa.io/en/latest/history.html#v82-0-0",
+            "https://anaconda.org/conda-forge/conda-pack/files?channel=main"
+          ],
+          "limits": "Local import-boundary/static controls do not establish real package CLI execution, successful packing/unpacking or relocated native replay; exact-head hosted acceptance remains mandatory."
         }
       }
     }
