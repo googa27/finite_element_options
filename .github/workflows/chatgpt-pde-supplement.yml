@@ -65,7 +65,7 @@ jobs:
           test ! -e "$NATIVE_PREFIX"
           mkdir "$CONSUMER_PREFIX" "$CONSUMER_INPUT"
           tar -xzf "$RUNNER_TEMP/native-runtime.tar.gz" -C "$CONSUMER_PREFIX"
-          "$CONSUMER_PREFIX/bin/python" -I "$CONSUMER_PREFIX/bin/conda-unpack"
+          env -u PYTHONPATH -u PYTHONHOME "$CONSUMER_PREFIX/bin/python" -E -s "$CONSUMER_PREFIX/bin/conda-unpack"
           cp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
           cmp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
           conda activate "$CONSUMER_PREFIX"

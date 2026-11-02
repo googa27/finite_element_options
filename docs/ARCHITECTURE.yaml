@@ -935,7 +935,17 @@
             "https://setuptools.pypa.io/en/latest/history.html#v82-0-0",
             "https://anaconda.org/conda-forge/conda-pack/files?channel=main"
           ],
-          "limits": "Local import-boundary/static controls do not establish real package CLI execution, successful packing/unpacking or relocated native replay; exact-head hosted acceptance remains mandatory."
+          "limits": "Local import-boundary/static controls do not establish real package CLI execution, successful packing/unpacking or relocated native replay; exact-head hosted acceptance remains mandatory.",
+          "bootstrap": {
+            "entrypoint": "env -u PYTHONPATH -u PYTHONHOME relocated-prefix/bin/python -E -s relocated-prefix/bin/conda-unpack",
+            "reason": "Maintained conda-pack0.9.2 generates conda-unpack and conda_unpack_progress.py side by side in bin. Python-I omits the script directory and prevents its required sibling import. Use the intended script directory only for unpack bootstrap; clear Python path/home environment and exclude user site packages.",
+            "boundary": "This controlled bootstrap exception does not apply to MPI identity, solver, NPZ validation or full-field replay: those later consumer commands retain Python-I, independent cwd/cache and actual-prefix origin checks. No generated source edits, stub helper, sys.path injection, retry or suppressed unpack failure.",
+            "sources": [
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/core.py",
+              "https://docs.python.org/3.12/using/cmdline.html#cmdoption-I",
+              "https://conda.github.io/conda-pack/"
+            ]
+          }
         }
       }
     }
