@@ -15,6 +15,7 @@ import math
 from pathlib import Path
 import platform
 import sys
+import tarfile
 from typing import Any
 
 
@@ -23,6 +24,7 @@ ERROR_LIMITS = {"fenicsx": 1e-3, "dedalus": 2e-6}
 REPLAY_COORDINATE_ATOL = 1e-12
 REPLAY_FIELD_ATOL = 1e-12
 REPLAY_FIELD_RTOL = 1e-10
+ARCHIVE_MAX_BYTES = 500 * 1024**2
 
 
 def _finite(value: Any, name: str) -> float:
@@ -496,18 +498,27 @@ def export_report(path: Path) -> None:
 
 
 def archive_manifest(
-    archive: Path, evidence: Path, *, max_bytes: int = 1024**3
+    archive: Path, evidence: Path, *, max_bytes: int = ARCHIVE_MAX_BYTES
 ) -> None:
     """Measure a bounded archive; actual relocated replay remains a later gate."""
     report = read_report(evidence / "original/report.json")
     if (
         archive.is_symlink()
         or not archive.is_file()
-        or not 0 < archive.stat().st_size <= max_bytes
+        or not 0 < archive.stat().st_size <= min(max_bytes, ARCHIVE_MAX_BYTES)
     ):
         raise ValueError(
-            "native archive must be a regular nonempty file no larger than1GiB"
+            "native archive must be a regular nonempty file no larger than500MiB"
         )
+    if archive.name != "native-runtime.tar.xz":
+        raise ValueError(
+            "native archive must use the declared native-runtime.tar.xz name"
+        )
+    try:
+        with tarfile.open(archive, mode="r:xz"):
+            pass
+    except (tarfile.TarError, OSError, EOFError) as error:
+        raise ValueError("native archive must be a readable tar.xz file") from error
     with archive.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     source = (evidence / "source.txt").read_text().splitlines()
@@ -520,6 +531,9 @@ def archive_manifest(
     manifest = {
         "schema": 1,
         "filename": archive.name,
+        "format": "tar.xz",
+        "compression": {"level": 6, "threads": 2},
+        "max_bytes": ARCHIVE_MAX_BYTES,
         "bytes": archive.stat().st_size,
         "sha256": digest,
         "source_commit": source[0],
@@ -533,7 +547,7 @@ def archive_manifest(
         "package_list_sha256": hashlib.sha256(packages.read_bytes()).hexdigest(),
         "serial_mpi_environment": {"OMPI_MCA_pml": "ob1", "OMPI_MCA_btl": "self,tcp"},
         "distribution_gate": "Measured before testing; upload allowed only after successful same-run unpack and isolated complete-field native replay. Measurement alone does not establish delivery or replay.",
-        "retention": "Separate public Actions artifact, compression0,1day;≤1GiB; upload/quota failure propagates.",
+        "retention": "Separate public Actions artifact, compression0,1day;≤500MiB raw archive leaves margin below512MiB binary readback limit; upload/quota failure propagates.",
     }
     (evidence / "archive-manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n"
@@ -542,15 +556,23 @@ def archive_manifest(
     (evidence / "README-runtime.md").write_text(
         "# Tested native FEniCSx environment\n\n"
         "This Linux x86_64 archive is tied to the exact source and package list in archive-manifest.json. "
-        "The accompanying small numeric evidence records the same-run producer/relocated validation. "
+        "It includes matplotlib-base3.11.2 for both original and relocated plot exports. "
+        "The accompanying small numeric evidence records the same-run producer/relocated validation and exports. "
         "It is a synthetic demonstration runtime, not validation of pricing, calibration or distributed performance.\n\n"
         "Verify the archive before extracting into a new independent prefix:\n\n"
+        "Standard tar.xz from maintained conda-pack0.9.2 replaces the former gzip artifact; "
+        "preset6/two compression threads and a500MiB raw cap leave room for metadata/ZIP overhead below512MiB. "
+        "A size measurement or header check is not independent complete artifact readback.\n\n"
         "```sh\nsha256sum --check SHA256SUMS\nmkdir runtime\n"
-        "tar -xzf native-runtime.tar.gz -C runtime\n"
+        "tar -xJf native-runtime.tar.xz -C runtime\n"
         "env -u PYTHONPATH -u PYTHONHOME runtime/bin/python -E -s runtime/bin/conda-unpack\n"
         "source runtime/bin/activate\nexport OMPI_MCA_pml=ob1 OMPI_MCA_btl=self,tcp\n"
-        "python -I -c 'import dolfinx; print(dolfinx.__version__)'\n```\n\n"
-        "Use the source_commit in the manifest to retrieve the matching validation script. "
+        "python -I -c 'import dolfinx, matplotlib; print(dolfinx.__version__, matplotlib.__version__)'\n```\n\n"
+        "Use source_commit in the manifest to retrieve the exact matching scripts/validate_native_pde.py "
+        "as validate_native_pde.py in a separate caller-owned working directory. Then rerun the synthetic solve/export:\n\n"
+        '```sh\nexport MPLCONFIGDIR="$PWD/matplotlib-cache"\n'
+        'python -I validate_native_pde.py solve --backend fenicsx --output replay --phase original --expected-prefix "$CONDA_PREFIX"\n'
+        "python -I validate_native_pde.py export replay/report.json\n```\n\n"
         "Do not move the environment again after conda-unpack. Other operating systems/architectures "
         "and MPI scaling are outside this evidence. Actions retention is one day; no delivery is inferred "
         "if the upload fails.\n"

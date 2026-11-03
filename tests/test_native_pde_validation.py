@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 
@@ -270,8 +271,11 @@ class NativeValidationTests(unittest.TestCase):
             )
             (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
             (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture only\n")
-            archive = root / "native-runtime.tar.gz"
-            archive.write_bytes(b"measurement fixture only; not an archive execution")
+            archive = root / "native-runtime.tar.xz"
+            fixture = root / "fixture.txt"
+            fixture.write_text("small archive fixture; not a native runtime")
+            with tarfile.open(archive, "w:xz", preset=6) as packed:
+                packed.add(fixture, arcname="fixture.txt")
             with self.assertRaises(ValueError):
                 self.module().archive_manifest(archive, root, max_bytes=1)
             self.assertFalse((root / "archive-manifest.json").exists())
@@ -282,6 +286,53 @@ class NativeValidationTests(unittest.TestCase):
                 report["sha256"], hashlib.sha256(archive.read_bytes()).hexdigest()
             )
             self.assertEqual(report["source_tree"], "b" * 40)
+            self.assertIn("format", report)
+            self.assertEqual(report["format"], "tar.xz")
+            self.assertEqual(report["max_bytes"], 524288000)
+            self.assertEqual(report["compression"], {"level": 6, "threads": 2})
+            readme = (root / "README-runtime.md").read_text()
+            self.assertIn("tar -xJf native-runtime.tar.xz -C runtime", readme)
+            self.assertIn("matplotlib-base3.11.2", readme)
+            self.assertIn(" export ", readme)
+            self.assertNotIn("native-runtime.tar.gz", readme)
+
+    def test_archive_default_cap_rejects_500_mib_plus_one_without_hashing(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self.measurement(
+                root / "original", phase="original", prefix="/native/source"
+            )
+            (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
+            (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture\n")
+            archive = root / "native-runtime.tar.xz"
+            with archive.open("wb") as stream:
+                stream.truncate(524288001)
+            for options in ({}, {"max_bytes": 1073741824}):
+                with self.subTest(options=options):
+                    with self.assertRaisesRegex(ValueError, "500MiB"):
+                        self.module().archive_manifest(archive, root, **options)
+            self.assertFalse((root / "archive-manifest.json").exists())
+
+    def test_archive_refuses_wrong_format_and_mislabeled_suffix(self):
+        for mode, name in [
+            ("w:gz", "native-runtime.tar.xz"),
+            ("w:xz", "native-runtime.tar.gz"),
+        ]:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                self.measurement(
+                    root / "original", phase="original", prefix="/native/source"
+                )
+                (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
+                (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture\n")
+                archive = root / name
+                fixture = root / "fixture.txt"
+                fixture.write_text("format fixture")
+                with tarfile.open(archive, mode) as packed:
+                    packed.add(fixture, arcname="fixture.txt")
+                with self.assertRaises(ValueError):
+                    self.module().archive_manifest(archive, root)
+                self.assertFalse((root / "archive-manifest.json").exists())
 
     def test_complete_replay_is_coordinate_aligned_for_both_backends(self):
         for backend in ["fenicsx", "dedalus"]:

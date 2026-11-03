@@ -988,15 +988,27 @@
           },
           "archive": {
             "owner": "scripts/validate_native_pde.py archive-info and hosted relocated job",
-            "output": "Exact tested native-runtime.tar.gz; filename succeeds historical fenicsx-env.tar.gz purpose. Separate fenicsx-conda-env-run public Actions artifact.",
-            "gate": "Measure regularnonempty archive<=1GiB andSHA256, bind sourceHEAD/tree/platform/package-list/producer report; perform actualunpack/isolated3levelconsumer/full-fieldcomparison with producerprefix unavailable. Only then move exact archive to deliverydirectory and recheckSHA256 before upload. Uploadfailure/capfailure blocks delivery; smallnumeric artifact remains separate.",
+            "output": "Exact tested native-runtime.tar.xz; standard maintained tar.xz compression succeeds historical fenicsx-env.tar.gz and predecessor native-runtime.tar.gz purposes. Separate fenicsx-conda-env-run public Actions artifact.",
+            "gate": "Measure regularnonempty readabletar.xz archive<=500MiB andSHA256; bind sourceHEAD/tree/platform/package-list/producer report. Include matplotlib-base3.11.2 in portablecohort, export actualproducer fields beforepacking, then unpack/sanitizedbootstrap/isolated3levelconsumer/export/full-fieldcomparison with producerprefix unavailable. Only then move exactarchive to deliverydirectory and recheckSHA256. Oversize/upload/quota failure blocksdelivery; smallnumeric/export artifact remains separate. Complete downloadedZIP/rawarchive hash/readback and reuse remain freshacceptance gates.",
             "retention": "compression-level0,retention-days1,contents:read; no release/settings/billing/protection change.",
-            "reuse": "Retained README gives SHA verification, independent extraction, maintained sanitized unpackbootstrap, activation/MPItransport and exactsource/platform restrictions; preserve explicitpackage list andmanifest.",
-            "limits": "A measured hash or successful same-run replay alone is not retainedarchive delivery; actualupload/artifactreadback is mandatory. Native environment is Linux-x86_64 serial demonstration only.",
+            "reuse": "Retained README gives SHAverification, standard tar-xJf extraction, maintained sanitizedunpackbootstrap, activation/MPItransport, exactsource/platform restrictions and isolated solve/export commands. Portablecohort itself includes headlessmatplotlib-base3.11.2; no plotting import is supplied from an unrelated environment.",
+            "limits": "Actualupload and completeartifactreadback remain mandatory. No new hostedpacking/unpacking/export/native/reuse/readback success is inferred from local archivefixtures or priorhead76254809 success. Nativeenvironment is Linux-x86_64 serialdemonstration only; no scientific/pricing/optional-backend maturity promotion.",
             "sources": [
               "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
-              "https://conda.github.io/conda-pack/"
-            ]
+              "https://conda.github.io/conda-pack/",
+              "https://conda.github.io/conda-pack/cli.html",
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/cli.py",
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/formats.py"
+            ],
+            "compression": {
+              "owner": "conda-pack0.9.2 releasedCLI/formats.py; maintained stdlib lzma/tarfile, no custom compressor",
+              "format": "tar.xz",
+              "level": 6,
+              "threads": 2,
+              "raw_archive_cap_bytes": 524288000,
+              "readback_limit_bytes": 536870912,
+              "reason": "Previously delivered gzipZIP601774678bytes exceeds supported512MiB fullbinaryreadback. StandardXZ plus500MiB rawcap leaves12MiB for metadata/ZIP overhead; actualfit is measured and never presumed. ReleasedserialXZ path ignorescompresslevel; boundedtwothreads select explicitLZMACompressor(preset=6)."
+            }
           },
           "ancestry": "Both original prototype refs/commits remain preserved until actual new PNG, allsixwheels, nativearchive delivery and scientific/default acceptance are independently reviewed; no zero-file ancestry bridge in this output change."
         }
