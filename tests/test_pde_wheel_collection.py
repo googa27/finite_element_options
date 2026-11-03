@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -21,7 +22,7 @@ class WheelCollectionTests(unittest.TestCase):
         spec.loader.exec_module(module)
         return module
 
-    def fixture(self, directory):
+    def fixture(self, directory, metadata_extra=b""):
         receipts = {}
         for name in ("meshio", "pyvista", "scooby", "mpi4py", "gmsh", "fenics-basix"):
             version = "0.11.0" if name == "fenics-basix" else "1.0.0"
@@ -30,7 +31,10 @@ class WheelCollectionTests(unittest.TestCase):
             with zipfile.ZipFile(file, "w") as archive:
                 archive.writestr(
                     f"{dist}-{version}.dist-info/METADATA",
-                    f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n",
+                    f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n".encode(
+                        "utf-8"
+                    )
+                    + metadata_extra,
                 )
                 archive.writestr(
                     f"{dist}-{version}.dist-info/WHEEL",
@@ -66,6 +70,32 @@ class WheelCollectionTests(unittest.TestCase):
                     row["sha256"],
                     hashlib.sha256((path / row["filename"]).read_bytes()).hexdigest(),
                 )
+
+    def test_utf8_license_roundtrips_as_json_without_losing_characters(self):
+        # This author spelling and folded MIT license occur in released meshio5.3.5.
+        license_text = "The MIT License (MIT)\n        Copyright (c) 2015-2021 Nico Schlömer et al."
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            receipts = self.fixture(
+                path, ("License: " + license_text + "\n").encode("utf-8")
+            )
+            rows = self.module().validate_wheels(path, receipts)
+            decoded = json.loads(json.dumps(rows, ensure_ascii=False).encode("utf-8"))
+            self.assertEqual(len(decoded), 6)
+            for row in decoded:
+                self.assertEqual(row["license"], license_text)
+                self.assertIn("Schlömer", row["license"])
+
+    def test_malformed_utf8_or_metadata_headers_are_refused(self):
+        for extra in (
+            b"License: invalid-utf8-\xff\n",
+            b"Broken header without colon\n",
+        ):
+            with self.subTest(extra=extra), tempfile.TemporaryDirectory() as d:
+                path = Path(d)
+                receipts = self.fixture(path, extra)
+                with self.assertRaises(ValueError):
+                    self.module().validate_wheels(path, receipts)
 
     def test_missing_duplicate_and_nonwheel_payloads_are_refused(self):
         for change in ("missing", "duplicate", "nonwheel"):

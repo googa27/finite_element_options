@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import argparse
-from email.parser import BytesParser
+from email import policy
+from email.parser import Parser
 import hashlib
 import json
 from pathlib import Path
@@ -47,8 +48,14 @@ def inspect_wheel(path: Path) -> dict:
         ):
             raise ValueError("wheel metadata directories disagree")
         raw = archive.read(metadata[0])
-        info = BytesParser().parsebytes(raw)
-        wheel_info = BytesParser().parsebytes(archive.read(wheel[0]))
+        # Core metadata is UTF-8 text using email's compat32 grammar. Parse
+        # decoded text so valid non-ASCII headers remain JSON-safe Unicode,
+        # rather than compat32 BytesParser's email.header.Header wrappers.
+        parser = Parser(policy=policy.compat32)
+        info = parser.parsestr(raw.decode("utf-8"))
+        wheel_info = parser.parsestr(archive.read(wheel[0]).decode("utf-8"))
+        if info.defects or wheel_info.defects:
+            raise ValueError("malformed wheel metadata headers")
     if canonicalize_name(info["Name"]) != name or info["Version"] != str(version):
         raise ValueError("wheel filename and distribution identity disagree")
     if platform.python_version() not in SpecifierSet(info.get("Requires-Python", "")):
