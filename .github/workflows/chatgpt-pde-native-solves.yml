@@ -71,6 +71,7 @@ jobs:
           "$NATIVE_PREFIX/bin/python" -I scripts/validate_native_pde.py export "$EVIDENCE/report.json"
           conda list --prefix "$NATIVE_PREFIX" --explicit --md5 > "$EVIDENCE/conda-explicit.txt"
           git rev-parse HEAD 'HEAD^{tree}' > "$EVIDENCE/source.txt"
+          (cd scripts && sha256sum validate_native_pde.py native_pde_artifacts.py) > "$EVIDENCE/SOURCE_SHA256SUMS"
           "$NATIVE_PREFIX/bin/python" -c 'import shutil; assert shutil.disk_usage(".").free > 1024**3, "native evidence must preserve 1GiB free"'
       - name: Retain actual native measurements and exact runtime identity
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

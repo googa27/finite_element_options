@@ -7,80 +7,18 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import importlib.util
 import json
 from pathlib import Path
-import subprocess
 import sys
-import tarfile
 import tempfile
 import unittest
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts/validate_native_pde.py"
+from native_pde_test_support import NativeEvidenceFixtures
 
 
-class NativeValidationTests(unittest.TestCase):
+class NativeValidationTests(NativeEvidenceFixtures, unittest.TestCase):
     """Reject scientific and relocation failures before declaring acceptance."""
-
-    def cli(self, *args: str) -> subprocess.CompletedProcess[str]:
-        """Execute the actual public script, including its argument parser."""
-        return subprocess.run(
-            [sys.executable, "-B", str(SCRIPT), *args],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
-        )
-
-    def module(self):
-        """Load the actual script without importing optional native packages."""
-        self.assertTrue(SCRIPT.is_file(), "native validation CLI is missing")
-        spec = importlib.util.spec_from_file_location("native_validation", SCRIPT)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-
-    def report(self, backend="fenicsx", phase="original", prefix="/native/source"):
-        """Return hand-derived admission data, never a numerical run receipt."""
-        levels = [
-            {"resolution": 16, "scale": 0.0625, "error_l2": 0.004},
-            {"resolution": 32, "scale": 0.03125, "error_l2": 0.001},
-            {"resolution": 64, "scale": 0.015625, "error_l2": 0.00025},
-        ]
-        for row in levels:
-            row.update(ksp_reason=4, iterations=1, boundary_max=0.0)
-        if backend == "dedalus":
-            levels = [
-                {
-                    "resolution": n,
-                    "scale": dt,
-                    "error_l2": err,
-                    "iterations": n,
-                    "final_time": 0.5,
-                    "mean": 0.0,
-                    "energy_ratio": 0.9,
-                }
-                for n, dt, err in [
-                    (10, 0.05, 8e-6),
-                    (20, 0.025, 2e-6),
-                    (40, 0.0125, 5e-7),
-                ]
-            ]
-        return {
-            "schema": 1,
-            "backend": backend,
-            "phase": phase,
-            "prefix": prefix,
-            "script_sha256": hashlib.sha256(SCRIPT.read_bytes()).hexdigest(),
-            "runtime": {backend: "0.11.0" if backend == "fenicsx" else "3.0.5"},
-            "origins": {
-                backend: prefix + "/lib/native/__init__.py",
-                "numpy": prefix + "/lib/numpy/__init__.py",
-            },
-            "levels": levels,
-        }
 
     def test_help_without_optional_native_packages(self):
         result = self.cli("--help")
@@ -138,48 +76,6 @@ class NativeValidationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("grid", result.stderr)
 
-    def measurement(
-        self,
-        directory,
-        *,
-        phase,
-        prefix,
-        perturbation=0.0,
-        reverse=False,
-        backend="fenicsx",
-        coordinate_offset=(0.0, 0.0),
-        exact_bias=0.0,
-        ulp_coordinates=False,
-    ):
-        """Write complete synthetic arrays to exercise real artifact comparison."""
-        import numpy as np
-
-        directory.mkdir()
-        if backend == "fenicsx":
-            x, y = np.meshgrid(np.linspace(0, 1, 65), np.linspace(0, 1, 65))
-            x, y = x.ravel() + coordinate_offset[0], y.ravel() + coordinate_offset[1]
-            exact = np.sin(np.pi * x) * np.sin(np.pi * y)
-            values = exact + perturbation * np.sin(2 * np.pi * x) * np.sin(np.pi * y)
-        else:
-            x = np.arange(64) * np.pi / 32
-            y = np.zeros_like(x)
-            exact = np.exp(-0.05) * np.sin(x) + 0.25 * np.exp(-0.2) * np.cos(2 * x)
-            values = exact + perturbation * np.sin(2 * x)
-        arrays = {"x": x, "y": y, "exact": exact + exact_bias, "u": values}
-        if ulp_coordinates:
-            for name in ("x", "y"):
-                arrays[name][::2] = np.nextafter(arrays[name][::2], np.inf)
-                arrays[name][1::2] = np.nextafter(arrays[name][1::2], -np.inf)
-        if reverse:
-            arrays = {name: value[::-1] for name, value in arrays.items()}
-        data = directory / "values.npz"
-        np.savez_compressed(data, **arrays)
-        report = self.report(backend, phase, prefix)
-        report["data_sha256"] = hashlib.sha256(data.read_bytes()).hexdigest()
-        path = directory / "report.json"
-        path.write_text(json.dumps(report))
-        return path
-
     def test_complete_rehashed_altered_field_is_not_a_relocated_replay(self):
         for backend, perturbation in [("fenicsx", 0.0005), ("dedalus", 1e-6)]:
             with (
@@ -204,135 +100,6 @@ class NativeValidationTests(unittest.TestCase):
                 result = self.cli("compare", str(original), str(changed))
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("replay field differs: u", result.stderr)
-
-    def test_export_preserves_validated_fields_and_renders_both_plots(self):
-        import numpy as np
-        import matplotlib.image as mpimg
-
-        for backend, png, shape in [
-            ("fenicsx", "fenicsx_poisson.png", (750, 900)),
-            ("dedalus", "dedalus_heat.png", (600, 1050)),
-        ]:
-            with self.subTest(backend=backend), tempfile.TemporaryDirectory() as d:
-                path = self.measurement(
-                    Path(d) / "data",
-                    phase="original",
-                    prefix="/native/source",
-                    backend=backend,
-                )
-                result = self.cli("export", str(path))
-                self.assertEqual(result.returncode, 0, result.stderr)
-                with np.load(
-                    path.parent / "values.npz", allow_pickle=False
-                ) as original:
-                    with np.load(
-                        path.parent / f"{backend}_result.npz", allow_pickle=False
-                    ) as exported:
-                        for name in ("x", "y", "u", "exact"):
-                            np.testing.assert_array_equal(
-                                exported[name], original[name]
-                            )
-                        self.assertEqual(float(exported["rms"]), 0.0)
-                pixels = mpimg.imread(path.parent / png)
-                self.assertEqual(pixels.shape[:2], shape)
-                self.assertGreater(float(np.std(pixels)), 0.05)
-                manifest = json.loads(
-                    (path.parent / "export-manifest.json").read_text()
-                )
-                self.assertEqual(
-                    manifest["data_sha256"], json.loads(path.read_text())["data_sha256"]
-                )
-                for item in manifest["exports"]:
-                    self.assertEqual(
-                        hashlib.sha256(
-                            (path.parent / item["name"]).read_bytes()
-                        ).hexdigest(),
-                        item["sha256"],
-                    )
-
-    def test_export_refuses_rehashed_bad_fields_before_writing_outputs(self):
-        with tempfile.TemporaryDirectory() as d:
-            path = self.measurement(
-                Path(d) / "data",
-                phase="original",
-                prefix="/native/source",
-                perturbation=0.1,
-            )
-            result = self.cli("export", str(path))
-            self.assertEqual(result.returncode, 1, result.stderr)
-            self.assertFalse((path.parent / "fenicsx_poisson.png").exists())
-            self.assertFalse((path.parent / "fenicsx_result.npz").exists())
-
-    def test_archive_measurement_refuses_oversize_and_binds_runtime_evidence(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            self.measurement(
-                root / "original", phase="original", prefix="/native/source"
-            )
-            (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
-            (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture only\n")
-            archive = root / "native-runtime.tar.xz"
-            fixture = root / "fixture.txt"
-            fixture.write_text("small archive fixture; not a native runtime")
-            with tarfile.open(archive, "w:xz", preset=6) as packed:
-                packed.add(fixture, arcname="fixture.txt")
-            with self.assertRaises(ValueError):
-                self.module().archive_manifest(archive, root, max_bytes=1)
-            self.assertFalse((root / "archive-manifest.json").exists())
-            self.module().archive_manifest(archive, root)
-            report = json.loads((root / "archive-manifest.json").read_text())
-            self.assertEqual(report["bytes"], archive.stat().st_size)
-            self.assertEqual(
-                report["sha256"], hashlib.sha256(archive.read_bytes()).hexdigest()
-            )
-            self.assertEqual(report["source_tree"], "b" * 40)
-            self.assertIn("format", report)
-            self.assertEqual(report["format"], "tar.xz")
-            self.assertEqual(report["max_bytes"], 524288000)
-            self.assertEqual(report["compression"], {"level": 6, "threads": 2})
-            readme = (root / "README-runtime.md").read_text()
-            self.assertIn("tar -xJf native-runtime.tar.xz -C runtime", readme)
-            self.assertIn("matplotlib-base3.11.2", readme)
-            self.assertIn(" export ", readme)
-            self.assertNotIn("native-runtime.tar.gz", readme)
-
-    def test_archive_default_cap_rejects_500_mib_plus_one_without_hashing(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            self.measurement(
-                root / "original", phase="original", prefix="/native/source"
-            )
-            (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
-            (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture\n")
-            archive = root / "native-runtime.tar.xz"
-            with archive.open("wb") as stream:
-                stream.truncate(524288001)
-            for options in ({}, {"max_bytes": 1073741824}):
-                with self.subTest(options=options):
-                    with self.assertRaisesRegex(ValueError, "500MiB"):
-                        self.module().archive_manifest(archive, root, **options)
-            self.assertFalse((root / "archive-manifest.json").exists())
-
-    def test_archive_refuses_wrong_format_and_mislabeled_suffix(self):
-        for mode, name in [
-            ("w:gz", "native-runtime.tar.xz"),
-            ("w:xz", "native-runtime.tar.gz"),
-        ]:
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as d:
-                root = Path(d)
-                self.measurement(
-                    root / "original", phase="original", prefix="/native/source"
-                )
-                (root / "source.txt").write_text("a" * 40 + "\n" + "b" * 40 + "\n")
-                (root / "conda-explicit.txt").write_text("@EXPLICIT\n# fixture\n")
-                archive = root / name
-                fixture = root / "fixture.txt"
-                fixture.write_text("format fixture")
-                with tarfile.open(archive, mode) as packed:
-                    packed.add(fixture, arcname="fixture.txt")
-                with self.assertRaises(ValueError):
-                    self.module().archive_manifest(archive, root)
-                self.assertFalse((root / "archive-manifest.json").exists())
 
     def test_complete_replay_is_coordinate_aligned_for_both_backends(self):
         for backend in ["fenicsx", "dedalus"]:

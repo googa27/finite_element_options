@@ -71,6 +71,8 @@ jobs:
           env -u PYTHONPATH -u PYTHONHOME "$CONSUMER_PREFIX/bin/python" -E -s "$CONSUMER_PREFIX/bin/conda-unpack"
           cp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
           cmp scripts/validate_native_pde.py "$CONSUMER_INPUT/validate_native_pde.py"
+          cp scripts/native_pde_artifacts.py "$CONSUMER_INPUT/native_pde_artifacts.py"
+          cmp scripts/native_pde_artifacts.py "$CONSUMER_INPUT/native_pde_artifacts.py"
           conda activate "$CONSUMER_PREFIX"
           "$CONSUMER_PREFIX/bin/python" -I -c 'import os,json; assert os.environ.get("OMPI_MCA_pml")=="ob1"; assert os.environ.get("OMPI_MCA_btl")=="self,tcp"; from mpi4py import MPI; assert MPI.COMM_WORLD.Get_size()==MPI.COMM_SELF.Get_size()==1; version=MPI.Get_library_version(); assert "Open MPI" in version; MPI.COMM_SELF.Barrier(); print(json.dumps({"serial_mpi_transport":{"pml":os.environ["OMPI_MCA_pml"],"btl":os.environ["OMPI_MCA_btl"],"world_size":MPI.COMM_WORLD.Get_size(),"self_size":MPI.COMM_SELF.Get_size()},"mpi_library":version.strip()}))'
           export XDG_CACHE_HOME="$RUNNER_TEMP/consumer-jit-cache"
@@ -83,7 +85,7 @@ jobs:
           RUNTIME_EXPORT="$GITHUB_WORKSPACE/artifacts/native-runtime"
           mkdir "$RUNTIME_EXPORT"
           mv "$RUNNER_TEMP/native-runtime.tar.xz" "$RUNTIME_EXPORT/native-runtime.tar.xz"
-          cp "$EVIDENCE/archive-manifest.json" "$EVIDENCE/conda-explicit.txt" "$EVIDENCE/SHA256SUMS" "$RUNTIME_EXPORT/"
+          cp "$EVIDENCE/archive-manifest.json" "$EVIDENCE/conda-explicit.txt" "$EVIDENCE/SHA256SUMS" "$EVIDENCE/SOURCE_SHA256SUMS" "$RUNTIME_EXPORT/"
           cp "$EVIDENCE/README-runtime.md" "$RUNTIME_EXPORT/README.md"
           (cd "$RUNTIME_EXPORT" && sha256sum --check SHA256SUMS)
       - name: Retain actual producer and relocated-consumer evidence

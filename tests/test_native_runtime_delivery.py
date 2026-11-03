@@ -73,6 +73,11 @@ def check_delivery_contract(source):
     assert 'cd "$CONSUMER_INPUT"' in script
     assert 'export MPLCONFIGDIR="$RUNNER_TEMP/producer-mpl"' in script
     assert 'export MPLCONFIGDIR="$RUNNER_TEMP/consumer-mpl"' in script
+    for name in ("validate_native_pde.py", "native_pde_artifacts.py"):
+        for operation in ("cp", "cmp"):
+            command = f'{operation} scripts/{name} "$CONSUMER_INPUT/{name}"'
+            assert command in script, "the entire exact source bundle is required"
+            assert script.index(command) < script.index(relocated_export)
     upload = job.split("name: Deliver the exact tested native archive", 1)[1]
     assert "compression-level: 0" in upload
     assert "retention-days: 1" in upload
@@ -109,6 +114,8 @@ class NativeRuntimeDeliveryTests(unittest.TestCase):
             'test ! -e "$NATIVE_PREFIX"',
             'mv "$NATIVE_PREFIX" "$RUNNER_TEMP/native-producer-disabled"',
             'env -u PYTHONPATH -u PYTHONHOME "$CONSUMER_PREFIX/bin/python" -E -s',
+            "cp scripts/native_pde_artifacts.py",
+            "cmp scripts/native_pde_artifacts.py",
         ]:
             with self.subTest(command=command):
                 self.assertIn(command, source)
