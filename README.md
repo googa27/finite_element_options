@@ -217,6 +217,17 @@ constraints.txt                     CI/test compatibility constraints
 tests/                              pytest-based test suite
 ```
 
+## Native demonstration replay
+
+The optional FEniCSx/Dedalus demonstration driver is
+`scripts/validate_native_pde.py`; its validated plot and portable archive helpers
+live in `scripts/native_pde_artifacts.py`. When replaying outside the checkout,
+retrieve both files from the evidence's exact source commit and keep them in the
+same directory. Verify `SOURCE_SHA256SUMS` before running the driver with
+`python -I`; no `PYTHONPATH` setup is needed. Reports and artifact manifests bind
+both source hashes. The runtime artifact README contains extraction and replay
+commands. These synthetic demonstrations do not validate pricing or MPI scaling.
+
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for development guidelines and prompt templates.

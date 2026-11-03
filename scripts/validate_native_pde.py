@@ -9,7 +9,9 @@ are mandatory only for ``solve``; metadata unit tests are not native run proof.
 from __future__ import annotations
 
 import argparse
+from functools import partial
 import hashlib
+import importlib.util
 import json
 import math
 from pathlib import Path
@@ -17,11 +19,20 @@ import sys
 from typing import Any
 
 
+# Load only the exact copied sibling, including under isolated Python (-I).
+_spec = importlib.util.spec_from_file_location(
+    "native_pde_artifacts", Path(__file__).with_name("native_pde_artifacts.py")
+)
+_artifacts = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_artifacts)
+
+
 VERSIONS = {"fenicsx": "0.11.0", "dedalus": "3.0.5"}
 ERROR_LIMITS = {"fenicsx": 1e-3, "dedalus": 2e-6}
 REPLAY_COORDINATE_ATOL = 1e-12
 REPLAY_FIELD_ATOL = 1e-12
 REPLAY_FIELD_RTOL = 1e-10
+ARCHIVE_MAX_BYTES = _artifacts.ARCHIVE_MAX_BYTES
 
 
 def _finite(value: Any, name: str) -> float:
@@ -55,6 +66,8 @@ def validate_report(report: dict[str, Any]) -> None:
         != hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     ):
         raise ValueError("report is not bound to this reviewed script")
+    if report["source_sha256"] != _artifacts.source_hashes(Path(__file__)):
+        raise ValueError("report is not bound to this complete source bundle")
     if report["runtime"] != {backend: VERSIONS[backend]}:
         raise ValueError("native runtime differs from the reviewed profile")
     origins = report["origins"]
@@ -364,6 +377,7 @@ def solve(backend: str, output: Path, phase: str, expected_prefix: Path) -> None
         "phase": phase,
         "prefix": str(Path(sys.prefix).resolve()),
         "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "source_sha256": _artifacts.source_hashes(Path(__file__)),
         "runtime": {backend: VERSIONS[backend]},
         "origins": origins,
         "levels": levels,
@@ -430,6 +444,10 @@ def read_report(path: Path) -> dict[str, Any]:
     return {**report, "measurements": arrays}
 
 
+export_report = partial(_artifacts.export_report, read_report=read_report)
+archive_manifest = partial(_artifacts.archive_manifest, read_report=read_report)
+
+
 def main() -> int:
     """Expose execution, artifact validation and relocated replay comparison."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -441,6 +459,11 @@ def main() -> int:
     run.add_argument("--expected-prefix", type=Path, required=True)
     check = commands.add_parser("validate")
     check.add_argument("report", type=Path)
+    export = commands.add_parser("export")
+    export.add_argument("report", type=Path)
+    archive = commands.add_parser("archive-info")
+    archive.add_argument("archive", type=Path)
+    archive.add_argument("evidence", type=Path)
     compare = commands.add_parser("compare")
     compare.add_argument("original", type=Path)
     compare.add_argument("relocated", type=Path)
@@ -450,6 +473,10 @@ def main() -> int:
             solve(args.backend, args.output, args.phase, args.expected_prefix)
         elif args.command == "validate":
             read_report(args.report)
+        elif args.command == "export":
+            export_report(args.report)
+        elif args.command == "archive-info":
+            archive_manifest(args.archive, args.evidence)
         else:
             validate_pair(read_report(args.original), read_report(args.relocated))
     except (ValueError, KeyError, TypeError, ImportError, OSError) as error:

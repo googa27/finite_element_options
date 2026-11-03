@@ -876,7 +876,7 @@
         "selftest": "python3 scripts/selftest_actions_runtime_contract.py"
       },
       "native_pde_validation": {
-        "owner": "scripts/validate_native_pde.py; optional public-synthetic demonstrations outside src",
+        "owner": "scripts/validate_native_pde.py owns native execution, scientific admission and replay; scripts/native_pde_artifacts.py owns validated exports/archive metadata; both outside src",
         "profiles": {
           "fenicsx": "Python3.12 / conda-forge fenics-dolfinx0.11.0 with matched MPI/PETSc/UFL/Basix/FFCx",
           "dedalus": "Python3.13 / conda-forge dedalus3.0.5 with matched MPI/FFTW/HDF5"
@@ -890,10 +890,10 @@
         "acceptance": {
           "poisson": "DOLFINx P1 manufactured sine solution;16/32/64 meshes; integrated L2 order>=1.8 on each refinement, finest<=1e-3, positive KSP reason, finite real vectors and zero Dirichlet boundary<=1e-12",
           "heat": "Dedalus Fourier64/RK222, exact two-mode decay atT0.5;10/20/40 steps; temporal L2 order>=1.8, finest<=2e-6, conserved mean<=1e-12 and decaying energy",
-          "relocation": "same-run producer, conda-pack0.9.2, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact script, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
+          "relocation": "same-run producer, conda-pack0.9.2, independently extracted/unpacked prefix; original prefix reversibly renamed before replay; independent JIT caches, unrelated consumer cwd, copied exact driver/helper bundle, isolated Python/module-origin checks and matching measured output; independently validate each NPZ, then align complete integer lattice node IDs under fixed coordinate atol1e-12, requiring exactly one point per expected node and compare x/y/exact with rtol0/atol1e-12 and u with rtol1e-10/atol1e-12. Scalar summaries or metadata-only records cannot establish replay."
         },
         "commands": [
-          "python -m unittest discover -s tests -p test_native_pde_validation.py -v",
+          "python -m unittest discover -s tests -p test_native*.py -v",
           "python scripts/validate_native_pde.py --help"
         ],
         "runtime_activation": "Native positive execution is mandatory in the public ubuntu-24.04 workflows; local missing native modules fail explicitly, never skip or fabricate numerical output.",
@@ -946,6 +946,87 @@
               "https://conda.github.io/conda-pack/"
             ]
           }
+        },
+        "prototype_output_reconciliation": {
+          "original_heads": {
+            "native": "c2fdae5c2cf731cfe1cbd5b980c67d1a6512c645",
+            "supplement": "d04c12fd2ebeb1cad484c20ba28d84bf5b1a2d7e"
+          },
+          "plots": {
+            "owner": "scripts/native_pde_artifacts.py through validate_native_pde.py export; conda-forge matplotlib-base3.11.2/Agg",
+            "outputs": [
+              "fenicsx_result.npz",
+              "fenicsx_poisson.png",
+              "dedalus_result.npz",
+              "dedalus_heat.png",
+              "export-manifest.json"
+            ],
+            "gate": "Independently validate report/hash/full actual fields before rendering; export identical x/y/u/exact with recomputed nodal RMS, plot6x5/7x4 at150dpi, hash each output and bind original report/data/source identity. No altered or synthetic replacement fields.",
+            "fixture_disposition": "Current64x64 finest P1 and Fourier64/two-mode/40-step heat refinement fixtures intentionally supersede the24x24 P1 and Fourier96/single-mode/dt0.002 prototypes. Original filenames/output purposes are restored; exact old numerical fixture equivalence is not claimed.",
+            "sources": [
+              "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tricontourf.html",
+              "https://conda-forge.org/docs/maintainer/knowledge_base/"
+            ]
+          },
+          "wheels": {
+            "owner": "scripts/collect_pde_wheels.py; separate actualCPython3.13/Linux-x86_64 hosted acquisition",
+            "specs": [
+              "meshio",
+              "pyvista",
+              "scooby",
+              "mpi4py",
+              "gmsh",
+              "fenics-basix==0.11.0"
+            ],
+            "gate": "Isolated pip, explicitHTTPS PyPI index, only-binary/no-deps/no-cache, boundedtimeout/retries; exactlysix regularwheel files,total<=100MiB, compatible filename/WHEEL tags and Requires-Python, exact expected distribution names/versions and internal metadata, non-yanked primary PyPI release file origin/size/SHA256. Record sourceHEAD/tree, actualinterpreter, downloadedmetadata and statuses; failures propagate.",
+            "retention": "pde-supplement-wheels-py313-run artifact,1day. No dependencies are installed from downloaded wheels.",
+            "limits": "Auxiliary wheel seeds preserve original six-package acquisition purpose; no complete offline environment, installed-library compatibility, native runtime or scientific success claim.",
+            "sources": [
+              "https://pip.pypa.io/en/stable/cli/pip_download/",
+              "https://docs.pypi.org/api/json/"
+            ]
+          },
+          "archive": {
+            "owner": "scripts/native_pde_artifacts.py through validate_native_pde.py archive-info and hosted relocated job",
+            "output": "Exact tested native-runtime.tar.xz; standard maintained tar.xz compression succeeds historical fenicsx-env.tar.gz and predecessor native-runtime.tar.gz purposes. Separate fenicsx-conda-env-run public Actions artifact.",
+            "gate": "Measure regularnonempty readabletar.xz archive<=500MiB andSHA256; bind sourceHEAD/tree/platform/package-list/producer report. Include matplotlib-base3.11.2 in portablecohort, export actualproducer fields beforepacking, then unpack/sanitizedbootstrap/isolated3levelconsumer/export/full-fieldcomparison with producerprefix unavailable. Only then move exactarchive to deliverydirectory and recheckSHA256. Oversize/upload/quota failure blocksdelivery; smallnumeric/export artifact remains separate. Complete downloadedZIP/rawarchive hash/readback and reuse remain freshacceptance gates.",
+            "retention": "compression-level0,retention-days1,contents:read; no release/settings/billing/protection change.",
+            "reuse": "Retained README gives SHAverification, standard tar-xJf extraction, maintained sanitizedunpackbootstrap, activation/MPItransport, exactsource/platform restrictions and isolated solve/export commands. Portablecohort itself includes headlessmatplotlib-base3.11.2; no plotting import is supplied from an unrelated environment. Retrieve both source files from source_commit and verify SOURCE_SHA256SUMS before isolated reuse.",
+            "limits": "Actualupload and completeartifactreadback remain mandatory. No new hostedpacking/unpacking/export/native/reuse/readback success is inferred from local archivefixtures or priorhead76254809 success. Nativeenvironment is Linux-x86_64 serialdemonstration only; no scientific/pricing/optional-backend maturity promotion.",
+            "sources": [
+              "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
+              "https://conda.github.io/conda-pack/",
+              "https://conda.github.io/conda-pack/cli.html",
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/cli.py",
+              "https://github.com/conda/conda-pack/blob/0.9.2/conda_pack/formats.py"
+            ],
+            "compression": {
+              "owner": "conda-pack0.9.2 releasedCLI/formats.py; maintained stdlib lzma/tarfile, no custom compressor",
+              "format": "tar.xz",
+              "level": 6,
+              "threads": 2,
+              "raw_archive_cap_bytes": 524288000,
+              "readback_limit_bytes": 536870912,
+              "reason": "Previously delivered gzipZIP601774678bytes exceeds supported512MiB fullbinaryreadback. StandardXZ plus500MiB rawcap leaves12MiB for metadata/ZIP overhead; actualfit is measured and never presumed. ReleasedserialXZ path ignorescompresslevel; boundedtwothreads select explicitLZMACompressor(preset=6)."
+            }
+          },
+          "ancestry": "Both original prototype refs/commits remain preserved until actual new PNG, allsixwheels, nativearchive delivery and scientific/default acceptance are independently reviewed; no zero-file ancestry bridge in this output change."
+        },
+        "source_bundle": {
+          "files": [
+            "validate_native_pde.py",
+            "native_pde_artifacts.py"
+          ],
+          "loading": "Maintained importlib.util.spec_from_file_location/module_from_spec/exec_module loads only the driver-adjacent helper under Python-I; no PYTHONPATH or sys.path mutation. Missing helper fails closed.",
+          "identity": "Existing script_sha256 remains the driver digest; required source_sha256 maps exactly both filenames to SHA256. Reports, exports and archive manifests bind both; SOURCE_SHA256SUMS records the same pair for independent retrieval/reuse. Missing, added or changed source identities refuse before output.",
+          "relocation": "Copy and cmp both reviewed files into the independent consumer input directory before isolated native replay/export; no repository or producer-prefix imports.",
+          "cohesion": "Artifact functions receive the validated report reader explicitly; numerical kernels, field validation and full-field comparison remain in the driver. No numerical algorithm or dependency change.",
+          "fitness": "tests/test_native_source_bundle.py enforces500physical lines for every native driver/helper/test module, tests real isolated copied-bundle execution and refuses missing/changed helper. Shared synthetic fixtures own test construction without duplicating discovered tests.",
+          "sources": [
+            "https://docs.python.org/3.12/library/importlib.html#importing-a-source-file-directly",
+            "https://docs.python.org/3.12/using/cmdline.html#cmdoption-I"
+          ],
+          "limits": "Local extraction tests are not fresh native/runtime/artifact or resulting-default acceptance; all hosted gates must repeat on the new exact source tree."
         }
       }
     }

@@ -7,6 +7,18 @@
 **Portfolio epic:** [`haircut-engine` #62](https://github.com/googa27/haircut-engine/issues/62)  
 **Local modernization epic:** [#43](https://github.com/googa27/finite_element_options/issues/43)
 
+The optional native demonstration source bundle for #188 keeps numerical
+execution, field admission and replay in `scripts/validate_native_pde.py`, with
+validated plot/archive output in `scripts/native_pde_artifacts.py`. The driver
+loads only its exact sibling through the standard-library importlib API under
+isolated Python; both files are copied and compared before relocated replay.
+Required `source_sha256` identities and `SOURCE_SHA256SUMS` cover the complete
+bundle alongside the existing driver digest. Artifact helpers receive the
+validated report reader explicitly. The native module fitness test enforces
+500 physical lines without an exception and checks copied-bundle isolation and
+source drift. This extraction changes no numerical algorithm, field tolerance,
+native dependency, or scientific maturity; fresh hosted acceptance remains required.
+
 ---
 
 ## 1. Architectural mission
